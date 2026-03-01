@@ -136,6 +136,10 @@ function App() {
   const recognitionRef = useRef<{ stop: () => void } | null>(null)
   /** 音声認識中の確定テキストを蓄積（リアルタイム表示用） */
   const voiceFinalRef = useRef('')
+  /** ユーザーがマイクを押して停止した場合 true。onend で再開しない判定に使用 */
+  const voiceUserStoppedRef = useRef(false)
+  /** 音声認識で表示中の最新テキスト（再開時のベース用） */
+  const voiceDisplayRef = useRef('')
   /** 矢印キーで履歴を選択した場合のみ true。Enter で履歴項目を送信する判定に使用 */
   const historyNavigatedWithKeyboardRef = useRef(false)
 
@@ -204,59 +208,79 @@ function App() {
       return
     }
     if (isListening && recognitionRef.current) {
+      voiceUserStoppedRef.current = true
       recognitionRef.current.stop()
       recognitionRef.current = null
       setIsListening(false)
       return
     }
-    const recognition = new SpeechRecognition() as {
-      start: () => void
-      stop: () => void
-      lang: string
-      continuous: boolean
-      interimResults: boolean
-      onresult: (e: { results: { length: number; [i: number]: { isFinal?: boolean; length: number; [j: number]: { transcript?: string } } } }) => void
-      onend: () => void
-      onerror: () => void
-    }
-    recognition.lang = 'ja-JP'
-    recognition.continuous = true
-    recognition.interimResults = true
+    voiceUserStoppedRef.current = false
     voiceFinalRef.current = input
-    recognition.onresult = (event) => {
-      const base = voiceFinalRef.current
-      let full = ''
-      let interim = ''
-      const results = event.results as { length: number; [i: number]: { isFinal?: boolean; 0?: { transcript?: string } } }
-      for (let i = 0; i < results.length; i++) {
-        const r = results[i]
-        if (!r) continue
-        const t = (r[0] as { transcript?: string } | undefined)?.transcript ?? ''
-        const isFinal = typeof r.isFinal === 'boolean' ? r.isFinal : false
-        if (isFinal) {
-          full += t
-        } else {
-          interim = t
+    voiceDisplayRef.current = input
+
+    const startRecognition = () => {
+      const recognition = new SpeechRecognition() as {
+        start: () => void
+        stop: () => void
+        lang: string
+        continuous: boolean
+        interimResults: boolean
+        onresult: (e: { results: { length: number; [i: number]: { isFinal?: boolean; length: number; [j: number]: { transcript?: string } } } }) => void
+        onend: () => void
+        onerror: () => void
+      }
+      recognition.lang = 'ja-JP'
+      recognition.continuous = true
+      recognition.interimResults = true
+      recognition.onresult = (event) => {
+        const base = voiceFinalRef.current
+        let full = ''
+        let interim = ''
+        const results = event.results as { length: number; [i: number]: { isFinal?: boolean; 0?: { transcript?: string } } }
+        for (let i = 0; i < results.length; i++) {
+          const r = results[i]
+          if (!r) continue
+          const t = (r[0] as { transcript?: string } | undefined)?.transcript ?? ''
+          const isFinal = typeof r.isFinal === 'boolean' ? r.isFinal : false
+          if (isFinal) {
+            full += t
+          } else {
+            interim = t
+          }
+        }
+        const combined = base ? `${base} ${full}${interim}`.trim() : `${full}${interim}`.trim()
+        voiceDisplayRef.current = combined
+        flushSync(() => setInput(combined))
+      }
+      recognition.onend = () => {
+        if (voiceUserStoppedRef.current) {
+          recognitionRef.current = null
+          setIsListening(false)
+          return
+        }
+        voiceFinalRef.current = voiceDisplayRef.current
+        try {
+          startRecognition()
+        } catch {
+          recognitionRef.current = null
+          setIsListening(false)
         }
       }
-      const combined = base ? `${base} ${full}${interim}`.trim() : `${full}${interim}`.trim()
-      flushSync(() => setInput(combined))
+      recognition.onerror = () => {
+        if (voiceUserStoppedRef.current) return
+        recognitionRef.current = null
+        setIsListening(false)
+      }
+      try {
+        recognition.start()
+        recognitionRef.current = recognition
+        setIsListening(true)
+      } catch {
+        recognitionRef.current = null
+        setIsListening(false)
+      }
     }
-    recognition.onend = () => {
-      recognitionRef.current = null
-      setIsListening(false)
-    }
-    recognition.onerror = () => {
-      recognitionRef.current = null
-      setIsListening(false)
-    }
-    try {
-      recognition.start()
-      recognitionRef.current = recognition
-      setIsListening(true)
-    } catch {
-      setIsListening(false)
-    }
+    startRecognition()
   }
 
   const updateFromStorage = useCallback(() => {
