@@ -1,6 +1,13 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+
+function MentorDeskOrNull() {
+  const loc = useLocation()
+  const pathname = (loc.pathname || '').replace(/^\/+/, '') || '/'
+  if (pathname === 'login') return null
+  return <MentorDesk />
+}
 import './index.css'
 import App from './App.tsx'
 import { LoginPage } from './LoginPage'
@@ -64,7 +71,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/training/infra-wbs" element={<IntroGate><InfraWbsPage /></IntroGate>} />
           <Route path="/training/intro" element={<IntroPage />} />
         </Routes>
-        <MentorDesk />
+        <MentorDeskOrNull />
       </>
     </HashRouter>
   </StrictMode>,
