@@ -455,8 +455,10 @@ function App() {
                       onChange={(event) => setInput(event.target.value)}
                       onFocus={() => setShowSearchHistory(true)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
+                        const isEnter = e.key === 'Enter' || e.keyCode === 13
+                        if (isEnter) {
                           e.preventDefault()
+                          e.stopPropagation()
                           const useHighlighted =
                             historyNavigatedWithKeyboardRef.current &&
                             showSearchHistory &&
