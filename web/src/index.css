@@ -1,0 +1,74 @@
+@import 'tailwindcss';
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+@keyframes kira-wiggle {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-1px);
+  }
+
+  50% {
+    transform: translateX(1px);
+  }
+
+  75% {
+    transform: translateX(-0.5px);
+  }
+}
+
+.btn-wiggle {
+  transition: transform 0.1s ease-out;
+}
+
+.btn-wiggle:hover {
+  animation: kira-wiggle 0.18s ease-in-out infinite;
+}
+
+/* 全ボタン: ポインターカーソル（Mac/Windows共通）＋ホバーで薄く */
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.45);
+  opacity: 0.92;
+  transition: filter 0.15s ease, opacity 0.15s ease;
+}
+
+button:active:not(:disabled) {
+  filter: brightness(0.9);
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-10vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.animate-confetti-fall {
+  animation: confetti-fall linear forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

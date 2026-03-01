@@ -1,0 +1,38 @@
+exports.handler = async (event) => {
+  const request = event.Records[0].cf.request
+  const headers = request.headers || {}
+
+  const authHeader = headers.authorization && headers.authorization[0] && headers.authorization[0].value
+
+  const expected = 'Basic a2lyYTpjaGFuZ2UtbWU='
+
+  if (authHeader !== expected) {
+    return {
+      status: '401',
+      statusDescription: 'Unauthorized',
+      headers: {
+        'www-authenticate': [
+          {
+            key: 'WWW-Authenticate',
+            value: 'Basic realm="Kira", charset="UTF-8"',
+          },
+        ],
+        'cache-control': [
+          {
+            key: 'Cache-Control',
+            value: 'no-store',
+          },
+        ],
+        'content-type': [
+          {
+            key: 'Content-Type',
+            value: 'text/plain; charset=utf-8',
+          },
+        ],
+      },
+      body: 'Unauthorized',
+    }
+  }
+
+  return request
+}

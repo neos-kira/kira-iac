@@ -1,0 +1,203 @@
+import { useState, useEffect } from 'react'
+import type { QuizQuestion } from './linuxLevel1Data'
+
+type Props = {
+  title: string
+  subtitle: string
+  questions: QuizQuestion[]
+  totalRequired: number
+  onClear?: () => void
+  storageKey?: string
+  onInterrupt?: () => void
+}
+
+type SavedProgress = {
+  currentIndex: number
+  answers: number[]
+}
+
+function loadProgress(storageKey: string | undefined, total: number): SavedProgress {
+  if (!storageKey || typeof window === 'undefined') {
+    return { currentIndex: 0, answers: [] }
+  }
+  try {
+    const raw = window.localStorage.getItem(storageKey)
+    if (!raw) return { currentIndex: 0, answers: [] }
+    const parsed = JSON.parse(raw) as Partial<SavedProgress>
+    if (
+      typeof parsed.currentIndex === 'number' &&
+      Array.isArray(parsed.answers) &&
+      parsed.currentIndex >= 0 &&
+      parsed.currentIndex < total &&
+      parsed.answers.length <= total
+    ) {
+      return { currentIndex: parsed.currentIndex, answers: parsed.answers as number[] }
+    }
+  } catch {
+    // ignore
+  }
+  return { currentIndex: 0, answers: [] }
+}
+
+function saveProgress(storageKey: string | undefined, currentIndex: number, answers: number[]) {
+  if (!storageKey || typeof window === 'undefined') return
+  try {
+    const payload: SavedProgress = { currentIndex, answers }
+    window.localStorage.setItem(storageKey, JSON.stringify(payload))
+  } catch {
+    // ignore
+  }
+}
+
+function clearProgress(storageKey: string | undefined) {
+  if (!storageKey || typeof window === 'undefined') return
+  try {
+    window.localStorage.removeItem(storageKey)
+  } catch {
+    // ignore
+  }
+}
+
+export function TrainingQuizFrame({
+  title,
+  subtitle,
+  questions,
+  totalRequired,
+  onClear,
+  storageKey,
+  onInterrupt,
+}: Props) {
+  const total = questions.length
+  const initial = loadProgress(storageKey, total)
+  const [currentIndex, setCurrentIndex] = useState(initial.currentIndex)
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+  const [answers, setAnswers] = useState<number[]>(initial.answers)
+
+  const current = questions[currentIndex]
+  const answeredCount = answers.length
+  const isFinished = answeredCount === total
+  const correctCount = answers.filter((a, i) => a === questions[i].correctIndex).length
+  const isPass = isFinished && correctCount === totalRequired
+
+  useEffect(() => {
+    if (isFinished && storageKey) clearProgress(storageKey)
+  }, [isFinished, storageKey])
+
+  function submit() {
+    if (selectedIndex == null) return
+    setAnswers((prev) => {
+      const nextAnswers = [...prev, selectedIndex]
+      const nextIndex = currentIndex < total - 1 ? currentIndex + 1 : currentIndex
+      saveProgress(storageKey, nextIndex, nextAnswers)
+      return nextAnswers
+    })
+    setSelectedIndex(null)
+    if (currentIndex < total - 1) setCurrentIndex((i) => i + 1)
+  }
+
+  function reset() {
+    setCurrentIndex(0)
+    setSelectedIndex(null)
+    setAnswers([])
+    clearProgress(storageKey)
+  }
+
+  function interrupt() {
+    saveProgress(storageKey, currentIndex, answers)
+    if (onInterrupt) onInterrupt()
+  }
+
+  if (isFinished) {
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
+        <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-soft-card">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">RESULT</p>
+          <h1 className="mt-2 text-xl font-semibold text-slate-800">{title}</h1>
+          <p className="mt-4 text-2xl font-bold text-slate-800">
+            得点: {correctCount} / {total}
+          </p>
+          {isPass ? (
+            <>
+              <p className="mt-2 text-sm text-emerald-300">合格です。クリア扱いになります。</p>
+              {onClear && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearProgress(storageKey)
+                    onClear()
+                  }}
+                  className="mt-4 rounded-xl bg-emerald-600/80 px-4 py-2 text-sm font-medium text-white"
+                >
+                  クリアを記録する
+                </button>
+              )}
+            </>
+          ) : (
+            <p className="mt-2 text-sm text-rose-300">
+              {totalRequired}/{total} 以上で合格です。もう一度挑戦してください。
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={reset}
+            className="mt-4 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700"
+          >
+            最初からやり直す
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
+      <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-soft-card">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-200">{subtitle}</p>
+        <h1 className="mt-2 text-xl font-semibold text-slate-800">{title}</h1>
+        <p className="mt-1 text-xs text-slate-400">
+          問題 {currentIndex + 1} / {total}（正誤は出さず、全問終了後に得点を表示します）
+        </p>
+
+        <p className="mt-4 text-sm font-medium text-slate-800">{current.prompt}</p>
+        <div className="mt-3 grid gap-2">
+          {current.choices.map((c, idx) => (
+            <label
+              key={c}
+              className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm ${selectedIndex === idx
+                ? 'border-brand-500/60 bg-brand-600/10'
+                : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                }`}
+            >
+              <input
+                type="radio"
+                name={current.id}
+                className="h-4 w-4 accent-blue-500"
+                checked={selectedIndex === idx}
+                onChange={() => setSelectedIndex(idx)}
+              />
+              <span className="text-slate-100">{c}</span>
+            </label>
+          ))}
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={submit}
+            disabled={selectedIndex == null}
+            className="rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:from-brand-400 hover:to-brand-500 disabled:opacity-40"
+          >
+            {currentIndex < total - 1 ? '次へ' : '終了して得点を見る'}
+          </button>
+          <button
+            type="button"
+            onClick={interrupt}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            中断してトップへ戻る
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}

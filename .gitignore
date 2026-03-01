@@ -1,0 +1,21 @@
+# Node / React
+node_modules/
+dist/
+build/
+
+# Terraform local files and state
+.terraform/
+terraform.tfstate
+terraform.tfstate.*
+crash.log
+crash.*.log
+
+# Sensitive Terraform variable files
+*.tfvars
+*.tfvars.json
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+

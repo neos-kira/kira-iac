@@ -15,3 +15,23 @@ variable "environment" {
   default     = "dev"
 }
 
+variable "enable_basic_auth" {
+  description = "Enable Basic Auth in CloudFront via Lambda@Edge"
+  type        = bool
+  default     = true
+}
+
+variable "basic_auth_username" {
+  description = "Basic Auth username"
+  type        = string
+  sensitive   = true
+  default     = null
+}
+
+variable "basic_auth_password" {
+  description = "Basic Auth password"
+  type        = string
+  sensitive   = true
+  default     = null
+}
+
