@@ -16,6 +16,7 @@ import { INFRA_BASIC_3_2_CLEARED_KEY } from './training/infraBasic3Data'
 import {
   getProgressKey,
   getTotalCleared,
+  getTaskProgressList,
   TOTAL_TASKS as WBS_TOTAL_TASKS,
   getDelayedTaskIds,
   isTask1Cleared,
@@ -446,6 +447,10 @@ function App() {
   const navigate = useNavigate()
   const delayed = getDelayedTaskIds().length > 0
   const progressPct = WBS_TOTAL_TASKS > 0 ? Math.round((getTotalCleared() / WBS_TOTAL_TASKS) * 100) : 0
+  const taskList = getTaskProgressList()
+  const inProgressLabels = taskList
+    .filter((t) => !t.cleared && t.subTasks.some((s) => s.status !== 'not_started'))
+    .map((t) => t.labelShort)
 
   return (
     <div className="min-h-screen bg-white text-slate-800">
@@ -472,6 +477,11 @@ function App() {
                 <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 shrink-0">
                   全体進捗:{progressPct}%
                 </span>
+                {inProgressLabels.length > 0 && (
+                  <span className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 shrink-0" title="実施中の課題">
+                    実施中: {inProgressLabels.join('・')}
+                  </span>
+                )}
               </>
             )}
             <span className="text-sm text-slate-700 hidden sm:inline">{getDisplayName()}</span>
