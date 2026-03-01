@@ -40,3 +40,12 @@ export function setIntroConfirmed(): void {
   window.localStorage.setItem(introConfirmedKey(), 'true')
   window.localStorage.setItem(introConfirmedAtKey(), new Date().toISOString())
 }
+
+/** 現在ログイン中のユーザーの「はじめに」完了状態をクリアする（進捗リセット用） */
+export function clearIntroForCurrentUser(): void {
+  if (typeof window === 'undefined') return
+  const name = getCurrentUsername()
+  if (!name) return
+  window.localStorage.removeItem(`${INTRO_CONFIRMED_KEY}_${name}`)
+  window.localStorage.removeItem(`${INTRO_CONFIRMED_AT_KEY}_${name}`)
+}

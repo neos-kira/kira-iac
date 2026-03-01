@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { NeOSLogo } from './components/NeOSLogo'
 import { setLoggedIn } from './auth'
 import { addTrainee } from './traineeProgressStorage'
+import { isJTerada, J_TERADA_PASSWORD } from './specialUsers'
 
 const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
 const ADMIN_SESSION_KEY = 'kira-admin-logged-in'
@@ -14,6 +15,7 @@ function getBaseUrl(): string {
 export function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [loginError, setLoginError] = useState('')
 
   useEffect(() => {
     document.title = 'NICプラットフォーム'
@@ -21,8 +23,13 @@ export function LoginPage() {
 
   function handleLogin(e: React.FormEvent) {
     e.preventDefault()
+    setLoginError('')
     const name = username.trim()
     if (!name) return
+    if (isJTerada(name) && password !== J_TERADA_PASSWORD) {
+      setLoginError('パスワードが正しくありません。')
+      return
+    }
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(USER_DISPLAY_NAME_KEY, name)
       setLoggedIn()
@@ -37,7 +44,8 @@ export function LoginPage() {
     window.location.href = getBaseUrl() + '#/'
   }
 
-  const canSubmit = username.trim().length > 0
+  const needsPassword = isJTerada(username.trim())
+  const canSubmit = username.trim().length > 0 && (!needsPassword || password.length > 0)
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
@@ -74,6 +82,11 @@ export function LoginPage() {
               autoComplete="current-password"
             />
           </div>
+          {loginError && (
+            <p className="text-sm text-red-600" role="alert">
+              {loginError}
+            </p>
+          )}
           <button
             type="submit"
             disabled={!canSubmit}

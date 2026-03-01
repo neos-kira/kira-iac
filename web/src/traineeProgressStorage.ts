@@ -15,7 +15,7 @@ const TRAINEE_LIST_KEY = 'kira-admin-trainee-list'
 const PROGRESS_SNAPSHOT_PREFIX = 'kira-progress-snapshot-'
 
 /** 管理者以外で最初から表示したい受講生ID（存在している受講生） */
-const DEFAULT_TRAINEE_IDS = ['kira-test']
+const DEFAULT_TRAINEE_IDS = ['kira-test', 'j-terada']
 
 export type TraineeProgressSnapshot = {
   introConfirmed: boolean

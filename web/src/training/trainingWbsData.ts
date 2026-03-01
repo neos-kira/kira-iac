@@ -1,12 +1,13 @@
 import { INFRA_BASIC_1_CLEARED_KEY, INFRA_BASIC_1_STORAGE_KEY } from './infraBasic1Data'
 import { L1_CLEARED_KEY, L1_PROGRESS_KEY } from './linuxLevel1Data'
-import { L2_CLEARED_KEY } from './linuxLevel2Data'
-import { INFRA_BASIC_3_1_DONE_KEY, INFRA_BASIC_3_2_CLEARED_KEY } from './infraBasic3Data'
+import { L2_CLEARED_KEY, L2_PROGRESS_KEY } from './linuxLevel2Data'
+import { INFRA_BASIC_3_1_DONE_KEY, INFRA_BASIC_3_2_CLEARED_KEY, INFRA_BASIC_3_2_STATE_KEY } from './infraBasic3Data'
 import { INFRA_BASIC_21_STORAGE_KEY } from './infraBasic21Data'
 import {
   INFRA_BASIC_4_CLEARED_KEY,
   AL2023_DAYS,
   getDayClearedKey,
+  getDayDevLogKey,
 } from './InfraBasic4Data'
 
 export const TRAINING_START_DATE_KEY = 'kira-training-start-date'
@@ -154,6 +155,27 @@ export function clearTask1Cache(): void {
   window.localStorage.removeItem(INFRA_BASIC_1_CLEARED_KEY)
   window.localStorage.removeItem(L1_PROGRESS_KEY)
   window.localStorage.removeItem(L1_CLEARED_KEY)
+}
+
+/** 全研修進捗をクリア（開始日・課題1〜4・L1/L2等）。進捗リセット用。 */
+export function clearAllTrainingProgress(): void {
+  if (typeof window === 'undefined') return
+  window.localStorage.removeItem(TRAINING_START_DATE_KEY)
+  window.localStorage.removeItem(INFRA_BASIC_1_STORAGE_KEY)
+  window.localStorage.removeItem(INFRA_BASIC_1_CLEARED_KEY)
+  window.localStorage.removeItem(L1_PROGRESS_KEY)
+  window.localStorage.removeItem(L1_CLEARED_KEY)
+  window.localStorage.removeItem(L2_CLEARED_KEY)
+  window.localStorage.removeItem(L2_PROGRESS_KEY)
+  window.localStorage.removeItem(INFRA_BASIC_21_STORAGE_KEY)
+  window.localStorage.removeItem(INFRA_BASIC_3_1_DONE_KEY)
+  window.localStorage.removeItem(INFRA_BASIC_3_2_STATE_KEY)
+  window.localStorage.removeItem(INFRA_BASIC_3_2_CLEARED_KEY)
+  window.localStorage.removeItem(INFRA_BASIC_4_CLEARED_KEY)
+  for (let day = 1; day <= 10; day++) {
+    window.localStorage.removeItem(getDayClearedKey(day))
+    window.localStorage.removeItem(getDayDevLogKey(day))
+  }
 }
 
 /** 課題の期限日（YYYY-MM-DD）。土日祝を除く営業日で累積日数分先 */
