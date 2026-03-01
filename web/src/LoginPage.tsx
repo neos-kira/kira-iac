@@ -38,8 +38,8 @@ export function LoginPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="flex justify-center mb-6 h-20 overflow-hidden">
-          <NeOSLogo height={128} />
+        <div className="flex justify-center mb-6">
+          <NeOSLogo height={128} clipTop />
         </div>
         <form onSubmit={handleLogin} className="mt-6 space-y-4">
           <div>
