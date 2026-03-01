@@ -470,8 +470,7 @@ function App() {
                             setShowSearchHistory(false)
                             void handleSubmit(e as unknown as React.FormEvent, item)
                           } else {
-                            const valueFromInput = (e.target as HTMLInputElement).value?.trim() ?? input.trim()
-                            if (valueFromInput) void handleSubmit(e as unknown as React.FormEvent, valueFromInput)
+                            void handleSubmit(e as unknown as React.FormEvent)
                           }
                         }
                         if (!showSearchHistory || searchHistory.length === 0) return
@@ -563,12 +562,12 @@ function App() {
               </div>
             )}
 
-            {/* 解釈結果（検索時のみ表示） */}
+            {/* 検索結果（Enter または ↑ 実行後に表示） */}
             {resolution && (
-              <section className="mt-6 space-y-3">
+              <section className="mt-6 space-y-3" aria-label="検索結果">
                 <div className="flex items-center justify-between text-xs text-slate-500">
                   <p>
-                    解釈結果:{' '}
+                    検索結果:{' '}
                     <span className="font-medium text-slate-800">
                       {resolution.displayName}
                     </span>
