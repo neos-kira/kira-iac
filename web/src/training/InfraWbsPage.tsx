@@ -69,6 +69,17 @@ export function InfraWbsPage() {
   }
   const chartWidthPx = timelineDates.length * DAY_WIDTH_PX
 
+  /** 本日の日付（YYYY-MM-DD）とガント上での左位置px。範囲外なら null */
+  const todayStr =
+    typeof window !== 'undefined'
+      ? `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`
+      : ''
+  const todayTs = todayStr ? new Date(todayStr + 'T12:00:00').getTime() : 0
+  const todayLeftPx =
+    ganttStart && ganttEnd && todayTs >= minTs && todayTs <= maxTs
+      ? ((todayTs - minTs) / rangeMs) * chartWidthPx
+      : null
+
   const getBarStylePx = (taskIndex: number) => {
     if (!ganttStart || !ganttEnd) return { left: 0, width: 0 }
     const taskEnd = progressList[taskIndex].deadline
@@ -198,7 +209,16 @@ export function InfraWbsPage() {
                     )
                   })}
                 </div>
-                <div className="flex flex-1 flex-col overflow-x-auto" style={{ minWidth: chartWidthPx }}>
+                <div className="relative flex flex-1 flex-col overflow-x-auto" style={{ minWidth: chartWidthPx }}>
+                  {/* 本日を示す赤線 */}
+                  {todayLeftPx != null && (
+                    <div
+                      className="absolute top-0 bottom-0 z-10 w-0.5 bg-red-500 pointer-events-none"
+                      style={{ left: todayLeftPx }}
+                      title="本日"
+                      aria-hidden
+                    />
+                  )}
                   {/* 日付軸: 1日＝40px */}
                   <div
                     className="flex shrink-0 border-b border-slate-200"
