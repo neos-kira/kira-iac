@@ -278,7 +278,7 @@ function App() {
         interimResults: boolean
         onresult: (e: { results: { length: number; [i: number]: { isFinal?: boolean; length: number; [j: number]: { transcript?: string } } } }) => void
         onend: () => void
-        onerror: () => void
+        onerror: (e?: unknown) => void
       }
       recognition.lang = 'ja-JP'
       recognition.continuous = true
@@ -317,8 +317,10 @@ function App() {
           setIsListening(false)
         }
       }
-      recognition.onerror = () => {
+      recognition.onerror = (event: unknown) => {
         if (voiceUserStoppedRef.current) return
+        const err = typeof event === 'object' && event !== null && 'error' in event ? String((event as { error: string }).error) : ''
+        if (err === 'no-speech') return
         recognitionRef.current = null
         setIsListening(false)
       }
@@ -326,7 +328,7 @@ function App() {
         recognition.start()
         recognitionRef.current = recognition
         setIsListening(true)
-      } catch {
+      } catch (e) {
         recognitionRef.current = null
         setIsListening(false)
       }
