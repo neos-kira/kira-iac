@@ -445,7 +445,7 @@ function App() {
           ) : (
           <>
           <div className="w-full max-w-2xl space-y-6">
-            <div className="rounded-2xl bg-white p-6 shadow-sm">
+            <div className="rounded-2xl bg-white p-6 shadow-sm" aria-label="検索">
               <div className="relative" ref={searchContainerRef}>
                 <form onSubmit={handleSubmit} className="space-y-3">
                   <div className="flex items-stretch rounded-xl bg-slate-50 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-0">
