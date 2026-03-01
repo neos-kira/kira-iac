@@ -456,19 +456,20 @@ function App() {
                       onFocus={() => setShowSearchHistory(true)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
+                          e.preventDefault()
                           const useHighlighted =
                             historyNavigatedWithKeyboardRef.current &&
                             showSearchHistory &&
                             searchHistory.length > 0 &&
                             searchHistoryHighlightIndex >= 0
                           if (useHighlighted) {
-                            e.preventDefault()
                             const item = searchHistory[searchHistoryHighlightIndex]
                             setInput(item)
                             setShowSearchHistory(false)
                             void handleSubmit(e as unknown as React.FormEvent, item)
+                          } else {
+                            void handleSubmit(e as unknown as React.FormEvent)
                           }
-                          // 履歴未選択時は preventDefault せずフォームの標準送信に任せる（type="submit" で handleSubmit が確実に呼ばれる）
                         }
                         if (!showSearchHistory || searchHistory.length === 0) return
                         if (e.key === 'ArrowDown') {
