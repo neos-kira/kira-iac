@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { NeOSLogo } from './components/NeOSLogo'
 import { setLoggedIn } from './auth'
 import { addTrainee } from './traineeProgressStorage'
@@ -7,8 +6,12 @@ import { addTrainee } from './traineeProgressStorage'
 const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
 const ADMIN_SESSION_KEY = 'kira-admin-logged-in'
 
+function getBaseUrl(): string {
+  if (typeof window === 'undefined') return ''
+  return (window.location.origin + window.location.pathname + (window.location.search || '')).replace(/\/$/, '') || window.location.origin
+}
+
 export function LoginPage() {
-  const navigate = useNavigate()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
 
@@ -25,12 +28,13 @@ export function LoginPage() {
       setLoggedIn()
       if (name === 'admin') {
         window.sessionStorage.setItem(ADMIN_SESSION_KEY, 'true')
-        window.location.href = (window.location.origin + window.location.pathname + (window.location.search || '')).replace(/\/$/, '') + '#/admin'
+        window.location.href = getBaseUrl() + '#/admin'
         return
       }
       addTrainee(name)
     }
-    navigate('/', { replace: true })
+    // フルページ遷移にすることでキャッシュされた古いJSでも確実にログイン状態が反映される
+    window.location.href = getBaseUrl() + '#/'
   }
 
   const canSubmit = username.trim().length > 0
