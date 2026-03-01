@@ -216,7 +216,7 @@ export function AdminPage() {
                               <span className="tabular-nums font-medium text-slate-800">{snap.wbsPercent}%</span>
                             </div>
                           ) : (
-                            <span className="text-slate-400">—</span>
+                            <span className="text-slate-400">—%</span>
                           )}
                         </td>
                         {snap?.chapterProgress?.length
@@ -245,15 +245,15 @@ export function AdminPage() {
                               )
                             })
                           : Array.from({ length: 4 }, (_, i) => (
-                              <td key={i} className="px-4 py-3 text-slate-400">—</td>
+                              <td key={i} className="px-4 py-3 text-slate-400">—%</td>
                             ))}
                         <td className="px-4 py-3">
                           {hasDelay ? (
                             <span className="inline-flex items-center gap-1 rounded-md bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-800">
-                              <span aria-hidden>⚠</span> 遅延あり
+                              <span aria-hidden>⚠</span> あり
                             </span>
                           ) : (
-                            <span className="text-slate-500">—</span>
+                            <span className="text-slate-600">なし</span>
                           )}
                         </td>
                       </tr>
