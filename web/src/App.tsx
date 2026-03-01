@@ -555,11 +555,11 @@ function App() {
                 />
               </div>
             )}
-            {/* j-terada 用：はじめにの下に「コマンド課題が終わったら 以下を実施してください」を表示。課題1クリア前はリンク無効 */}
+            {/* j-terada 用：はじめにの下に課題1完了後の案内を表示。課題1クリア前はリンク無効 */}
             {isJTerada(getDisplayName()) && (
               <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
                 <p className="text-base font-semibold text-indigo-900">
-                  コマンド課題が終わったら 以下を実施してください。
+                  インフラ基礎課題1が完了したら、以下の課題を実施してください。
                 </p>
                 <ul className="mt-4 space-y-3">
                   <li>
