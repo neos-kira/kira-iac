@@ -18,9 +18,10 @@ import {
   TOTAL_TASKS as WBS_TOTAL_TASKS,
   getDelayedTaskIds,
   isTask1Cleared,
+  clearAllTrainingProgress,
 } from './training/trainingWbsData'
 import { isJTerada, J_TERADA_ALLOWED_LINKS } from './specialUsers'
-import { getIntroConfirmed } from './training/introGate'
+import { getIntroConfirmed, clearIntroForCurrentUser } from './training/introGate'
 import { LOGIN_FLAG_KEY } from './auth'
 import { getCurrentProgressSnapshot, saveProgressSnapshot } from './traineeProgressStorage'
 
@@ -138,6 +139,18 @@ function JTeradaRestrictedView() {
           <span className="text-sm text-slate-600">j-terada さん</span>
           <button
             type="button"
+            onClick={() => {
+              clearIntroForCurrentUser()
+              clearAllTrainingProgress()
+              handleLogout()
+            }}
+            className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-[11px] font-medium text-amber-800 hover:bg-amber-100"
+            title="進捗をクリアし、次回ログイン時にはじめにからやり直します"
+          >
+            進捗をリセット
+          </button>
+          <button
+            type="button"
             onClick={handleLogout}
             className="rounded-lg px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
           >
@@ -147,9 +160,9 @@ function JTeradaRestrictedView() {
       </header>
       <main className="max-w-xl mx-auto px-4 py-8">
         <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <h1 className="text-lg font-semibold text-slate-800">Windows Server 研修 — 資料へのリンク</h1>
+          <h1 className="text-lg font-semibold text-slate-800">コマンド問題が終わりました</h1>
           <p className="mt-2 text-sm text-slate-600">
-            インフラ基礎課題1をクリアしました。以下の資料にアクセスできます。
+            以下を行ってください。
           </p>
           <ul className="mt-6 space-y-3">
             {J_TERADA_ALLOWED_LINKS.map(({ label, url }) => (
@@ -472,6 +485,22 @@ function App() {
               </>
             )}
             <span className="text-sm text-slate-700 hidden sm:inline">{getDisplayName()}</span>
+            {isJTerada(getDisplayName()) && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  clearIntroForCurrentUser()
+                  clearAllTrainingProgress()
+                  handleLogout()
+                }}
+                className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-[11px] font-medium text-amber-800 hover:bg-amber-100"
+                title="進捗をクリアし、次回ログイン時にはじめにからやり直します"
+              >
+                進捗をリセット
+              </button>
+            )}
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleLogout(); }}
