@@ -188,7 +188,17 @@ export function TrainingCommandQuizFrame({
 
         <p className="mt-4 text-sm font-medium text-slate-800">{current.prompt}</p>
 
-        <div className="mt-4">
+        <form
+          className="mt-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (showFeedback) {
+              goNext()
+            } else if (inputValue.trim() !== '') {
+              handleExecute()
+            }
+          }}
+        >
           <label htmlFor="cmd-input" className="block text-[11px] font-medium uppercase tracking-wider text-slate-500 mb-1.5">
             コマンドを入力
           </label>
@@ -199,13 +209,10 @@ export function TrainingCommandQuizFrame({
               value={inputValue}
               onChange={(e) => !showFeedback && setInputValue(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !showFeedback) {
+                if (e.key === 'Enter') {
                   e.preventDefault()
-                  if (inputValue.trim() !== '') handleExecute()
-                }
-                if (e.key === 'Enter' && showFeedback) {
-                  e.preventDefault()
-                  goNext()
+                  if (showFeedback) goNext()
+                  else if (inputValue.trim() !== '') handleExecute()
                 }
               }}
               disabled={showFeedback}
@@ -216,8 +223,7 @@ export function TrainingCommandQuizFrame({
             />
             {!showFeedback ? (
               <button
-                type="button"
-                onClick={handleExecute}
+                type="submit"
                 disabled={inputValue.trim() === ''}
                 className="shrink-0 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
@@ -225,15 +231,14 @@ export function TrainingCommandQuizFrame({
               </button>
             ) : (
               <button
-                type="button"
-                onClick={goNext}
+                type="submit"
                 className="shrink-0 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700"
               >
                 {currentIndex < total - 1 ? '次へ' : '終了して得点を見る'}
               </button>
             )}
           </div>
-        </div>
+        </form>
 
         {showFeedback && (
           <div
