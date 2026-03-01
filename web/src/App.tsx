@@ -456,21 +456,19 @@ function App() {
                       onFocus={() => setShowSearchHistory(true)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
-                          e.preventDefault()
                           const useHighlighted =
                             historyNavigatedWithKeyboardRef.current &&
                             showSearchHistory &&
                             searchHistory.length > 0 &&
                             searchHistoryHighlightIndex >= 0
                           if (useHighlighted) {
+                            e.preventDefault()
                             const item = searchHistory[searchHistoryHighlightIndex]
                             setInput(item)
                             setShowSearchHistory(false)
                             void handleSubmit(e as unknown as React.FormEvent, item)
-                          } else {
-                            void handleSubmit(e as unknown as React.FormEvent)
                           }
-                          return
+                          // 履歴未選択時は preventDefault せずフォームの標準送信に任せる（type="submit" で handleSubmit が確実に呼ばれる）
                         }
                         if (!showSearchHistory || searchHistory.length === 0) return
                         if (e.key === 'ArrowDown') {
@@ -504,7 +502,8 @@ function App() {
                     </button>
                     <button
                       type="submit"
-                      className="rounded-r-xl bg-indigo-600 px-4 py-3 text-lg font-medium text-white hover:bg-indigo-700 transition-colors shrink-0 leading-none"
+                      disabled={isThinking}
+                      className="rounded-r-xl bg-indigo-600 px-4 py-3 text-lg font-medium text-white hover:bg-indigo-700 active:scale-[0.98] active:opacity-90 disabled:opacity-70 disabled:cursor-wait transition-all shrink-0 leading-none"
                       aria-label="実行"
                     >
                       {isThinking ? '…' : '↑'}
