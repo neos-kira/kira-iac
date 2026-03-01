@@ -470,7 +470,8 @@ function App() {
                             setShowSearchHistory(false)
                             void handleSubmit(e as unknown as React.FormEvent, item)
                           } else {
-                            void handleSubmit(e as unknown as React.FormEvent)
+                            const valueFromInput = (e.target as HTMLInputElement).value?.trim() ?? input.trim()
+                            if (valueFromInput) void handleSubmit(e as unknown as React.FormEvent, valueFromInput)
                           }
                         }
                         if (!showSearchHistory || searchHistory.length === 0) return
