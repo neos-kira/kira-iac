@@ -1,7 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getProgressKey } from './trainingWbsData'
 import {
   AL2023_DAYS,
+  INFRA_BASIC_4_CLEARED_KEY,
+  getDayClearedKey,
+  getDayDevLogKey,
   loadDayDevLog,
   saveDayDevLog,
   isDayCleared,
@@ -18,19 +22,26 @@ function getTrainingUrl(path: string): string {
   return `${base}#${path}`
 }
 
+function useProgressKeys() {
+  const resolveClearedKey = useCallback((day: number) => getProgressKey(getDayClearedKey(day)), [])
+  const resolveDevLogKey = useCallback((day: number) => getProgressKey(getDayDevLogKey(day)), [])
+  return { resolveClearedKey, resolveDevLogKey }
+}
+
 export function InfraBasic4Page() {
   const navigate = useNavigate()
+  const { resolveClearedKey, resolveDevLogKey } = useProgressKeys()
   const [devLogs, setDevLogs] = useState<Record<number, string>>(() =>
-    Object.fromEntries(AL2023_DAYS.map((d) => [d.day, loadDayDevLog(d.day)]))
+    Object.fromEntries(AL2023_DAYS.map((d) => [d.day, loadDayDevLog(d.day, resolveDevLogKey(d.day))]))
   )
   const [cleared, setCleared] = useState<Record<number, boolean>>(() =>
-    Object.fromEntries(AL2023_DAYS.map((d) => [d.day, isDayCleared(d.day)]))
+    Object.fromEntries(AL2023_DAYS.map((d) => [d.day, isDayCleared(d.day, resolveClearedKey(d.day))]))
   )
-  const clearedCount = getAl2023ClearedCount()
+  const clearedCount = getAl2023ClearedCount(resolveClearedKey)
 
   const refreshCleared = useCallback(() => {
-    setCleared(Object.fromEntries(AL2023_DAYS.map((d) => [d.day, isDayCleared(d.day)])))
-  }, [])
+    setCleared(Object.fromEntries(AL2023_DAYS.map((d) => [d.day, isDayCleared(d.day, resolveClearedKey(d.day))])))
+  }, [resolveClearedKey])
 
   useEffect(() => {
     document.title = 'インフラ基礎課題4 - AL2023 10日間プロジェクト'
@@ -38,12 +49,12 @@ export function InfraBasic4Page() {
 
   const handleDevLogChange = (day: number, value: string) => {
     setDevLogs((prev) => ({ ...prev, [day]: value }))
-    saveDayDevLog(day, value)
+    saveDayDevLog(day, value, resolveDevLogKey(day))
   }
 
   const handleMarkDayComplete = (day: number, done: boolean) => {
-    setDayCleared(day, done)
-    setAl2023AllClearedIfDone()
+    setDayCleared(day, done, resolveClearedKey(day))
+    setAl2023AllClearedIfDone(getProgressKey(INFRA_BASIC_4_CLEARED_KEY), resolveClearedKey)
     refreshCleared()
   }
 

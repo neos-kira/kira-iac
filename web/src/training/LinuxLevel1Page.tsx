@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getProgressKey } from './trainingWbsData'
 import { TrainingCommandQuizFrame } from './TrainingCommandQuizFrame'
 import { LINUX_LEVEL1_QUESTIONS, L1_CLEARED_KEY, L1_PROGRESS_KEY } from './linuxLevel1Data'
 
@@ -16,9 +17,9 @@ export function LinuxLevel1Page() {
       subtitle="TRAINING · LINUX · LEVEL 1"
       questions={LINUX_LEVEL1_QUESTIONS}
       totalRequired={30}
-      storageKey={L1_PROGRESS_KEY}
+      storageKey={getProgressKey(L1_PROGRESS_KEY)}
       onClear={() => {
-        window.localStorage.setItem(L1_CLEARED_KEY, 'true')
+        window.localStorage.setItem(getProgressKey(L1_CLEARED_KEY), 'true')
         window.alert('インフラ研修1をクリアしました。インフラ研修2にチャレンジできます。')
       }}
       onInterrupt={() => {

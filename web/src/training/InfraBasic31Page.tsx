@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getProgressKey } from './trainingWbsData'
 import { INFRA_BASIC_3_1_DONE_KEY } from './infraBasic3Data'
 
 export function InfraBasic31Page() {
   const navigate = useNavigate()
+  const key = getProgressKey(INFRA_BASIC_3_1_DONE_KEY)
   const [ack, setAck] = useState(() => {
     if (typeof window === 'undefined') return false
-    return window.localStorage.getItem(INFRA_BASIC_3_1_DONE_KEY) === 'true'
+    return window.localStorage.getItem(key) === 'true'
   })
 
   useEffect(() => {
@@ -16,8 +18,8 @@ export function InfraBasic31Page() {
   const handleAckChange = (checked: boolean) => {
     setAck(checked)
     if (typeof window !== 'undefined') {
-      if (checked) window.localStorage.setItem(INFRA_BASIC_3_1_DONE_KEY, 'true')
-      else window.localStorage.removeItem(INFRA_BASIC_3_1_DONE_KEY)
+      if (checked) window.localStorage.setItem(key, 'true')
+      else window.localStorage.removeItem(key)
     }
   }
 

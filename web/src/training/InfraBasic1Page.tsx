@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getProgressKey } from './trainingWbsData'
 import {
   INFRA_BASIC_1_PARAMS,
   loadInfraBasic1State,
   saveInfraBasic1State,
   INFRA_BASIC_1_CLEARED_KEY,
+  INFRA_BASIC_1_STORAGE_KEY,
   type InfraBasic1StoredState,
 } from './infraBasic1Data'
 
@@ -68,7 +70,9 @@ const INFRA_BASIC_1_SECTION_IDS = ['teraterm', 'sakura', 'winmerge', 'winscp'] a
 
 export function InfraBasic1Page() {
   const navigate = useNavigate()
-  const [state, setState] = useState<InfraBasic1StoredState>(loadInfraBasic1State)
+  const storageKey = getProgressKey(INFRA_BASIC_1_STORAGE_KEY)
+  const clearedKey = getProgressKey(INFRA_BASIC_1_CLEARED_KEY)
+  const [state, setState] = useState<InfraBasic1StoredState>(() => loadInfraBasic1State(storageKey))
 
   useEffect(() => {
     document.title = 'インフラ基礎演習1'
@@ -81,7 +85,7 @@ export function InfraBasic1Page() {
         while (checkboxes.length <= index) checkboxes.push(false)
         checkboxes[index] = !checkboxes[index]
         const next = { ...prev, checkboxes }
-        saveInfraBasic1State(next)
+        saveInfraBasic1State(next, storageKey)
         return next
       })
     },
@@ -92,15 +96,15 @@ export function InfraBasic1Page() {
     setState((prev) => {
       const sectionDone = { ...prev.sectionDone, [sectionId]: !prev.sectionDone[sectionId] }
       const next = { ...prev, sectionDone }
-      saveInfraBasic1State(next)
+      saveInfraBasic1State(next, storageKey)
 
       if (typeof window !== 'undefined') {
         const allDone = INFRA_BASIC_1_SECTION_IDS.every((id) => sectionDone[id])
         try {
           if (allDone) {
-            window.localStorage.setItem(INFRA_BASIC_1_CLEARED_KEY, 'true')
+            window.localStorage.setItem(clearedKey, 'true')
           } else {
-            window.localStorage.removeItem(INFRA_BASIC_1_CLEARED_KEY)
+            window.localStorage.removeItem(clearedKey)
           }
         } catch {
           // ignore

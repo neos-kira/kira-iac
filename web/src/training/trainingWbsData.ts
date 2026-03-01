@@ -1,3 +1,4 @@
+import { getCurrentUsername } from '../auth'
 import { INFRA_BASIC_1_CLEARED_KEY, INFRA_BASIC_1_STORAGE_KEY } from './infraBasic1Data'
 import { L1_CLEARED_KEY, L1_PROGRESS_KEY } from './linuxLevel1Data'
 import { L2_CLEARED_KEY, L2_PROGRESS_KEY } from './linuxLevel2Data'
@@ -119,10 +120,21 @@ export const TRAINING_TASKS: TrainingTaskDef[] = [
   },
 ]
 
+/**
+ * 進捗用 localStorage キーをユーザー別に解決する。
+ * admin または未ログイン時はグローバルキー、それ以外は key_username を使用。
+ */
+export function getProgressKey(baseKey: string): string {
+  if (typeof window === 'undefined') return baseKey
+  const user = getCurrentUsername()
+  if (!user || user.toLowerCase() === 'admin') return baseKey
+  return `${baseKey}_${user}`
+}
+
 /** 研修開始日を取得。未設定の場合は空文字（課題1開始後に設定される） */
 export function getTrainingStartDate(): string {
   if (typeof window === 'undefined') return ''
-  return window.localStorage.getItem(TRAINING_START_DATE_KEY) ?? ''
+  return window.localStorage.getItem(getProgressKey(TRAINING_START_DATE_KEY)) ?? ''
 }
 
 /**
@@ -131,50 +143,51 @@ export function getTrainingStartDate(): string {
  */
 export function setTrainingStartDateFromTask1Start(): boolean {
   if (typeof window === 'undefined') return false
-  const stored = window.localStorage.getItem(TRAINING_START_DATE_KEY)
+  const key = getProgressKey(TRAINING_START_DATE_KEY)
+  const stored = window.localStorage.getItem(key)
   if (stored) return false
   const today = new Date()
   const y = today.getFullYear()
   const m = String(today.getMonth() + 1).padStart(2, '0')
   const d = String(today.getDate()).padStart(2, '0')
-  window.localStorage.setItem(TRAINING_START_DATE_KEY, `${y}-${m}-${d}`)
+  window.localStorage.setItem(key, `${y}-${m}-${d}`)
   return true
 }
 
 /** 開始日を削除する（テスト用・確認ダイアログを再表示したいとき） */
 export function clearTrainingStartDate(): void {
   if (typeof window === 'undefined') return
-  window.localStorage.removeItem(TRAINING_START_DATE_KEY)
+  window.localStorage.removeItem(getProgressKey(TRAINING_START_DATE_KEY))
 }
 
 /** 課題1関連のキャッシュをすべて削除（開始日・1-1演習・1-2 Linux30問の進捗） */
 export function clearTask1Cache(): void {
   if (typeof window === 'undefined') return
-  window.localStorage.removeItem(TRAINING_START_DATE_KEY)
-  window.localStorage.removeItem(INFRA_BASIC_1_STORAGE_KEY)
-  window.localStorage.removeItem(INFRA_BASIC_1_CLEARED_KEY)
-  window.localStorage.removeItem(L1_PROGRESS_KEY)
-  window.localStorage.removeItem(L1_CLEARED_KEY)
+  window.localStorage.removeItem(getProgressKey(TRAINING_START_DATE_KEY))
+  window.localStorage.removeItem(getProgressKey(INFRA_BASIC_1_STORAGE_KEY))
+  window.localStorage.removeItem(getProgressKey(INFRA_BASIC_1_CLEARED_KEY))
+  window.localStorage.removeItem(getProgressKey(L1_PROGRESS_KEY))
+  window.localStorage.removeItem(getProgressKey(L1_CLEARED_KEY))
 }
 
 /** 全研修進捗をクリア（開始日・課題1〜4・L1/L2等）。進捗リセット用。 */
 export function clearAllTrainingProgress(): void {
   if (typeof window === 'undefined') return
-  window.localStorage.removeItem(TRAINING_START_DATE_KEY)
-  window.localStorage.removeItem(INFRA_BASIC_1_STORAGE_KEY)
-  window.localStorage.removeItem(INFRA_BASIC_1_CLEARED_KEY)
-  window.localStorage.removeItem(L1_PROGRESS_KEY)
-  window.localStorage.removeItem(L1_CLEARED_KEY)
-  window.localStorage.removeItem(L2_CLEARED_KEY)
-  window.localStorage.removeItem(L2_PROGRESS_KEY)
-  window.localStorage.removeItem(INFRA_BASIC_21_STORAGE_KEY)
-  window.localStorage.removeItem(INFRA_BASIC_3_1_DONE_KEY)
-  window.localStorage.removeItem(INFRA_BASIC_3_2_STATE_KEY)
-  window.localStorage.removeItem(INFRA_BASIC_3_2_CLEARED_KEY)
-  window.localStorage.removeItem(INFRA_BASIC_4_CLEARED_KEY)
+  window.localStorage.removeItem(getProgressKey(TRAINING_START_DATE_KEY))
+  window.localStorage.removeItem(getProgressKey(INFRA_BASIC_1_STORAGE_KEY))
+  window.localStorage.removeItem(getProgressKey(INFRA_BASIC_1_CLEARED_KEY))
+  window.localStorage.removeItem(getProgressKey(L1_PROGRESS_KEY))
+  window.localStorage.removeItem(getProgressKey(L1_CLEARED_KEY))
+  window.localStorage.removeItem(getProgressKey(L2_CLEARED_KEY))
+  window.localStorage.removeItem(getProgressKey(L2_PROGRESS_KEY))
+  window.localStorage.removeItem(getProgressKey(INFRA_BASIC_21_STORAGE_KEY))
+  window.localStorage.removeItem(getProgressKey(INFRA_BASIC_3_1_DONE_KEY))
+  window.localStorage.removeItem(getProgressKey(INFRA_BASIC_3_2_STATE_KEY))
+  window.localStorage.removeItem(getProgressKey(INFRA_BASIC_3_2_CLEARED_KEY))
+  window.localStorage.removeItem(getProgressKey(INFRA_BASIC_4_CLEARED_KEY))
   for (let day = 1; day <= 10; day++) {
-    window.localStorage.removeItem(getDayClearedKey(day))
-    window.localStorage.removeItem(getDayDevLogKey(day))
+    window.localStorage.removeItem(getProgressKey(getDayClearedKey(day)))
+    window.localStorage.removeItem(getProgressKey(getDayDevLogKey(day)))
   }
 }
 
@@ -222,11 +235,11 @@ export type TaskProgress = {
 function getSubTaskStatus(sub: SubTaskDef): SubTaskStatus {
   if (typeof window === 'undefined') return 'not_started'
   if (sub.clearedKey) {
-    return window.localStorage.getItem(sub.clearedKey) === 'true' ? 'cleared' : 'not_started'
+    return window.localStorage.getItem(getProgressKey(sub.clearedKey)) === 'true' ? 'cleared' : 'not_started'
   }
   if (sub.storageKeyForProgress) {
     try {
-      const raw = window.localStorage.getItem(sub.storageKeyForProgress)
+      const raw = window.localStorage.getItem(getProgressKey(sub.storageKeyForProgress))
       if (!raw) return 'not_started'
       const parsed = JSON.parse(raw)
       const hasData = parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0
@@ -252,9 +265,9 @@ export function getTaskProgressList(): TaskProgress[] {
     let cleared = false
     if (typeof window !== 'undefined') {
       if (task.clearedKeys && task.clearedKeys.length > 0) {
-        cleared = task.clearedKeys.every((k) => window.localStorage.getItem(k) === 'true')
+        cleared = task.clearedKeys.every((k) => window.localStorage.getItem(getProgressKey(k)) === 'true')
       } else {
-        cleared = window.localStorage.getItem(task.clearedKey) === 'true'
+        cleared = window.localStorage.getItem(getProgressKey(task.clearedKey)) === 'true'
       }
     }
     const isDelayed = !!start && !cleared && todayStr > deadline
@@ -280,9 +293,9 @@ export function getTotalCleared(): number {
   if (typeof window === 'undefined') return 0
   return TRAINING_TASKS.filter((t) => {
     if (t.clearedKeys && t.clearedKeys.length > 0) {
-      return t.clearedKeys.every((k) => window.localStorage.getItem(k) === 'true')
+      return t.clearedKeys.every((k) => window.localStorage.getItem(getProgressKey(k)) === 'true')
     }
-    return window.localStorage.getItem(t.clearedKey) === 'true'
+    return window.localStorage.getItem(getProgressKey(t.clearedKey)) === 'true'
   }).length
 }
 
@@ -293,13 +306,13 @@ export function isTask1Cleared(): boolean {
   if (typeof window === 'undefined') return false
   const task = TRAINING_TASKS[0]
   if (!task.clearedKeys || task.clearedKeys.length === 0) return false
-  return task.clearedKeys.every((k) => window.localStorage.getItem(k) === 'true')
+  return task.clearedKeys.every((k) => window.localStorage.getItem(getProgressKey(k)) === 'true')
 }
 
 /** インフラ基礎課題2が完了しているか */
 export function isTask2Cleared(): boolean {
   if (typeof window === 'undefined') return false
-  return window.localStorage.getItem(L2_CLEARED_KEY) === 'true'
+  return window.localStorage.getItem(getProgressKey(L2_CLEARED_KEY)) === 'true'
 }
 
 /** 次の未完了課題のラベル。全てクリアなら null */

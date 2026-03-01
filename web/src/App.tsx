@@ -14,6 +14,7 @@ import { L2_PROGRESS_KEY, TCPIP_LEVEL2_QUESTIONS, L2_CLEARED_KEY } from './train
 import { INFRA_BASIC_1_CLEARED_KEY } from './training/infraBasic1Data'
 import { INFRA_BASIC_3_2_CLEARED_KEY } from './training/infraBasic3Data'
 import {
+  getProgressKey,
   getTotalCleared,
   TOTAL_TASKS as WBS_TOTAL_TASKS,
   getDelayedTaskIds,
@@ -43,10 +44,10 @@ function readTrainingStatus(): TrainingStatus {
     }
   }
   return {
-    infraToolsCleared: window.localStorage.getItem(INFRA_BASIC_1_CLEARED_KEY) === 'true',
-    linuxL1Cleared: window.localStorage.getItem(L1_CLEARED_KEY) === 'true',
-    linuxL2Cleared: window.localStorage.getItem(L2_CLEARED_KEY) === 'true',
-    infraOsCloudCleared: window.localStorage.getItem(INFRA_BASIC_3_2_CLEARED_KEY) === 'true',
+    infraToolsCleared: window.localStorage.getItem(getProgressKey(INFRA_BASIC_1_CLEARED_KEY)) === 'true',
+    linuxL1Cleared: window.localStorage.getItem(getProgressKey(L1_CLEARED_KEY)) === 'true',
+    linuxL2Cleared: window.localStorage.getItem(getProgressKey(L2_CLEARED_KEY)) === 'true',
+    infraOsCloudCleared: window.localStorage.getItem(getProgressKey(INFRA_BASIC_3_2_CLEARED_KEY)) === 'true',
   }
 }
 
@@ -336,8 +337,8 @@ function App() {
   const updateFromStorage = useCallback(() => {
     if (typeof window === 'undefined') return
     try {
-      setCanResumeL1(hasInProgressSession(L1_PROGRESS_KEY, LINUX_LEVEL1_QUESTIONS.length))
-      setCanResumeL2(hasInProgressSession(L2_PROGRESS_KEY, TCPIP_LEVEL2_QUESTIONS.length))
+      setCanResumeL1(hasInProgressSession(getProgressKey(L1_PROGRESS_KEY), LINUX_LEVEL1_QUESTIONS.length))
+      setCanResumeL2(hasInProgressSession(getProgressKey(L2_PROGRESS_KEY), TCPIP_LEVEL2_QUESTIONS.length))
       setTrainingStatus(readTrainingStatus())
       setPinnedTraining(loadPinnedTrainingTasks())
     } catch {

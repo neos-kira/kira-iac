@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getProgressKey } from './trainingWbsData'
 import {
   INFRA_BASIC_3_2_CLEARED_KEY,
   INFRA_BASIC_3_2_DEFAULT_STATE,
@@ -168,7 +169,9 @@ function evaluateAnswer(id: QuestionId, raw: string): EvalResult {
 
 export function InfraBasic32Page() {
   const navigate = useNavigate()
-  const [state, setState] = useState(() => loadInfraBasic32State())
+  const stateKey = getProgressKey(INFRA_BASIC_3_2_STATE_KEY)
+  const clearedKey = getProgressKey(INFRA_BASIC_3_2_CLEARED_KEY)
+  const [state, setState] = useState(() => loadInfraBasic32State(stateKey))
   const [summary, setSummary] = useState<string>('')
   const [copyToast, setCopyToast] = useState<{
     visible: boolean
@@ -195,7 +198,7 @@ export function InfraBasic32Page() {
           [id]: value,
         },
       }
-      saveInfraBasic32State(next)
+      saveInfraBasic32State(next, stateKey)
       return next
     })
   }
@@ -211,7 +214,7 @@ export function InfraBasic32Page() {
       results: nextResults,
     }
     setState(nextState)
-    saveInfraBasic32State(nextState)
+    saveInfraBasic32State(nextState, stateKey)
 
     const passCount = (Object.values(nextResults) as EvalResult[]).filter((r) => r.pass).length
     const total = Object.keys(nextResults).length
@@ -219,9 +222,9 @@ export function InfraBasic32Page() {
 
     if (typeof window !== 'undefined') {
       if (allPass) {
-        window.localStorage.setItem(INFRA_BASIC_3_2_CLEARED_KEY, 'true')
+        window.localStorage.setItem(clearedKey, 'true')
       } else {
-        window.localStorage.removeItem(INFRA_BASIC_3_2_CLEARED_KEY)
+        window.localStorage.removeItem(clearedKey)
       }
     }
 
@@ -315,8 +318,8 @@ export function InfraBasic32Page() {
     setState(INFRA_BASIC_3_2_DEFAULT_STATE)
     setSummary('')
     if (typeof window !== 'undefined') {
-      window.localStorage.removeItem(INFRA_BASIC_3_2_STATE_KEY)
-      window.localStorage.removeItem(INFRA_BASIC_3_2_CLEARED_KEY)
+      window.localStorage.removeItem(stateKey)
+      window.localStorage.removeItem(clearedKey)
     }
   }
 

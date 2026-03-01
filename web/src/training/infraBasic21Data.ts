@@ -73,10 +73,12 @@ export const INFRA_BASIC_21_DEFAULT_STATE: InfraBasic21StoredState = {
   },
 }
 
-export function loadInfraBasic21State(): InfraBasic21StoredState {
+/** storageKey を省略した場合はグローバルキーを使用（後方互換） */
+export function loadInfraBasic21State(storageKey?: string): InfraBasic21StoredState {
   if (typeof window === 'undefined') return INFRA_BASIC_21_DEFAULT_STATE
+  const key = storageKey ?? INFRA_BASIC_21_STORAGE_KEY
   try {
-    const raw = window.localStorage.getItem(INFRA_BASIC_21_STORAGE_KEY)
+    const raw = window.localStorage.getItem(key)
     if (!raw) return INFRA_BASIC_21_DEFAULT_STATE
     const parsed = JSON.parse(raw) as Partial<InfraBasic21StoredState>
     return {
@@ -89,10 +91,12 @@ export function loadInfraBasic21State(): InfraBasic21StoredState {
   }
 }
 
-export function saveInfraBasic21State(state: InfraBasic21StoredState): void {
+/** storageKey を省略した場合はグローバルキーを使用（後方互換） */
+export function saveInfraBasic21State(state: InfraBasic21StoredState, storageKey?: string): void {
   if (typeof window === 'undefined') return
+  const key = storageKey ?? INFRA_BASIC_21_STORAGE_KEY
   try {
-    window.localStorage.setItem(INFRA_BASIC_21_STORAGE_KEY, JSON.stringify(state))
+    window.localStorage.setItem(key, JSON.stringify(state))
   } catch {
     // ignore
   }

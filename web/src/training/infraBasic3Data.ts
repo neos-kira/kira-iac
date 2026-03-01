@@ -47,10 +47,12 @@ export const INFRA_BASIC_3_2_DEFAULT_STATE: InfraBasic32StoredState = {
   },
 }
 
-export function loadInfraBasic32State(): InfraBasic32StoredState {
+/** stateKey を省略した場合はグローバルキーを使用（後方互換） */
+export function loadInfraBasic32State(stateKey?: string): InfraBasic32StoredState {
   if (typeof window === 'undefined') return INFRA_BASIC_3_2_DEFAULT_STATE
+  const key = stateKey ?? INFRA_BASIC_3_2_STATE_KEY
   try {
-    const raw = window.localStorage.getItem(INFRA_BASIC_3_2_STATE_KEY)
+    const raw = window.localStorage.getItem(key)
     if (!raw) return INFRA_BASIC_3_2_DEFAULT_STATE
     const parsed = JSON.parse(raw) as Partial<InfraBasic32StoredState>
     return {
@@ -62,10 +64,12 @@ export function loadInfraBasic32State(): InfraBasic32StoredState {
   }
 }
 
-export function saveInfraBasic32State(state: InfraBasic32StoredState): void {
+/** stateKey を省略した場合はグローバルキーを使用（後方互換） */
+export function saveInfraBasic32State(state: InfraBasic32StoredState, stateKey?: string): void {
   if (typeof window === 'undefined') return
+  const key = stateKey ?? INFRA_BASIC_3_2_STATE_KEY
   try {
-    window.localStorage.setItem(INFRA_BASIC_3_2_STATE_KEY, JSON.stringify(state))
+    window.localStorage.setItem(key, JSON.stringify(state))
   } catch {
     // ignore
   }

@@ -124,38 +124,48 @@ export const AL2023_DAYS: DayDef[] = [
   },
 ]
 
-export function loadDayDevLog(day: number): string {
+/** devLogKey を省略した場合は getDayDevLogKey(day) を使用（後方互換） */
+export function loadDayDevLog(day: number, devLogKey?: string): string {
   if (typeof window === 'undefined') return ''
-  return window.localStorage.getItem(getDayDevLogKey(day)) ?? ''
+  const key = devLogKey ?? getDayDevLogKey(day)
+  return window.localStorage.getItem(key) ?? ''
 }
 
-export function saveDayDevLog(day: number, content: string): void {
+/** devLogKey を省略した場合は getDayDevLogKey(day) を使用（後方互換） */
+export function saveDayDevLog(day: number, content: string, devLogKey?: string): void {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(getDayDevLogKey(day), content)
+  const key = devLogKey ?? getDayDevLogKey(day)
+  window.localStorage.setItem(key, content)
 }
 
-export function isDayCleared(day: number): boolean {
+/** clearedKey を省略した場合は getDayClearedKey(day) を使用（後方互換） */
+export function isDayCleared(day: number, clearedKey?: string): boolean {
   if (typeof window === 'undefined') return false
-  return window.localStorage.getItem(getDayClearedKey(day)) === 'true'
+  const key = clearedKey ?? getDayClearedKey(day)
+  return window.localStorage.getItem(key) === 'true'
 }
 
-export function setDayCleared(day: number, cleared: boolean): void {
+/** clearedKey を省略した場合は getDayClearedKey(day) を使用（後方互換） */
+export function setDayCleared(day: number, cleared: boolean, clearedKey?: string): void {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(getDayClearedKey(day), cleared ? 'true' : 'false')
+  const key = clearedKey ?? getDayClearedKey(day)
+  window.localStorage.setItem(key, cleared ? 'true' : 'false')
 }
 
-export function getAl2023ClearedCount(): number {
+export function getAl2023ClearedCount(resolveClearedKey?: (day: number) => string): number {
   if (typeof window === 'undefined') return 0
-  return AL2023_DAYS.filter((d) => isDayCleared(d.day)).length
+  return AL2023_DAYS.filter((d) => isDayCleared(d.day, resolveClearedKey?.(d.day))).length
 }
 
-export function isAl2023AllCleared(): boolean {
-  return getAl2023ClearedCount() === 10
+export function isAl2023AllCleared(resolveClearedKey?: (day: number) => string): boolean {
+  return getAl2023ClearedCount(resolveClearedKey) === 10
 }
 
-export function setAl2023AllClearedIfDone(): void {
+/** allClearedKey / resolveClearedKey を省略した場合はグローバルキーを使用（後方互換） */
+export function setAl2023AllClearedIfDone(allClearedKey?: string, resolveClearedKey?: (day: number) => string): void {
   if (typeof window === 'undefined') return
-  if (isAl2023AllCleared()) {
-    window.localStorage.setItem(INFRA_BASIC_4_CLEARED_KEY, 'true')
+  const key = allClearedKey ?? INFRA_BASIC_4_CLEARED_KEY
+  if (isAl2023AllCleared(resolveClearedKey)) {
+    window.localStorage.setItem(key, 'true')
   }
 }

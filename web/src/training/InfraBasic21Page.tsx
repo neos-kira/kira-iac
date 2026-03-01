@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getProgressKey } from './trainingWbsData'
 import {
   INFRA_BASIC_21_DEFAULT_STATE,
+  INFRA_BASIC_21_STORAGE_KEY,
   loadInfraBasic21State,
   saveInfraBasic21State,
   type InfraBasic21StoredState,
@@ -39,7 +41,8 @@ function copyToClipboard(text: string): Promise<boolean> {
 
 export function InfraBasic21Page() {
   const navigate = useNavigate()
-  const [state, setState] = useState<InfraBasic21StoredState>(() => loadInfraBasic21State())
+  const storageKey = getProgressKey(INFRA_BASIC_21_STORAGE_KEY)
+  const [state, setState] = useState<InfraBasic21StoredState>(() => loadInfraBasic21State(storageKey))
   const [copiedReport, setCopiedReport] = useState(false)
   const [hintOpen, setHintOpen] = useState<Record<string, boolean>>({})
   const [pingCheck, setPingCheck] = useState<{ checked: boolean; pass: boolean; message: string }>({
@@ -55,10 +58,10 @@ export function InfraBasic21Page() {
   const updateState = useCallback((updater: (prev: InfraBasic21StoredState) => InfraBasic21StoredState) => {
     setState((prev) => {
       const next = updater(prev)
-      saveInfraBasic21State(next)
+      saveInfraBasic21State(next, storageKey)
       return next
     })
-  }, [])
+  }, [storageKey])
 
   const handlePracticalChange = useCallback(
     (field: keyof InfraBasic21StoredState['practical'], value: string | boolean) => {
