@@ -128,8 +128,10 @@ function App() {
   const [searchHistory, setSearchHistory] = useState<string[]>(() => loadSearchHistory())
   const [showSearchHistory, setShowSearchHistory] = useState(false)
   const [searchHistoryHighlightIndex, setSearchHistoryHighlightIndex] = useState(-1)
+  const [isListening, setIsListening] = useState(false)
   const openedRef = useRef<string | null>(null)
   const searchContainerRef = useRef<HTMLDivElement | null>(null)
+  const recognitionRef = useRef<{ stop: () => void } | null>(null)
 
   /** インフラ課題系URL: はじめに未完了ならポップアップ、完了なら開く */
   function openInfraOrShowIntro(url: string) {
@@ -186,6 +188,54 @@ function App() {
       saveSearchHistory(next)
       return next
     })
+  }
+
+  function toggleVoiceInput() {
+    if (typeof window === 'undefined') return
+    const Win = window as Window & { SpeechRecognition?: new () => unknown; webkitSpeechRecognition?: new () => unknown }
+    const SpeechRecognition = Win.SpeechRecognition ?? Win.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      return
+    }
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop()
+      recognitionRef.current = null
+      setIsListening(false)
+      return
+    }
+    const recognition = new SpeechRecognition() as {
+      start: () => void
+      stop: () => void
+      lang: string
+      continuous: boolean
+      interimResults: boolean
+      onresult: (e: { results: { length: number; [i: number]: { [j: number]: { transcript?: string } } } }) => void
+      onend: () => void
+      onerror: () => void
+    }
+    recognition.lang = 'ja-JP'
+    recognition.continuous = false
+    recognition.interimResults = false
+    recognition.onresult = (event) => {
+      const last = event.results[event.results.length - 1]
+      const transcript = last?.[0]?.transcript
+      if (transcript) setInput((prev) => (prev ? `${prev} ${transcript}` : transcript).trim())
+    }
+    recognition.onend = () => {
+      recognitionRef.current = null
+      setIsListening(false)
+    }
+    recognition.onerror = () => {
+      recognitionRef.current = null
+      setIsListening(false)
+    }
+    try {
+      recognition.start()
+      recognitionRef.current = recognition
+      setIsListening(true)
+    } catch {
+      setIsListening(false)
+    }
   }
 
   const updateFromStorage = useCallback(() => {
@@ -404,13 +454,6 @@ function App() {
                       onFocus={() => setShowSearchHistory(true)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
-                          if (showSearchHistory && searchHistory.length > 0 && searchHistoryHighlightIndex >= 0) {
-                            e.preventDefault()
-                            const item = searchHistory[searchHistoryHighlightIndex]
-                            setInput(item)
-                            setShowSearchHistory(false)
-                            handleSubmit(e as unknown as React.FormEvent, item)
-                          }
                           return
                         }
                         if (!showSearchHistory || searchHistory.length === 0) return
@@ -429,11 +472,18 @@ function App() {
                       placeholder="「インフラ研修を表示」 「WBSを表示」"
                       className="flex-1 min-w-0 py-3.5 pl-4 pr-3 text-sm text-slate-800 placeholder:text-slate-400 border-0 outline-none bg-transparent"
                     />
-                    <span className="flex items-center px-2 text-slate-500" aria-hidden>
+                    <button
+                      type="button"
+                      onClick={toggleVoiceInput}
+                      className="relative flex items-center justify-center px-2 py-1 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded transition-colors"
+                      aria-label={isListening ? '音声認識を停止' : '音声入力'}
+                      title={isListening ? '音声認識を停止' : '音声入力'}
+                    >
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
                         <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z" />
                       </svg>
-                    </span>
+                      {isListening && <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" aria-hidden />}
+                    </button>
                     <button
                       type="submit"
                       className="rounded-r-xl bg-indigo-600 px-4 py-3 text-lg font-medium text-white hover:bg-indigo-700 transition-colors shrink-0 leading-none"
