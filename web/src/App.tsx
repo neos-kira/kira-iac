@@ -376,28 +376,18 @@ function App() {
 
         <main className="mt-4 flex flex-1 flex-col items-center justify-start">
           {isAdminView ? (
-            /* 講師用メニュー: 解答と受講生の進捗のみ */
+            /* 講師用メニュー: 受講生の進捗 */
             <div className="w-full max-w-2xl space-y-4">
               <h1 className="text-lg font-semibold text-slate-800">講師用メニュー</h1>
-              <p className="text-sm text-slate-600">解答の確認と受講生の進捗確認ができます。</p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => navigate('/admin', { state: { openRef: true } })}
-                  className="flex flex-col items-start rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/50"
-                >
-                  <span className="text-base font-semibold text-slate-800">解答（講師用リファレンス）</span>
-                  <span className="mt-1 text-xs text-slate-600">模範解答・技術監査ポイントを確認</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/admin')}
-                  className="flex flex-col items-start rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/50"
-                >
-                  <span className="text-base font-semibold text-slate-800">受講生の進捗</span>
-                  <span className="mt-1 text-xs text-slate-600">WBSに基づく進捗一覧を表示</span>
-                </button>
-              </div>
+              <p className="text-sm text-slate-600">受講生の進捗を確認できます。</p>
+              <button
+                type="button"
+                onClick={() => navigate('/admin')}
+                className="flex w-full flex-col items-start rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/50"
+              >
+                <span className="text-base font-semibold text-slate-800">受講生の進捗</span>
+                <span className="mt-1 text-xs text-slate-600">WBSに基づく進捗一覧を表示</span>
+              </button>
             </div>
           ) : (
           <>

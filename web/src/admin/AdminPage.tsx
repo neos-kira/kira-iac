@@ -1,9 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import {
-  INSTRUCTOR_REFERENCE,
-  AUDIT_REFERENCE,
-} from '../training/trainingWbsData'
+import { useNavigate } from 'react-router-dom'
 import { getTraineeList, getProgressSnapshot } from '../traineeProgressStorage'
 
 const ADMIN_SESSION_KEY = 'kira-admin-logged-in'
@@ -23,7 +19,6 @@ function formatIntroDate(iso: string | null): string {
 
 export function AdminPage() {
   const navigate = useNavigate()
-  const location = useLocation()
   const [username, setUsername] = useState('admin')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -31,7 +26,6 @@ export function AdminPage() {
     if (typeof window === 'undefined') return false
     return window.sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true'
   })
-  const [refModalOpen, setRefModalOpen] = useState(false)
   const [traineeList, setTraineeList] = useState<string[]>(() => getTraineeList())
 
   function refreshProgress() {
@@ -44,13 +38,6 @@ export function AdminPage() {
     const id = setInterval(refreshProgress, 2000)
     return () => clearInterval(id)
   }, [authed])
-
-  useEffect(() => {
-    if (authed && (location.state as { openRef?: boolean } | null)?.openRef) {
-      setRefModalOpen(true)
-      navigate(location.pathname + location.search, { replace: true, state: {} })
-    }
-  }, [authed, location.state, location.pathname, location.search, navigate])
 
   function handleLoginSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -137,13 +124,6 @@ export function AdminPage() {
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <h1 className="text-base font-semibold text-slate-800">受講生進捗（WBS）</h1>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setRefModalOpen(true)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-            >
-              リファレンス
-            </button>
             <button
               type="button"
               onClick={() => navigate('/')}
@@ -265,88 +245,6 @@ export function AdminPage() {
           </div>
         </section>
       </main>
-
-      {/* 講師用リファレンス: モーダル（白基調） */}
-      {refModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => setRefModalOpen(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="ref-modal-title"
-        >
-          <div
-            className="max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3">
-              <h2 id="ref-modal-title" className="text-sm font-bold text-slate-800">
-                講師用リファレンス
-              </h2>
-              <button
-                type="button"
-                onClick={() => setRefModalOpen(false)}
-                className="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200"
-              >
-                閉じる
-              </button>
-            </div>
-            <div className="overflow-y-auto p-5 space-y-5 max-h-[calc(85vh-52px)] bg-white">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <h3 className="text-xs font-bold text-indigo-700 mb-2">{AUDIT_REFERENCE.aiGovernance.title}</h3>
-                <p className="text-[11px] text-slate-600 mb-1.5">
-                  IPアドレス（192.168.1.1 → 192.168.X.X）の抽象化、顧客名の匿名化（株式会社A → クライアントX）。
-                </p>
-                <ul className="list-disc list-inside text-[11px] text-slate-600 space-y-0.5">
-                  {AUDIT_REFERENCE.aiGovernance.points.map((point, i) => (
-                    <li key={i}>{point}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <h3 className="text-xs font-bold text-indigo-700 mb-2">{INSTRUCTOR_REFERENCE.chapter4Quality.title}</h3>
-                <ul className="list-disc list-inside text-[11px] text-slate-600 space-y-0.5">
-                  {INSTRUCTOR_REFERENCE.chapter4Quality.points.map((point, i) => (
-                    <li key={i}>{point}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-xs font-bold text-indigo-700 mb-2">{INSTRUCTOR_REFERENCE.chapter1.title}</h3>
-                <pre className="rounded-lg bg-slate-100 p-3 text-[11px] text-slate-700 whitespace-pre-wrap border border-slate-200">
-                  {INSTRUCTOR_REFERENCE.chapter1.content}
-                </pre>
-              </div>
-              <div>
-                <h3 className="text-xs font-bold text-indigo-700 mb-2">{INSTRUCTOR_REFERENCE.chapter2.title}</h3>
-                <pre className="rounded-lg bg-slate-100 p-3 text-[11px] text-slate-700 whitespace-pre-wrap border border-slate-200">
-                  {INSTRUCTOR_REFERENCE.chapter2.content}
-                </pre>
-              </div>
-              <div>
-                <h3 className="text-xs font-bold text-indigo-700 mb-2">{INSTRUCTOR_REFERENCE.chapter3.title}</h3>
-                <pre className="rounded-lg bg-slate-100 p-3 text-[11px] text-slate-700 whitespace-pre-wrap border border-slate-200">
-                  {INSTRUCTOR_REFERENCE.chapter3.content}
-                </pre>
-              </div>
-              <div>
-                <h3 className="text-xs font-bold text-indigo-700 mb-2">{INSTRUCTOR_REFERENCE.al2023Script.title}</h3>
-                <pre className="rounded-lg bg-slate-100 p-3 text-[11px] text-slate-700 whitespace-pre-wrap border border-slate-200 font-mono">
-                  {INSTRUCTOR_REFERENCE.al2023Script.content}
-                </pre>
-              </div>
-              <div>
-                <h3 className="text-xs font-bold text-indigo-700 mb-2">{AUDIT_REFERENCE.backupAndDiff.title}</h3>
-                <ul className="list-disc list-inside text-[11px] text-slate-600 space-y-0.5">
-                  {AUDIT_REFERENCE.backupAndDiff.points.map((point, i) => (
-                    <li key={i}>{point}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
