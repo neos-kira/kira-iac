@@ -12,6 +12,8 @@ permissions:
 jobs:
   terraform:
     runs-on: ubuntu-latest
+    outputs:
+      distribution_id: ${{ steps.cloudfront.outputs.distribution_id }}
 
     env:
       TF_VAR_project_name: kira-project
@@ -48,6 +50,11 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: terraform apply -input=false -auto-approve
 
+      - name: Set CloudFront distribution ID
+        id: cloudfront
+        if: github.ref == 'refs/heads/main'
+        run: echo "distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> $GITHUB_OUTPUT
+
   web-deploy:
     runs-on: ubuntu-latest
     needs: terraform
@@ -82,3 +89,10 @@ jobs:
 
       - name: Sync dist to S3
         run: aws s3 sync dist s3://kira-project-dev-web-static --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          DIST_ID="${{ needs.terraform.outputs.distribution_id }}"
+          if [ -n "$DIST_ID" ]; then
+            aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths "/*"
+          fi
