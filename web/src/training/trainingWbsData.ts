@@ -266,6 +266,20 @@ export function getTotalCleared(): number {
 
 export const TOTAL_TASKS = TRAINING_TASKS.length
 
+/** インフラ基礎課題1が完了しているか（1-1 と 1-2 両方クリア） */
+export function isTask1Cleared(): boolean {
+  if (typeof window === 'undefined') return false
+  const task = TRAINING_TASKS[0]
+  if (!task.clearedKeys || task.clearedKeys.length === 0) return false
+  return task.clearedKeys.every((k) => window.localStorage.getItem(k) === 'true')
+}
+
+/** インフラ基礎課題2が完了しているか */
+export function isTask2Cleared(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.localStorage.getItem(L2_CLEARED_KEY) === 'true'
+}
+
 /** 次の未完了課題のラベル。全てクリアなら null */
 export function getNextTaskLabel(): string | null {
   const list = getTaskProgressList()
