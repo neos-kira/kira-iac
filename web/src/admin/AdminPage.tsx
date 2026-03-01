@@ -129,7 +129,7 @@ export function AdminPage() {
               onClick={() => navigate('/')}
               className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
             >
-              受講者画面へ
+              トップへ
             </button>
             <button
               type="button"
@@ -201,32 +201,32 @@ export function AdminPage() {
                         </td>
                         {snap?.chapterProgress?.length
                           ? snap.chapterProgress.map((ch) => {
-                              const status = ch.cleared ? 'done' : ch.percent > 0 ? 'in_progress' : 'not_started'
-                              const dotClass =
-                                status === 'done'
-                                  ? 'bg-emerald-500'
-                                  : status === 'in_progress'
-                                    ? 'bg-amber-500'
-                                    : 'bg-slate-300'
-                              const statusLabel = ch.cleared ? '完了' : ch.percent > 0 ? '実施中' : '未着手'
-                              return (
-                                <td key={ch.chapter} className="px-4 py-3">
-                                  <div className="flex flex-col gap-0.5">
-                                    <span className="inline-flex items-center gap-1.5 text-slate-800">
-                                      <span className={`inline-block h-2.5 w-2.5 rounded-full ${dotClass}`} aria-hidden />
-                                      <span className="text-xs font-medium">{Math.round(ch.percent)}%</span>
-                                    </span>
-                                    <span className="text-[11px] text-slate-500">{statusLabel}</span>
-                                    {ch.chapter === 4 && (
-                                      <span className="text-[11px] text-slate-500">Day {snap.currentDay}/10</span>
-                                    )}
-                                  </div>
-                                </td>
-                              )
-                            })
+                            const status = ch.cleared ? 'done' : ch.percent > 0 ? 'in_progress' : 'not_started'
+                            const dotClass =
+                              status === 'done'
+                                ? 'bg-emerald-500'
+                                : status === 'in_progress'
+                                  ? 'bg-amber-500'
+                                  : 'bg-slate-300'
+                            const statusLabel = ch.cleared ? '完了' : ch.percent > 0 ? '実施中' : '未着手'
+                            return (
+                              <td key={ch.chapter} className="px-4 py-3">
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="inline-flex items-center gap-1.5 text-slate-800">
+                                    <span className={`inline-block h-2.5 w-2.5 rounded-full ${dotClass}`} aria-hidden />
+                                    <span className="text-xs font-medium">{Math.round(ch.percent)}%</span>
+                                  </span>
+                                  <span className="text-[11px] text-slate-500">{statusLabel}</span>
+                                  {ch.chapter === 4 && (
+                                    <span className="text-[11px] text-slate-500">Day {snap.currentDay}/10</span>
+                                  )}
+                                </div>
+                              </td>
+                            )
+                          })
                           : Array.from({ length: 4 }, (_, i) => (
-                              <td key={i} className="px-4 py-3 text-slate-400">—%</td>
-                            ))}
+                            <td key={i} className="px-4 py-3 text-slate-400">—%</td>
+                          ))}
                         <td className="px-4 py-3">
                           {hasDelay ? (
                             <span className="inline-flex items-center gap-1 rounded-md bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-800">
