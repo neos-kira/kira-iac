@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { NeOSLogo } from './components/NeOSLogo'
 import { setLoggedIn } from './auth'
+import { addTrainee } from './traineeProgressStorage'
 
 const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
 const ADMIN_SESSION_KEY = 'kira-admin-logged-in'
@@ -27,6 +28,7 @@ export function LoginPage() {
         window.location.href = (window.location.origin + window.location.pathname + (window.location.search || '')).replace(/\/$/, '') + '#/admin'
         return
       }
+      addTrainee(name)
     }
     navigate('/', { replace: true })
   }

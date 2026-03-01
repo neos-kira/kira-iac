@@ -1,25 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { getIntroConfirmed, getIntroConfirmedAt } from '../training/introGate'
 import {
-  getWbsProgressPercent,
-  getChapterProgressList,
-  getCurrentProjectDay,
-  getDelayedTaskIds,
   INSTRUCTOR_REFERENCE,
   AUDIT_REFERENCE,
 } from '../training/trainingWbsData'
+import { getTraineeList, getProgressSnapshot } from '../traineeProgressStorage'
 
 const ADMIN_SESSION_KEY = 'kira-admin-logged-in'
-const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
-
-/** この端末で記録されている受講生名。admin の場合は null（管理者の進捗は表示しない） */
-function getTraineeDisplayName(): string | null {
-  if (typeof window === 'undefined') return null
-  const name = window.localStorage.getItem(USER_DISPLAY_NAME_KEY)?.trim() || ''
-  if (name.toLowerCase() === 'admin' || name === '') return null
-  return name
-}
 
 /** 合格日を MM/DD 形式で返す */
 function formatIntroDate(iso: string | null): string {
@@ -45,22 +32,10 @@ export function AdminPage() {
     return window.sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true'
   })
   const [refModalOpen, setRefModalOpen] = useState(false)
-  const [introConfirmed, setIntroConfirmed] = useState(false)
-  const [introAt, setIntroAt] = useState<string | null>(null)
-  const [wbsPercent, setWbsPercent] = useState(0)
-  const [chapterProgress, setChapterProgress] = useState<ReturnType<typeof getChapterProgressList>>([])
-  const [currentDay, setCurrentDay] = useState(0)
-  const [delayedIds, setDelayedIds] = useState<string[]>([])
-  const [traineeName, setTraineeName] = useState<string | null>(() => getTraineeDisplayName())
+  const [traineeList, setTraineeList] = useState<string[]>(() => getTraineeList())
 
   function refreshProgress() {
-    setIntroConfirmed(getIntroConfirmed())
-    setIntroAt(getIntroConfirmedAt())
-    setWbsPercent(getWbsProgressPercent())
-    setChapterProgress(getChapterProgressList())
-    setCurrentDay(getCurrentProjectDay())
-    setDelayedIds(getDelayedTaskIds())
-    setTraineeName(getTraineeDisplayName())
+    setTraineeList(getTraineeList())
   }
 
   useEffect(() => {
@@ -156,8 +131,6 @@ export function AdminPage() {
     )
   }
 
-  const hasDelay = delayedIds.length > 0
-
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800">
       <header className="border-b border-slate-200 bg-white px-4 py-3 shadow-sm">
@@ -191,7 +164,7 @@ export function AdminPage() {
 
       <main className="mx-auto max-w-4xl p-6">
         <p className="mb-4 text-sm text-slate-600">
-          受講生（管理者以外）の<strong>基礎課題1〜4</strong>の進捗と遅延状況を表示します。各端末で受講生としてログインした際の進捗が記録されます。
+          登録されている受講生（<strong>kira-test</strong> 等）の<strong>基礎課題1〜4</strong>の進捗と遅延をリアルタイムで表示します。受講生がログインして利用した端末で記録された進捗がここに反映されます。
         </p>
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="overflow-x-auto">
@@ -209,71 +182,83 @@ export function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {traineeName === null ? (
+                {traineeList.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-4 py-8 text-center text-slate-600">
-                      この端末は管理者でログイン中のため、受講生の進捗データはありません。
-                      <br />
-                      <span className="text-xs">受講生として別の端末でログインすると、その端末で本画面を開いた際に進捗が表示されます。</span>
+                      受講生がまだ登録されていません。受講生がログインするとここに表示されます。
                     </td>
                   </tr>
                 ) : (
-                  <tr className="border-b border-slate-100 hover:bg-slate-50/80">
-                    <td className="px-4 py-3 font-medium text-slate-800">{traineeName}</td>
-                    <td className="px-4 py-3 text-slate-700">
-                      {introConfirmed ? (
-                        <span className="inline-flex items-center gap-1">
-                          <span aria-hidden>✅</span> {formatIntroDate(introAt)}
-                        </span>
-                      ) : (
-                        <span className="text-slate-500">未合格</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2.5 w-20 overflow-hidden rounded-full bg-slate-200">
-                          <div
-                            className="h-full rounded-full bg-indigo-500 transition-all"
-                            style={{ width: `${wbsPercent}%` }}
-                          />
-                        </div>
-                        <span className="tabular-nums font-medium text-slate-800">{wbsPercent}%</span>
-                      </div>
-                    </td>
-                    {chapterProgress.map((ch) => {
-                      const status = ch.cleared ? 'done' : ch.percent > 0 ? 'in_progress' : 'not_started'
-                      const dotClass =
-                        status === 'done'
-                          ? 'bg-emerald-500'
-                          : status === 'in_progress'
-                            ? 'bg-amber-500'
-                            : 'bg-slate-300'
-                      const statusLabel = ch.cleared ? '完了' : ch.percent > 0 ? '実施中' : '未着手'
-                      return (
-                        <td key={ch.chapter} className="px-4 py-3">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="inline-flex items-center gap-1.5 text-slate-800">
-                              <span className={`inline-block h-2.5 w-2.5 rounded-full ${dotClass}`} aria-hidden />
-                              <span className="text-xs font-medium">{Math.round(ch.percent)}%</span>
+                  traineeList.map((traineeId) => {
+                    const snap = getProgressSnapshot(traineeId)
+                    const hasDelay = snap ? snap.delayedIds.length > 0 : false
+                    return (
+                      <tr key={traineeId} className="border-b border-slate-100 hover:bg-slate-50/80">
+                        <td className="px-4 py-3 font-medium text-slate-800">{traineeId}</td>
+                        <td className="px-4 py-3 text-slate-700">
+                          {snap?.introConfirmed ? (
+                            <span className="inline-flex items-center gap-1">
+                              <span aria-hidden>✅</span> {formatIntroDate(snap.introAt)}
                             </span>
-                            <span className="text-[11px] text-slate-500">{statusLabel}</span>
-                            {ch.chapter === 4 && (
-                              <span className="text-[11px] text-slate-500">Day {currentDay}/10</span>
-                            )}
-                          </div>
+                          ) : (
+                            <span className="text-slate-500">{snap ? '未合格' : '—'}</span>
+                          )}
                         </td>
-                      )
-                    })}
-                    <td className="px-4 py-3">
-                      {hasDelay ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-800">
-                          <span aria-hidden>⚠</span> 遅延あり
-                        </span>
-                      ) : (
-                        <span className="text-slate-500">—</span>
-                      )}
-                    </td>
-                  </tr>
+                        <td className="px-4 py-3">
+                          {snap ? (
+                            <div className="flex items-center gap-2">
+                              <div className="h-2.5 w-20 overflow-hidden rounded-full bg-slate-200">
+                                <div
+                                  className="h-full rounded-full bg-indigo-500 transition-all"
+                                  style={{ width: `${snap.wbsPercent}%` }}
+                                />
+                              </div>
+                              <span className="tabular-nums font-medium text-slate-800">{snap.wbsPercent}%</span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
+                        </td>
+                        {snap?.chapterProgress?.length
+                          ? snap.chapterProgress.map((ch) => {
+                              const status = ch.cleared ? 'done' : ch.percent > 0 ? 'in_progress' : 'not_started'
+                              const dotClass =
+                                status === 'done'
+                                  ? 'bg-emerald-500'
+                                  : status === 'in_progress'
+                                    ? 'bg-amber-500'
+                                    : 'bg-slate-300'
+                              const statusLabel = ch.cleared ? '完了' : ch.percent > 0 ? '実施中' : '未着手'
+                              return (
+                                <td key={ch.chapter} className="px-4 py-3">
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="inline-flex items-center gap-1.5 text-slate-800">
+                                      <span className={`inline-block h-2.5 w-2.5 rounded-full ${dotClass}`} aria-hidden />
+                                      <span className="text-xs font-medium">{Math.round(ch.percent)}%</span>
+                                    </span>
+                                    <span className="text-[11px] text-slate-500">{statusLabel}</span>
+                                    {ch.chapter === 4 && (
+                                      <span className="text-[11px] text-slate-500">Day {snap.currentDay}/10</span>
+                                    )}
+                                  </div>
+                                </td>
+                              )
+                            })
+                          : Array.from({ length: 4 }, (_, i) => (
+                              <td key={i} className="px-4 py-3 text-slate-400">—</td>
+                            ))}
+                        <td className="px-4 py-3">
+                          {hasDelay ? (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-800">
+                              <span aria-hidden>⚠</span> 遅延あり
+                            </span>
+                          ) : (
+                            <span className="text-slate-500">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>

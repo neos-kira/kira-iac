@@ -19,6 +19,7 @@ import {
 } from './training/trainingWbsData'
 import { getIntroConfirmed } from './training/introGate'
 import { LOGIN_FLAG_KEY } from './auth'
+import { getCurrentProgressSnapshot, saveProgressSnapshot } from './traineeProgressStorage'
 
 type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3'
 
@@ -278,8 +279,22 @@ function App() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showSearchHistory])
 
-  const navigate = useNavigate()
   const isAdminView = getDisplayName()?.toLowerCase() === 'admin'
+
+  useEffect(() => {
+    if (isAdminView || typeof window === 'undefined') return
+    const save = () => {
+      const name = getDisplayName()
+      if (name && name.toLowerCase() !== 'admin') {
+        saveProgressSnapshot(name, getCurrentProgressSnapshot())
+      }
+    }
+    save()
+    const id = setInterval(save, 2000)
+    return () => clearInterval(id)
+  }, [isAdminView])
+
+  const navigate = useNavigate()
   const delayed = getDelayedTaskIds().length > 0
   const progressPct = WBS_TOTAL_TASKS > 0 ? Math.round((getTotalCleared() / WBS_TOTAL_TASKS) * 100) : 0
 
