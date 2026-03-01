@@ -2,7 +2,7 @@
  * 受講生リストと進捗スナップショットを localStorage に保存し、
  * 管理者画面で admin 以外の受講生（kira-test 等）の進捗を一覧表示するための仕組み。
  */
-import { getIntroConfirmed, getIntroConfirmedAt } from './training/introGate'
+import { getIntroConfirmed, getIntroConfirmedAt, getIntroConfirmedForUser, getIntroConfirmedAtForUser } from './training/introGate'
 import {
   getWbsProgressPercent,
   getChapterProgressList,
@@ -90,7 +90,7 @@ export function saveProgressSnapshot(username: string, data: TraineeProgressSnap
   }
 }
 
-/** 指定受講生の進捗スナップショットを取得（管理者画面用） */
+/** 指定受講生の進捗スナップショットを取得（保存済みキャッシュ。管理者画面では getProgressSnapshotLive を推奨） */
 export function getProgressSnapshot(username: string): TraineeProgressSnapshot | null {
   if (typeof window === 'undefined') return null
   try {
@@ -110,5 +110,44 @@ export function getProgressSnapshot(username: string): TraineeProgressSnapshot |
     }
   } catch {
     return null
+  }
+}
+
+/**
+ * 指定受講生の進捗を localStorage からリアルタイムで算出（管理者画面用）。
+ * 保存済みスナップショットに依存せず、常に正しい進捗を表示する。
+ */
+export function getProgressSnapshotLive(username: string): TraineeProgressSnapshot {
+  if (typeof window === 'undefined') {
+    return {
+      introConfirmed: false,
+      introAt: null,
+      wbsPercent: 0,
+      chapterProgress: [],
+      currentDay: 0,
+      delayedIds: [],
+      updatedAt: new Date().toISOString(),
+    }
+  }
+  const id = username.trim()
+  if (!id || id.toLowerCase() === 'admin') {
+    return {
+      introConfirmed: false,
+      introAt: null,
+      wbsPercent: 0,
+      chapterProgress: [],
+      currentDay: 0,
+      delayedIds: [],
+      updatedAt: new Date().toISOString(),
+    }
+  }
+  return {
+    introConfirmed: getIntroConfirmedForUser(id),
+    introAt: getIntroConfirmedAtForUser(id),
+    wbsPercent: getWbsProgressPercent(id),
+    chapterProgress: getChapterProgressList(id),
+    currentDay: getCurrentProjectDay(id),
+    delayedIds: getDelayedTaskIds(id),
+    updatedAt: new Date().toISOString(),
   }
 }

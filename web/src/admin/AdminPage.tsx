@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getTraineeList, getProgressSnapshot } from '../traineeProgressStorage'
+import { getTraineeList, getProgressSnapshotLive } from '../traineeProgressStorage'
 
 const ADMIN_SESSION_KEY = 'kira-admin-logged-in'
 
@@ -156,8 +156,8 @@ export function AdminPage() {
                   </tr>
                 ) : (
                   traineeList.map((traineeId) => {
-                    const snap = getProgressSnapshot(traineeId)
-                    const hasDelay = snap ? snap.delayedIds.length > 0 : false
+                    const snap = getProgressSnapshotLive(traineeId)
+                    const hasDelay = snap.delayedIds.length > 0
                     return (
                       <tr key={traineeId} className="border-b border-slate-100 hover:bg-slate-50/80">
                         <td className="px-4 py-3 font-medium text-slate-800">{traineeId}</td>

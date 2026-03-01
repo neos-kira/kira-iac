@@ -122,19 +122,20 @@ export const TRAINING_TASKS: TrainingTaskDef[] = [
 
 /**
  * 進捗用 localStorage キーをユーザー別に解決する。
- * admin または未ログイン時はグローバルキー、それ以外は key_username を使用。
+ * username を渡した場合はそのユーザー用キー、省略時は現在ログイン中ユーザー。
+ * admin または空の場合はグローバルキー。
  */
-export function getProgressKey(baseKey: string): string {
+export function getProgressKey(baseKey: string, username?: string): string {
   if (typeof window === 'undefined') return baseKey
-  const user = getCurrentUsername()
-  if (!user || user.toLowerCase() === 'admin') return baseKey
+  const user = username !== undefined ? username : getCurrentUsername()
+  if (!user || String(user).toLowerCase() === 'admin') return baseKey
   return `${baseKey}_${user}`
 }
 
-/** 研修開始日を取得。未設定の場合は空文字（課題1開始後に設定される） */
-export function getTrainingStartDate(): string {
+/** 研修開始日を取得。未設定の場合は空文字。username 指定時はそのユーザー用キーを参照（管理者画面のリアルタイム表示用）。 */
+export function getTrainingStartDate(username?: string): string {
   if (typeof window === 'undefined') return ''
-  return window.localStorage.getItem(getProgressKey(TRAINING_START_DATE_KEY)) ?? ''
+  return window.localStorage.getItem(getProgressKey(TRAINING_START_DATE_KEY, username)) ?? ''
 }
 
 /**
@@ -232,14 +233,14 @@ export type TaskProgress = {
   subTasks: SubTaskProgress[]
 }
 
-function getSubTaskStatus(sub: SubTaskDef): SubTaskStatus {
+function getSubTaskStatus(sub: SubTaskDef, username?: string): SubTaskStatus {
   if (typeof window === 'undefined') return 'not_started'
   if (sub.clearedKey) {
-    return window.localStorage.getItem(getProgressKey(sub.clearedKey)) === 'true' ? 'cleared' : 'not_started'
+    return window.localStorage.getItem(getProgressKey(sub.clearedKey, username)) === 'true' ? 'cleared' : 'not_started'
   }
   if (sub.storageKeyForProgress) {
     try {
-      const raw = window.localStorage.getItem(getProgressKey(sub.storageKeyForProgress))
+      const raw = window.localStorage.getItem(getProgressKey(sub.storageKeyForProgress, username))
       if (!raw) return 'not_started'
       const parsed = JSON.parse(raw)
       const hasData = parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0
@@ -251,8 +252,9 @@ function getSubTaskStatus(sub: SubTaskDef): SubTaskStatus {
   return 'not_started'
 }
 
-export function getTaskProgressList(): TaskProgress[] {
-  const start = getTrainingStartDate()
+/** username 指定時はそのユーザーの進捗を参照（管理者画面のリアルタイム表示用）。 */
+export function getTaskProgressList(username?: string): TaskProgress[] {
+  const start = getTrainingStartDate(username)
   const today = new Date()
   const todayStr =
     today.getFullYear() +
@@ -265,15 +267,15 @@ export function getTaskProgressList(): TaskProgress[] {
     let cleared = false
     if (typeof window !== 'undefined') {
       if (task.clearedKeys && task.clearedKeys.length > 0) {
-        cleared = task.clearedKeys.every((k) => window.localStorage.getItem(getProgressKey(k)) === 'true')
+        cleared = task.clearedKeys.every((k) => window.localStorage.getItem(getProgressKey(k, username)) === 'true')
       } else {
-        cleared = window.localStorage.getItem(getProgressKey(task.clearedKey)) === 'true'
+        cleared = window.localStorage.getItem(getProgressKey(task.clearedKey, username)) === 'true'
       }
     }
     const isDelayed = !!start && !cleared && todayStr > deadline
     const subTasks: SubTaskProgress[] = task.subTasks.map((sub) => ({
       label: sub.label,
-      status: getSubTaskStatus(sub),
+      status: getSubTaskStatus(sub, username),
     }))
     return {
       id: task.id,
@@ -289,13 +291,14 @@ export function getTaskProgressList(): TaskProgress[] {
   })
 }
 
-export function getTotalCleared(): number {
+/** username 指定時はそのユーザーの完了数を参照。 */
+export function getTotalCleared(username?: string): number {
   if (typeof window === 'undefined') return 0
   return TRAINING_TASKS.filter((t) => {
     if (t.clearedKeys && t.clearedKeys.length > 0) {
-      return t.clearedKeys.every((k) => window.localStorage.getItem(getProgressKey(k)) === 'true')
+      return t.clearedKeys.every((k) => window.localStorage.getItem(getProgressKey(k, username)) === 'true')
     }
-    return window.localStorage.getItem(getProgressKey(t.clearedKey)) === 'true'
+    return window.localStorage.getItem(getProgressKey(t.clearedKey, username)) === 'true'
   }).length
 }
 
@@ -322,17 +325,17 @@ export function getNextTaskLabel(): string | null {
   return next ? next.labelShort : null
 }
 
-/** 遅延している課題の id 一覧 */
-export function getDelayedTaskIds(): TrainingTaskId[] {
-  return getTaskProgressList()
+/** 遅延している課題の id 一覧。username 指定時はそのユーザーを参照。 */
+export function getDelayedTaskIds(username?: string): TrainingTaskId[] {
+  return getTaskProgressList(username)
     .filter((t) => t.isDelayed)
     .map((t) => t.id)
 }
 
-/** WBS進捗率（0〜100）。完了課題数 / 全課題数 */
-export function getWbsProgressPercent(): number {
+/** WBS進捗率（0〜100）。username 指定時はそのユーザーを参照。 */
+export function getWbsProgressPercent(username?: string): number {
   if (typeof window === 'undefined' || TOTAL_TASKS === 0) return 0
-  const cleared = getTotalCleared()
+  const cleared = getTotalCleared(username)
   return Math.round((cleared / TOTAL_TASKS) * 100)
 }
 
@@ -370,8 +373,9 @@ export type ChapterProgress = {
   deadline: string
 }
 
-export function getChapterProgressList(): ChapterProgress[] {
-  const list = getTaskProgressList()
+/** username 指定時はそのユーザーの進捗を参照（管理者画面のリアルタイム表示用）。 */
+export function getChapterProgressList(username?: string): ChapterProgress[] {
+  const list = getTaskProgressList(username)
   const todayStr =
     typeof window !== 'undefined'
       ? new Date().toISOString().slice(0, 10)
@@ -419,7 +423,7 @@ export function getChapterProgressList(): ChapterProgress[] {
       deadline: ch4.deadline,
     })
   } else {
-    const start = getTrainingStartDate()
+    const start = getTrainingStartDate(username)
     const currentDay = getBusinessDaysFromStart(start, todayStr)
     const ch4Percent = start ? Math.min(100, Math.round((currentDay / PROJECT_DAYS_TOTAL) * 100)) : 0
     const allCleared = list.every((t) => t.cleared)
@@ -436,10 +440,10 @@ export function getChapterProgressList(): ChapterProgress[] {
   return result
 }
 
-/** 10日間プロジェクトの現在の Day X（1〜10）。未開始は 0 */
-export function getCurrentProjectDay(): number {
+/** 10日間プロジェクトの現在の Day X（1〜10）。未開始は 0。username 指定時はそのユーザーの開始日を参照。 */
+export function getCurrentProjectDay(username?: string): number {
   if (typeof window === 'undefined') return 0
-  const start = getTrainingStartDate()
+  const start = getTrainingStartDate(username)
   if (!start) return 0
   const today = new Date()
   const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0')
