@@ -1,6 +1,7 @@
 export type FeatureId = 'training' | 'timeTracking' | 'projects' | 'unknown'
 
 export type TrainingCategory =
+  | 'intro'
   | 'linuxLevel1'
   | 'linuxLevel2'
   | 'infra'
@@ -38,6 +39,16 @@ export async function resolveCommand(
 ): Promise<CommandResolution> {
   const text = input.trim()
   const lower = text.toLowerCase()
+
+  // --- はじめに ---
+  if (/はじめに/.test(text) || lower.includes('intro')) {
+    return {
+      feature: 'training',
+      displayName: 'はじめに',
+      reason: '「はじめに」を検出しました。ページを表示します。',
+      training: { category: 'intro' },
+    }
+  }
 
   // --- 研修系 ---
   if (/インフラ研修2|インフラ研修\s*2/.test(text)) {

@@ -1,9 +1,9 @@
 /**
  * メインテーマ: 白ベース (Light)
- * トップページ・ヘッダー・コマンドパレットは白/ライトで統一する。
- * ネイビー（ダーク）テーマには戻さないこと。
+ * 全ページを白/ライトで統一する。
  */
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { OpenInNewTabButton } from './components/OpenInNewTabButton'
 import { NeOSLogo } from './components/NeOSLogo'
 import type { CommandResolution } from './commandRouter'
@@ -47,7 +47,30 @@ function readTrainingStatus(): TrainingStatus {
 }
 
 const TRAINING_PIN_KEY = 'kira-training-pins'
+const SEARCH_HISTORY_KEY = 'kira-search-history'
+const SEARCH_HISTORY_MAX = 10
 const ADMIN_SESSION_KEY = 'kira-admin-logged-in'
+
+function loadSearchHistory(): string[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = window.localStorage.getItem(SEARCH_HISTORY_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((v: unknown): v is string => typeof v === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function saveSearchHistory(history: string[]) {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history))
+  } catch {
+    // ignore
+  }
+}
 const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
 function getDisplayName(): string {
   if (typeof window === 'undefined') return 'kira-test'
@@ -101,7 +124,11 @@ function App() {
     return window.sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true'
   })
   const [showIntroRequiredPopup, setShowIntroRequiredPopup] = useState(false)
+  const [searchHistory, setSearchHistory] = useState<string[]>(() => loadSearchHistory())
+  const [showSearchHistory, setShowSearchHistory] = useState(false)
+  const [searchHistoryHighlightIndex, setSearchHistoryHighlightIndex] = useState(-1)
   const openedRef = useRef<string | null>(null)
+  const searchContainerRef = useRef<HTMLDivElement | null>(null)
 
   /** インフラ課題系URL: はじめに未完了ならポップアップ、完了なら開く */
   function openInfraOrShowIntro(url: string) {
@@ -123,10 +150,10 @@ function App() {
       window.sessionStorage.removeItem(ADMIN_SESSION_KEY)
       window.localStorage.removeItem(USER_DISPLAY_NAME_KEY)
       window.localStorage.removeItem(LOGIN_FLAG_KEY)
-      const base = window.location.origin + window.location.pathname + (window.location.search || '')
-      window.location.replace(base + '#/login')
+      const base = (window.location.origin + window.location.pathname + (window.location.search || '')).replace(/\/$/, '') || window.location.origin
+      window.location.href = base + '#/login'
     } catch {
-      window.location.replace(window.location.pathname + '#/login')
+      window.location.href = (window.location.pathname || '/') + '#/login'
     }
   }
 
@@ -134,6 +161,13 @@ function App() {
     event.preventDefault()
     const value = input.trim()
     if (!value) return
+
+    setSearchHistory((prev) => {
+      const next = [value, ...prev.filter((v) => v !== value)].slice(0, SEARCH_HISTORY_MAX)
+      saveSearchHistory(next)
+      return next
+    })
+    setShowSearchHistory(false)
 
     setIsThinking(true)
     openedRef.current = null
@@ -143,6 +177,14 @@ function App() {
     } finally {
       setIsThinking(false)
     }
+  }
+
+  function removeSearchHistoryItem(item: string) {
+    setSearchHistory((prev) => {
+      const next = prev.filter((v) => v !== item)
+      saveSearchHistory(next)
+      return next
+    })
   }
 
   const updateFromStorage = useCallback(() => {
@@ -175,6 +217,10 @@ function App() {
   useEffect(() => {
     if (!resolution || resolution.feature !== 'training') return
     const cat = resolution.training.category
+    if (cat === 'intro') {
+      window.location.hash = '#/training/intro'
+      return
+    }
     if (cat === 'linuxLevel1') {
       if (openedRef.current === 'linuxLevel1') return
       if (!getIntroConfirmed()) setShowIntroRequiredPopup(true)
@@ -194,7 +240,7 @@ function App() {
   }, [resolution])
 
   useEffect(() => {
-    document.title = 'NeOS社内統合プラットフォーム'
+    document.title = 'NICプラットフォーム'
     updateFromStorage()
   }, [updateFromStorage])
 
@@ -213,47 +259,71 @@ function App() {
     }
   }, [updateFromStorage])
 
+  useEffect(() => {
+    if (showSearchHistory && searchHistory.length > 0) {
+      setSearchHistoryHighlightIndex(0)
+    } else {
+      setSearchHistoryHighlightIndex(-1)
+    }
+  }, [showSearchHistory, searchHistory.length])
+
+  useEffect(() => {
+    if (!showSearchHistory) return
+    function handleClickOutside(e: MouseEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowSearchHistory(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showSearchHistory])
+
+  const navigate = useNavigate()
+  const isAdminView = getDisplayName()?.toLowerCase() === 'admin'
   const delayed = getDelayedTaskIds().length > 0
   const progressPct = WBS_TOTAL_TASKS > 0 ? Math.round((getTotalCleared() / WBS_TOTAL_TASKS) * 100) : 0
 
   return (
     <div className="min-h-screen bg-white text-slate-800">
-      <div className="mx-auto flex min-h-screen max-w-4xl flex-col px-5 py-8">
-        {/* ヘッダー: 拡張機能のオーバーレイより前面に表示 */}
-        <header className="relative z-[9999] flex items-center justify-between gap-4">
+      <div className="mx-auto flex min-h-screen max-w-4xl flex-col px-5 pt-4 pb-8">
+        <header className="relative z-[9999] flex items-center justify-between gap-4 bg-white px-4 py-3">
           <div className="flex items-center">
-            <NeOSLogo height={80} />
+            <NeOSLogo height={100} />
           </div>
 
           <div className="flex items-center gap-3 flex-wrap justify-end">
-            <button
-              type="button"
-              onClick={() => {
-                if (getIntroConfirmed()) window.location.hash = '#/training/infra-wbs'
-                else setShowIntroRequiredPopup(true)
-              }}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium text-white shrink-0 ${delayed ? 'bg-rose-500' : 'bg-emerald-500'}`}
-              title="クリックでWBS"
-            >
-              {delayed ? '遅延あり' : '遅延なし'}
-            </button>
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 shrink-0">
-              全体進捗:{progressPct}%
-            </span>
+            {!isAdminView && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (getIntroConfirmed()) window.location.hash = '#/training/infra-wbs'
+                    else setShowIntroRequiredPopup(true)
+                  }}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium text-white shrink-0 ${delayed ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                  title="クリックでWBS"
+                >
+                  {delayed ? '遅延あり' : '遅延なし'}
+                </button>
+                <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 shrink-0">
+                  全体進捗:{progressPct}%
+                </span>
+              </>
+            )}
             <span className="text-sm text-slate-700 hidden sm:inline">{getDisplayName()}</span>
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleLogout(); }}
-              className="relative z-[10000] min-w-[88px] cursor-pointer rounded-lg border-2 border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:border-indigo-400 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              className="relative z-[10000] min-w-[88px] cursor-pointer rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               aria-label="ログアウト"
             >
               ログアウト
             </button>
-            {isAdmin && (
+            {!isAdminView && isAdmin && (
               <button
                 type="button"
                 onClick={() => (window.location.hash = '#/admin')}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50"
+                className="rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
               >
                 講師メニュー
               </button>
@@ -264,7 +334,7 @@ function App() {
         {/* はじめに未完了時ポップアップ */}
         {showIntroRequiredPopup && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="intro-required-title">
-            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
               <h2 id="intro-required-title" className="text-lg font-semibold text-slate-800">はじめにを実施してください</h2>
               <p className="mt-3 text-sm text-slate-600">
                 インフラ基礎課題にアクセスするには、先に「はじめに」でプロフェッショナルとしての行動基準を確認してください。
@@ -273,14 +343,14 @@ function App() {
                 <button
                   type="button"
                   onClick={goToIntroAndClosePopup}
-                  className="flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
+                  className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
                 >
                   はじめにを開く
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowIntroRequiredPopup(false)}
-                  className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  className="rounded-lg bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-200"
                 >
                   閉じる
                 </button>
@@ -289,60 +359,130 @@ function App() {
           </div>
         )}
 
-        {/* 中央: 1枚目カード — NICプラットフォーム + 検索窓 */}
-        <main className="mt-10 flex flex-1 flex-col items-center justify-start">
-          <div className="w-full max-w-2xl space-y-6">
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h1 className="text-xl font-bold text-slate-800 mb-5">NICプラットフォーム</h1>
-              <form onSubmit={handleSubmit} className="space-y-3">
-                <div className="flex items-stretch rounded-xl border border-slate-200 bg-slate-50 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500">
-                  <span className="flex items-center pl-4 text-slate-600 pointer-events-none text-sm font-medium" aria-hidden>
-                    ⌘ K
-                  </span>
-                  <input
-                    type="text"
-                    value={input}
-                    onChange={(event) => setInput(event.target.value)}
-                    placeholder="「インフラ研修を表示」 「WBSを表示」"
-                    className="flex-1 min-w-0 py-3.5 px-3 text-sm text-slate-800 placeholder:text-slate-400 border-0 outline-none bg-transparent"
-                  />
-                  <span className="flex items-center px-2 text-slate-500" aria-hidden>
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
-                      <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z" />
-                    </svg>
-                  </span>
-                  <button
-                    type="submit"
-                    className="rounded-r-xl bg-indigo-600 px-5 py-3 text-sm font-medium text-white hover:bg-indigo-700 transition-colors shrink-0"
-                  >
-                    {isThinking ? '解析中…' : '実行'}
-                  </button>
-                </div>
-              </form>
-              <p className="mt-4 pt-3 border-t border-slate-100 text-center">
+        <main className="mt-4 flex flex-1 flex-col items-center justify-start">
+          {isAdminView ? (
+            /* 講師用メニュー: 解答と受講生の進捗のみ */
+            <div className="w-full max-w-2xl space-y-4">
+              <h1 className="text-lg font-semibold text-slate-800">講師用メニュー</h1>
+              <p className="text-sm text-slate-600">解答の確認と受講生の進捗確認ができます。</p>
+              <div className="grid gap-4 sm:grid-cols-2">
                 <button
                   type="button"
-                  onClick={handleLogout}
-                  className="text-sm text-slate-500 underline hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 rounded"
+                  onClick={() => navigate('/admin', { state: { openRef: true } })}
+                  className="flex flex-col items-start rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/50"
                 >
-                  ログアウト
+                  <span className="text-base font-semibold text-slate-800">解答（講師用リファレンス）</span>
+                  <span className="mt-1 text-xs text-slate-600">模範解答・技術監査ポイントを確認</span>
                 </button>
-              </p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin')}
+                  className="flex flex-col items-start rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/50"
+                >
+                  <span className="text-base font-semibold text-slate-800">受講生の進捗</span>
+                  <span className="mt-1 text-xs text-slate-600">WBSに基づく進捗一覧を表示</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+          <>
+          <div className="w-full max-w-2xl space-y-6">
+            <div className="rounded-2xl bg-white p-6 shadow-sm">
+              <h1 className="text-xl font-bold text-slate-800 mb-5">NICプラットフォーム</h1>
+              <div className="relative" ref={searchContainerRef}>
+                <form onSubmit={handleSubmit} className="space-y-3">
+                  <div className="flex items-stretch rounded-xl bg-slate-50 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-0">
+                    <span className="flex items-center pl-4 text-slate-600 pointer-events-none text-sm font-medium" aria-hidden>
+                      ⌘ K
+                    </span>
+                    <input
+                      type="text"
+                      value={input}
+                      onChange={(event) => setInput(event.target.value)}
+                      onFocus={() => setShowSearchHistory(true)}
+                      onKeyDown={(e) => {
+                        if (!showSearchHistory || searchHistory.length === 0) return
+                        if (e.key === 'ArrowDown') {
+                          e.preventDefault()
+                          setSearchHistoryHighlightIndex((i) =>
+                            i < searchHistory.length - 1 ? i + 1 : 0
+                          )
+                        } else if (e.key === 'ArrowUp') {
+                          e.preventDefault()
+                          setSearchHistoryHighlightIndex((i) =>
+                            i <= 0 ? searchHistory.length - 1 : i - 1
+                          )
+                        } else if (e.key === 'Enter' && searchHistoryHighlightIndex >= 0) {
+                          e.preventDefault()
+                          const item = searchHistory[searchHistoryHighlightIndex]
+                          setInput(item)
+                          setShowSearchHistory(false)
+                        }
+                      }}
+                      placeholder="「インフラ研修を表示」 「WBSを表示」"
+                      className="flex-1 min-w-0 py-3.5 px-3 text-sm text-slate-800 placeholder:text-slate-400 border-0 outline-none bg-transparent"
+                    />
+                    <span className="flex items-center px-2 text-slate-500" aria-hidden>
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z" />
+                      </svg>
+                    </span>
+                    <button
+                      type="submit"
+                      className="rounded-r-xl bg-indigo-600 px-5 py-3 text-sm font-medium text-white hover:bg-indigo-700 transition-colors shrink-0"
+                    >
+                      {isThinking ? '解析中…' : '実行'}
+                    </button>
+                  </div>
+                </form>
+                {showSearchHistory && searchHistory.length > 0 && (
+                  <ul className="absolute top-full left-0 right-0 mt-1 rounded-lg bg-white shadow-lg py-1 z-10 max-h-60 overflow-auto">
+                    {searchHistory.map((item, index) => (
+                      <li
+                        key={item}
+                        className={`group flex items-center justify-between gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 ${
+                          index === searchHistoryHighlightIndex ? 'bg-indigo-50' : ''
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => { setInput(item); setShowSearchHistory(false); }}
+                          className="flex-1 min-w-0 text-left truncate"
+                        >
+                          {item}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); removeSearchHistoryItem(item); }}
+                          className="shrink-0 p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200 opacity-0 group-hover:opacity-100 transition-opacity"
+                          aria-label="この履歴を削除"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
 
-            {/* 2枚目カード — TRAINING はじめに */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">TRAINING</p>
-              <h2 className="mt-1 text-lg font-bold text-slate-800">はじめに</h2>
-              <p className="mt-2 text-sm text-slate-700 leading-relaxed">
-                プロフェッショナルとしての行動基準を確認したうえで、インフラ基礎課題 (Chapter 1~4) に進みます。
-              </p>
-              <OpenInNewTabButton
-                url={getTrainingUrl('/training/intro')}
-                label="別タブで開く"
-                className="mt-4 inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-              />
-            </div>
+            {/* 2枚目カード — TRAINING はじめに（未完了のユーザーのみ表示） */}
+            {!getIntroConfirmed() && (
+              <div className="rounded-2xl bg-white p-6 shadow-sm">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">TRAINING</p>
+                <h2 className="mt-1 text-lg font-bold text-slate-800">はじめに</h2>
+                <p className="mt-2 text-sm text-slate-700 leading-relaxed">
+                  プロフェッショナルとしての行動基準を確認したうえで、インフラ基礎課題に進みます。
+                </p>
+                <OpenInNewTabButton
+                  url={getTrainingUrl('/training/intro')}
+                  label="別タブで開く"
+                  className="mt-4 inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                />
+              </div>
+            )}
 
             {/* 解釈結果（検索時のみ表示） */}
             {resolution && (
@@ -354,7 +494,7 @@ function App() {
                       {resolution.displayName}
                     </span>
                   </p>
-                  <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-slate-600">
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-slate-600">
                     {resolution.feature}
                   </span>
                 </div>
@@ -375,18 +515,18 @@ function App() {
 
           {/* ピン留めした課題（検索しなくてもすぐアクセス） */}
           {pinnedTraining.length > 0 && (
-            <section className="mt-6 w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-4 text-[11px] text-slate-700 shadow-sm">
+            <section className="mt-6 w-full max-w-2xl rounded-2xl bg-white p-4 text-[11px] text-slate-700 shadow-sm">
               <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
                 PINNED · TRAINING
               </p>
               <p className="mt-1 text-xs text-slate-600">よく使う課題にワンクリックでアクセスできます。</p>
               <ul className="mt-3 space-y-2 text-slate-700">
                 {pinnedTraining.includes('infra-basic-1') && (
-                  <li className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                  <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-slate-800">インフラ基礎課題1</span>
-                        <span className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                        <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                           📌
                         </span>
                         {trainingStatus.infraToolsCleared && trainingStatus.linuxL1Cleared && (
@@ -414,11 +554,11 @@ function App() {
                   </li>
                 )}
                 {pinnedTraining.includes('infra-basic-2') && (
-                  <li className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                  <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-slate-800">インフラ基礎課題2</span>
-                        <span className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                        <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                           📌
                         </span>
                         {trainingStatus.linuxL2Cleared && (
@@ -446,11 +586,11 @@ function App() {
                   </li>
                 )}
                 {pinnedTraining.includes('infra-basic-3') && (
-                  <li className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                  <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-slate-800">インフラ基礎課題3</span>
-                        <span className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                        <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                           📌
                         </span>
                         {trainingStatus.infraOsCloudCleared && (
@@ -482,7 +622,7 @@ function App() {
             </section>
           )}
 
-          {(canResumeL1 || canResumeL2) && (
+          {(canResumeL1 || canResumeL2) && getDisplayName()?.toLowerCase() !== 'admin' && (
             <section className="mt-6 w-full max-w-2xl rounded-2xl border border-amber-300 bg-amber-50/80 p-4 text-[11px] text-slate-700 shadow-sm">
               <div className="flex items-center justify-between gap-2">
                 <div>
@@ -501,7 +641,7 @@ function App() {
                   <button
                     type="button"
                     onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level1'))}
-                    className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:border-amber-400 hover:bg-amber-50"
+                    className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-amber-50"
                   >
                     インフラ研修1を途中から再開（別タブ）
                   </button>
@@ -510,7 +650,7 @@ function App() {
                   <button
                     type="button"
                     onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level2'))}
-                    className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:border-amber-400 hover:bg-amber-50"
+                    className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-amber-50"
                   >
                     インフラ研修2を途中から再開（別タブ）
                   </button>
@@ -531,6 +671,8 @@ function App() {
               例) プロジェクトAのタスクボード
             </span>
           </div>
+          </>
+          )}
         </main>
       </div>
     </div>
@@ -549,9 +691,19 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
   if (resolution.feature === 'training') {
     const category = resolution.training.category
 
+    if (category === 'intro') {
+      return (
+        <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">TRAINING · はじめに</p>
+          <h2 className="mt-2 text-base font-semibold text-slate-800">はじめに</h2>
+          <p className="mt-1 text-xs text-slate-600">はじめにページを表示しました。上記の内容をご確認ください。</p>
+        </div>
+      )
+    }
+
     if (category === 'linuxLevel1') {
       return (
-        <div className="rounded-2xl border border-indigo-200 bg-indigo-50/80 p-4 text-sm shadow-sm">
+        <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">TRAINING · LINUX · LEVEL 1</p>
           <h2 className="mt-2 text-base font-semibold text-slate-800">インフラ研修1 — Linuxコマンド30問</h2>
           <p className="mt-1 text-xs text-slate-600">別タブで問題を開きました。タブを確認してください。</p>
@@ -562,7 +714,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
 
     if (category === 'linuxLevel2') {
       return (
-        <div className="rounded-2xl border border-indigo-200 bg-indigo-50/80 p-4 text-sm shadow-sm">
+        <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
             TRAINING · INFRA · 2-2 TCP/IP
           </p>
@@ -578,7 +730,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
       const infra3Cleared = trainingStatus.infraOsCloudCleared
 
       return (
-        <div className="rounded-2xl border border-indigo-200 bg-indigo-50/80 p-4 text-sm shadow-sm">
+        <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
             TRAINING · INFRA
           </p>
@@ -586,12 +738,12 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
           <h2 className="mt-1 text-base font-semibold text-slate-800">インフラ基礎課題</h2>
 
           <ul className="mt-4 space-y-2 text-slate-700">
-            <li className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+            <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-slate-800">インフラ基礎課題1</span>
                   {pinnedTraining.includes('infra-basic-1') && (
-                    <span className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                    <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                       📌
                     </span>
                   )}
@@ -618,12 +770,12 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                 別タブで開く
               </button>
             </li>
-            <li className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+            <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-slate-800">インフラ基礎課題3</span>
                   {pinnedTraining.includes('infra-basic-3') && (
-                    <span className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                    <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                       📌
                     </span>
                   )}
@@ -650,12 +802,12 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                 別タブで開く
               </button>
             </li>
-            <li className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+            <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-slate-800">インフラ基礎課題2</span>
                   {pinnedTraining.includes('infra-basic-2') && (
-                    <span className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                    <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                       📌
                     </span>
                   )}
@@ -688,7 +840,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
     }
 
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
+      <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
         <h2 className="text-base font-semibold text-slate-800">研修モジュール</h2>
         <p className="mt-1 text-xs text-slate-600">
           研修ポータルへのルーティング結果です。実装時には、ここから研修管理システムの画面へ遷移させます。
@@ -699,7 +851,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
 
   if (resolution.feature === 'timeTracking') {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
+      <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
         <h2 className="text-base font-semibold text-slate-800">
           勤怠管理モジュール（プレースホルダー）
         </h2>
@@ -712,7 +864,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
 
   if (resolution.feature === 'projects') {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
+      <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
         <h2 className="text-base font-semibold text-slate-800">
           プロジェクト管理モジュール（プレースホルダー）
         </h2>
@@ -724,7 +876,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+    <div className="rounded-2xl bg-white p-4 text-sm text-slate-600 shadow-sm">
       <p>該当する機能が見つかりませんでした。別の表現でもう一度試してください。</p>
     </div>
   )

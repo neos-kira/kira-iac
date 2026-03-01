@@ -136,7 +136,7 @@ export function TrainingCommandQuizFrame({
   if (isFinished) {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
-        <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-soft-card">
+        <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-md">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">RESULT</p>
           <h1 className="mt-2 text-xl font-semibold text-slate-800">{title}</h1>
           <p className="mt-4 text-2xl font-bold text-slate-800">
@@ -179,17 +179,17 @@ export function TrainingCommandQuizFrame({
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
-      <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-soft-card">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-200">{subtitle}</p>
+      <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-md">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{subtitle}</p>
         <h1 className="mt-2 text-xl font-semibold text-slate-800">{title}</h1>
         <p className="mt-1 text-xs text-slate-400">
-          問題 {currentIndex + 1} / {total}（コマンドを入力して実行。一度実行したら次に進み、最後に採点。満点でのみクリア）
+          問題 {currentIndex + 1} / {total}（コマンドを入力して実行。一度実行したら正誤を確認し、Enter または「次へ」で次に進み、最後に採点。満点でのみクリア）
         </p>
 
         <p className="mt-4 text-sm font-medium text-slate-800">{current.prompt}</p>
 
         <div className="mt-4">
-          <label htmlFor="cmd-input" className="block text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1.5">
+          <label htmlFor="cmd-input" className="block text-[11px] font-medium uppercase tracking-wider text-slate-500 mb-1.5">
             コマンドを入力
           </label>
           <div className="flex gap-2">
@@ -199,12 +199,18 @@ export function TrainingCommandQuizFrame({
               value={inputValue}
               onChange={(e) => !showFeedback && setInputValue(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !showFeedback) handleExecute()
-                if (e.key === 'Enter' && showFeedback) goNext()
+                if (e.key === 'Enter' && !showFeedback) {
+                  e.preventDefault()
+                  if (inputValue.trim() !== '') handleExecute()
+                }
+                if (e.key === 'Enter' && showFeedback) {
+                  e.preventDefault()
+                  goNext()
+                }
               }}
               disabled={showFeedback}
-              placeholder=""
-              className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-8000 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 disabled:opacity-70"
+              placeholder="例: ls, pwd"
+              className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 disabled:opacity-70"
               autoComplete="off"
               spellCheck={false}
             />
@@ -213,7 +219,7 @@ export function TrainingCommandQuizFrame({
                 type="button"
                 onClick={handleExecute}
                 disabled={inputValue.trim() === ''}
-                className="shrink-0 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:from-brand-400 hover:to-brand-500 disabled:opacity-40"
+                className="shrink-0 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 実行
               </button>
@@ -221,7 +227,7 @@ export function TrainingCommandQuizFrame({
               <button
                 type="button"
                 onClick={goNext}
-                className="shrink-0 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:from-brand-400 hover:to-brand-500"
+                className="shrink-0 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700"
               >
                 {currentIndex < total - 1 ? '次へ' : '終了して得点を見る'}
               </button>
@@ -232,15 +238,18 @@ export function TrainingCommandQuizFrame({
         {showFeedback && (
           <div
             className={`mt-4 rounded-xl border px-4 py-3 text-sm ${lastResult === 'correct'
-              ? 'border-emerald-500/50 bg-emerald-600/20 text-emerald-200'
-              : 'border-rose-500/50 bg-rose-600/20 text-rose-200'
+              ? 'border-emerald-500/50 bg-emerald-50 text-emerald-800'
+              : 'border-rose-500/50 bg-rose-50 text-rose-800'
               }`}
             role="status"
           >
             {lastResult === 'correct' ? (
-              <span className="font-medium">正解！</span>
+              <span className="font-medium">✓ 正解</span>
             ) : (
-              <span className="font-medium">不正解</span>
+              <p>
+                <span className="font-medium">✗ 不正解</span>
+                <span className="ml-2 text-slate-600">正解は「{correctAnswer}」です。</span>
+              </p>
             )}
           </div>
         )}

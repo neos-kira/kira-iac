@@ -14,6 +14,7 @@ import { InfraBasic21Page } from './training/InfraBasic21Page'
 import { InfraBasic3TopPage } from './training/InfraBasic3TopPage'
 import { InfraBasic31Page } from './training/InfraBasic31Page'
 import { InfraBasic32Page } from './training/InfraBasic32Page'
+import { InfraBasic4Page } from './training/InfraBasic4Page'
 import { InfraWbsPage } from './training/InfraWbsPage'
 import { IntroPage } from './training/IntroPage'
 import { AdminPage } from './admin/AdminPage'
@@ -37,6 +38,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/training/infra-basic-3-top" element={<IntroGate><InfraBasic3TopPage /></IntroGate>} />
           <Route path="/training/infra-basic-3-1" element={<IntroGate><InfraBasic31Page /></IntroGate>} />
           <Route path="/training/infra-basic-3-2" element={<IntroGate><InfraBasic32Page /></IntroGate>} />
+          <Route path="/training/infra-basic-4" element={<IntroGate><InfraBasic4Page /></IntroGate>} />
           <Route path="/training/infra-wbs" element={<IntroGate><InfraWbsPage /></IntroGate>} />
           <Route path="/training/intro" element={<IntroPage />} />
         </Routes>

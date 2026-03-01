@@ -135,8 +135,8 @@ export function InfraBasic1Page() {
         </div>
 
         {/* 前提 */}
-        <section className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4 shadow-soft-card">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-amber-200">
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
             前提
           </p>
           <p className="mt-2 text-sm text-slate-700">

@@ -110,7 +110,7 @@ export function TrainingQuizFrame({
   if (isFinished) {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
-        <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-soft-card">
+        <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">RESULT</p>
           <h1 className="mt-2 text-xl font-semibold text-slate-800">{title}</h1>
           <p className="mt-4 text-2xl font-bold text-slate-800">
@@ -118,7 +118,7 @@ export function TrainingQuizFrame({
           </p>
           {isPass ? (
             <>
-              <p className="mt-2 text-sm text-emerald-300">合格です。クリア扱いになります。</p>
+              <p className="mt-2 text-sm text-emerald-600">合格です。クリア扱いになります。</p>
               {onClear && (
                 <button
                   type="button"
@@ -126,21 +126,21 @@ export function TrainingQuizFrame({
                     clearProgress(storageKey)
                     onClear()
                   }}
-                  className="mt-4 rounded-xl bg-emerald-600/80 px-4 py-2 text-sm font-medium text-white"
+                  className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
                 >
                   クリアを記録する
                 </button>
               )}
             </>
           ) : (
-            <p className="mt-2 text-sm text-rose-300">
+            <p className="mt-2 text-sm text-rose-600">
               {totalRequired}/{total} 以上で合格です。もう一度挑戦してください。
             </p>
           )}
           <button
             type="button"
             onClick={reset}
-            className="mt-4 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700"
+            className="mt-4 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             最初からやり直す
           </button>
@@ -151,8 +151,8 @@ export function TrainingQuizFrame({
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
-      <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-soft-card">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-200">{subtitle}</p>
+      <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{subtitle}</p>
         <h1 className="mt-2 text-xl font-semibold text-slate-800">{title}</h1>
         <p className="mt-1 text-xs text-slate-400">
           問題 {currentIndex + 1} / {total}（正誤は出さず、全問終了後に得点を表示します）
@@ -164,18 +164,18 @@ export function TrainingQuizFrame({
             <label
               key={c}
               className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm ${selectedIndex === idx
-                ? 'border-brand-500/60 bg-brand-600/10'
+                ? 'border-indigo-500/60 bg-indigo-50'
                 : 'border-slate-200 bg-slate-50 hover:border-slate-300'
                 }`}
             >
               <input
                 type="radio"
                 name={current.id}
-                className="h-4 w-4 accent-blue-500"
+                className="h-4 w-4 accent-indigo-500"
                 checked={selectedIndex === idx}
                 onChange={() => setSelectedIndex(idx)}
               />
-              <span className="text-slate-100">{c}</span>
+              <span className="text-slate-800">{c}</span>
             </label>
           ))}
         </div>
@@ -185,7 +185,7 @@ export function TrainingQuizFrame({
             type="button"
             onClick={submit}
             disabled={selectedIndex == null}
-            className="rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:from-brand-400 hover:to-brand-500 disabled:opacity-40"
+            className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-40"
           >
             {currentIndex < total - 1 ? '次へ' : '終了して得点を見る'}
           </button>

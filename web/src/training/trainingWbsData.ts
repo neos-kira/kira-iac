@@ -3,6 +3,11 @@ import { L1_CLEARED_KEY, L1_PROGRESS_KEY } from './linuxLevel1Data'
 import { L2_CLEARED_KEY } from './linuxLevel2Data'
 import { INFRA_BASIC_3_1_DONE_KEY, INFRA_BASIC_3_2_CLEARED_KEY } from './infraBasic3Data'
 import { INFRA_BASIC_21_STORAGE_KEY } from './infraBasic21Data'
+import {
+  INFRA_BASIC_4_CLEARED_KEY,
+  AL2023_DAYS,
+  getDayClearedKey,
+} from './InfraBasic4Data'
 
 export const TRAINING_START_DATE_KEY = 'kira-training-start-date'
 
@@ -38,7 +43,7 @@ function addBusinessDays(startDateStr: string, businessDays: number): string {
   return `${y}-${m}-${day}`
 }
 
-export type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3'
+export type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3' | 'infra-basic-4'
 
 export type SubTaskDef = {
   label: string
@@ -99,6 +104,18 @@ export const TRAINING_TASKS: TrainingTaskDef[] = [
       { label: '3-2 理解度チェック（記述式）', clearedKey: INFRA_BASIC_3_2_CLEARED_KEY },
     ],
   },
+  {
+    id: 'infra-basic-4',
+    label: 'インフラ基礎課題4（Amazon Linux 2023 構築プロジェクト）',
+    labelShort: '課題4',
+    path: '/training/infra-basic-4',
+    estimatedDays: 10,
+    clearedKey: INFRA_BASIC_4_CLEARED_KEY,
+    subTasks: AL2023_DAYS.map((d) => ({
+      label: `Day ${d.day} ${d.title}`,
+      clearedKey: getDayClearedKey(d.day),
+    })),
+  },
 ]
 
 /** 研修開始日を取得。未設定の場合は空文字（課題1開始後に設定される） */
@@ -142,6 +159,23 @@ export function clearTask1Cache(): void {
 /** 課題の期限日（YYYY-MM-DD）。土日祝を除く営業日で累積日数分先 */
 function getDeadlineForTask(startDate: string, cumulativeBusinessDays: number): string {
   return addBusinessDays(startDate, cumulativeBusinessDays)
+}
+
+const PROJECT_DAYS_TOTAL = 10
+
+/** 開始日から今日までの営業日数（1〜PROJECT_DAYS_TOTAL）。未開始は 0 */
+function getBusinessDaysFromStart(startDate: string, todayStr: string): number {
+  if (!startDate) return 0
+  const start = new Date(startDate + 'T12:00:00')
+  const end = new Date(todayStr + 'T12:00:00')
+  if (end < start) return 0
+  let count = 0
+  const d = new Date(start)
+  while (d <= end) {
+    if (isBusinessDay(d)) count++
+    d.setDate(d.getDate() + 1)
+  }
+  return Math.min(count, PROJECT_DAYS_TOTAL)
 }
 
 export type SubTaskStatus = 'cleared' | 'in_progress' | 'not_started'
@@ -245,3 +279,169 @@ export function getDelayedTaskIds(): TrainingTaskId[] {
     .filter((t) => t.isDelayed)
     .map((t) => t.id)
 }
+
+/** WBS進捗率（0〜100）。完了課題数 / 全課題数 */
+export function getWbsProgressPercent(): number {
+  if (typeof window === 'undefined' || TOTAL_TASKS === 0) return 0
+  const cleared = getTotalCleared()
+  return Math.round((cleared / TOTAL_TASKS) * 100)
+}
+
+/**
+ * 技術監査・模範解答リファレンス（Admin画面等で表示）
+ * - AI利用: IPアドレス（192.168.1.1 → 192.168.X.X）の抽象化、顧客名の仮名化
+ * - バックアップ: cp -p によるタイムスタンプ維持、.org での事前保存、diff による差分確認
+ */
+export const AUDIT_REFERENCE = {
+  aiGovernance: {
+    title: 'AI利用の監査点',
+    points: [
+      'IPアドレスは特定できない形式に置換する（例: 192.168.1.1 → 192.168.X.X）',
+      '顧客名・組織名は仮名化する（例: 株式会社A → クライアントX）',
+      '認証情報・本番環境の実データはAIに入力しない',
+    ],
+  },
+  backupAndDiff: {
+    title: '技術監査の必須作法',
+    points: [
+      '設定変更前には cp -p でタイムスタンプを維持したバックアップを作成する（例: config.conf → config.conf.org）',
+      '変更後は diff コマンドで差分確認する（例: diff config.conf.org config.conf）',
+      'ロールバック手順をメモし、.org から復元できる状態を維持する',
+    ],
+  },
+} as const
+
+/** Chapter 1〜4 の進捗（Admin用）。Chapter 4 は10日間プロジェクトの全体 */
+export type ChapterProgress = {
+  chapter: number
+  label: string
+  percent: number
+  cleared: boolean
+  isDelayed: boolean
+  deadline: string
+}
+
+export function getChapterProgressList(): ChapterProgress[] {
+  const list = getTaskProgressList()
+  const todayStr =
+    typeof window !== 'undefined'
+      ? new Date().toISOString().slice(0, 10)
+      : ''
+
+  const ch1 = list[0]
+  const ch2 = list[1]
+  const ch3 = list[2]
+
+  const result: ChapterProgress[] = [
+    {
+      chapter: 1,
+      label: 'Chapter 1 インフラ基礎課題1',
+      percent: ch1 ? (ch1.cleared ? 100 : (ch1.subTasks.filter((s) => s.status !== 'not_started').length / ch1.subTasks.length) * 100) : 0,
+      cleared: ch1?.cleared ?? false,
+      isDelayed: ch1?.isDelayed ?? false,
+      deadline: ch1?.deadline ?? '—',
+    },
+    {
+      chapter: 2,
+      label: 'Chapter 2 インフラ基礎課題2',
+      percent: ch2 ? (ch2.cleared ? 100 : (ch2.subTasks.filter((s) => s.status !== 'not_started').length / ch2.subTasks.length) * 100) : 0,
+      cleared: ch2?.cleared ?? false,
+      isDelayed: ch2?.isDelayed ?? false,
+      deadline: ch2?.deadline ?? '—',
+    },
+    {
+      chapter: 3,
+      label: 'Chapter 3 インフラ基礎課題3',
+      percent: ch3 ? (ch3.cleared ? 100 : (ch3.subTasks.filter((s) => s.status !== 'not_started').length / ch3.subTasks.length) * 100) : 0,
+      cleared: ch3?.cleared ?? false,
+      isDelayed: ch3?.isDelayed ?? false,
+      deadline: ch3?.deadline ?? '—',
+    },
+  ]
+
+  const ch4 = list[3]
+  if (ch4) {
+    result.push({
+      chapter: 4,
+      label: 'Chapter 4 10日間プロジェクト（AL2023 構築）',
+      percent: ch4.cleared ? 100 : (ch4.subTasks.filter((s) => s.status !== 'not_started').length / Math.max(1, ch4.subTasks.length)) * 100,
+      cleared: ch4.cleared,
+      isDelayed: ch4.isDelayed,
+      deadline: ch4.deadline,
+    })
+  } else {
+    const start = getTrainingStartDate()
+    const currentDay = getBusinessDaysFromStart(start, todayStr)
+    const ch4Percent = start ? Math.min(100, Math.round((currentDay / PROJECT_DAYS_TOTAL) * 100)) : 0
+    const allCleared = list.every((t) => t.cleared)
+    result.push({
+      chapter: 4,
+      label: 'Chapter 4 10日間プロジェクト',
+      percent: allCleared ? 100 : ch4Percent,
+      cleared: allCleared,
+      isDelayed: list.some((t) => t.isDelayed),
+      deadline: start ? addBusinessDays(start, PROJECT_DAYS_TOTAL) : '—',
+    })
+  }
+
+  return result
+}
+
+/** 10日間プロジェクトの現在の Day X（1〜10）。未開始は 0 */
+export function getCurrentProjectDay(): number {
+  if (typeof window === 'undefined') return 0
+  const start = getTrainingStartDate()
+  if (!start) return 0
+  const today = new Date()
+  const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0')
+  return getBusinessDaysFromStart(start, todayStr)
+}
+
+/**
+ * 講師用リファレンス（設計書サンプル・AL2023構築スクリプト等）
+ * サイドパネルで即座に正解を確認できるよう格納
+ */
+export const INSTRUCTOR_REFERENCE = {
+  chapter1: {
+    title: 'Chapter 1 設計書サンプル',
+    content: `# ツール演習チェックリスト
+- TeraTerm: 接続・ログ取得
+- WinSCP: ファイル転送
+- 設定変更前のバックアップ: cp -p で .org を作成`,
+  },
+  chapter2: {
+    title: 'Chapter 2 ネットワーク設計の要点',
+    content: `# ネットワーク実践
+- サブネット設計
+- 障害報告は 5W1H（いつ・どこで・誰が・何が・なぜ・どのように）`,
+  },
+  chapter3: {
+    title: 'Chapter 3 OS・クラウド概要',
+    content: `# 仮想化・クラウド
+- ハイパーバイザー種別
+- クラウドの責任分担モデル`,
+  },
+  al2023Script: {
+    title: 'AL2023 用構築スクリプト（.org バックアップ付き）',
+    content: `#!/bin/bash
+# 設定変更前は必ず cp -p でバックアップ
+cp -p /etc/nginx/nginx.conf /etc/nginx/nginx.conf.org
+cp -p /etc/ssh/sshd_config /etc/ssh/sshd_config.org
+
+# 変更後は diff で確認
+# diff /etc/nginx/nginx.conf.org /etc/nginx/nginx.conf
+
+# Amazon Linux 2023 でのパッケージ例
+# dnf install -y nginx
+# systemctl enable --now nginx`,
+  },
+  /** Chapter 4 構築品質：技術監査で必須のチェック項目 */
+  chapter4Quality: {
+    title: 'Chapter 4 構築品質（技術監査ポイント）',
+    points: [
+      'cp -p による属性保持：タイムスタンプ・パーミッションを維持したバックアップを作成する',
+      '.org 形式の事前バックアップ：設定変更前に必ず config.conf → config.conf.org のように保存する',
+      'diff による差分確認：変更後に diff config.conf.org config.conf で意図した変更のみであることを確認する',
+    ],
+  },
+} as const

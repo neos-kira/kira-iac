@@ -1,5 +1,6 @@
 /** はじめに確認済みでインフラ基礎課題をアンロックするフラグ（localStorage） */
 const INTRO_CONFIRMED_KEY = 'isProfessionalStandardsConfirmed'
+const INTRO_CONFIRMED_AT_KEY = 'kira-intro-confirmed-at'
 const LEGACY_KEY = 'kira-intro-confirmed'
 
 export function getIntroConfirmed(): boolean {
@@ -10,7 +11,14 @@ export function getIntroConfirmed(): boolean {
   )
 }
 
+/** はじめにクリア日時（ISO文字列）。未クリアなら null */
+export function getIntroConfirmedAt(): string | null {
+  if (typeof window === 'undefined') return null
+  return window.localStorage.getItem(INTRO_CONFIRMED_AT_KEY)
+}
+
 export function setIntroConfirmed(): void {
   if (typeof window === 'undefined') return
   window.localStorage.setItem(INTRO_CONFIRMED_KEY, 'true')
+  window.localStorage.setItem(INTRO_CONFIRMED_AT_KEY, new Date().toISOString())
 }
