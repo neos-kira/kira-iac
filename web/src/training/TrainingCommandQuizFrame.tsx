@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { QuizQuestion } from './linuxLevel1Data'
 
 type Props = {
@@ -77,6 +77,7 @@ export function TrainingCommandQuizFrame({
   const [answers, setAnswers] = useState<number[]>(initial.answers)
   const [inputValue, setInputValue] = useState('')
   const [lastResult, setLastResult] = useState<'correct' | 'wrong' | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const current = questions[currentIndex]
   const answeredCount = answers.length
@@ -88,6 +89,12 @@ export function TrainingCommandQuizFrame({
   useEffect(() => {
     if (isFinished && storageKey) clearProgress(storageKey)
   }, [isFinished, storageKey])
+
+  useEffect(() => {
+    if (lastResult === null && inputRef.current) {
+      inputRef.current.focus()
+    }
+  }, [lastResult, currentIndex])
 
   // 正解/不正解表示中は Enter で「次へ」を実行
   useEffect(() => {
@@ -197,6 +204,7 @@ export function TrainingCommandQuizFrame({
           </label>
           <div className="flex gap-2">
             <input
+              ref={inputRef}
               id="cmd-input"
               type="text"
               value={inputValue}
