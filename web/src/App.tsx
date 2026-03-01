@@ -541,6 +541,36 @@ function App() {
           ) : (
           <>
           <div className="w-full max-w-2xl space-y-6">
+            {/* j-terada 用：コマンド課題後の実施案内をトップに表示 */}
+            {isJTerada(getDisplayName()) && (
+              <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
+                <p className="text-base font-semibold text-indigo-900">
+                  コマンド課題が終わったら 以下を実施してください。
+                </p>
+                <ul className="mt-4 space-y-3">
+                  <li>
+                    <a
+                      href="https://docs.google.com/presentation/d/1Xw--LXH056ekfvkneyzl-ZCFPKJon4vd/edit?usp=drivesdk&ouid=100622650885455094391&rtpof=true&sd=true"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-indigo-800 shadow-sm ring-1 ring-indigo-200 hover:bg-indigo-100 hover:ring-indigo-300"
+                    >
+                      概要ppt
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="https://docs.google.com/spreadsheets/d/127QyXSU1_nLAeRF5HPfsYcECDWjNZKZW/edit?usp=drivesdk&ouid=100622650885455094391&rtpof=true&sd=true"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-indigo-800 shadow-sm ring-1 ring-indigo-200 hover:bg-indigo-100 hover:ring-indigo-300"
+                    >
+                      WBS
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            )}
             {/* はじめに未完了時：メッセージとリンクを最上部に表示 */}
             {!getIntroConfirmed() && (
               <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 shadow-sm">
