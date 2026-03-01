@@ -217,8 +217,8 @@ function App() {
   return (
     <div className="min-h-screen bg-white text-slate-800">
       <div className="mx-auto flex min-h-screen max-w-4xl flex-col px-5 py-8">
-        {/* ヘッダー: 正式ロゴ（2枚目画像）＋ 遅延pill・進捗・ユーザー名・ログアウト */}
-        <header className="flex items-center justify-between gap-4">
+        {/* ヘッダー: 拡張機能のオーバーレイより前面に表示 */}
+        <header className="relative z-[9999] flex items-center justify-between gap-4">
           <div className="flex items-center">
             <NeOSLogo height={80} />
           </div>
@@ -242,7 +242,8 @@ function App() {
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleLogout(); }}
-              className="cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="relative z-[10000] min-w-[88px] cursor-pointer rounded-lg border-2 border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:border-indigo-400 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              aria-label="ログアウト"
             >
               ログアウト
             </button>
@@ -316,6 +317,15 @@ function App() {
                   </button>
                 </div>
               </form>
+              <p className="mt-4 pt-3 border-t border-slate-100 text-center">
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="text-sm text-slate-500 underline hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 rounded"
+                >
+                  ログアウト
+                </button>
+              </p>
             </div>
 
             {/* 2枚目カード — TRAINING はじめに */}
