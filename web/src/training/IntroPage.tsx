@@ -183,11 +183,8 @@ export function IntroPage() {
   return pageLayout(
     <>
       {confirmed && showReview && (
-        <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-4 flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-4 mb-6">
           <p className="text-sm text-slate-600">確認済みです。下記の内容はいつでも見返せます。</p>
-          <button type="button" onClick={() => navigate('/')} className="text-sm font-medium text-indigo-600 hover:text-indigo-800 underline">
-            トップに戻る
-          </button>
         </div>
       )}
 
