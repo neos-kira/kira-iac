@@ -15,7 +15,7 @@ const LOGO_SRC = '/logo-neos-it-college.png'
 export function NeOSLogo({ className = '', height = 48, clipTop = false }: Props) {
   if (clipTop) {
     return (
-      <div className={`flex justify-center overflow-hidden ${className}`} style={{ height: 56 }}>
+      <div className={`flex justify-center overflow-hidden ${className}`} style={{ height: 36 }}>
         <img
           src={LOGO_SRC}
           alt="NeOS IT College"
