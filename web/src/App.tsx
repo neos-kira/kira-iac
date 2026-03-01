@@ -18,6 +18,7 @@ import {
   getDelayedTaskIds,
 } from './training/trainingWbsData'
 import { getIntroConfirmed } from './training/introGate'
+import { LOGIN_FLAG_KEY } from './auth'
 
 type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3'
 
@@ -121,10 +122,11 @@ function App() {
     try {
       window.sessionStorage.removeItem(ADMIN_SESSION_KEY)
       window.localStorage.removeItem(USER_DISPLAY_NAME_KEY)
-      // 同一URLのreplaceではリロードされないため、必ず reload で再読み込みする
-      window.location.reload()
+      window.localStorage.removeItem(LOGIN_FLAG_KEY)
+      const base = window.location.origin + window.location.pathname + (window.location.search || '')
+      window.location.replace(base + '#/login')
     } catch {
-      window.location.href = window.location.href
+      window.location.replace(window.location.pathname + '#/login')
     }
   }
 

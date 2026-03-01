@@ -1,8 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { HashRouter, Routes, Route } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
+import { LoginPage } from './LoginPage'
+import { isLoggedIn } from './auth'
 import { LinuxLevel1Page } from './training/LinuxLevel1Page'
 import { LinuxLevel2Page } from './training/LinuxLevel2Page'
 import { InfraBasic1Page } from './training/InfraBasic1Page'
@@ -23,7 +25,8 @@ createRoot(document.getElementById('root')!).render(
     <HashRouter>
       <>
         <Routes>
-          <Route path="/" element={<App />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/" element={isLoggedIn() ? <App /> : <Navigate to="/login" replace />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/training/linux-level1" element={<IntroGate><LinuxLevel1Page /></IntroGate>} />
           <Route path="/training/linux-level2" element={<IntroGate><LinuxLevel2Page /></IntroGate>} />
