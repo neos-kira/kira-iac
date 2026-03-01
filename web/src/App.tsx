@@ -3,6 +3,7 @@
  * 全ページを白/ライトで統一する。
  */
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { flushSync } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { OpenInNewTabButton } from './components/OpenInNewTabButton'
 import { NeOSLogo } from './components/NeOSLogo'
@@ -226,17 +227,20 @@ function App() {
       const base = voiceFinalRef.current
       let full = ''
       let interim = ''
-      for (let i = 0; i < event.results.length; i++) {
-        const r = event.results[i]
+      const results = event.results as { length: number; [i: number]: { isFinal?: boolean; 0?: { transcript?: string } } }
+      for (let i = 0; i < results.length; i++) {
+        const r = results[i]
+        if (!r) continue
         const t = (r[0] as { transcript?: string } | undefined)?.transcript ?? ''
-        if (r.isFinal) {
+        const isFinal = typeof r.isFinal === 'boolean' ? r.isFinal : false
+        if (isFinal) {
           full += t
         } else {
           interim = t
         }
       }
-      const combined = base ? `${base} ${full}${interim}` : `${full}${interim}`
-      setInput(combined.trim() || combined)
+      const combined = base ? `${base} ${full}${interim}`.trim() : `${full}${interim}`.trim()
+      flushSync(() => setInput(combined))
     }
     recognition.onend = () => {
       recognitionRef.current = null
