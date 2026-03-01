@@ -41,7 +41,6 @@ export function LoginPage() {
         <div className="flex justify-center mb-6">
           <NeOSLogo height={128} />
         </div>
-        <h1 className="text-xl font-bold text-slate-800 text-center">NICプラットフォーム</h1>
         <form onSubmit={handleLogin} className="mt-6 space-y-4">
           <div>
             <label htmlFor="login-username" className="block text-sm font-medium text-slate-700 mb-1">
