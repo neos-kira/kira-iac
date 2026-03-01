@@ -209,7 +209,7 @@ export function TrainingCommandQuizFrame({
                 }
               }}
               disabled={showFeedback}
-              placeholder="例: ls, pwd"
+              placeholder=""
               className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 disabled:opacity-70"
               autoComplete="off"
               spellCheck={false}
@@ -246,10 +246,7 @@ export function TrainingCommandQuizFrame({
             {lastResult === 'correct' ? (
               <span className="font-medium">✓ 正解</span>
             ) : (
-              <p>
-                <span className="font-medium">✗ 不正解</span>
-                <span className="ml-2 text-slate-600">正解は「{correctAnswer}」です。</span>
-              </p>
+              <span className="font-medium">✗ 不正解</span>
             )}
           </div>
         )}
