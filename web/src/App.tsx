@@ -697,11 +697,15 @@ function App() {
                         <span aria-hidden>📌</span>
                         ピン解除
                       </button>
+                      {!(trainingStatus.infraToolsCleared && trainingStatus.linuxL1Cleared) && (
+                        <p className="mt-1 text-[10px] text-amber-700">インフラ基礎課題1をクリアすると利用できます</p>
+                      )}
                     </div>
                     <button
                       type="button"
+                      disabled={!(trainingStatus.infraToolsCleared && trainingStatus.linuxL1Cleared)}
                       onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-2-top'))}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700"
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       別タブで開く
                     </button>
@@ -730,11 +734,15 @@ function App() {
                         <span aria-hidden>📌</span>
                         ピン解除
                       </button>
+                      {!trainingStatus.linuxL2Cleared && (
+                        <p className="mt-1 text-[10px] text-amber-700">インフラ基礎課題2をクリアすると利用できます</p>
+                      )}
                     </div>
                     <button
                       type="button"
+                      disabled={!trainingStatus.linuxL2Cleared}
                       onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-3-top'))}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700"
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       別タブで開く
                     </button>
@@ -915,14 +923,18 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                   <span aria-hidden>📌</span>
                   {pinnedTraining.includes('infra-basic-2') ? 'ピン解除' : 'ピン留め'}
                 </button>
+                {!infra1Cleared && (
+                  <p className="mt-1 text-[10px] text-amber-700">インフラ基礎課題1をクリアすると利用できます</p>
+                )}
               </div>
               <button
                 type="button"
+                disabled={!infra1Cleared}
                 onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-2-top'))}
-                  className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700"
-                >
-                  別タブで開く
-                </button>
+                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                別タブで開く
+              </button>
             </li>
             <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -947,11 +959,15 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                   <span aria-hidden>📌</span>
                   {pinnedTraining.includes('infra-basic-3') ? 'ピン解除' : 'ピン留め'}
                 </button>
+                {!infra2Cleared && (
+                  <p className="mt-1 text-[10px] text-amber-700">インフラ基礎課題2をクリアすると利用できます</p>
+                )}
               </div>
               <button
                 type="button"
+                disabled={!infra2Cleared}
                 onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-3-top'))}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700"
+                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 別タブで開く
               </button>
