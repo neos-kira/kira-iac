@@ -1,10 +1,13 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
 import { LoginPage } from './LoginPage'
 import { isLoggedIn } from './auth'
+import { isJTerada } from './specialUsers'
+import { isTask1Cleared } from './training/trainingWbsData'
+import { getIntroConfirmed } from './training/introGate'
 import { LinuxLevel1Page } from './training/LinuxLevel1Page'
 import { LinuxLevel2Page } from './training/LinuxLevel2Page'
 import { InfraBasic1Page } from './training/InfraBasic1Page'
@@ -22,13 +25,40 @@ import { MentorDesk } from './components/MentorDesk'
 import { IntroGate } from './components/IntroGate'
 import { Task1Gate, Task2Gate } from './components/TaskGates'
 
+const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
+
+function getDisplayName(): string {
+  if (typeof window === 'undefined') return ''
+  return window.localStorage.getItem(USER_DISPLAY_NAME_KEY) || ''
+}
+
+/** j-terada が課題1クリア後はトップ以外のルートにアクセスさせず "/" へリダイレクトする */
+function JTeradaRestrictGuard() {
+  const loc = useLocation()
+  const pathname = loc.pathname.replace(/^\/+/, '') || '/'
+  if (pathname === 'login' || pathname === '') return null
+  if (!isLoggedIn()) return null
+  const name = getDisplayName()
+  if (!isJTerada(name) || !isTask1Cleared()) return null
+  return <Navigate to="/" replace />
+}
+
+/** admin 以外は「はじめに」未完了ならトップでなく「はじめに」を表示する（リダイレクト） */
+function AppOrRedirectToIntro() {
+  const name = getDisplayName().trim().toLowerCase()
+  if (name === 'admin') return <App />
+  if (!getIntroConfirmed()) return <Navigate to="/training/intro" replace />
+  return <App />
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <HashRouter>
       <>
+        <JTeradaRestrictGuard />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={isLoggedIn() ? <App /> : <Navigate to="/login" replace />} />
+          <Route path="/" element={isLoggedIn() ? <AppOrRedirectToIntro /> : <Navigate to="/login" replace />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/training/linux-level1" element={<IntroGate><LinuxLevel1Page /></IntroGate>} />
           <Route path="/training/infra-basic-1" element={<IntroGate><InfraBasic1Page /></IntroGate>} />
