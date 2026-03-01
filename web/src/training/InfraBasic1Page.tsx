@@ -239,6 +239,23 @@ export function InfraBasic1Page() {
             { idx: 10, checked: isChecked(10), onToggle: () => toggleCheck(10), text: '転送成功を確認後、サーバ側のファイルを右クリックで削除' },
           ]}
         />
+
+        {/* すべて済になったら：課題1-2へ進むメッセージ */}
+        {INFRA_BASIC_1_SECTION_IDS.every((id) => isSectionDone(id)) && (
+          <section className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 p-5 shadow-soft-card">
+            <p className="text-sm font-semibold text-emerald-800">すべてのツール演習が完了しました</p>
+            <p className="mt-2 text-sm text-slate-700">
+              次は「<strong>課題1-2 · LINUXコマンド</strong>」に進んでください。
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/training/linux-level1')}
+              className="mt-4 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
+            >
+              課題1-2 · LINUXコマンドを開く
+            </button>
+          </section>
+        )}
       </div>
     </div>
   )
