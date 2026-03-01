@@ -1,13 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-
-function MentorDeskOrNull() {
-  const loc = useLocation()
-  const pathname = (loc.pathname || '').replace(/^\/+/, '') || '/'
-  if (pathname === 'login') return null
-  return <MentorDesk />
-}
+import { DeskOpenProvider, useDeskOpen } from './deskOpenContext'
 import './index.css'
 import App from './App.tsx'
 import { LoginPage } from './LoginPage'
@@ -28,6 +22,23 @@ import { InfraWbsPage } from './training/InfraWbsPage'
 import { IntroPage } from './training/IntroPage'
 import { AdminPage } from './admin/AdminPage'
 import { MentorDesk } from './components/MentorDesk'
+
+function MentorDeskOrNull() {
+  const loc = useLocation()
+  const pathname = (loc.pathname || '').replace(/^\/+/, '') || '/'
+  if (pathname === 'login') return null
+  return <MentorDesk />
+}
+
+/** DESK パネル表示時にメインコンテンツが重ならないよう右余白を確保（max-w-md = 28rem） */
+function RoutesWithDeskMargin({ children }: { children: React.ReactNode }) {
+  const ctx = useDeskOpen()
+  return (
+    <div className={ctx?.deskOpen ? 'mr-[28rem] transition-[margin-right] duration-200' : ''}>
+      {children}
+    </div>
+  )
+}
 import { IntroGate } from './components/IntroGate'
 import { Task1Gate, Task2Gate } from './components/TaskGates'
 
@@ -52,9 +63,10 @@ function JTeradaRestrictGuard() {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <HashRouter>
-      <>
+      <DeskOpenProvider>
         <JTeradaRestrictGuard />
-        <Routes>
+        <RoutesWithDeskMargin>
+          <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={isLoggedIn() ? <App /> : <Navigate to="/login" replace />} />
           <Route path="/admin" element={<AdminPage />} />
@@ -70,9 +82,10 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/training/infra-basic-4" element={<IntroGate><InfraBasic4Page /></IntroGate>} />
           <Route path="/training/infra-wbs" element={<IntroGate><InfraWbsPage /></IntroGate>} />
           <Route path="/training/intro" element={<IntroPage />} />
-        </Routes>
+          </Routes>
+        </RoutesWithDeskMargin>
         <MentorDeskOrNull />
-      </>
+      </DeskOpenProvider>
     </HashRouter>
   </StrictMode>,
 )

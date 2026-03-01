@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useDeskOpen } from '../deskOpenContext'
 
 type Grade = 'S' | 'A' | 'B' | 'C' | 'D'
 
@@ -159,6 +160,7 @@ function evaluateQuestion(raw: string): MentorResult {
 }
 
 export function MentorDesk() {
+  const deskCtx = useDeskOpen()
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState('')
   const [result, setResult] = useState<MentorResult | null>(null)
@@ -242,6 +244,12 @@ export function MentorDesk() {
   const handleClose = () => {
     setOpen(false)
     setResult(null)
+    deskCtx?.setDeskOpen(false)
+  }
+
+  const handleOpen = () => {
+    setOpen(true)
+    deskCtx?.setDeskOpen(true)
   }
 
   return (
@@ -249,7 +257,7 @@ export function MentorDesk() {
       {/* フローティングボタン（アイコンのみ・右下で邪魔にならない配置） */}
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={handleOpen}
         className="fixed bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 shadow-lg hover:border-indigo-400 hover:bg-slate-50"
         title="AIメンターに相談（質問添削）"
         aria-label="AIメンターに相談（質問添削）"
