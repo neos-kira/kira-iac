@@ -1,9 +1,11 @@
 name: Deploy Terraform
 
+# main への push で自動デプロイ。training-org.neos-nic.jp はこの CloudFront を指している場合に反映される。
 on:
   push:
     branches:
       - main
+  workflow_dispatch: {}  # 手動実行で再デプロイ・キャッシュ無効化可能
 
 permissions:
   contents: read
@@ -95,4 +97,5 @@ jobs:
           DIST_ID="${{ needs.terraform.outputs.distribution_id }}"
           if [ -n "$DIST_ID" ]; then
             aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths "/*"
+            echo "CloudFront invalidation requested. https://training-org.neos-nic.jp/ の反映は数分かかることがあります。"
           fi
