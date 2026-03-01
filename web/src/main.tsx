@@ -7,7 +7,6 @@ import { LoginPage } from './LoginPage'
 import { isLoggedIn } from './auth'
 import { isJTerada } from './specialUsers'
 import { isTask1Cleared } from './training/trainingWbsData'
-import { getIntroConfirmed } from './training/introGate'
 import { LinuxLevel1Page } from './training/LinuxLevel1Page'
 import { LinuxLevel2Page } from './training/LinuxLevel2Page'
 import { InfraBasic1Page } from './training/InfraBasic1Page'
@@ -43,14 +42,6 @@ function JTeradaRestrictGuard() {
   return <Navigate to="/" replace />
 }
 
-/** admin 以外は「はじめに」未完了ならトップでなく「はじめに」を表示する（リダイレクト） */
-function AppOrRedirectToIntro() {
-  const name = getDisplayName().trim().toLowerCase()
-  if (name === 'admin') return <App />
-  if (!getIntroConfirmed()) return <Navigate to="/training/intro" replace />
-  return <App />
-}
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <HashRouter>
@@ -58,7 +49,7 @@ createRoot(document.getElementById('root')!).render(
         <JTeradaRestrictGuard />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={isLoggedIn() ? <AppOrRedirectToIntro /> : <Navigate to="/login" replace />} />
+          <Route path="/" element={isLoggedIn() ? <App /> : <Navigate to="/login" replace />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/training/linux-level1" element={<IntroGate><LinuxLevel1Page /></IntroGate>} />
           <Route path="/training/infra-basic-1" element={<IntroGate><InfraBasic1Page /></IntroGate>} />

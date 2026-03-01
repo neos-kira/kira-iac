@@ -17,7 +17,9 @@ import {
   getTotalCleared,
   TOTAL_TASKS as WBS_TOTAL_TASKS,
   getDelayedTaskIds,
+  isTask1Cleared,
 } from './training/trainingWbsData'
+import { isJTerada, J_TERADA_ALLOWED_LINKS } from './specialUsers'
 import { getIntroConfirmed } from './training/introGate'
 import { LOGIN_FLAG_KEY } from './auth'
 import { getCurrentProgressSnapshot, saveProgressSnapshot } from './traineeProgressStorage'
@@ -113,7 +115,68 @@ function hasInProgressSession(storageKey: string, total: number): boolean {
   }
 }
 
+function handleLogout() {
+  if (typeof window === 'undefined') return
+  try {
+    window.sessionStorage.removeItem(ADMIN_SESSION_KEY)
+    window.localStorage.removeItem(USER_DISPLAY_NAME_KEY)
+    window.localStorage.removeItem(LOGIN_FLAG_KEY)
+    const base = (window.location.origin + window.location.pathname + (window.location.search || '')).replace(/\/$/, '') || window.location.origin
+    window.location.href = base + '#/login'
+  } catch {
+    window.location.href = (window.location.pathname || '/') + '#/login'
+  }
+}
+
+/** j-terada が課題1クリア後に表示する限定ページ（指定2リンクのみ） */
+function JTeradaRestrictedView() {
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <header className="border-b border-slate-200 bg-white px-4 py-3 flex items-center justify-between">
+        <NeOSLogo height={32} />
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-slate-600">j-terada さん</span>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="rounded-lg px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+          >
+            ログアウト
+          </button>
+        </div>
+      </header>
+      <main className="max-w-xl mx-auto px-4 py-8">
+        <div className="rounded-2xl bg-white p-6 shadow-sm">
+          <h1 className="text-lg font-semibold text-slate-800">Windows Server 研修 — 資料へのリンク</h1>
+          <p className="mt-2 text-sm text-slate-600">
+            インフラ基礎課題1をクリアしました。以下の資料にアクセスできます。
+          </p>
+          <ul className="mt-6 space-y-3">
+            {J_TERADA_ALLOWED_LINKS.map(({ label, url }) => (
+              <li key={url}>
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block rounded-xl bg-indigo-50 px-4 py-3 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+                >
+                  {label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </main>
+    </div>
+  )
+}
+
 function App() {
+  const displayName = getDisplayName()
+  if (isJTerada(displayName) && isTask1Cleared()) {
+    return <JTeradaRestrictedView />
+  }
+
   const [input, setInput] = useState('')
   const [resolution, setResolution] = useState<CommandResolution | null>(null)
   const [isThinking, setIsThinking] = useState(false)
@@ -155,19 +218,6 @@ function App() {
   function goToIntroAndClosePopup() {
     setShowIntroRequiredPopup(false)
     window.location.hash = '#/training/intro'
-  }
-
-  function handleLogout() {
-    if (typeof window === 'undefined') return
-    try {
-      window.sessionStorage.removeItem(ADMIN_SESSION_KEY)
-      window.localStorage.removeItem(USER_DISPLAY_NAME_KEY)
-      window.localStorage.removeItem(LOGIN_FLAG_KEY)
-      const base = (window.location.origin + window.location.pathname + (window.location.search || '')).replace(/\/$/, '') || window.location.origin
-      window.location.href = base + '#/login'
-    } catch {
-      window.location.href = (window.location.pathname || '/') + '#/login'
-    }
   }
 
   async function handleSubmit(event: React.FormEvent, valueOverride?: string) {
@@ -488,6 +538,20 @@ function App() {
           ) : (
           <>
           <div className="w-full max-w-2xl space-y-6">
+            {/* はじめに未完了時：メッセージとリンクを最上部に表示 */}
+            {!getIntroConfirmed() && (
+              <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 shadow-sm">
+                <p className="text-sm font-semibold text-amber-800">はじめにを実施してください</p>
+                <p className="mt-2 text-sm text-slate-700">
+                  インフラ基礎課題に進む前に、「はじめに」でプロフェッショナルとしての行動基準を確認してください。
+                </p>
+                <OpenInNewTabButton
+                  url={getTrainingUrl('/training/intro')}
+                  label="はじめにを開く"
+                  className="mt-4 inline-flex rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
+                />
+              </div>
+            )}
             <div className="rounded-2xl bg-white p-6 shadow-sm" aria-label="検索">
               <div className="relative" ref={searchContainerRef}>
                 <form ref={searchFormRef} onSubmit={handleSubmit} className="space-y-3">
@@ -589,22 +653,6 @@ function App() {
                 )}
               </div>
             </div>
-
-            {/* 2枚目カード — TRAINING はじめに（未完了のユーザーのみ表示） */}
-            {!getIntroConfirmed() && (
-              <div className="rounded-2xl bg-white p-6 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">TRAINING</p>
-                <h2 className="mt-1 text-lg font-bold text-slate-800">はじめに</h2>
-                <p className="mt-2 text-sm text-slate-700 leading-relaxed">
-                  プロフェッショナルとしての行動基準を確認したうえで、インフラ基礎課題に進みます。
-                </p>
-                <OpenInNewTabButton
-                  url={getTrainingUrl('/training/intro')}
-                  label="別タブで開く"
-                  className="mt-4 inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-                />
-              </div>
-            )}
 
             {/* 検索結果（Enter または ↑ 実行後に表示） */}
             {resolution && (
