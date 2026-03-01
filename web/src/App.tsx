@@ -121,10 +121,10 @@ function App() {
     try {
       window.sessionStorage.removeItem(ADMIN_SESSION_KEY)
       window.localStorage.removeItem(USER_DISPLAY_NAME_KEY)
-      const url = window.location.origin + window.location.pathname + (window.location.search || '') + '#/'
-      window.location.replace(url)
-    } catch {
+      // 同一URLのreplaceではリロードされないため、必ず reload で再読み込みする
       window.location.reload()
+    } catch {
+      window.location.href = window.location.href
     }
   }
 
