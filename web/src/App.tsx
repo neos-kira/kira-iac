@@ -158,9 +158,9 @@ function App() {
     }
   }
 
-  async function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent, valueOverride?: string) {
     event.preventDefault()
-    const value = input.trim()
+    const value = (valueOverride ?? input).trim()
     if (!value) return
 
     setSearchHistory((prev) => {
@@ -403,6 +403,16 @@ function App() {
                       onChange={(event) => setInput(event.target.value)}
                       onFocus={() => setShowSearchHistory(true)}
                       onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          if (showSearchHistory && searchHistory.length > 0 && searchHistoryHighlightIndex >= 0) {
+                            e.preventDefault()
+                            const item = searchHistory[searchHistoryHighlightIndex]
+                            setInput(item)
+                            setShowSearchHistory(false)
+                            handleSubmit(e as unknown as React.FormEvent, item)
+                          }
+                          return
+                        }
                         if (!showSearchHistory || searchHistory.length === 0) return
                         if (e.key === 'ArrowDown') {
                           e.preventDefault()
@@ -414,11 +424,6 @@ function App() {
                           setSearchHistoryHighlightIndex((i) =>
                             i <= 0 ? searchHistory.length - 1 : i - 1
                           )
-                        } else if (e.key === 'Enter' && searchHistoryHighlightIndex >= 0) {
-                          e.preventDefault()
-                          const item = searchHistory[searchHistoryHighlightIndex]
-                          setInput(item)
-                          setShowSearchHistory(false)
                         }
                       }}
                       placeholder="「インフラ研修を表示」 「WBSを表示」"
@@ -431,9 +436,10 @@ function App() {
                     </span>
                     <button
                       type="submit"
-                      className="rounded-r-xl bg-indigo-600 px-5 py-3 text-sm font-medium text-white hover:bg-indigo-700 transition-colors shrink-0"
+                      className="rounded-r-xl bg-indigo-600 px-4 py-3 text-lg font-medium text-white hover:bg-indigo-700 transition-colors shrink-0 leading-none"
+                      aria-label="実行"
                     >
-                      {isThinking ? '解析中…' : '実行'}
+                      {isThinking ? '…' : '↑'}
                     </button>
                   </div>
                 </form>
