@@ -111,9 +111,22 @@ export function IntroPage() {
     navigate('/training/infra-basic-top')
   }
 
+  const topBar = (
+    <div className="flex items-center justify-end mb-6">
+      <button
+        type="button"
+        onClick={() => navigate('/')}
+        className="rounded-lg px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 shadow-sm hover:bg-slate-50"
+      >
+        トップに戻る
+      </button>
+    </div>
+  )
+
   const pageLayout = (children: React.ReactNode) => (
     <div className="min-h-screen bg-slate-100 text-slate-800 p-6">
       <div className="mx-auto max-w-2xl">
+        {topBar}
         {children}
       </div>
     </div>
@@ -148,6 +161,7 @@ export function IntroPage() {
       <div className="min-h-screen bg-slate-100 text-slate-800 p-6">
         <Confetti />
         <div className="mx-auto max-w-2xl relative z-10">
+          {topBar}
           {headerBlock}
           <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-10 text-center">
             <p className="text-5xl mb-2" aria-hidden>🎉</p>
