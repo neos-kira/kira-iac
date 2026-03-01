@@ -26,6 +26,7 @@ export function IntroPage() {
   const [answers, setAnswers] = useState<number[]>(() => QUIZ_QUESTIONS.map(() => -1))
   const [confirmed, setConfirmed] = useState(false)
   const [showPassScreen, setShowPassScreen] = useState(false)
+  const [showReview, setShowReview] = useState(false)
 
   useEffect(() => {
     document.title = 'はじめに'
@@ -53,7 +54,7 @@ export function IntroPage() {
     navigate('/training/infra-basic-top')
   }
 
-  if (confirmed) {
+  if (confirmed && !showReview) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 text-slate-800 p-6">
         <div className="mx-auto max-w-2xl">
@@ -63,8 +64,15 @@ export function IntroPage() {
               トップへ戻る
             </button>
           </div>
-          <div className="rounded-2xl bg-white p-6 shadow-soft-card border border-slate-200">
+          <div className="rounded-2xl bg-white p-6 shadow-soft-card border border-slate-200 space-y-4">
             <p className="text-sm text-slate-600">確認済みです。インフラ基礎課題へアクセスできます。</p>
+            <button
+              type="button"
+              onClick={() => setShowReview(true)}
+              className="rounded-xl border border-indigo-300 bg-indigo-50 px-4 py-2.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition-colors"
+            >
+              内容を見返す
+            </button>
           </div>
         </div>
       </div>
@@ -102,6 +110,18 @@ export function IntroPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 text-slate-800 p-6">
       <div className="mx-auto max-w-2xl space-y-6">
+        {confirmed && showReview && (
+          <div className="rounded-2xl border border-indigo-200 bg-indigo-50/80 p-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-indigo-800">確認済みです。下記の内容はいつでも見返せます。</p>
+            <button
+              type="button"
+              onClick={() => setShowReview(false)}
+              className="text-sm font-medium text-indigo-700 hover:text-indigo-900 underline"
+            >
+              簡易表示に戻る
+            </button>
+          </div>
+        )}
         <div className="flex justify-between items-start">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-indigo-500">SECTION · はじめに</p>
