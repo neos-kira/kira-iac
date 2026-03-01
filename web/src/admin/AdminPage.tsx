@@ -56,13 +56,6 @@ export function AdminPage() {
     }
   }
 
-  function handleLogout() {
-    if (typeof window === 'undefined') return
-    window.sessionStorage.removeItem(ADMIN_SESSION_KEY)
-    const base = (window.location.origin + window.location.pathname + (window.location.search || '')).replace(/\/$/, '') || window.location.origin
-    window.location.href = base + '#/admin'
-  }
-
   if (!authed) {
     return (
       <div className="min-h-screen bg-slate-100 text-slate-800 p-6">
@@ -130,13 +123,6 @@ export function AdminPage() {
               className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
             >
               トップへ
-            </button>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="rounded-lg bg-slate-200 px-3 py-1.5 text-xs font-medium text-slate-800 hover:bg-slate-300"
-            >
-              ログアウト
             </button>
           </div>
         </div>
