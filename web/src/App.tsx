@@ -800,7 +800,7 @@ function App() {
             </section>
           )}
 
-          {(canResumeL1 || canResumeL2) && getDisplayName()?.toLowerCase() !== 'admin' && (
+          {(canResumeL1 || canResumeL2) && getDisplayName()?.toLowerCase() !== 'admin' && getIntroConfirmed() && (
             <section className="mt-6 w-full max-w-2xl rounded-2xl border border-amber-300 bg-amber-50/80 p-4 text-[11px] text-slate-700 shadow-sm">
               <div className="flex items-center justify-between gap-2">
                 <div>
@@ -837,18 +837,6 @@ function App() {
             </section>
           )}
 
-          {/* サジェストチップ（画像通り: ライトグレー背景・ダークテキスト） */}
-          <div className="mt-6 flex w-full max-w-2xl flex-wrap gap-2 text-[11px]">
-            <span className="rounded-lg bg-slate-100 px-3 py-2 text-slate-700">
-              例) インフラ研修と入力
-            </span>
-            <span className="rounded-lg bg-slate-100 px-3 py-2 text-slate-700">
-              例) 今日の勤怠を開いて
-            </span>
-            <span className="rounded-lg bg-slate-100 px-3 py-2 text-slate-700">
-              例) プロジェクトAのタスクボード
-            </span>
-          </div>
           </>
           )}
         </main>
