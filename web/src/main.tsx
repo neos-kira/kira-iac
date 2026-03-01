@@ -20,7 +20,6 @@ import { InfraBasic32Page } from './training/InfraBasic32Page'
 import { InfraBasic4Page } from './training/InfraBasic4Page'
 import { InfraWbsPage } from './training/InfraWbsPage'
 import { IntroPage } from './training/IntroPage'
-import { AdminPage } from './admin/AdminPage'
 import { MentorDesk } from './components/MentorDesk'
 
 function MentorDeskOrNull() {
@@ -69,7 +68,6 @@ createRoot(document.getElementById('root')!).render(
           <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={isLoggedIn() ? <App /> : <Navigate to="/login" replace />} />
-          <Route path="/admin" element={<AdminPage />} />
           <Route path="/training/linux-level1" element={<IntroGate><LinuxLevel1Page /></IntroGate>} />
           <Route path="/training/infra-basic-1" element={<IntroGate><InfraBasic1Page /></IntroGate>} />
           <Route path="/training/infra-basic-top" element={<IntroGate><InfraBasicTopPage /></IntroGate>} />

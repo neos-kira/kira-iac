@@ -5,7 +5,6 @@ import { addTrainee } from './traineeProgressStorage'
 import { isJTerada, J_TERADA_PASSWORD } from './specialUsers'
 
 const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
-const ADMIN_SESSION_KEY = 'kira-admin-logged-in'
 
 function getBaseUrl(): string {
   if (typeof window === 'undefined') return ''
@@ -34,8 +33,7 @@ export function LoginPage() {
       window.localStorage.setItem(USER_DISPLAY_NAME_KEY, name)
       setLoggedIn()
       if (name === 'admin') {
-        window.sessionStorage.setItem(ADMIN_SESSION_KEY, 'true')
-        window.location.href = getBaseUrl() + '#/admin'
+        window.location.href = getBaseUrl() + '#/'
         return
       }
       addTrainee(name)

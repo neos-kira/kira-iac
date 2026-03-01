@@ -4,7 +4,6 @@
  */
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { flushSync } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
 import { OpenInNewTabButton } from './components/OpenInNewTabButton'
 import { NeOSLogo } from './components/NeOSLogo'
 import type { CommandResolution } from './commandRouter'
@@ -186,10 +185,6 @@ function App() {
   const [canResumeL2, setCanResumeL2] = useState(false)
   const [trainingStatus, setTrainingStatus] = useState<TrainingStatus>(() => readTrainingStatus())
   const [pinnedTraining, setPinnedTraining] = useState<TrainingTaskId[]>(() => loadPinnedTrainingTasks())
-  const [isAdmin] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return window.sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true'
-  })
   const [showIntroRequiredPopup, setShowIntroRequiredPopup] = useState(false)
   const [searchHistory, setSearchHistory] = useState<string[]>(() => loadSearchHistory())
   const [showSearchHistory, setShowSearchHistory] = useState(false)
@@ -444,7 +439,6 @@ function App() {
     return () => clearInterval(id)
   }, [isAdminView])
 
-  const navigate = useNavigate()
   const delayed = getDelayedTaskIds().length > 0
   const progressPct = WBS_TOTAL_TASKS > 0 ? Math.round((getTotalCleared() / WBS_TOTAL_TASKS) * 100) : 0
   const taskList = getTaskProgressList()
@@ -493,15 +487,6 @@ function App() {
             >
               ログアウト
             </button>
-            {!isAdminView && isAdmin && (
-              <button
-                type="button"
-                onClick={() => (window.location.hash = '#/admin')}
-                className="rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
-              >
-                講師メニュー
-              </button>
-            )}
           </div>
         </header>
 
@@ -534,21 +519,6 @@ function App() {
         )}
 
         <main className="mt-4 flex flex-1 flex-col items-center justify-start">
-          {isAdminView ? (
-            /* 講師用メニュー: 受講生の進捗 */
-            <div className="w-full max-w-2xl space-y-4">
-              <h1 className="text-lg font-semibold text-slate-800">講師用メニュー</h1>
-              <p className="text-sm text-slate-600">受講生の進捗を確認できます。</p>
-              <button
-                type="button"
-                onClick={() => navigate('/admin')}
-                className="flex w-full flex-col items-start rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/50"
-              >
-                <span className="text-base font-semibold text-slate-800">受講生の進捗</span>
-                <span className="mt-1 text-xs text-slate-600">WBSに基づく進捗一覧を表示</span>
-              </button>
-            </div>
-          ) : (
           <>
           <div className="w-full max-w-2xl space-y-6">
             {/* はじめに未完了時：メッセージとリンクを最上部に表示 */}
@@ -893,7 +863,6 @@ function App() {
           )}
 
           </>
-          )}
         </main>
       </div>
     </div>
