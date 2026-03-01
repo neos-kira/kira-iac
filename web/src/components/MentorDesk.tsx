@@ -473,8 +473,8 @@ export function MentorDesk() {
 
                   {result.hints.length > 0 && (
                     <div className="space-y-1">
-                      <p className="text-[10px] font-semibold text-slate-300">調査の方向性（抽象的ヒント）</p>
-                      <ul className="list-disc space-y-1 pl-5 text-[11px] text-slate-200">
+                      <p className="text-[10px] font-semibold text-slate-700">調査の方向性（抽象的ヒント）</p>
+                      <ul className="list-disc space-y-1 pl-5 text-[11px] text-slate-700">
                         {result.hints.map((h, idx) => (
                           <li key={idx}>{h}</li>
                         ))}
@@ -482,7 +482,7 @@ export function MentorDesk() {
                     </div>
                   )}
 
-                  <p className="text-[10px] text-slate-500">
+                  <p className="text-[10px] text-slate-600">
                     ※ ここでは「どの OS ログを見るべきか」「どの解説セクションを読み直すべきか」といった方向性のみを案内し、課題の正解や具体的な
                     コマンドは一切提示しません。
                   </p>
