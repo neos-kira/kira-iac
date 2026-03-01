@@ -853,38 +853,6 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
             <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-slate-800">インフラ基礎課題3</span>
-                  {pinnedTraining.includes('infra-basic-3') && (
-                    <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                      📌
-                    </span>
-                  )}
-                  {infra3Cleared && (
-                    <span className="inline-flex items-center justify-center rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
-                      ✓
-                    </span>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onTogglePin('infra-basic-3')}
-                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-amber-600"
-                >
-                  <span aria-hidden>📌</span>
-                  {pinnedTraining.includes('infra-basic-3') ? 'ピン解除' : 'ピン留め'}
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-3-top'))}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700"
-              >
-                別タブで開く
-              </button>
-            </li>
-            <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-slate-800">インフラ基礎課題2</span>
                   {pinnedTraining.includes('infra-basic-2') && (
                     <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
@@ -909,6 +877,38 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
               <button
                 type="button"
                 onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-2-top'))}
+                  className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700"
+                >
+                  別タブで開く
+                </button>
+            </li>
+            <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-slate-800">インフラ基礎課題3</span>
+                  {pinnedTraining.includes('infra-basic-3') && (
+                    <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                      📌
+                    </span>
+                  )}
+                  {infra3Cleared && (
+                    <span className="inline-flex items-center justify-center rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
+                      ✓
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onTogglePin('infra-basic-3')}
+                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-amber-600"
+                >
+                  <span aria-hidden>📌</span>
+                  {pinnedTraining.includes('infra-basic-3') ? 'ピン解除' : 'ピン留め'}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-3-top'))}
                 className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700"
               >
                 別タブで開く
