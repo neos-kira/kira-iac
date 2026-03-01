@@ -41,6 +41,7 @@ export function LoginPage() {
         <div className="flex justify-center mb-6">
           <NeOSLogo height={128} />
         </div>
+        {/* ログイン画面では「NICプラットフォーム」の見出しは表示しない */}
         <form onSubmit={handleLogin} className="mt-6 space-y-4">
           <div>
             <label htmlFor="login-username" className="block text-sm font-medium text-slate-700 mb-1">
