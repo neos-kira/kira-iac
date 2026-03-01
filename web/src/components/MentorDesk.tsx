@@ -331,42 +331,67 @@ export function MentorDesk() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     rows={6}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 pr-12 text-[11px] text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 pr-20 text-[11px] text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
                     placeholder="上の例文のように、一文で5W1Hが伝わる形で自分の状況を入力してください。"
                   />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (isListening) {
-                        stopVoiceInput()
-                      } else {
-                        startVoiceInput()
-                      }
-                    }}
-                    className={`absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${isListening
-                        ? 'animate-pulse border-rose-500 bg-rose-600 text-white'
-                        : 'border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }`}
-                    title="タップで音声入力を開始／停止"
-                  >
-                    <span className="sr-only">音声入力</span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
+                  <div className="absolute bottom-2 right-2 flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isListening) {
+                          stopVoiceInput()
+                        } else {
+                          startVoiceInput()
+                        }
+                      }}
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors ${isListening
+                          ? 'animate-pulse border-rose-500 bg-rose-600 text-white'
+                          : 'border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      title="タップで音声入力を開始／停止"
                     >
-                      <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3Z" />
-                      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                      <line x1="12" x2="12" y1="19" y2="22" />
-                    </svg>
-                  </button>
+                      <span className="sr-only">音声入力</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3Z" />
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                        <line x1="12" x2="12" y1="19" y2="22" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAnalyze}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                      title="質問を送信して添削する"
+                      aria-label="質問を送信して添削する"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <path d="M22 2L11 13" />
+                        <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 {isListening && (
                   <p className="flex items-center gap-1.5 text-[10px] text-amber-600">
