@@ -397,9 +397,6 @@ function App() {
               <div className="relative" ref={searchContainerRef}>
                 <form onSubmit={handleSubmit} className="space-y-3">
                   <div className="flex items-stretch rounded-xl bg-slate-50 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-0">
-                    <span className="flex items-center pl-4 text-slate-600 pointer-events-none text-sm font-medium" aria-hidden>
-                      ⌘ K
-                    </span>
                     <input
                       type="text"
                       value={input}
@@ -425,7 +422,7 @@ function App() {
                         }
                       }}
                       placeholder="「インフラ研修を表示」 「WBSを表示」"
-                      className="flex-1 min-w-0 py-3.5 px-3 text-sm text-slate-800 placeholder:text-slate-400 border-0 outline-none bg-transparent"
+                      className="flex-1 min-w-0 py-3.5 pl-4 pr-3 text-sm text-slate-800 placeholder:text-slate-400 border-0 outline-none bg-transparent"
                     />
                     <span className="flex items-center px-2 text-slate-500" aria-hidden>
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
