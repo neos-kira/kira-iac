@@ -190,14 +190,7 @@ export function TrainingCommandQuizFrame({
 
         <form
           className="mt-4"
-          onSubmit={(e) => {
-            e.preventDefault()
-            if (showFeedback) {
-              goNext()
-            } else if (inputValue.trim() !== '') {
-              handleExecute()
-            }
-          }}
+          onSubmit={(e) => e.preventDefault()}
         >
           <label htmlFor="cmd-input" className="block text-[11px] font-medium uppercase tracking-wider text-slate-500 mb-1.5">
             コマンドを入力
@@ -209,10 +202,13 @@ export function TrainingCommandQuizFrame({
               value={inputValue}
               onChange={(e) => !showFeedback && setInputValue(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  if (showFeedback) goNext()
-                  else if (inputValue.trim() !== '') handleExecute()
+                if (e.key !== 'Enter') return
+                e.preventDefault()
+                e.stopPropagation()
+                if (showFeedback) {
+                  goNext()
+                } else if (inputValue.trim() !== '') {
+                  handleExecute()
                 }
               }}
               disabled={showFeedback}
@@ -223,7 +219,8 @@ export function TrainingCommandQuizFrame({
             />
             {!showFeedback ? (
               <button
-                type="submit"
+                type="button"
+                onClick={handleExecute}
                 disabled={inputValue.trim() === ''}
                 className="shrink-0 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
@@ -231,7 +228,8 @@ export function TrainingCommandQuizFrame({
               </button>
             ) : (
               <button
-                type="submit"
+                type="button"
+                onClick={goNext}
                 className="shrink-0 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700"
               >
                 {currentIndex < total - 1 ? '次へ' : '終了して得点を見る'}
