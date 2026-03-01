@@ -144,7 +144,7 @@ export function AdminPage() {
 
       <main className="mx-auto max-w-4xl p-6">
         <p className="mb-4 text-sm text-slate-600">
-          登録されている受講生（<strong>kira-test</strong> 等）の<strong>基礎課題1〜4</strong>の進捗と遅延をリアルタイムで表示します。受講生がログインして利用した端末で記録された進捗がここに反映されます。
+          登録されている受講生の<strong>基礎課題1〜4</strong>の進捗と遅延をリアルタイムで表示します。受講生がログインして利用した端末で記録された進捗がここに反映されます。
         </p>
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="overflow-x-auto">
