@@ -118,9 +118,14 @@ function App() {
 
   function handleLogout() {
     if (typeof window === 'undefined') return
-    window.sessionStorage.removeItem(ADMIN_SESSION_KEY)
-    window.localStorage.removeItem(USER_DISPLAY_NAME_KEY)
-    window.location.reload()
+    try {
+      window.sessionStorage.removeItem(ADMIN_SESSION_KEY)
+      window.localStorage.removeItem(USER_DISPLAY_NAME_KEY)
+      const url = window.location.origin + window.location.pathname + (window.location.search || '') + '#/'
+      window.location.replace(url)
+    } catch {
+      window.location.reload()
+    }
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -236,8 +241,8 @@ function App() {
             <span className="text-sm text-slate-700 hidden sm:inline">{getDisplayName()}</span>
             <button
               type="button"
-              onClick={handleLogout}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 hover:bg-slate-50"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleLogout(); }}
+              className="cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               ログアウト
             </button>
