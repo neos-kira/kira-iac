@@ -131,6 +131,7 @@ function App() {
   const [isListening, setIsListening] = useState(false)
   const openedRef = useRef<string | null>(null)
   const searchContainerRef = useRef<HTMLDivElement | null>(null)
+  const searchFormRef = useRef<HTMLFormElement | null>(null)
   const recognitionRef = useRef<{ stop: () => void } | null>(null)
   /** 矢印キーで履歴を選択した場合のみ true。Enter で履歴項目を送信する判定に使用 */
   const historyNavigatedWithKeyboardRef = useRef(false)
@@ -447,7 +448,7 @@ function App() {
           <div className="w-full max-w-2xl space-y-6">
             <div className="rounded-2xl bg-white p-6 shadow-sm" aria-label="検索">
               <div className="relative" ref={searchContainerRef}>
-                <form onSubmit={handleSubmit} className="space-y-3">
+                <form ref={searchFormRef} onSubmit={handleSubmit} className="space-y-3">
                   <div className="flex items-stretch rounded-xl bg-slate-50 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-0">
                     <input
                       type="text"
@@ -470,7 +471,8 @@ function App() {
                             setShowSearchHistory(false)
                             void handleSubmit(e as unknown as React.FormEvent, item)
                           } else {
-                            void handleSubmit(e as unknown as React.FormEvent)
+                            // フォームの requestSubmit で送信し、検索結果を確実に表示
+                            searchFormRef.current?.requestSubmit()
                           }
                         }
                         if (!showSearchHistory || searchHistory.length === 0) return
