@@ -18,10 +18,9 @@ import {
   TOTAL_TASKS as WBS_TOTAL_TASKS,
   getDelayedTaskIds,
   isTask1Cleared,
-  clearAllTrainingProgress,
 } from './training/trainingWbsData'
 import { isJTerada, J_TERADA_ALLOWED_LINKS } from './specialUsers'
-import { getIntroConfirmed, clearIntroForCurrentUser } from './training/introGate'
+import { getIntroConfirmed } from './training/introGate'
 import { LOGIN_FLAG_KEY } from './auth'
 import { getCurrentProgressSnapshot, saveProgressSnapshot } from './traineeProgressStorage'
 
@@ -137,18 +136,6 @@ function JTeradaRestrictedView() {
         <NeOSLogo height={32} />
         <div className="flex items-center gap-2">
           <span className="text-sm text-slate-600">j-terada さん</span>
-          <button
-            type="button"
-            onClick={() => {
-              clearIntroForCurrentUser()
-              clearAllTrainingProgress()
-              handleLogout()
-            }}
-            className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-[11px] font-medium text-amber-800 hover:bg-amber-100"
-            title="進捗をクリアし、次回ログイン時にはじめにからやり直します"
-          >
-            進捗をリセット
-          </button>
           <button
             type="button"
             onClick={handleLogout}
@@ -485,22 +472,6 @@ function App() {
               </>
             )}
             <span className="text-sm text-slate-700 hidden sm:inline">{getDisplayName()}</span>
-            {isJTerada(getDisplayName()) && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  clearIntroForCurrentUser()
-                  clearAllTrainingProgress()
-                  handleLogout()
-                }}
-                className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-[11px] font-medium text-amber-800 hover:bg-amber-100"
-                title="進捗をクリアし、次回ログイン時にはじめにからやり直します"
-              >
-                進捗をリセット
-              </button>
-            )}
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleLogout(); }}
