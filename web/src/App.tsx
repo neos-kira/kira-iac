@@ -133,6 +133,8 @@ function App() {
   const searchContainerRef = useRef<HTMLDivElement | null>(null)
   const searchFormRef = useRef<HTMLFormElement | null>(null)
   const recognitionRef = useRef<{ stop: () => void } | null>(null)
+  /** 音声認識中の確定テキストを蓄積（リアルタイム表示用） */
+  const voiceFinalRef = useRef('')
   /** 矢印キーで履歴を選択した場合のみ true。Enter で履歴項目を送信する判定に使用 */
   const historyNavigatedWithKeyboardRef = useRef(false)
 
@@ -212,17 +214,29 @@ function App() {
       lang: string
       continuous: boolean
       interimResults: boolean
-      onresult: (e: { results: { length: number; [i: number]: { [j: number]: { transcript?: string } } } }) => void
+      onresult: (e: { results: { length: number; [i: number]: { isFinal?: boolean; length: number; [j: number]: { transcript?: string } } } }) => void
       onend: () => void
       onerror: () => void
     }
     recognition.lang = 'ja-JP'
-    recognition.continuous = false
-    recognition.interimResults = false
+    recognition.continuous = true
+    recognition.interimResults = true
+    voiceFinalRef.current = input
     recognition.onresult = (event) => {
-      const last = event.results[event.results.length - 1]
-      const transcript = last?.[0]?.transcript
-      if (transcript) setInput((prev) => (prev ? `${prev} ${transcript}` : transcript).trim())
+      const base = voiceFinalRef.current
+      let full = ''
+      let interim = ''
+      for (let i = 0; i < event.results.length; i++) {
+        const r = event.results[i]
+        const t = (r[0] as { transcript?: string } | undefined)?.transcript ?? ''
+        if (r.isFinal) {
+          full += t
+        } else {
+          interim = t
+        }
+      }
+      const combined = base ? `${base} ${full}${interim}` : `${full}${interim}`
+      setInput(combined.trim() || combined)
     }
     recognition.onend = () => {
       recognitionRef.current = null
