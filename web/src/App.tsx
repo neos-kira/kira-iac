@@ -132,6 +132,8 @@ function App() {
   const openedRef = useRef<string | null>(null)
   const searchContainerRef = useRef<HTMLDivElement | null>(null)
   const recognitionRef = useRef<{ stop: () => void } | null>(null)
+  /** 矢印キーで履歴を選択した場合のみ true。Enter で履歴項目を送信する判定に使用 */
+  const historyNavigatedWithKeyboardRef = useRef(false)
 
   /** インフラ課題系URL: はじめに未完了ならポップアップ、完了なら開く */
   function openInfraOrShowIntro(url: string) {
@@ -313,6 +315,7 @@ function App() {
   useEffect(() => {
     if (showSearchHistory && searchHistory.length > 0) {
       setSearchHistoryHighlightIndex(0)
+      historyNavigatedWithKeyboardRef.current = false
     } else {
       setSearchHistoryHighlightIndex(-1)
     }
@@ -454,16 +457,32 @@ function App() {
                       onFocus={() => setShowSearchHistory(true)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
+                          e.preventDefault()
+                          const useHighlighted =
+                            historyNavigatedWithKeyboardRef.current &&
+                            showSearchHistory &&
+                            searchHistory.length > 0 &&
+                            searchHistoryHighlightIndex >= 0
+                          if (useHighlighted) {
+                            const item = searchHistory[searchHistoryHighlightIndex]
+                            setInput(item)
+                            setShowSearchHistory(false)
+                            void handleSubmit(e as unknown as React.FormEvent, item)
+                          } else {
+                            void handleSubmit(e as unknown as React.FormEvent)
+                          }
                           return
                         }
                         if (!showSearchHistory || searchHistory.length === 0) return
                         if (e.key === 'ArrowDown') {
                           e.preventDefault()
+                          historyNavigatedWithKeyboardRef.current = true
                           setSearchHistoryHighlightIndex((i) =>
                             i < searchHistory.length - 1 ? i + 1 : 0
                           )
                         } else if (e.key === 'ArrowUp') {
                           e.preventDefault()
+                          historyNavigatedWithKeyboardRef.current = true
                           setSearchHistoryHighlightIndex((i) =>
                             i <= 0 ? searchHistory.length - 1 : i - 1
                           )
