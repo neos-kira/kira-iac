@@ -496,7 +496,7 @@ function App() {
         {showIntroRequiredPopup && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="intro-required-title">
             <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
-              <h2 id="intro-required-title" className="text-lg font-semibold text-slate-800">はじめにを実施してください</h2>
+              <h2 id="intro-required-title" className="text-lg font-semibold text-slate-800">はじめに</h2>
               <p className="mt-3 text-sm text-slate-600">
                 インフラ基礎課題にアクセスするには、先に「はじめに」でプロフェッショナルとしての行動基準を確認してください。
               </p>
@@ -506,7 +506,7 @@ function App() {
                   onClick={goToIntroAndClosePopup}
                   className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
                 >
-                  はじめにを開く
+                  はじめに
                 </button>
                 <button
                   type="button"
@@ -541,13 +541,13 @@ function App() {
             {/* はじめに未完了時：メッセージとリンクを最上部に表示 */}
             {!getIntroConfirmed() && (
               <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 shadow-sm">
-                <p className="text-sm font-semibold text-amber-800">はじめにを実施してください</p>
+                <p className="text-sm font-semibold text-amber-800">はじめに</p>
                 <p className="mt-2 text-sm text-slate-700">
                   インフラ基礎課題に進む前に、「はじめに」でプロフェッショナルとしての行動基準を確認してください。
                 </p>
                 <OpenInNewTabButton
                   url={getTrainingUrl('/training/intro')}
-                  label="はじめにを開く"
+                  label="はじめに"
                   className="mt-4 inline-flex rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
                 />
               </div>
