@@ -14,8 +14,8 @@ export function setLoggedIn(): void {
   window.localStorage.setItem(LOGIN_FLAG_KEY, 'true')
 }
 
-/** 現在ログイン中のユーザー名（進捗をユーザー別に保存するために使用） */
+/** 現在ログイン中のユーザー名（進捗キー用に小文字統一。正しくは kira-test 等） */
 export function getCurrentUsername(): string {
   if (typeof window === 'undefined') return ''
-  return (window.localStorage.getItem(USER_DISPLAY_NAME_KEY) || '').trim()
+  return (window.localStorage.getItem(USER_DISPLAY_NAME_KEY) || '').trim().toLowerCase()
 }

@@ -27,6 +27,7 @@ export type TraineeProgressSnapshot = {
   updatedAt: string
 }
 
+/** 受講生IDは小文字統一（kira-test 等）。大文字小文字のずれを防ぐ。 */
 function loadTraineeList(): string[] {
   if (typeof window === 'undefined') return [...DEFAULT_TRAINEE_IDS]
   try {
@@ -34,8 +35,11 @@ function loadTraineeList(): string[] {
     if (!raw) return [...DEFAULT_TRAINEE_IDS]
     const parsed = JSON.parse(raw) as unknown
     if (!Array.isArray(parsed)) return [...DEFAULT_TRAINEE_IDS]
-    const list = [...new Set([...DEFAULT_TRAINEE_IDS, ...parsed.filter((x): x is string => typeof x === 'string')])]
-    return list.filter((id) => id.toLowerCase() !== 'admin')
+    const normalized = (parsed as string[])
+      .filter((x): x is string => typeof x === 'string')
+      .map((x) => x.trim().toLowerCase())
+    const list = [...new Set([...DEFAULT_TRAINEE_IDS, ...normalized])]
+    return list.filter((id) => id !== 'admin')
   } catch {
     return [...DEFAULT_TRAINEE_IDS]
   }
@@ -55,11 +59,11 @@ export function getTraineeList(): string[] {
   return loadTraineeList()
 }
 
-/** ログイン時に受講生をリストに追加（admin は追加しない） */
+/** ログイン時に受講生をリストに追加（admin は追加しない）。IDは小文字で統一。 */
 export function addTrainee(username: string): void {
   if (typeof window === 'undefined') return
-  const id = username.trim()
-  if (!id || id.toLowerCase() === 'admin') return
+  const id = username.trim().toLowerCase()
+  if (!id || id === 'admin') return
   const list = loadTraineeList()
   if (list.includes(id)) return
   saveTraineeList([...list, id])

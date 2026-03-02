@@ -30,9 +30,10 @@ export function LoginPage() {
       return
     }
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(USER_DISPLAY_NAME_KEY, name)
+      const normalized = name.toLowerCase()
+      window.localStorage.setItem(USER_DISPLAY_NAME_KEY, normalized)
       setLoggedIn()
-      if (name === 'admin') {
+      if (normalized === 'admin') {
         window.location.href = getBaseUrl() + '#/'
         return
       }

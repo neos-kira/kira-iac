@@ -65,7 +65,7 @@ export function AdminPage() {
 
       <main className="mx-auto max-w-4xl p-6">
         <p className="mb-4 text-sm text-slate-600">
-          登録されている受講生の<strong>基礎課題1〜4</strong>の進捗と遅延をリアルタイムで表示します。受講生がログインして利用した端末で記録された進捗がここに反映されます。
+          登録されている受講生の<strong>基礎課題1〜4</strong>の進捗と遅延をリアルタイムで表示します。進捗は<strong>受講生がログインして利用したのと同じブラウザ（同じ端末）</strong>にのみ保存されるため、この画面もその同じブラウザで開いた場合にのみ正しく表示されます。別の端末で開くと「未合格」「0%」となります。
         </p>
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="overflow-x-auto">
