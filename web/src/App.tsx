@@ -4,6 +4,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { flushSync } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import { OpenInNewTabButton } from './components/OpenInNewTabButton'
 import { NeOSLogo } from './components/NeOSLogo'
 import type { CommandResolution } from './commandRouter'
@@ -439,6 +440,7 @@ function App() {
     return () => clearInterval(id)
   }, [isAdminView])
 
+  const navigate = useNavigate()
   const delayed = getDelayedTaskIds().length > 0
   const progressPct = WBS_TOTAL_TASKS > 0 ? Math.round((getTotalCleared() / WBS_TOTAL_TASKS) * 100) : 0
   const taskList = getTaskProgressList()
@@ -479,6 +481,15 @@ function App() {
               </>
             )}
             <span className="text-sm text-slate-700 hidden sm:inline">{getDisplayName()}</span>
+            {isAdminView && (
+              <button
+                type="button"
+                onClick={() => (window.location.hash = '#/admin')}
+                className="rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
+              >
+                講師メニュー
+              </button>
+            )}
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleLogout(); }}
@@ -519,9 +530,23 @@ function App() {
         )}
 
         <main className="mt-4 flex flex-1 flex-col items-center justify-start">
+          {isAdminView ? (
+            <div className="w-full max-w-2xl space-y-4">
+              <h1 className="text-lg font-semibold text-slate-800">講師用メニュー</h1>
+              <p className="text-sm text-slate-600">受講生の進捗を確認できます。</p>
+              <button
+                type="button"
+                onClick={() => navigate('/admin')}
+                className="flex w-full flex-col items-start rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/50"
+              >
+                <span className="text-base font-semibold text-slate-800">受講生の進捗</span>
+                <span className="mt-1 text-xs text-slate-600">WBSに基づく進捗一覧を表示</span>
+              </button>
+            </div>
+          ) : (
           <>
           <div className="w-full max-w-2xl space-y-6">
-            {/* はじめに未完了時：メッセージとリンクを最上部に表示 */}
+            {/* はじめに未完了時：メッセージとリンクを最上部に表示（admin では表示しない） */}
             {!getIntroConfirmed() && (
               <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 shadow-sm">
                 <p className="text-sm font-semibold text-amber-800">はじめに</p>
@@ -863,6 +888,7 @@ function App() {
           )}
 
           </>
+          )}
         </main>
       </div>
     </div>
