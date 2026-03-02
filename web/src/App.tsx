@@ -15,9 +15,8 @@ import { INFRA_BASIC_1_CLEARED_KEY } from './training/infraBasic1Data'
 import { INFRA_BASIC_3_2_CLEARED_KEY } from './training/infraBasic3Data'
 import {
   getProgressKey,
-  getTotalCleared,
   getTaskProgressList,
-  TOTAL_TASKS as WBS_TOTAL_TASKS,
+  getWbsProgressPercent,
   getDelayedTaskIds,
   isTask1Cleared,
 } from './training/trainingWbsData'
@@ -442,7 +441,7 @@ function App() {
 
   const navigate = useNavigate()
   const delayed = getDelayedTaskIds().length > 0
-  const progressPct = WBS_TOTAL_TASKS > 0 ? Math.round((getTotalCleared() / WBS_TOTAL_TASKS) * 100) : 0
+  const progressPct = getWbsProgressPercent()
   const taskList = getTaskProgressList()
   const inProgressLabels = taskList
     .filter((t) => !t.cleared && t.subTasks.some((s) => s.status !== 'not_started'))

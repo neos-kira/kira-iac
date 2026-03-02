@@ -118,14 +118,17 @@ export function AdminPage() {
                         </td>
                         {snap?.chapterProgress?.length
                           ? snap.chapterProgress.map((ch) => {
-                            const status = ch.cleared ? 'done' : ch.percent > 0 ? 'in_progress' : 'not_started'
+                            const isOutOfScope = ch.label.includes('対象外')
+                            const status = isOutOfScope ? 'out_of_scope' : ch.cleared ? 'done' : ch.percent > 0 ? 'in_progress' : 'not_started'
                             const dotClass =
                               status === 'done'
                                 ? 'bg-emerald-500'
                                 : status === 'in_progress'
                                   ? 'bg-amber-500'
-                                  : 'bg-slate-300'
-                            const statusLabel = ch.cleared ? '完了' : ch.percent > 0 ? '実施中' : '未着手'
+                                  : status === 'out_of_scope'
+                                    ? 'bg-slate-200'
+                                    : 'bg-slate-300'
+                            const statusLabel = isOutOfScope ? '対象外' : ch.cleared ? '完了' : ch.percent > 0 ? '実施中' : '未着手'
                             return (
                               <td key={ch.chapter} className="px-4 py-3">
                                 <div className="flex flex-col gap-0.5">
@@ -134,7 +137,7 @@ export function AdminPage() {
                                     <span className="text-xs font-medium">{Math.round(ch.percent)}%</span>
                                   </span>
                                   <span className="text-[11px] text-slate-500">{statusLabel}</span>
-                                  {ch.chapter === 4 && (
+                                  {ch.chapter === 4 && !isOutOfScope && (
                                     <span className="text-[11px] text-slate-500">Day {snap.currentDay}/10</span>
                                   )}
                                 </div>

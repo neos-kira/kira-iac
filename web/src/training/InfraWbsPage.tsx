@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   getTaskProgressList,
   getTrainingStartDate,
-  TOTAL_TASKS,
+  getTotalTaskCountForUser,
   getTotalCleared,
 } from './trainingWbsData'
 import { OpenInNewTabButton } from '../components/OpenInNewTabButton'
@@ -22,7 +22,8 @@ export function InfraWbsPage() {
   const [progressList, setProgressList] = useState(() => getTaskProgressList())
   const startDate = getTrainingStartDate()
   const cleared = getTotalCleared()
-  const percent = TOTAL_TASKS > 0 ? Math.round((cleared / TOTAL_TASKS) * 100) : 0
+  const totalTasks = getTotalTaskCountForUser()
+  const percent = totalTasks > 0 ? Math.round((cleared / totalTasks) * 100) : 0
 
   useEffect(() => {
     document.title = 'インフラ基礎 研修WBS'
@@ -153,7 +154,7 @@ export function InfraWbsPage() {
             <div className="min-w-0 flex-1">
               <p className="text-2xl font-bold tabular-nums text-slate-800">{percent}%</p>
               <p className="mt-1 text-sm text-slate-600">
-                {cleared} / {TOTAL_TASKS} 課題クリア
+                {cleared} / {totalTasks} 課題クリア
               </p>
               <p className="mt-0.5 text-[11px] text-slate-8000">
                 {startDate ? `開始日 ${startDate}` : '開始日未設定（課題1を開くと設定されます）'}

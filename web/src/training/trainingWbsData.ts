@@ -1,4 +1,5 @@
 import { getCurrentUsername } from '../auth'
+import { isJTerada } from '../specialUsers'
 import { INFRA_BASIC_1_CLEARED_KEY, INFRA_BASIC_1_STORAGE_KEY } from './infraBasic1Data'
 import { L1_CLEARED_KEY, L1_PROGRESS_KEY } from './linuxLevel1Data'
 import { L2_CLEARED_KEY, L2_PROGRESS_KEY } from './linuxLevel2Data'
@@ -119,6 +120,13 @@ export const TRAINING_TASKS: TrainingTaskDef[] = [
     })),
   },
 ]
+
+/** j-terada はインフラ基礎課題1のみ。以降は別カリキュラムのため WBS/進捗は課題1のみ対象。 */
+function getTrainingTasksForUser(username?: string): TrainingTaskDef[] {
+  const user = username !== undefined ? username : getCurrentUsername()
+  if (user && isJTerada(user)) return [TRAINING_TASKS[0]]
+  return TRAINING_TASKS
+}
 
 /**
  * 進捗用 localStorage キーをユーザー別に解決する。
@@ -262,7 +270,8 @@ export function getTaskProgressList(username?: string): TaskProgress[] {
     String(today.getMonth() + 1).padStart(2, '0') +
     '-' +
     String(today.getDate()).padStart(2, '0')
-  return TRAINING_TASKS.map((task) => {
+  const tasks = getTrainingTasksForUser(username)
+  return tasks.map((task) => {
     const deadline = start ? getDeadlineForTask(start, task.estimatedDays) : '—'
     let cleared = false
     if (typeof window !== 'undefined') {
@@ -294,7 +303,8 @@ export function getTaskProgressList(username?: string): TaskProgress[] {
 /** username 指定時はそのユーザーの完了数を参照。 */
 export function getTotalCleared(username?: string): number {
   if (typeof window === 'undefined') return 0
-  return TRAINING_TASKS.filter((t) => {
+  const tasks = getTrainingTasksForUser(username)
+  return tasks.filter((t) => {
     if (t.clearedKeys && t.clearedKeys.length > 0) {
       return t.clearedKeys.every((k) => window.localStorage.getItem(getProgressKey(k, username)) === 'true')
     }
@@ -303,6 +313,11 @@ export function getTotalCleared(username?: string): number {
 }
 
 export const TOTAL_TASKS = TRAINING_TASKS.length
+
+/** 指定ユーザーが対象とする課題数（j-terada は 1、それ以外は 4）。 */
+export function getTotalTaskCountForUser(username?: string): number {
+  return getTrainingTasksForUser(username).length
+}
 
 /** インフラ基礎課題1が完了しているか（1-1 と 1-2 両方クリア） */
 export function isTask1Cleared(): boolean {
@@ -332,11 +347,13 @@ export function getDelayedTaskIds(username?: string): TrainingTaskId[] {
     .map((t) => t.id)
 }
 
-/** WBS進捗率（0〜100）。username 指定時はそのユーザーを参照。 */
+/** WBS進捗率（0〜100）。username 指定時はそのユーザーを参照。j-terada は課題1のみで 100% 算出。 */
 export function getWbsProgressPercent(username?: string): number {
-  if (typeof window === 'undefined' || TOTAL_TASKS === 0) return 0
+  if (typeof window === 'undefined') return 0
+  const total = getTotalTaskCountForUser(username)
+  if (total === 0) return 0
   const cleared = getTotalCleared(username)
-  return Math.round((cleared / TOTAL_TASKS) * 100)
+  return Math.round((cleared / total) * 100)
 }
 
 /**
@@ -373,68 +390,45 @@ export type ChapterProgress = {
   deadline: string
 }
 
-/** username 指定時はそのユーザーの進捗を参照（管理者画面のリアルタイム表示用）。 */
+const CHAPTER_LABELS: Record<number, string> = {
+  1: 'Chapter 1 インフラ基礎課題1',
+  2: 'Chapter 2 インフラ基礎課題2',
+  3: 'Chapter 3 インフラ基礎課題3',
+  4: 'Chapter 4 10日間プロジェクト（AL2023 構築）',
+}
+
+/** 対象外プレースホルダー（j-terada は課題2〜4 が別カリキュラムのため） */
+function placeholderChapter(chapter: number): ChapterProgress {
+  return {
+    chapter,
+    label: `課題${chapter} 対象外`,
+    percent: 0,
+    cleared: false,
+    isDelayed: false,
+    deadline: '—',
+  }
+}
+
+/** username 指定時はそのユーザーの進捗を参照（管理者画面のリアルタイム表示用）。j-terada は課題1のみ実データ、課題2〜4 は対象外。 */
 export function getChapterProgressList(username?: string): ChapterProgress[] {
   const list = getTaskProgressList(username)
-  const todayStr =
-    typeof window !== 'undefined'
-      ? new Date().toISOString().slice(0, 10)
-      : ''
 
-  const ch1 = list[0]
-  const ch2 = list[1]
-  const ch3 = list[2]
+  const result: ChapterProgress[] = list.map((task, i) => {
+    const chNum = i + 1
+    const percent =
+      task.cleared ? 100 : (task.subTasks.filter((s) => s.status !== 'not_started').length / Math.max(1, task.subTasks.length)) * 100
+    return {
+      chapter: chNum,
+      label: CHAPTER_LABELS[chNum] ?? task.label,
+      percent: Math.round(percent),
+      cleared: task.cleared,
+      isDelayed: task.isDelayed,
+      deadline: task.deadline,
+    }
+  })
 
-  const result: ChapterProgress[] = [
-    {
-      chapter: 1,
-      label: 'Chapter 1 インフラ基礎課題1',
-      percent: ch1 ? (ch1.cleared ? 100 : (ch1.subTasks.filter((s) => s.status !== 'not_started').length / ch1.subTasks.length) * 100) : 0,
-      cleared: ch1?.cleared ?? false,
-      isDelayed: ch1?.isDelayed ?? false,
-      deadline: ch1?.deadline ?? '—',
-    },
-    {
-      chapter: 2,
-      label: 'Chapter 2 インフラ基礎課題2',
-      percent: ch2 ? (ch2.cleared ? 100 : (ch2.subTasks.filter((s) => s.status !== 'not_started').length / ch2.subTasks.length) * 100) : 0,
-      cleared: ch2?.cleared ?? false,
-      isDelayed: ch2?.isDelayed ?? false,
-      deadline: ch2?.deadline ?? '—',
-    },
-    {
-      chapter: 3,
-      label: 'Chapter 3 インフラ基礎課題3',
-      percent: ch3 ? (ch3.cleared ? 100 : (ch3.subTasks.filter((s) => s.status !== 'not_started').length / ch3.subTasks.length) * 100) : 0,
-      cleared: ch3?.cleared ?? false,
-      isDelayed: ch3?.isDelayed ?? false,
-      deadline: ch3?.deadline ?? '—',
-    },
-  ]
-
-  const ch4 = list[3]
-  if (ch4) {
-    result.push({
-      chapter: 4,
-      label: 'Chapter 4 10日間プロジェクト（AL2023 構築）',
-      percent: ch4.cleared ? 100 : (ch4.subTasks.filter((s) => s.status !== 'not_started').length / Math.max(1, ch4.subTasks.length)) * 100,
-      cleared: ch4.cleared,
-      isDelayed: ch4.isDelayed,
-      deadline: ch4.deadline,
-    })
-  } else {
-    const start = getTrainingStartDate(username)
-    const currentDay = getBusinessDaysFromStart(start, todayStr)
-    const ch4Percent = start ? Math.min(100, Math.round((currentDay / PROJECT_DAYS_TOTAL) * 100)) : 0
-    const allCleared = list.every((t) => t.cleared)
-    result.push({
-      chapter: 4,
-      label: 'Chapter 4 10日間プロジェクト',
-      percent: allCleared ? 100 : ch4Percent,
-      cleared: allCleared,
-      isDelayed: list.some((t) => t.isDelayed),
-      deadline: start ? addBusinessDays(start, PROJECT_DAYS_TOTAL) : '—',
-    })
+  while (result.length < 4) {
+    result.push(placeholderChapter(result.length + 1))
   }
 
   return result
