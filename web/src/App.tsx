@@ -21,7 +21,7 @@ import {
   isTask1Cleared,
 } from './training/trainingWbsData'
 import { isJTerada, J_TERADA_ALLOWED_LINKS } from './specialUsers'
-import { getIntroConfirmed } from './training/introGate'
+import { getIntroConfirmed, setIntroConfirmedForUser } from './training/introGate'
 import { LOGIN_FLAG_KEY } from './auth'
 import { getCurrentProgressSnapshot, saveProgressSnapshot } from './traineeProgressStorage'
 
@@ -430,6 +430,7 @@ function App() {
     const save = () => {
       const name = getDisplayName()
       if (name && name.toLowerCase() !== 'admin') {
+        if (getIntroConfirmed()) setIntroConfirmedForUser(name)
         saveProgressSnapshot(name, getCurrentProgressSnapshot())
       }
     }

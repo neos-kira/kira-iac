@@ -89,8 +89,11 @@ export function IntroPage() {
 
   useEffect(() => {
     document.title = 'はじめに'
-    setConfirmed(getIntroConfirmed())
-    if (usernameAtMountRef.current === null) usernameAtMountRef.current = getCurrentUsername()
+    const ok = getIntroConfirmed()
+    setConfirmed(ok)
+    const user = getCurrentUsername()
+    if (usernameAtMountRef.current === null) usernameAtMountRef.current = user
+    if (ok && user && user.toLowerCase() !== 'admin') setIntroConfirmedForUser(user)
   }, [])
 
   const setAnswer = (i: number, ci: number) => {
