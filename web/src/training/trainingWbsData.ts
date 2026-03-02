@@ -131,12 +131,13 @@ function getTrainingTasksForUser(username?: string): TrainingTaskDef[] {
 /**
  * 進捗用 localStorage キーをユーザー別に解決する。
  * username を渡した場合はそのユーザー用キー、省略時は現在ログイン中ユーザー。
- * admin または空の場合はグローバルキー。
+ * 大文字小文字は小文字に統一（kira-test）し、admin と受講生で同じキーを参照する。
  */
 export function getProgressKey(baseKey: string, username?: string): string {
   if (typeof window === 'undefined') return baseKey
-  const user = username !== undefined ? username : getCurrentUsername()
-  if (!user || String(user).toLowerCase() === 'admin') return baseKey
+  const raw = username !== undefined ? username : getCurrentUsername()
+  const user = String(raw).trim().toLowerCase()
+  if (!user || user === 'admin') return baseKey
   return `${baseKey}_${user}`
 }
 

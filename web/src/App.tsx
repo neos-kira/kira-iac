@@ -425,6 +425,8 @@ function App() {
 
   const isAdminView = getDisplayName()?.toLowerCase() === 'admin'
 
+  /** 受講生の進捗を定期保存し、ヘッダーの全体進捗％をリアルタイムで更新するための再描画用 */
+  const [progressTick, setProgressTick] = useState(0)
   useEffect(() => {
     if (isAdminView || typeof window === 'undefined') return
     const save = () => {
@@ -433,9 +435,10 @@ function App() {
         if (getIntroConfirmed()) setIntroConfirmedForUser(name)
         saveProgressSnapshot(name, getCurrentProgressSnapshot())
       }
+      setProgressTick((t) => t + 1)
     }
     save()
-    const id = setInterval(save, 2000)
+    const id = setInterval(save, 1000)
     return () => clearInterval(id)
   }, [isAdminView])
 
@@ -469,7 +472,7 @@ function App() {
                 >
                   {delayed ? '遅延あり' : '遅延なし'}
                 </button>
-                <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 shrink-0">
+                <span data-refresh={progressTick} className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 shrink-0">
                   全体進捗:{progressPct}%
                 </span>
                 {inProgressLabels.length > 0 && (

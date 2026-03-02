@@ -38,7 +38,7 @@ export function AdminPage() {
       setProgressTick((t) => t + 1)
     }
     refresh()
-    const id = setInterval(refresh, 2000)
+    const id = setInterval(refresh, 1000)
     return () => clearInterval(id)
   }, [navigate])
 

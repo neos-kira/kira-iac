@@ -82,11 +82,11 @@ export function getCurrentProgressSnapshot(): TraineeProgressSnapshot {
   }
 }
 
-/** 指定受講生の進捗スナップショットを保存 */
+/** 指定受講生の進捗スナップショットを保存（IDは小文字統一で admin と一致） */
 export function saveProgressSnapshot(username: string, data: TraineeProgressSnapshot): void {
   if (typeof window === 'undefined') return
-  const id = username.trim()
-  if (!id || id.toLowerCase() === 'admin') return
+  const id = username.trim().toLowerCase()
+  if (!id || id === 'admin') return
   try {
     window.localStorage.setItem(PROGRESS_SNAPSHOT_PREFIX + id, JSON.stringify(data))
   } catch {
@@ -98,7 +98,8 @@ export function saveProgressSnapshot(username: string, data: TraineeProgressSnap
 export function getProgressSnapshot(username: string): TraineeProgressSnapshot | null {
   if (typeof window === 'undefined') return null
   try {
-    const raw = window.localStorage.getItem(PROGRESS_SNAPSHOT_PREFIX + username)
+    const id = username.trim().toLowerCase()
+    const raw = window.localStorage.getItem(PROGRESS_SNAPSHOT_PREFIX + id)
     if (!raw) return null
     const parsed = JSON.parse(raw) as unknown
     if (!parsed || typeof parsed !== 'object') return null
@@ -133,8 +134,8 @@ export function getProgressSnapshotLive(username: string): TraineeProgressSnapsh
       updatedAt: new Date().toISOString(),
     }
   }
-  const id = username.trim()
-  if (!id || id.toLowerCase() === 'admin') {
+  const id = username.trim().toLowerCase()
+  if (!id || id === 'admin') {
     return {
       introConfirmed: false,
       introAt: null,
