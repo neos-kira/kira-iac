@@ -22,6 +22,9 @@ jobs:
       TF_VAR_project_name: kira-project
       TF_VAR_environment: dev
       TF_VAR_aws_region: ap-northeast-1
+      TF_VAR_enable_basic_auth: false
+      TF_VAR_cloudfront_aliases: '["training-org.neos-nic.jp"]'
+      TF_VAR_acm_certificate_arn: arn:aws:acm:us-east-1:685431584604:certificate/382a0b81-e11b-4ca5-806e-05a437bc378c
 
     defaults:
       run:
