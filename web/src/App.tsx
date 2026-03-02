@@ -362,13 +362,7 @@ function App() {
   useEffect(() => {
     if (!resolution || resolution.feature !== 'training') return
     const cat = resolution.training.category
-    if (cat === 'intro') {
-      window.location.hash = '#/training/intro'
-      return
-    }
-    if (cat === 'wbs') {
-      if (getIntroConfirmed()) window.location.hash = '#/training/infra-wbs'
-      else setShowIntroRequiredPopup(true)
+    if (cat === 'intro' || cat === 'wbs') {
       return
     }
     if (cat === 'linuxLevel1') {
@@ -731,6 +725,11 @@ function App() {
                     trainingStatus={trainingStatus}
                     onTogglePin={handleTogglePin}
                     onOpenInfraOrShowIntro={openInfraOrShowIntro}
+                    onOpenIntro={() => { window.location.hash = '#/training/intro' }}
+                    onOpenWbs={() => {
+                      if (getIntroConfirmed()) window.location.hash = '#/training/infra-wbs'
+                      else setShowIntroRequiredPopup(true)
+                    }}
                   />
                 </div>
               </section>
@@ -905,9 +904,11 @@ type PlaceholderProps = {
   trainingStatus: TrainingStatus
   onTogglePin: (id: TrainingTaskId) => void
   onOpenInfraOrShowIntro: (url: string) => void
+  onOpenIntro?: () => void
+  onOpenWbs?: () => void
 }
 
-function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus, onTogglePin, onOpenInfraOrShowIntro }: PlaceholderProps) {
+function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus, onTogglePin, onOpenInfraOrShowIntro, onOpenIntro, onOpenWbs }: PlaceholderProps) {
   if (resolution.feature === 'training') {
     const category = resolution.training.category
 
@@ -916,7 +917,16 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
         <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">TRAINING · はじめに</p>
           <h2 className="mt-2 text-base font-semibold text-slate-800">はじめに</h2>
-          <p className="mt-1 text-xs text-slate-600">はじめにページを表示しました。上記の内容をご確認ください。</p>
+          <p className="mt-1 text-xs text-slate-600">はじめにのページへアクセスできます。</p>
+          {onOpenIntro && (
+            <button
+              type="button"
+              onClick={onOpenIntro}
+              className="mt-3 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+            >
+              はじめにを開く
+            </button>
+          )}
         </div>
       )
     }
@@ -926,7 +936,16 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
         <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">TRAINING · WBS</p>
           <h2 className="mt-2 text-base font-semibold text-slate-800">インフラ基礎 研修WBS</h2>
-          <p className="mt-1 text-xs text-slate-600">WBSページを表示しました。進捗とガントチャートをご確認ください。</p>
+          <p className="mt-1 text-xs text-slate-600">WBSページで進捗とガントチャートを確認できます。</p>
+          {onOpenWbs && (
+            <button
+              type="button"
+              onClick={onOpenWbs}
+              className="mt-3 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+            >
+              WBSを開く
+            </button>
+          )}
         </div>
       )
     }
