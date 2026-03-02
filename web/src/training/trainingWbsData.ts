@@ -348,13 +348,20 @@ export function getDelayedTaskIds(username?: string): TrainingTaskId[] {
     .map((t) => t.id)
 }
 
-/** WBS進捗率（0〜100）。username 指定時はそのユーザーを参照。j-terada は課題1のみで 100% 算出。 */
+/** WBS進捗率（0〜100）。username 指定時はそのユーザーを参照。リアルタイムに「どこまで進んでいるか」を反映するため、各課題の進捗率の平均を取る。 */
 export function getWbsProgressPercent(username?: string): number {
   if (typeof window === 'undefined') return 0
-  const total = getTotalTaskCountForUser(username)
-  if (total === 0) return 0
-  const cleared = getTotalCleared(username)
-  return Math.round((cleared / total) * 100)
+  const tasks = getTaskProgressList(username)
+  if (!tasks.length) return 0
+
+  const sum = tasks.reduce((acc, task) => {
+    if (task.cleared) return acc + 100
+    const done = task.subTasks.filter((s) => s.status !== 'not_started').length
+    const pct = (done / Math.max(1, task.subTasks.length)) * 100
+    return acc + pct
+  }, 0)
+
+  return Math.round(sum / tasks.length)
 }
 
 /**
