@@ -480,7 +480,7 @@ function App() {
                 )}
               </>
             )}
-            <span className="text-sm text-slate-700 hidden sm:inline">{getDisplayName()}</span>
+            <span className="text-sm text-slate-700">{getDisplayName()}</span>
             {isAdminView && (
               <button
                 type="button"
