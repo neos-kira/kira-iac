@@ -59,11 +59,16 @@ export function clearIntroForCurrentUser(): void {
   window.localStorage.removeItem(`${INTRO_CONFIRMED_AT_KEY}_${name}`)
 }
 
-/** 指定ユーザーの「はじめに」完了有無（管理者画面のリアルタイム表示用） */
+/** 指定ユーザーの「はじめに」完了有無（管理者画面のリアルタイム表示用）。レガシーキーがあれば合格とみなし per-user へ移行する。 */
 export function getIntroConfirmedForUser(username: string): boolean {
   if (typeof window === 'undefined' || !username || username.toLowerCase() === 'admin') return false
   const key = `${INTRO_CONFIRMED_KEY}_${username}`
-  return window.localStorage.getItem(key) === 'true'
+  if (window.localStorage.getItem(key) === 'true') return true
+  if (window.localStorage.getItem(LEGACY_KEY) === 'true') {
+    setIntroConfirmedForUser(username)
+    return true
+  }
+  return false
 }
 
 /** 指定ユーザーの「はじめに」クリア日時（ISO文字列）。未クリアなら null。 */
