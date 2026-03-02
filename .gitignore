@@ -3,6 +3,9 @@ node_modules/
 dist/
 build/
 
+# Terraform Lambda deps (bundled at apply time)
+terraform/lambda/progress-api/node_modules/
+
 # Terraform local files and state
 .terraform/
 terraform.tfstate
