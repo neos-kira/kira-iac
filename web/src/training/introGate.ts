@@ -41,6 +41,15 @@ export function setIntroConfirmed(): void {
   window.localStorage.setItem(introConfirmedAtKey(), new Date().toISOString())
 }
 
+/** 指定ユーザーの「はじめに」完了を保存（同一タブで表示名が変わっても正しいユーザーに紐付ける） */
+export function setIntroConfirmedForUser(username: string): void {
+  if (typeof window === 'undefined' || !username || username.toLowerCase() === 'admin') return
+  const key = `${INTRO_CONFIRMED_KEY}_${username}`
+  const atKey = `${INTRO_CONFIRMED_AT_KEY}_${username}`
+  window.localStorage.setItem(key, 'true')
+  window.localStorage.setItem(atKey, new Date().toISOString())
+}
+
 /** 現在ログイン中のユーザーの「はじめに」完了状態をクリアする（進捗リセット用） */
 export function clearIntroForCurrentUser(): void {
   if (typeof window === 'undefined') return

@@ -25,6 +25,7 @@ function formatIntroDate(iso: string | null): string {
 export function AdminPage() {
   const navigate = useNavigate()
   const [traineeList, setTraineeList] = useState<string[]>(() => getTraineeList())
+  const [, setProgressTick] = useState(0)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -32,7 +33,10 @@ export function AdminPage() {
       navigate('/', { replace: true })
       return
     }
-    const refresh = () => setTraineeList(getTraineeList())
+    const refresh = () => {
+      setTraineeList(getTraineeList())
+      setProgressTick((t) => t + 1)
+    }
     refresh()
     const id = setInterval(refresh, 2000)
     return () => clearInterval(id)

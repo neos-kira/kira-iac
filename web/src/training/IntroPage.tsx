@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { setIntroConfirmed, getIntroConfirmed } from './introGate'
+import { setIntroConfirmed, setIntroConfirmedForUser, getIntroConfirmed } from './introGate'
+import { getCurrentUsername } from '../auth'
 import { Confetti } from '../components/Confetti'
 
 /** カードのアクセント色（画像の緑・青に合わせたパレット） */
@@ -80,6 +81,7 @@ const CHOICE_LABELS = ['A', 'B', 'C', 'D']
 
 export function IntroPage() {
   const navigate = useNavigate()
+  const usernameAtMountRef = useRef<string | null>(null)
   const [answers, setAnswers] = useState<number[]>(() => QUIZ_QUESTIONS.map(() => -1))
   const [confirmed, setConfirmed] = useState(false)
   const [showPassScreen, setShowPassScreen] = useState(false)
@@ -88,6 +90,7 @@ export function IntroPage() {
   useEffect(() => {
     document.title = 'はじめに'
     setConfirmed(getIntroConfirmed())
+    if (usernameAtMountRef.current === null) usernameAtMountRef.current = getCurrentUsername()
   }, [])
 
   const setAnswer = (i: number, ci: number) => {
@@ -106,7 +109,9 @@ export function IntroPage() {
   }
 
   const handleStartTraining = () => {
-    setIntroConfirmed()
+    const who = usernameAtMountRef.current?.trim()
+    if (who && who.toLowerCase() !== 'admin') setIntroConfirmedForUser(who)
+    else setIntroConfirmed()
     setConfirmed(true)
     navigate('/training/infra-basic-top')
   }
