@@ -27,6 +27,7 @@ import { getCurrentProgressSnapshot, saveProgressSnapshot } from './traineeProgr
 import { isProgressApiAvailable, postProgress } from './progressApi'
 
 type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3'
+type PinnableId = TrainingTaskId | 'intro'
 
 type TrainingStatus = {
   infraToolsCleared: boolean
@@ -83,7 +84,7 @@ function getDisplayName(): string {
   return window.localStorage.getItem(USER_DISPLAY_NAME_KEY) || 'kira-test'
 }
 
-function loadPinnedTrainingTasks(): TrainingTaskId[] {
+function loadPinnedTrainingTasks(): PinnableId[] {
   if (typeof window === 'undefined') return []
   try {
     const raw = window.localStorage.getItem(TRAINING_PIN_KEY)
@@ -91,8 +92,8 @@ function loadPinnedTrainingTasks(): TrainingTaskId[] {
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
     return parsed.filter(
-      (v: unknown): v is TrainingTaskId =>
-        v === 'infra-basic-1' || v === 'infra-basic-2' || v === 'infra-basic-3',
+      (v: unknown): v is PinnableId =>
+        v === 'intro' || v === 'infra-basic-1' || v === 'infra-basic-2' || v === 'infra-basic-3',
     )
   } catch {
     return []
@@ -185,7 +186,7 @@ function App() {
   const [canResumeL1, setCanResumeL1] = useState(false)
   const [canResumeL2, setCanResumeL2] = useState(false)
   const [trainingStatus, setTrainingStatus] = useState<TrainingStatus>(() => readTrainingStatus())
-  const [pinnedTraining, setPinnedTraining] = useState<TrainingTaskId[]>(() => loadPinnedTrainingTasks())
+  const [pinnedTraining, setPinnedTraining] = useState<PinnableId[]>(() => loadPinnedTrainingTasks())
   const [showIntroRequiredPopup, setShowIntroRequiredPopup] = useState(false)
   const [searchHistory, setSearchHistory] = useState<string[]>(() => loadSearchHistory())
   const [showSearchHistory, setShowSearchHistory] = useState(false)
@@ -345,7 +346,7 @@ function App() {
     }
   }, [])
 
-  const handleTogglePin = useCallback((id: TrainingTaskId) => {
+  const handleTogglePin = useCallback((id: PinnableId) => {
     setPinnedTraining((prev) => {
       const exists = prev.includes(id)
       const next = exists ? prev.filter((p) => p !== id) : [...prev, id]
@@ -751,6 +752,33 @@ function App() {
               </p>
               <p className="mt-1 text-xs text-slate-600">よく使う課題にワンクリックでアクセスできます。</p>
               <ul className="mt-3 space-y-2 text-slate-700">
+                {pinnedTraining.includes('intro') && (
+                  <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-slate-800">はじめに</span>
+                        <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                          📌
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePin('intro')}
+                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-amber-600"
+                      >
+                        <span aria-hidden>📌</span>
+                        ピン解除
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { window.location.hash = '#/training/intro' }}
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700"
+                    >
+                      開く
+                    </button>
+                  </li>
+                )}
                 {pinnedTraining.includes('infra-basic-1') && (
                   <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -907,9 +935,9 @@ function App() {
 
 type PlaceholderProps = {
   resolution: CommandResolution
-  pinnedTraining: TrainingTaskId[]
+  pinnedTraining: PinnableId[]
   trainingStatus: TrainingStatus
-  onTogglePin: (id: TrainingTaskId) => void
+  onTogglePin: (id: PinnableId) => void
   onOpenInfraOrShowIntro: (url: string) => void
   onOpenIntro?: () => void
   onOpenWbs?: () => void
@@ -923,17 +951,34 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
       return (
         <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">TRAINING · はじめに</p>
-          <h2 className="mt-2 text-base font-semibold text-slate-800">はじめに</h2>
+          <div className="mt-2 flex items-center gap-2">
+            <h2 className="text-base font-semibold text-slate-800">はじめに</h2>
+            {pinnedTraining.includes('intro') && (
+              <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                📌
+              </span>
+            )}
+          </div>
           <p className="mt-1 text-xs text-slate-600">はじめにのページへアクセスできます。</p>
-          {onOpenIntro && (
+          <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={onOpenIntro}
-              className="mt-3 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+              onClick={() => onTogglePin('intro')}
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-medium text-slate-600 hover:border-amber-500 hover:text-amber-700"
             >
-              はじめにを開く
+              <span aria-hidden>📌</span>
+              {pinnedTraining.includes('intro') ? 'ピン解除' : 'ピン留め'}
             </button>
-          )}
+            {onOpenIntro && (
+              <button
+                type="button"
+                onClick={onOpenIntro}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+              >
+                はじめにを開く
+              </button>
+            )}
+          </div>
         </div>
       )
     }
