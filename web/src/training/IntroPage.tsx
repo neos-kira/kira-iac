@@ -93,8 +93,19 @@ export function IntroPage() {
     setConfirmed(ok)
     const user = getCurrentUsername()
     if (usernameAtMountRef.current === null) usernameAtMountRef.current = user
-    if (ok && user && user.toLowerCase() !== 'admin') setIntroConfirmedForUser(user)
+    if (ok && user && user !== 'admin') setIntroConfirmedForUser(user)
   }, [])
+
+  /** 「確認済み」表示中は per-user キーへ毎秒同期し、admin で合格と表示されるようにする */
+  useEffect(() => {
+    if (!confirmed) return
+    const user = getCurrentUsername()
+    if (!user || user === 'admin') return
+    const sync = () => setIntroConfirmedForUser(user)
+    sync()
+    const id = setInterval(sync, 1000)
+    return () => clearInterval(id)
+  }, [confirmed])
 
   const setAnswer = (i: number, ci: number) => {
     setAnswers((prev) => {

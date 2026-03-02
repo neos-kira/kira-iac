@@ -1,22 +1,18 @@
+import { getCurrentUsername } from '../auth'
+
 /** はじめに確認済みでインフラ基礎課題をアンロックするフラグ（localStorage）。ユーザーごとに保持する。 */
 const INTRO_CONFIRMED_KEY = 'isProfessionalStandardsConfirmed'
 const INTRO_CONFIRMED_AT_KEY = 'kira-intro-confirmed-at'
 const LEGACY_KEY = 'kira-intro-confirmed'
-const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
-
-function getCurrentUsername(): string {
-  if (typeof window === 'undefined') return ''
-  return (window.localStorage.getItem(USER_DISPLAY_NAME_KEY) || '').trim() || ''
-}
 
 function introConfirmedKey(): string {
   const name = getCurrentUsername()
-  return name ? `${INTRO_CONFIRMED_KEY}_${name.trim().toLowerCase()}` : INTRO_CONFIRMED_KEY
+  return name ? `${INTRO_CONFIRMED_KEY}_${name}` : INTRO_CONFIRMED_KEY
 }
 
 function introConfirmedAtKey(): string {
   const name = getCurrentUsername()
-  return name ? `${INTRO_CONFIRMED_AT_KEY}_${name.trim().toLowerCase()}` : INTRO_CONFIRMED_AT_KEY
+  return name ? `${INTRO_CONFIRMED_AT_KEY}_${name}` : INTRO_CONFIRMED_AT_KEY
 }
 
 export function getIntroConfirmed(): boolean {
