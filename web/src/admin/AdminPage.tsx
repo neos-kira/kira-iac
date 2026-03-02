@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getTraineeList, getProgressSnapshotLive } from '../traineeProgressStorage'
+import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
+import { fetchProgressFromApi, isProgressApiAvailable } from '../progressApi'
 
 const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
 
@@ -25,6 +27,7 @@ function formatIntroDate(iso: string | null): string {
 export function AdminPage() {
   const navigate = useNavigate()
   const [traineeList, setTraineeList] = useState<string[]>(() => getTraineeList())
+  const [apiProgress, setApiProgress] = useState<Record<string, TraineeProgressSnapshot>>({})
   const [, setProgressTick] = useState(0)
 
   useEffect(() => {
@@ -33,12 +36,29 @@ export function AdminPage() {
       navigate('/', { replace: true })
       return
     }
-    const refresh = () => {
-      setTraineeList(getTraineeList())
+    const refresh = async () => {
+      const list = getTraineeList()
+      if (isProgressApiAvailable()) {
+        const trainees = await fetchProgressFromApi()
+        const byId: Record<string, TraineeProgressSnapshot> = {}
+        const ids = new Set(list)
+        for (const t of trainees) {
+          const id = (t.traineeId || '').trim().toLowerCase()
+          if (id && id !== 'admin') {
+            ids.add(id)
+            byId[id] = t
+          }
+        }
+        setTraineeList([...ids].sort())
+        setApiProgress(byId)
+      } else {
+        setTraineeList(list)
+        setApiProgress({})
+      }
       setProgressTick((t) => t + 1)
     }
-    refresh()
-    const id = setInterval(refresh, 1000)
+    void refresh()
+    const id = setInterval(() => void refresh(), 2000)
     return () => clearInterval(id)
   }, [navigate])
 
@@ -65,7 +85,10 @@ export function AdminPage() {
 
       <main className="mx-auto max-w-4xl p-6">
         <p className="mb-4 text-sm text-slate-600">
-          登録されている受講生の<strong>基礎課題1〜4</strong>の進捗と遅延をリアルタイムで表示します。進捗は<strong>受講生がログインして利用したのと同じブラウザ（同じ端末）</strong>にのみ保存されるため、この画面もその同じブラウザで開いた場合にのみ正しく表示されます。別の端末で開くと「未合格」「0%」となります。
+          登録されている受講生の<strong>基礎課題1〜4</strong>の進捗と遅延を表示します。
+          {isProgressApiAvailable()
+            ? '進捗はサーバーに保存されているため、どの端末からでも確認できます。'
+            : '進捗API未設定時は、受講生が利用したのと同じブラウザで開いた場合のみ表示されます。'}
         </p>
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="overflow-x-auto">
@@ -91,7 +114,7 @@ export function AdminPage() {
                   </tr>
                 ) : (
                   traineeList.map((traineeId) => {
-                    const snap = getProgressSnapshotLive(traineeId)
+                    const snap = apiProgress[traineeId] ?? getProgressSnapshotLive(traineeId)
                     const hasDelay = snap.delayedIds.length > 0
                     return (
                       <tr key={traineeId} className="border-b border-slate-100 hover:bg-slate-50/80">

@@ -13,3 +13,8 @@ output "cloudfront_distribution_id" {
   value       = aws_cloudfront_distribution.web.id
 }
 
+output "progress_api_url" {
+  description = "Progress API base URL (for VITE_PROGRESS_API_URL)"
+  value       = "${aws_apigatewayv2_stage.progress.invoke_url}"
+}
+

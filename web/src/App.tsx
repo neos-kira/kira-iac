@@ -24,6 +24,7 @@ import { isJTerada, J_TERADA_ALLOWED_LINKS } from './specialUsers'
 import { getIntroConfirmed, setIntroConfirmedForUser } from './training/introGate'
 import { LOGIN_FLAG_KEY } from './auth'
 import { getCurrentProgressSnapshot, saveProgressSnapshot } from './traineeProgressStorage'
+import { isProgressApiAvailable, postProgress } from './progressApi'
 
 type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3'
 
@@ -433,7 +434,9 @@ function App() {
       const name = getDisplayName()
       if (name && name.toLowerCase() !== 'admin') {
         if (getIntroConfirmed()) setIntroConfirmedForUser(name)
-        saveProgressSnapshot(name, getCurrentProgressSnapshot())
+        const snapshot = getCurrentProgressSnapshot()
+        saveProgressSnapshot(name, snapshot)
+        if (isProgressApiAvailable()) void postProgress(name, snapshot)
       }
       setProgressTick((t) => t + 1)
     }

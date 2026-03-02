@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       distribution_id: ${{ steps.cloudfront.outputs.distribution_id }}
+      progress_api_url: ${{ steps.terraform_outputs.outputs.progress_api_url }}
 
     env:
       TF_VAR_project_name: kira-project
@@ -52,14 +53,23 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: terraform apply -input=false -auto-approve
 
-      - name: Set CloudFront distribution ID
+      - name: Set Terraform outputs
         id: cloudfront
         if: github.ref == 'refs/heads/main'
-        run: echo "distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> $GITHUB_OUTPUT
+        run: |
+          echo "distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> $GITHUB_OUTPUT
+      - name: Set progress API URL for web build
+        id: terraform_outputs
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "progress_api_url=$(terraform output -raw progress_api_url)" >> $GITHUB_OUTPUT
 
   web-deploy:
     runs-on: ubuntu-latest
     needs: terraform
+
+    env:
+      VITE_PROGRESS_API_URL: ${{ needs.terraform.outputs.progress_api_url }}
 
     defaults:
       run:
