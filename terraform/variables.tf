@@ -35,3 +35,15 @@ variable "basic_auth_password" {
   default     = null
 }
 
+variable "cloudfront_aliases" {
+  description = "Custom domain aliases for CloudFront (e.g. [\"training-org.neos-nic.jp\"]). Empty = default *.cloudfront.net only."
+  type        = list(string)
+  default     = []
+}
+
+variable "acm_certificate_arn" {
+  description = "ACM certificate ARN for CloudFront (must be in us-east-1). Required when cloudfront_aliases is non-empty."
+  type        = string
+  default     = null
+}
+

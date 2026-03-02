@@ -202,6 +202,7 @@ resource "aws_cloudfront_distribution" "web" {
   enabled             = true
   comment             = "React SPA for ${local.app_name}"
   default_root_object = "index.html"
+  aliases             = length(var.cloudfront_aliases) > 0 ? var.cloudfront_aliases : null
 
   price_class = "PriceClass_100"
 
@@ -239,7 +240,10 @@ resource "aws_cloudfront_distribution" "web" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    acm_certificate_arn            = length(var.cloudfront_aliases) > 0 ? var.acm_certificate_arn : null
+    cloudfront_default_certificate = length(var.cloudfront_aliases) == 0
+    ssl_support_method             = length(var.cloudfront_aliases) > 0 ? "sni-only" : null
+    minimum_protocol_version       = length(var.cloudfront_aliases) > 0 ? "TLSv1.2_2021" : null
   }
 
   tags = local.tags
