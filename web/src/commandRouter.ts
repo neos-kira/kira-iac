@@ -2,6 +2,7 @@ export type FeatureId = 'training' | 'timeTracking' | 'projects' | 'unknown'
 
 export type TrainingCategory =
   | 'intro'
+  | 'wbs'
   | 'linuxLevel1'
   | 'linuxLevel2'
   | 'infra'
@@ -47,6 +48,16 @@ export async function resolveCommand(
       displayName: 'はじめに',
       reason: '「はじめに」を検出しました。ページを表示します。',
       training: { category: 'intro' },
+    }
+  }
+
+  // --- WBS ---
+  if (/WBSを表示|WBS\s*を\s*表示/.test(text) || /^\s*wbs\s*$/i.test(text)) {
+    return {
+      feature: 'training',
+      displayName: 'インフラ基礎 研修WBS',
+      reason: '「WBS」を検出しました。WBSページを表示します。',
+      training: { category: 'wbs' },
     }
   }
 

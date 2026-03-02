@@ -366,6 +366,11 @@ function App() {
       window.location.hash = '#/training/intro'
       return
     }
+    if (cat === 'wbs') {
+      if (getIntroConfirmed()) window.location.hash = '#/training/infra-wbs'
+      else setShowIntroRequiredPopup(true)
+      return
+    }
     if (cat === 'linuxLevel1') {
       if (openedRef.current === 'linuxLevel1') return
       if (!getIntroConfirmed()) setShowIntroRequiredPopup(true)
@@ -912,6 +917,16 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">TRAINING · はじめに</p>
           <h2 className="mt-2 text-base font-semibold text-slate-800">はじめに</h2>
           <p className="mt-1 text-xs text-slate-600">はじめにページを表示しました。上記の内容をご確認ください。</p>
+        </div>
+      )
+    }
+
+    if (category === 'wbs') {
+      return (
+        <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">TRAINING · WBS</p>
+          <h2 className="mt-2 text-base font-semibold text-slate-800">インフラ基礎 研修WBS</h2>
+          <p className="mt-1 text-xs text-slate-600">WBSページを表示しました。進捗とガントチャートをご確認ください。</p>
         </div>
       )
     }
