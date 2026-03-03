@@ -23,8 +23,8 @@ import {
 import { isJTerada, J_TERADA_ALLOWED_LINKS } from './specialUsers'
 import { getIntroConfirmed, setIntroConfirmedForUser } from './training/introGate'
 import { LOGIN_FLAG_KEY } from './auth'
-import { getCurrentProgressSnapshot, saveProgressSnapshot } from './traineeProgressStorage'
-import { isProgressApiAvailable, postProgress } from './progressApi'
+import { getCurrentProgressSnapshot, saveProgressSnapshot, type TraineeProgressSnapshot } from './traineeProgressStorage'
+import { isProgressApiAvailable, postProgress, fetchMyProgress } from './progressApi'
 
 type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3'
 type PinnableId = TrainingTaskId | 'intro'
@@ -187,6 +187,7 @@ function App() {
   const [canResumeL2, setCanResumeL2] = useState(false)
   const [trainingStatus, setTrainingStatus] = useState<TrainingStatus>(() => readTrainingStatus())
   const [pinnedTraining, setPinnedTraining] = useState<PinnableId[]>(() => loadPinnedTrainingTasks())
+  const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const [showIntroRequiredPopup, setShowIntroRequiredPopup] = useState(false)
   const [searchHistory, setSearchHistory] = useState<string[]>(() => loadSearchHistory())
   const [showSearchHistory, setShowSearchHistory] = useState(false)
@@ -446,9 +447,30 @@ function App() {
     return () => clearInterval(id)
   }, [isAdminView])
 
+  /** 受講生画面用：サーバー側の最新進捗（DynamoDB）のスナップショットを定期取得して同期表示に使う */
+  useEffect(() => {
+    if (isAdminView || !isProgressApiAvailable() || typeof window === 'undefined') return
+    const name = getDisplayName().trim().toLowerCase()
+    if (!name || name === 'admin') return
+
+    let cancelled = false
+    const load = async () => {
+      const snap = await fetchMyProgress(name)
+      if (!cancelled && snap) setServerSnapshot(snap)
+    }
+    void load()
+    const id = window.setInterval(() => {
+      void load()
+    }, 5000)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [isAdminView])
+
   const navigate = useNavigate()
-  const delayed = getDelayedTaskIds().length > 0
-  const progressPct = getWbsProgressPercent()
+  const delayed = (serverSnapshot?.delayedIds?.length ?? getDelayedTaskIds().length) > 0
+  const progressPct = typeof serverSnapshot?.wbsPercent === 'number' ? serverSnapshot.wbsPercent : getWbsProgressPercent()
   const taskList = getTaskProgressList()
   const inProgressLabels = taskList
     .filter((t) => !t.cleared && t.subTasks.some((s) => s.status !== 'not_started'))

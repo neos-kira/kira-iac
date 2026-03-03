@@ -7,6 +7,9 @@ import {
   getTotalCleared,
 } from './trainingWbsData'
 import { OpenInNewTabButton } from '../components/OpenInNewTabButton'
+import { getCurrentUsername } from '../auth'
+import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
+import { fetchMyProgress, isProgressApiAvailable } from '../progressApi'
 
 function getTrainingUrl(path: string) {
   const base =
@@ -20,10 +23,18 @@ function getTrainingUrl(path: string) {
 export function InfraWbsPage() {
   const navigate = useNavigate()
   const [progressList, setProgressList] = useState(() => getTaskProgressList())
+  const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const startDate = getTrainingStartDate()
-  const cleared = getTotalCleared()
-  const totalTasks = getTotalTaskCountForUser()
-  const percent = totalTasks > 0 ? Math.round((cleared / totalTasks) * 100) : 0
+  const clearedLocal = getTotalCleared()
+  const totalTasksLocal = getTotalTaskCountForUser()
+
+  const totalTasks = serverSnapshot?.chapterProgress?.length ?? totalTasksLocal
+  const cleared = serverSnapshot ? serverSnapshot.chapterProgress.filter((c) => c.cleared).length : clearedLocal
+  const percent = typeof serverSnapshot?.wbsPercent === 'number'
+    ? serverSnapshot.wbsPercent
+    : totalTasksLocal > 0
+      ? Math.round((clearedLocal / totalTasksLocal) * 100)
+      : 0
 
   useEffect(() => {
     document.title = 'インフラ基礎 研修WBS'
@@ -31,6 +42,26 @@ export function InfraWbsPage() {
 
   useEffect(() => {
     setProgressList(getTaskProgressList())
+  }, [])
+
+  // サーバー側の進捗スナップショットを取得（あれば全体進捗やクリア数の表示に使用）
+  useEffect(() => {
+    if (!isProgressApiAvailable() || typeof window === 'undefined') return
+    const name = getCurrentUsername().trim().toLowerCase()
+    if (!name || name === 'admin') return
+    let cancelled = false
+    const load = async () => {
+      const snap = await fetchMyProgress(name)
+      if (!cancelled && snap) setServerSnapshot(snap)
+    }
+    void load()
+    const id = window.setInterval(() => {
+      void load()
+    }, 5000)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
   }, [])
 
   const ganttStart = startDate || null

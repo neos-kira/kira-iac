@@ -42,3 +42,13 @@ export async function fetchProgressFromApi(): Promise<TraineeProgressFromApi[]> 
     return []
   }
 }
+
+/** 指定受講生の進捗をサーバーから取得（受講生画面用）。なければ null。 */
+export async function fetchMyProgress(traineeId: string): Promise<TraineeProgressSnapshot | null> {
+  if (!BASE_URL) return null
+  const id = traineeId.trim().toLowerCase()
+  if (!id || id === 'admin') return null
+  const all = await fetchProgressFromApi()
+  const me = all.find((t) => (t.traineeId || '').trim().toLowerCase() === id)
+  return me ?? null
+}
