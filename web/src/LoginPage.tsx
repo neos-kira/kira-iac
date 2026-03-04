@@ -3,6 +3,7 @@ import { NeOSLogo } from './components/NeOSLogo'
 import { setLoggedIn } from './auth'
 import { addTrainee } from './traineeProgressStorage'
 import { isJTerada, J_TERADA_PASSWORD } from './specialUsers'
+import { checkAccount, isAccountApiAvailable } from './accountsApi'
 
 const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
 
@@ -20,7 +21,7 @@ export function LoginPage() {
     document.title = 'NICプラットフォーム'
   }, [])
 
-  function handleLogin(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoginError('')
     const name = username.trim()
@@ -29,8 +30,23 @@ export function LoginPage() {
       setLoginError('パスワードが正しくありません。')
       return
     }
+    const normalized = name.toLowerCase()
+
+    if (!isAccountApiAvailable()) {
+      setLoginError('アカウントAPIが未設定のためログインできません。管理者に連絡してください。')
+      return
+    }
+
+    // admin は特別扱い（DB 登録なし）
+    if (normalized !== 'admin') {
+      const ok = await checkAccount(normalized)
+      if (!ok) {
+        setLoginError('このユーザーは作成されていません。admin 画面からアカウントを作成してください。')
+        return
+      }
+    }
+
     if (typeof window !== 'undefined') {
-      const normalized = name.toLowerCase()
       window.localStorage.setItem(USER_DISPLAY_NAME_KEY, normalized)
       setLoggedIn()
       if (normalized === 'admin') {

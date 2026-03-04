@@ -45,7 +45,10 @@ resource "aws_iam_role_policy" "progress_api_dynamodb" {
         "dynamodb:GetItem",
         "dynamodb:Scan"
       ]
-      Resource = [aws_dynamodb_table.progress.arn]
+      Resource = [
+        aws_dynamodb_table.progress.arn,
+        aws_dynamodb_table.accounts.arn,
+      ]
     }]
   })
 }
@@ -65,7 +68,8 @@ resource "aws_lambda_function" "progress_api" {
 
   environment {
     variables = {
-      TABLE_NAME = aws_dynamodb_table.progress.name
+      TABLE_NAME          = aws_dynamodb_table.progress.name
+      ACCOUNTS_TABLE_NAME = aws_dynamodb_table.accounts.name
     }
   }
   tags = local.tags
@@ -76,7 +80,7 @@ resource "aws_apigatewayv2_api" "progress" {
   protocol_type = "HTTP"
   cors_configuration {
     allow_origins = ["*"]
-    allow_methods = ["GET", "PUT", "OPTIONS"]
+    allow_methods = ["GET", "PUT", "POST", "OPTIONS"]
     allow_headers = ["Content-Type"]
   }
   tags = local.tags
@@ -104,6 +108,37 @@ resource "aws_apigatewayv2_route" "progress_get" {
 resource "aws_apigatewayv2_route" "progress_options" {
   api_id    = aws_apigatewayv2_api.progress.id
   route_key = "OPTIONS /progress"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
+# アカウント作成・一覧・認証チェック用のルート
+resource "aws_apigatewayv2_route" "accounts_post" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "POST /accounts"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
+resource "aws_apigatewayv2_route" "accounts_get" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "GET /accounts"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
+resource "aws_apigatewayv2_route" "accounts_options" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "OPTIONS /accounts"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
+resource "aws_apigatewayv2_route" "auth_check_post" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "POST /auth/check"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
+resource "aws_apigatewayv2_route" "auth_check_options" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "OPTIONS /auth/check"
   target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
 }
 
