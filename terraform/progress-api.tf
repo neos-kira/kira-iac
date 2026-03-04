@@ -80,7 +80,7 @@ resource "aws_apigatewayv2_api" "progress" {
   protocol_type = "HTTP"
   cors_configuration {
     allow_origins = ["*"]
-    allow_methods = ["GET", "PUT", "POST", "OPTIONS"]
+    allow_methods = ["GET", "PUT", "POST", "DELETE", "OPTIONS"]
     allow_headers = ["Content-Type"]
   }
   tags = local.tags
@@ -127,6 +127,12 @@ resource "aws_apigatewayv2_route" "accounts_get" {
 resource "aws_apigatewayv2_route" "accounts_options" {
   api_id    = aws_apigatewayv2_api.progress.id
   route_key = "OPTIONS /accounts"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
+resource "aws_apigatewayv2_route" "accounts_delete" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "DELETE /accounts"
   target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
 }
 

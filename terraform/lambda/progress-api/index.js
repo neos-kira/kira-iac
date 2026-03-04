@@ -1,4 +1,4 @@
-const { DynamoDBClient, PutItemCommand, ScanCommand, GetItemCommand } = require('@aws-sdk/client-dynamodb')
+const { DynamoDBClient, PutItemCommand, ScanCommand, GetItemCommand, DeleteItemCommand } = require('@aws-sdk/client-dynamodb')
 const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb')
 
 const client = new DynamoDBClient({})
@@ -8,7 +8,7 @@ const AccountsTableName = process.env.ACCOUNTS_TABLE_NAME
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Allow-Methods': 'GET, PUT, POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
 }
 
 function json(body, status = 200) {
@@ -81,6 +81,22 @@ async function handler(event) {
       const { Items } = await client.send(new ScanCommand({ TableName: AccountsTableName }))
       const accounts = (Items || []).map((item) => unmarshall(item))
       return json({ accounts })
+    }
+
+    // アカウント削除（admin 用）
+    if (method === 'DELETE' && (path === '/accounts' || path === '/accounts/')) {
+      const body = JSON.parse(event.body || '{}')
+      const username = (body.username || '').trim().toLowerCase()
+      if (!username || username === 'admin') {
+        return json({ error: 'invalid username' }, 400)
+      }
+      await client.send(
+        new DeleteItemCommand({
+          TableName: AccountsTableName,
+          Key: marshall({ username }),
+        }),
+      )
+      return json({ ok: true })
     }
 
     // ログイン可否チェック（LoginPage 用）

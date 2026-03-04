@@ -66,3 +66,20 @@ export async function checkAccount(username: string): Promise<boolean> {
   }
 }
 
+export async function deleteAccount(username: string): Promise<boolean> {
+  if (!BASE_URL) return false
+  const name = username.trim().toLowerCase()
+  if (!name || name === 'admin') return false
+  try {
+    const res = await fetch(`${BASE_URL}/accounts`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: name }),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+

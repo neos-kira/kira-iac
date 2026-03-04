@@ -25,7 +25,7 @@ import { getIntroConfirmed, setIntroConfirmedForUser } from './training/introGat
 import { LOGIN_FLAG_KEY } from './auth'
 import { getCurrentProgressSnapshot, saveProgressSnapshot, type TraineeProgressSnapshot } from './traineeProgressStorage'
 import { isProgressApiAvailable, postProgress, fetchMyProgress } from './progressApi'
-import { createAccount, fetchAccounts, isAccountApiAvailable, type Account } from './accountsApi'
+import { createAccount, fetchAccounts, isAccountApiAvailable, deleteAccount, type Account } from './accountsApi'
 
 type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3'
 type PinnableId = TrainingTaskId | 'intro'
@@ -58,6 +58,7 @@ const TRAINING_PIN_KEY = 'kira-training-pins'
 const SEARCH_HISTORY_KEY = 'kira-search-history'
 const SEARCH_HISTORY_MAX = 10
 const ADMIN_SESSION_KEY = 'kira-admin-logged-in'
+const ADMIN_DELETE_PASSWORD = 'admin'
 
 function loadSearchHistory(): string[] {
   if (typeof window === 'undefined') return []
@@ -197,6 +198,10 @@ function App() {
   const [accounts, setAccounts] = useState<Account[]>([])
   const [newAccountName, setNewAccountName] = useState('')
   const [accountMessage, setAccountMessage] = useState<string | null>(null)
+  const [showAccountPanel, setShowAccountPanel] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const openedRef = useRef<string | null>(null)
   const searchContainerRef = useRef<HTMLDivElement | null>(null)
   const searchFormRef = useRef<HTMLFormElement | null>(null)
@@ -494,6 +499,25 @@ function App() {
     setAccounts(list)
   }
 
+  async function handleConfirmDelete(e: React.FormEvent) {
+    e.preventDefault()
+    setDeleteError(null)
+    if (!deleteTarget) return
+    if (deletePassword !== ADMIN_DELETE_PASSWORD) {
+      setDeleteError('パスワードが正しくありません。')
+      return
+    }
+    const ok = await deleteAccount(deleteTarget)
+    if (!ok) {
+      setDeleteError('削除に失敗しました。時間をおいて再度お試しください。')
+      return
+    }
+    setDeletePassword('')
+    setDeleteTarget(null)
+    const list = await fetchAccounts()
+    setAccounts(list)
+  }
+
   /** 受講生画面用：サーバー側の最新進捗（DynamoDB）のスナップショットを定期取得して同期表示に使う */
   useEffect(() => {
     if (isAdminView || !isProgressApiAvailable() || typeof window === 'undefined') return
@@ -607,47 +631,16 @@ function App() {
         <main className="mt-4 flex flex-1 flex-col items-center justify-start">
           {isAdminView ? (
             <div className="w-full max-w-2xl space-y-4">
-              <h1 className="text-lg font-semibold text-slate-800">講師用メニュー</h1>
-              <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <h2 className="text-sm font-semibold text-slate-800">アカウント管理</h2>
-                <p className="mt-1 text-xs text-slate-600">
-                  admin で作成したアカウントのみ、受講生画面からログインできます。
-                </p>
-                <form onSubmit={handleCreateAccount} className="mt-3 flex flex-wrap items-center gap-2">
-                  <input
-                    type="text"
-                    value={newAccountName}
-                    onChange={(e) => setNewAccountName(e.target.value)}
-                    placeholder="新しいユーザー名（例: kira-test）"
-                    className="w-48 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newAccountName.trim()}
-                    className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    アカウント作成
-                  </button>
-                  {accountMessage && <span className="text-[11px] text-slate-600">{accountMessage}</span>}
-                </form>
-                <div className="mt-3">
-                  <p className="text-[11px] font-medium text-slate-700">作成済みアカウント一覧</p>
-                  {accounts.length === 0 ? (
-                    <p className="mt-1 text-[11px] text-slate-500">まだアカウントがありません。</p>
-                  ) : (
-                    <ul className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-slate-700">
-                      {accounts.map((a) => (
-                        <li
-                          key={a.username}
-                          className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1"
-                        >
-                          <span className="font-medium">{a.username}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </section>
+              <div className="flex items-center justify-between">
+                <h1 className="text-lg font-semibold text-slate-800">講師用メニュー</h1>
+                <button
+                  type="button"
+                  onClick={() => setShowAccountPanel(true)}
+                  className="rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
+                >
+                  アカウント管理
+                </button>
+              </div>
 
               <section className="space-y-2">
                 <p className="text-sm text-slate-600">受講生の進捗を確認できます。</p>
@@ -660,6 +653,121 @@ function App() {
                   <span className="mt-1 text-xs text-slate-600">WBSに基づく進捗一覧を表示</span>
                 </button>
               </section>
+
+              {showAccountPanel && (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="account-manage-title"
+                >
+                  <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
+                    <div className="flex items-center justify-between gap-3">
+                      <h2 id="account-manage-title" className="text-base font-semibold text-slate-800">
+                        アカウント管理
+                      </h2>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAccountPanel(false)
+                          setAccountMessage(null)
+                          setDeleteTarget(null)
+                          setDeletePassword('')
+                          setDeleteError(null)
+                        }}
+                        className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600 hover:bg-slate-200"
+                      >
+                        閉じる
+                      </button>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-600">
+                      admin で作成したアカウントのみ、受講生画面からログインできます。
+                    </p>
+
+                    <form onSubmit={handleCreateAccount} className="mt-3 flex flex-wrap items-center gap-2">
+                      <input
+                        type="text"
+                        value={newAccountName}
+                        onChange={(e) => setNewAccountName(e.target.value)}
+                        placeholder="新しいユーザー名（例: kira-test）"
+                        className="w-48 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!newAccountName.trim()}
+                        className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        アカウント作成
+                      </button>
+                    </form>
+                    {accountMessage && <p className="mt-1 text-[11px] text-slate-600">{accountMessage}</p>}
+
+                    <div className="mt-4">
+                      <p className="text-[11px] font-medium text-slate-700">作成済みアカウント一覧</p>
+                      {accounts.length === 0 ? (
+                        <p className="mt-1 text-[11px] text-slate-500">まだアカウントがありません。</p>
+                      ) : (
+                        <ul className="mt-2 space-y-1 max-h-40 overflow-auto text-[11px] text-slate-700">
+                          {accounts.map((a) => (
+                            <li key={a.username} className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-1.5">
+                              <span className="font-medium">{a.username}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDeleteTarget(a.username)
+                                  setDeletePassword('')
+                                  setDeleteError(null)
+                                }}
+                                className="rounded-lg bg-rose-100 px-2 py-1 text-[10px] font-semibold text-rose-700 hover:bg-rose-200"
+                              >
+                                削除
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+
+                    {deleteTarget && (
+                      <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-3">
+                        <p className="text-xs font-semibold text-rose-800">ファイナルアンサー？</p>
+                        <p className="mt-1 text-[11px] text-rose-700">
+                          ユーザー「{deleteTarget}」を削除します。admin のパスワードを再入力してください。
+                        </p>
+                        <form onSubmit={handleConfirmDelete} className="mt-2 flex flex-col gap-2">
+                          <input
+                            type="password"
+                            value={deletePassword}
+                            onChange={(e) => setDeletePassword(e.target.value)}
+                            placeholder="admin パスワード"
+                            className="w-full rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-rose-300 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500"
+                          />
+                          {deleteError && <p className="text-[11px] text-rose-700">{deleteError}</p>}
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDeleteTarget(null)
+                                setDeletePassword('')
+                                setDeleteError(null)
+                              }}
+                              className="rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
+                            >
+                              やめる
+                            </button>
+                            <button
+                              type="submit"
+                              className="rounded-lg bg-rose-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-rose-700"
+                            >
+                              削除する
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
           <>
