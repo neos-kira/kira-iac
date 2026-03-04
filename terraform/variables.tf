@@ -18,7 +18,8 @@ variable "environment" {
 variable "enable_basic_auth" {
   description = "Enable Basic Auth in CloudFront via Lambda@Edge"
   type        = bool
-  default     = true
+  # デフォルトは無効。必要な環境でのみ -var で true を指定する。
+  default     = false
 }
 
 variable "basic_auth_username" {

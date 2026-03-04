@@ -1,5 +1,6 @@
 const { DynamoDBClient, PutItemCommand, ScanCommand, GetItemCommand, DeleteItemCommand } = require('@aws-sdk/client-dynamodb')
 const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb')
+const crypto = require('crypto')
 
 const client = new DynamoDBClient({})
 const TableName = process.env.TABLE_NAME
@@ -63,8 +64,14 @@ async function handler(event) {
       if (!username || username === 'admin') {
         return json({ error: 'invalid username' }, 400)
       }
+      const password = typeof body.password === 'string' ? body.password : ''
+      if (!password) {
+        return json({ error: 'invalid password' }, 400)
+      }
+      const passwordHash = crypto.createHash('sha256').update(password).digest('hex')
       const Item = {
         username,
+        passwordHash,
         createdAt: new Date().toISOString(),
       }
       await client.send(
@@ -103,7 +110,8 @@ async function handler(event) {
     if (method === 'POST' && (path === '/auth/check' || path === '/auth/check/')) {
       const body = JSON.parse(event.body || '{}')
       const username = (body.username || '').trim().toLowerCase()
-      if (!username) {
+      const password = typeof body.password === 'string' ? body.password : ''
+      if (!username || !password) {
         return json({ ok: false, reason: 'empty' }, 400)
       }
       // admin はコード内特別扱いとし、DB には登録しない
@@ -116,8 +124,14 @@ async function handler(event) {
           Key: marshall({ username }),
         }),
       )
-      const exists = !!res.Item
-      return json({ ok: exists })
+      if (!res.Item) {
+        return json({ ok: false })
+      }
+      const account = unmarshall(res.Item)
+      const expected = typeof account.passwordHash === 'string' ? account.passwordHash : ''
+      const actual = crypto.createHash('sha256').update(password).digest('hex')
+      const ok = expected && expected === actual
+      return json({ ok })
     }
 
     return json({ error: 'not found' }, 404)

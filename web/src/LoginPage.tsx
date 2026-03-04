@@ -12,7 +12,7 @@ export function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loginError, setLoginError] = useState('')
-   const navigate = useNavigate()
+  const navigate = useNavigate()
 
   useEffect(() => {
     document.title = 'NICプラットフォーム'
@@ -36,7 +36,7 @@ export function LoginPage() {
 
     // admin は特別扱い（DB 登録なし）
     if (normalized !== 'admin') {
-      const ok = await checkAccount(normalized)
+      const ok = await checkAccount(normalized, password)
       if (!ok) {
         setLoginError('ユーザー名かパスワードが間違っています。')
         return

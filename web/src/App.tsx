@@ -197,6 +197,7 @@ function App() {
   const [isListening, setIsListening] = useState(false)
   const [accounts, setAccounts] = useState<Account[]>([])
   const [newAccountName, setNewAccountName] = useState('')
+  const [newAccountPassword, setNewAccountPassword] = useState('')
   const [accountMessage, setAccountMessage] = useState<string | null>(null)
   const [showAccountPanel, setShowAccountPanel] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
@@ -477,9 +478,9 @@ function App() {
       const existing = new Set(current.map((a) => a.username))
       const missing = allIds.filter((id) => !existing.has(id))
       for (const id of missing) {
-        // 既に存在する場合も含めて上書き Put。エラーは無視して続行。
+        // 既に存在する場合も含めて上書き Put。デフォルトパスワードは「ユーザー名」と同じ。
         // eslint-disable-next-line no-await-in-loop
-        await createAccount(id)
+        await createAccount(id, id)
       }
       if (missing.length > 0 && !cancelled) {
         const refreshed = await fetchAccounts()
@@ -504,16 +505,21 @@ function App() {
       setAccountMessage('有効なユーザー名を入力してください。（admin は除外）')
       return
     }
+    if (!newAccountPassword) {
+      setAccountMessage('パスワードを入力してください。')
+      return
+    }
     if (!isAccountApiAvailable()) {
       setAccountMessage('アカウントAPIが未設定です。VITE_PROGRESS_API_URL を確認してください。')
       return
     }
-    const ok = await createAccount(name)
+    const ok = await createAccount(name, newAccountPassword)
     if (!ok) {
       setAccountMessage('アカウント作成に失敗しました。ネットワークやAPI設定を確認してください。')
       return
     }
     setNewAccountName('')
+    setNewAccountPassword('')
     setAccountMessage('アカウントを作成しました。')
     const list = await fetchAccounts()
     setAccounts(list)
@@ -536,13 +542,13 @@ function App() {
       return
     }
     for (const id of ids) {
-      // 既に存在する場合も含めて上書き Put。エラーは無視して続行。
+      // 既に存在する場合も含めて上書き Put。デフォルトパスワードは「ユーザー名」と同じ。
       // eslint-disable-next-line no-await-in-loop
-      await createAccount(id)
+      await createAccount(id, id)
     }
     const list = await fetchAccounts()
     setAccounts(list)
-    setAccountMessage(`既存の進捗から ${ids.length} 件のユーザーを取り込みました。`)
+    setAccountMessage(`既存の進捗から ${ids.length} 件のユーザーを取り込みました。（初期パスワードはユーザー名と同じです）`)
   }
 
   async function handleConfirmDelete(e: React.FormEvent) {
@@ -735,11 +741,18 @@ function App() {
                         value={newAccountName}
                         onChange={(e) => setNewAccountName(e.target.value)}
                         placeholder="新しいユーザー名（例: kira-test）"
-                        className="w-48 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="w-40 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                      <input
+                        type="password"
+                        value={newAccountPassword}
+                        onChange={(e) => setNewAccountPassword(e.target.value)}
+                        placeholder="パスワード"
+                        className="w-32 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       />
                       <button
                         type="submit"
-                        disabled={!newAccountName.trim()}
+                        disabled={!newAccountName.trim() || !newAccountPassword}
                         className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         アカウント作成

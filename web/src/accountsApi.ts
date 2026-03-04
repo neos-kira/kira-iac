@@ -14,15 +14,16 @@ export function isAccountApiAvailable(): boolean {
   return isProgressApiAvailable()
 }
 
-export async function createAccount(username: string): Promise<boolean> {
+export async function createAccount(username: string, password: string): Promise<boolean> {
   if (!BASE_URL) return false
   const name = username.trim().toLowerCase()
   if (!name || name === 'admin') return false
+  if (!password) return false
   try {
     const res = await fetch(`${BASE_URL}/accounts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: name }),
+      body: JSON.stringify({ username: name, password }),
     })
     return res.ok
   } catch {
@@ -48,15 +49,15 @@ export async function fetchAccounts(): Promise<Account[]> {
   }
 }
 
-export async function checkAccount(username: string): Promise<boolean> {
+export async function checkAccount(username: string, password: string): Promise<boolean> {
   if (!BASE_URL) return false
   const name = username.trim().toLowerCase()
-  if (!name) return false
+  if (!name || !password) return false
   try {
     const res = await fetch(`${BASE_URL}/auth/check`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: name }),
+      body: JSON.stringify({ username: name, password }),
     })
     if (!res.ok) return false
     const data = (await res.json()) as { ok?: boolean }
