@@ -27,7 +27,7 @@ export function LoginPage() {
     const name = username.trim()
     if (!name) return
     if (isJTerada(name) && password !== J_TERADA_PASSWORD) {
-      setLoginError('パスワードが正しくありません。')
+      setLoginError('ユーザー名かパスワードが間違っています。')
       return
     }
     const normalized = name.toLowerCase()
@@ -41,7 +41,7 @@ export function LoginPage() {
     if (normalized !== 'admin') {
       const ok = await checkAccount(normalized)
       if (!ok) {
-        setLoginError('このユーザーは作成されていません。admin 画面からアカウントを作成してください。')
+        setLoginError('ユーザー名かパスワードが間違っています。')
         return
       }
     }
