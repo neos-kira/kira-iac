@@ -24,7 +24,7 @@ import { isJTerada, J_TERADA_ALLOWED_LINKS } from './specialUsers'
 import { getIntroConfirmed, setIntroConfirmedForUser } from './training/introGate'
 import { LOGIN_FLAG_KEY } from './auth'
 import { getCurrentProgressSnapshot, saveProgressSnapshot, type TraineeProgressSnapshot } from './traineeProgressStorage'
-import { isProgressApiAvailable, postProgress, fetchMyProgress } from './progressApi'
+import { isProgressApiAvailable, postProgress, fetchMyProgress, fetchProgressFromApi } from './progressApi'
 import { createAccount, fetchAccounts, isAccountApiAvailable, deleteAccount, type Account } from './accountsApi'
 
 type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3'
@@ -499,6 +499,34 @@ function App() {
     setAccounts(list)
   }
 
+  async function handleImportFromProgress() {
+    setAccountMessage(null)
+    if (!isAccountApiAvailable() || !isProgressApiAvailable()) {
+      setAccountMessage('API が未設定のため取り込みできません。VITE_PROGRESS_API_URL を確認してください。')
+      return
+    }
+    const trainees = await fetchProgressFromApi()
+    const ids = Array.from(
+      new Set(
+        trainees
+          .map((t) => (t.traineeId || '').trim().toLowerCase())
+          .filter((id) => id && id !== 'admin'),
+      ),
+    )
+    if (ids.length === 0) {
+      setAccountMessage('取り込める既存ユーザーが見つかりませんでした。')
+      return
+    }
+    for (const id of ids) {
+      // 既に存在する場合も含めて上書き Put。エラーは無視して続行。
+      // eslint-disable-next-line no-await-in-loop
+      await createAccount(id)
+    }
+    const list = await fetchAccounts()
+    setAccounts(list)
+    setAccountMessage(`既存の進捗から ${ids.length} 件のユーザーを取り込みました。`)
+  }
+
   async function handleConfirmDelete(e: React.FormEvent) {
     e.preventDefault()
     setDeleteError(null)
@@ -581,13 +609,22 @@ function App() {
             )}
             <span className="text-sm text-slate-700">{getDisplayName()}</span>
             {isAdminView && (
-              <button
-                type="button"
-                onClick={() => (window.location.hash = '#/admin')}
-                className="rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
-              >
-                講師メニュー
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => (window.location.hash = '#/admin')}
+                  className="rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
+                >
+                  講師メニュー
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAccountPanel(true)}
+                  className="rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
+                >
+                  受講生アカウント管理
+                </button>
+              </>
             )}
             <button
               type="button"
@@ -631,17 +668,7 @@ function App() {
         <main className="mt-4 flex flex-1 flex-col items-center justify-start">
           {isAdminView ? (
             <div className="w-full max-w-2xl space-y-4">
-              <div className="flex items-center justify-between">
-                <h1 className="text-lg font-semibold text-slate-800">講師用メニュー</h1>
-                <button
-                  type="button"
-                  onClick={() => setShowAccountPanel(true)}
-                  className="rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
-                >
-                  アカウント管理
-                </button>
-              </div>
-
+              <h1 className="text-lg font-semibold text-slate-800">講師用メニュー</h1>
               <section className="space-y-2">
                 <p className="text-sm text-slate-600">受講生の進捗を確認できます。</p>
                 <button
@@ -700,6 +727,13 @@ function App() {
                         アカウント作成
                       </button>
                     </form>
+                    <button
+                      type="button"
+                      onClick={handleImportFromProgress}
+                      className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-100"
+                    >
+                      既存の進捗から受講生アカウントを取り込む
+                    </button>
                     {accountMessage && <p className="mt-1 text-[11px] text-slate-600">{accountMessage}</p>}
 
                     <div className="mt-4">
