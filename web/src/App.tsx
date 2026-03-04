@@ -506,13 +506,11 @@ function App() {
       return
     }
     const trainees = await fetchProgressFromApi()
-    const ids = Array.from(
-      new Set(
-        trainees
-          .map((t) => (t.traineeId || '').trim().toLowerCase())
-          .filter((id) => id && id !== 'admin'),
-      ),
-    )
+    const baseIds = trainees
+      .map((t) => (t.traineeId || '').trim().toLowerCase())
+      .filter((id) => id && id !== 'admin')
+    const extraIds = ['j-terada']
+    const ids = Array.from(new Set([...baseIds, ...extraIds]))
     if (ids.length === 0) {
       setAccountMessage('取り込める既存ユーザーが見つかりませんでした。')
       return
