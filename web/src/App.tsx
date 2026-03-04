@@ -25,6 +25,7 @@ import { getIntroConfirmed, setIntroConfirmedForUser } from './training/introGat
 import { LOGIN_FLAG_KEY } from './auth'
 import { getCurrentProgressSnapshot, saveProgressSnapshot, type TraineeProgressSnapshot } from './traineeProgressStorage'
 import { isProgressApiAvailable, postProgress, fetchMyProgress } from './progressApi'
+import { createAccount, fetchAccounts, isAccountApiAvailable, type Account } from './accountsApi'
 
 type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3'
 type PinnableId = TrainingTaskId | 'intro'
@@ -193,6 +194,9 @@ function App() {
   const [showSearchHistory, setShowSearchHistory] = useState(false)
   const [searchHistoryHighlightIndex, setSearchHistoryHighlightIndex] = useState(-1)
   const [isListening, setIsListening] = useState(false)
+  const [accounts, setAccounts] = useState<Account[]>([])
+  const [newAccountName, setNewAccountName] = useState('')
+  const [accountMessage, setAccountMessage] = useState<string | null>(null)
   const openedRef = useRef<string | null>(null)
   const searchContainerRef = useRef<HTMLDivElement | null>(null)
   const searchFormRef = useRef<HTMLFormElement | null>(null)
@@ -447,6 +451,49 @@ function App() {
     return () => clearInterval(id)
   }, [isAdminView])
 
+  // admin 用: アカウント一覧を定期取得
+  useEffect(() => {
+    if (!isAdminView || !isAccountApiAvailable()) return
+    let cancelled = false
+    const load = async () => {
+      const list = await fetchAccounts()
+      if (!cancelled) {
+        setAccounts(list)
+      }
+    }
+    void load()
+    const id = window.setInterval(() => {
+      void load()
+    }, 5000)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [isAdminView])
+
+  async function handleCreateAccount(e: React.FormEvent) {
+    e.preventDefault()
+    setAccountMessage(null)
+    const name = newAccountName.trim().toLowerCase()
+    if (!name || name === 'admin') {
+      setAccountMessage('有効なユーザー名を入力してください。（admin は除外）')
+      return
+    }
+    if (!isAccountApiAvailable()) {
+      setAccountMessage('アカウントAPIが未設定です。VITE_PROGRESS_API_URL を確認してください。')
+      return
+    }
+    const ok = await createAccount(name)
+    if (!ok) {
+      setAccountMessage('アカウント作成に失敗しました。ネットワークやAPI設定を確認してください。')
+      return
+    }
+    setNewAccountName('')
+    setAccountMessage('アカウントを作成しました。')
+    const list = await fetchAccounts()
+    setAccounts(list)
+  }
+
   /** 受講生画面用：サーバー側の最新進捗（DynamoDB）のスナップショットを定期取得して同期表示に使う */
   useEffect(() => {
     if (isAdminView || !isProgressApiAvailable() || typeof window === 'undefined') return
@@ -561,15 +608,58 @@ function App() {
           {isAdminView ? (
             <div className="w-full max-w-2xl space-y-4">
               <h1 className="text-lg font-semibold text-slate-800">講師用メニュー</h1>
-              <p className="text-sm text-slate-600">受講生の進捗を確認できます。</p>
-              <button
-                type="button"
-                onClick={() => navigate('/admin')}
-                className="flex w-full flex-col items-start rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/50"
-              >
-                <span className="text-base font-semibold text-slate-800">受講生の進捗</span>
-                <span className="mt-1 text-xs text-slate-600">WBSに基づく進捗一覧を表示</span>
-              </button>
+              <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <h2 className="text-sm font-semibold text-slate-800">アカウント管理</h2>
+                <p className="mt-1 text-xs text-slate-600">
+                  admin で作成したアカウントのみ、受講生画面からログインできます。
+                </p>
+                <form onSubmit={handleCreateAccount} className="mt-3 flex flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    value={newAccountName}
+                    onChange={(e) => setNewAccountName(e.target.value)}
+                    placeholder="新しいユーザー名（例: kira-test）"
+                    className="w-48 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!newAccountName.trim()}
+                    className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    アカウント作成
+                  </button>
+                  {accountMessage && <span className="text-[11px] text-slate-600">{accountMessage}</span>}
+                </form>
+                <div className="mt-3">
+                  <p className="text-[11px] font-medium text-slate-700">作成済みアカウント一覧</p>
+                  {accounts.length === 0 ? (
+                    <p className="mt-1 text-[11px] text-slate-500">まだアカウントがありません。</p>
+                  ) : (
+                    <ul className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-slate-700">
+                      {accounts.map((a) => (
+                        <li
+                          key={a.username}
+                          className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1"
+                        >
+                          <span className="font-medium">{a.username}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </section>
+
+              <section className="space-y-2">
+                <p className="text-sm text-slate-600">受講生の進捗を確認できます。</p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin')}
+                  className="flex w-full flex-col items-start rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/50"
+                >
+                  <span className="text-base font-semibold text-slate-800">受講生の進捗</span>
+                  <span className="mt-1 text-xs text-slate-600">WBSに基づく進捗一覧を表示</span>
+                </button>
+              </section>
             </div>
           ) : (
           <>

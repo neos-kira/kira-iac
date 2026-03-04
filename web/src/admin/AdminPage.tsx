@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { getTraineeList, getProgressSnapshotLive } from '../traineeProgressStorage'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 import { fetchProgressFromApi, isProgressApiAvailable } from '../progressApi'
-import { createAccount, fetchAccounts, type Account, isAccountApiAvailable } from '../accountsApi'
 
 const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
 
@@ -30,9 +29,6 @@ export function AdminPage() {
   const [traineeList, setTraineeList] = useState<string[]>(() => getTraineeList())
   const [apiProgress, setApiProgress] = useState<Record<string, TraineeProgressSnapshot>>({})
   const [, setProgressTick] = useState(0)
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [newAccountName, setNewAccountName] = useState('')
-  const [accountMessage, setAccountMessage] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -66,44 +62,6 @@ export function AdminPage() {
     return () => clearInterval(id)
   }, [navigate])
 
-  useEffect(() => {
-    if (!isAccountApiAvailable()) return
-    let cancelled = false
-    const load = async () => {
-      const list = await fetchAccounts()
-      if (!cancelled) {
-        setAccounts(list)
-      }
-    }
-    void load()
-    const id = window.setInterval(() => {
-      void load()
-    }, 5000)
-    return () => {
-      cancelled = true
-      window.clearInterval(id)
-    }
-  }, [])
-
-  async function handleCreateAccount(e: React.FormEvent) {
-    e.preventDefault()
-    setAccountMessage(null)
-    const name = newAccountName.trim().toLowerCase()
-    if (!name || name === 'admin') {
-      setAccountMessage('有効なユーザー名を入力してください。（admin は除外）')
-      return
-    }
-    const ok = await createAccount(name)
-    if (!ok) {
-      setAccountMessage('アカウント作成に失敗しました。API設定やネットワークを確認してください。')
-      return
-    }
-    setNewAccountName('')
-    setAccountMessage('アカウントを作成しました。')
-    const list = await fetchAccounts()
-    setAccounts(list)
-  }
-
   if (typeof window !== 'undefined' && getDisplayName()?.toLowerCase() !== 'admin') {
     return null
   }
@@ -126,52 +84,6 @@ export function AdminPage() {
       </header>
 
       <main className="mx-auto max-w-4xl p-6">
-        <section className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-800">アカウント管理</h2>
-          <p className="mt-1 text-xs text-slate-600">
-            admin で作成したアカウントのみ、受講生画面からログインできます。
-          </p>
-          {!isAccountApiAvailable() && (
-            <p className="mt-2 text-xs text-rose-600">
-              アカウントAPIが未設定のため、ここからアカウントを作成できません。VITE_PROGRESS_API_URL を確認してください。
-            </p>
-          )}
-          <form onSubmit={handleCreateAccount} className="mt-3 flex flex-wrap items-center gap-2">
-            <input
-              type="text"
-              value={newAccountName}
-              onChange={(e) => setNewAccountName(e.target.value)}
-              placeholder="新しいユーザー名（例: kira-test）"
-              className="w-48 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
-            <button
-              type="submit"
-              disabled={!isAccountApiAvailable() || !newAccountName.trim()}
-              className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              アカウント作成
-            </button>
-            {accountMessage && <span className="text-[11px] text-slate-600">{accountMessage}</span>}
-          </form>
-          <div className="mt-3">
-            <p className="text-[11px] font-medium text-slate-700">作成済みアカウント一覧</p>
-            {accounts.length === 0 ? (
-              <p className="mt-1 text-[11px] text-slate-500">まだアカウントがありません。</p>
-            ) : (
-              <ul className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-slate-700">
-                {accounts.map((a) => (
-                  <li
-                    key={a.username}
-                    className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1"
-                  >
-                    <span className="font-medium">{a.username}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </section>
-
         <p className="mb-4 text-sm text-slate-600">
           登録されている受講生の<strong>基礎課題1〜4</strong>の進捗と遅延を表示します。
           {isProgressApiAvailable()
