@@ -456,14 +456,34 @@ function App() {
     return () => clearInterval(id)
   }, [isAdminView])
 
-  // admin 用: アカウント一覧を定期取得
+  // admin 用: アカウント一覧を定期取得し、既存の進捗から自動的に取り込む
   useEffect(() => {
     if (!isAdminView || !isAccountApiAvailable()) return
     let cancelled = false
     const load = async () => {
-      const list = await fetchAccounts()
+      if (!isAccountApiAvailable()) return
+      const current = await fetchAccounts()
       if (!cancelled) {
-        setAccounts(list)
+        setAccounts(current)
+      }
+      // 進捗APIが利用可能なら、既存の進捗 + j-terada から不足分を自動登録
+      if (!isProgressApiAvailable()) return
+      const trainees = await fetchProgressFromApi()
+      const baseIds = trainees
+        .map((t) => (t.traineeId || '').trim().toLowerCase())
+        .filter((id) => id && id !== 'admin')
+      const extraIds = ['j-terada']
+      const allIds = Array.from(new Set([...baseIds, ...extraIds]))
+      const existing = new Set(current.map((a) => a.username))
+      const missing = allIds.filter((id) => !existing.has(id))
+      for (const id of missing) {
+        // 既に存在する場合も含めて上書き Put。エラーは無視して続行。
+        // eslint-disable-next-line no-await-in-loop
+        await createAccount(id)
+      }
+      if (missing.length > 0 && !cancelled) {
+        const refreshed = await fetchAccounts()
+        setAccounts(refreshed)
       }
     }
     void load()
