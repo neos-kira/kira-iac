@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { NeOSLogo } from './components/NeOSLogo'
 import { setLoggedIn } from './auth'
 import { addTrainee } from './traineeProgressStorage'
@@ -7,15 +8,11 @@ import { checkAccount, isAccountApiAvailable } from './accountsApi'
 
 const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
 
-function getBaseUrl(): string {
-  if (typeof window === 'undefined') return ''
-  return (window.location.origin + window.location.pathname + (window.location.search || '')).replace(/\/$/, '') || window.location.origin
-}
-
 export function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loginError, setLoginError] = useState('')
+   const navigate = useNavigate()
 
   useEffect(() => {
     document.title = 'NICプラットフォーム'
@@ -49,14 +46,11 @@ export function LoginPage() {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(USER_DISPLAY_NAME_KEY, normalized)
       setLoggedIn()
-      if (normalized === 'admin') {
-        window.location.href = getBaseUrl() + '#/'
-        return
+      if (normalized !== 'admin') {
+        addTrainee(name)
       }
-      addTrainee(name)
     }
-    // フルページ遷移にすることでキャッシュされた古いJSでも確実にログイン状態が反映される
-    window.location.href = getBaseUrl() + '#/'
+    navigate('/', { replace: true })
   }
 
   const needsPassword = isJTerada(username.trim())
