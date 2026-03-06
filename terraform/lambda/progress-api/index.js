@@ -45,6 +45,7 @@ async function handler(event) {
         currentDay: typeof body.currentDay === 'number' ? body.currentDay : 0,
         delayedIds: Array.isArray(body.delayedIds) ? body.delayedIds : [],
         updatedAt: body.updatedAt || new Date().toISOString(),
+        pins: Array.isArray(body.pins) ? body.pins : [],
       }
       await client.send(new PutItemCommand({ TableName, Item: marshall(Item, { removeUndefinedValues: true }) }))
       return json({ ok: true })

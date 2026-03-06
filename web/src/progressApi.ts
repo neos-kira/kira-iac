@@ -3,9 +3,11 @@
  */
 import type { TraineeProgressSnapshot } from './traineeProgressStorage'
 
-const BASE_URL = typeof import.meta.env !== 'undefined' && import.meta.env.VITE_PROGRESS_API_URL
-  ? (import.meta.env.VITE_PROGRESS_API_URL as string).replace(/\/$/, '')
-  : ''
+const DEFAULT_API_URL = 'https://wfhfqq0tjh.execute-api.ap-northeast-1.amazonaws.com'
+const BASE_URL = (typeof import.meta.env !== 'undefined' && import.meta.env.VITE_PROGRESS_API_URL
+  ? (import.meta.env.VITE_PROGRESS_API_URL as string)
+  : DEFAULT_API_URL
+).replace(/\/$/, '')
 
 export function isProgressApiAvailable(): boolean {
   return BASE_URL.length > 0
@@ -50,5 +52,10 @@ export async function fetchMyProgress(traineeId: string): Promise<TraineeProgres
   if (!id || id === 'admin') return null
   const all = await fetchProgressFromApi()
   const me = all.find((t) => (t.traineeId || '').trim().toLowerCase() === id)
-  return me ?? null
+  if (!me) return null
+  const pins = Array.isArray(me.pins) ? me.pins : []
+  if (typeof console !== 'undefined' && console.log) {
+    console.log('[Sync] fetchMyProgress 取得:', { traineeId: id, pinsCount: pins.length })
+  }
+  return { ...me, pins }
 }

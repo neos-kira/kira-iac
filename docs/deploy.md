@@ -8,6 +8,11 @@
     ```bash
     aws cloudfront create-invalidation --distribution-id E3MP0X7N45428N --paths "/*"
     ```
+- **kira-test でログインできない場合**（「ユーザー名かパスワードが間違っています」）: accounts テーブルに kira-test が未登録の可能性があります。以下を実行して kira-test（パスワード: `kira-test`）を登録してください。
+  ```bash
+  chmod +x scripts/seed-accounts.sh
+  TABLE_NAME=kira-project-dev-accounts AWS_REGION=ap-northeast-1 ./scripts/seed-accounts.sh
+  ```
 - 反映されない場合:
   1. GitHub Actions の「Deploy Terraform」ワークフローが成功しているか確認する。
   2. **手動で再デプロイ**: リポジトリの Actions タブで「Deploy Terraform」を選び「Run workflow」で再実行すると、再ビルド・S3 同期・CloudFront 無効化が行われます。

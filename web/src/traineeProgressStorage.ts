@@ -25,6 +25,8 @@ export type TraineeProgressSnapshot = {
   currentDay: number
   delayedIds: string[]
   updatedAt: string
+  /** ピン留めした課題ID（サーバー同期用） */
+  pins: string[]
 }
 
 /** 受講生IDは小文字統一（kira-test 等）。大文字小文字のずれを防ぐ。 */
@@ -69,8 +71,8 @@ export function addTrainee(username: string): void {
   saveTraineeList([...list, id])
 }
 
-/** 現在のグローバル進捗からスナップショットを生成（受講生が利用中に呼ぶ） */
-export function getCurrentProgressSnapshot(): TraineeProgressSnapshot {
+/** 現在のグローバル進捗からスナップショットを生成（受講生が利用中に呼ぶ）。pins は呼び出し元でマージする。 */
+export function getCurrentProgressSnapshot(pinsOverride?: string[]): TraineeProgressSnapshot {
   return {
     introConfirmed: getIntroConfirmed(),
     introAt: getIntroConfirmedAt(),
@@ -79,6 +81,7 @@ export function getCurrentProgressSnapshot(): TraineeProgressSnapshot {
     currentDay: getCurrentProjectDay(),
     delayedIds: getDelayedTaskIds(),
     updatedAt: new Date().toISOString(),
+    pins: Array.isArray(pinsOverride) ? pinsOverride : [],
   }
 }
 
@@ -112,6 +115,7 @@ export function getProgressSnapshot(username: string): TraineeProgressSnapshot |
       currentDay: typeof d.currentDay === 'number' ? d.currentDay : 0,
       delayedIds: Array.isArray(d.delayedIds) ? (d.delayedIds as string[]) : [],
       updatedAt: typeof d.updatedAt === 'string' ? d.updatedAt : '',
+      pins: Array.isArray(d.pins) ? (d.pins as string[]) : [],
     }
   } catch {
     return null
@@ -132,6 +136,7 @@ export function getProgressSnapshotLive(username: string): TraineeProgressSnapsh
       currentDay: 0,
       delayedIds: [],
       updatedAt: new Date().toISOString(),
+      pins: [],
     }
   }
   const id = username.trim().toLowerCase()
@@ -144,6 +149,7 @@ export function getProgressSnapshotLive(username: string): TraineeProgressSnapsh
       currentDay: 0,
       delayedIds: [],
       updatedAt: new Date().toISOString(),
+      pins: [],
     }
   }
   return {
@@ -154,5 +160,6 @@ export function getProgressSnapshotLive(username: string): TraineeProgressSnapsh
     currentDay: getCurrentProjectDay(id),
     delayedIds: getDelayedTaskIds(id),
     updatedAt: new Date().toISOString(),
+    pins: [],
   }
 }

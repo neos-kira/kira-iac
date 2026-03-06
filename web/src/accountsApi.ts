@@ -1,9 +1,11 @@
 import { isProgressApiAvailable } from './progressApi'
 
-const BASE_URL =
+const DEFAULT_API_URL = 'https://wfhfqq0tjh.execute-api.ap-northeast-1.amazonaws.com'
+const BASE_URL = (
   typeof import.meta.env !== 'undefined' && import.meta.env.VITE_PROGRESS_API_URL
-    ? (import.meta.env.VITE_PROGRESS_API_URL as string).replace(/\/$/, '')
-    : ''
+    ? (import.meta.env.VITE_PROGRESS_API_URL as string)
+    : DEFAULT_API_URL
+).replace(/\/$/, '')
 
 export type Account = {
   username: string
@@ -49,15 +51,53 @@ export async function fetchAccounts(): Promise<Account[]> {
   }
 }
 
+/** サーバーへ送るボディ: バックエンドは username / password（平文。ハッシュはサーバー側で実施）を期待 */
+const LOGIN_DEBUG = true
+
 export async function checkAccount(username: string, password: string): Promise<boolean> {
   if (!BASE_URL) return false
   const name = username.trim().toLowerCase()
   if (!name || !password) return false
+  const body = { username: name, password }
+  if (LOGIN_DEBUG) {
+    console.log('[auth] 送信ボディ:', { username: name, password: password ? '***' : '' })
+  }
+  try {
+    const res = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      credentials: 'omit',
+    })
+    const text = await res.text()
+    let data: { ok?: boolean; error?: string } = {}
+    try {
+      data = text ? (JSON.parse(text) as { ok?: boolean; error?: string }) : {}
+    } catch {
+      if (LOGIN_DEBUG) console.log('[auth] レスポンスパース失敗:', text?.slice(0, 200))
+    }
+    if (LOGIN_DEBUG) {
+      console.log('[auth] レスポンス:', { status: res.status, body: data })
+    }
+    if (res.ok && (data.ok === true || 'username' in data)) return true
+    if (res.status === 401) return false
+    if (res.status === 404) return checkAccountAuthCheck(name, password)
+    return false
+  } catch (err) {
+    if (LOGIN_DEBUG) console.log('[auth] 例外:', err)
+    return false
+  }
+}
+
+/** /auth/check のフォールバック（旧バックエンド用） */
+async function checkAccountAuthCheck(username: string, password: string): Promise<boolean> {
+  if (!BASE_URL) return false
   try {
     const res = await fetch(`${BASE_URL}/auth/check`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: name, password }),
+      body: JSON.stringify({ username: username.trim().toLowerCase(), password }),
+      credentials: 'omit',
     })
     if (!res.ok) return false
     const data = (await res.json()) as { ok?: boolean }

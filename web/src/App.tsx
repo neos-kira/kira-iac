@@ -30,6 +30,11 @@ import { createAccount, fetchAccounts, isAccountApiAvailable, deleteAccount, typ
 type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3'
 type PinnableId = TrainingTaskId | 'intro'
 
+const VALID_PIN_IDS: PinnableId[] = ['intro', 'infra-basic-1', 'infra-basic-2', 'infra-basic-3']
+function filterPinnableIds(ids: string[]): PinnableId[] {
+  return ids.filter((id): id is PinnableId => VALID_PIN_IDS.includes(id as PinnableId))
+}
+
 type TrainingStatus = {
   infraToolsCleared: boolean
   linuxL1Cleared: boolean
@@ -188,8 +193,11 @@ function App() {
   const [canResumeL1, setCanResumeL1] = useState(false)
   const [canResumeL2, setCanResumeL2] = useState(false)
   const [trainingStatus, setTrainingStatus] = useState<TrainingStatus>(() => readTrainingStatus())
-  const [pinnedTraining, setPinnedTraining] = useState<PinnableId[]>(() => loadPinnedTrainingTasks())
+  /** 初期値 null = 未ロード。サーバー取得完了まで PUT をブロックするため。 */
+  const [pinnedTraining, setPinnedTraining] = useState<PinnableId[] | null>(null)
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
+  /** サーバー初回 GET が完了し pinnedTraining に反映されるまで true にしない。それまでは保存処理をブロック。 */
+  const isDataReady = useRef(false)
   const [showIntroRequiredPopup, setShowIntroRequiredPopup] = useState(false)
   const [searchHistory, setSearchHistory] = useState<string[]>(() => loadSearchHistory())
   const [showSearchHistory, setShowSearchHistory] = useState(false)
@@ -351,26 +359,32 @@ function App() {
       setCanResumeL1(hasInProgressSession(getProgressKey(L1_PROGRESS_KEY), LINUX_LEVEL1_QUESTIONS.length))
       setCanResumeL2(hasInProgressSession(getProgressKey(L2_PROGRESS_KEY), TCPIP_LEVEL2_QUESTIONS.length))
       setTrainingStatus(readTrainingStatus())
-      setPinnedTraining(loadPinnedTrainingTasks())
+      // ピン留めはサーバー同期のため localStorage からは再読込しない（上書き防止）
     } catch {
       // ignore
     }
   }, [])
 
+  /** 保存処理の唯一の入口。isDataReady かつ pinnedTraining !== null のときだけ PUT する。 */
+  const guardedSavePins = useCallback((name: string, pins: PinnableId[]) => {
+    if (!isDataReady.current) {
+      console.log('[Sync] 保存ブロック中')
+      return
+    }
+    const base = getCurrentProgressSnapshot(pins)
+    if (isProgressApiAvailable()) void postProgress(name, base)
+  }, [])
+
   const handleTogglePin = useCallback((id: PinnableId) => {
+    const name = getDisplayName().trim().toLowerCase()
     setPinnedTraining((prev) => {
-      const exists = prev.includes(id)
-      const next = exists ? prev.filter((p) => p !== id) : [...prev, id]
-      if (typeof window !== 'undefined') {
-        try {
-          window.localStorage.setItem(TRAINING_PIN_KEY, JSON.stringify(next))
-        } catch {
-          // ignore
-        }
-      }
+      const list = prev ?? []
+      const exists = list.includes(id)
+      const next = exists ? list.filter((p) => p !== id) : [...list, id]
+      if (name && name !== 'admin') guardedSavePins(name, next)
       return next
     })
-  }, [])
+  }, [guardedSavePins])
 
   useEffect(() => {
     if (!resolution || resolution.feature !== 'training') return
@@ -438,15 +452,60 @@ function App() {
 
   const isAdminView = getDisplayName()?.toLowerCase() === 'admin'
 
+  /** 初回のみ: サーバーから進捗を取得し pinnedTraining をセット。必要なら localStorage を 1 回だけサーバーにマージ。完了後に isDataReady を true にする。 */
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const name = getDisplayName().trim().toLowerCase()
+    if (isAdminView || !name || name === 'admin') {
+      setPinnedTraining([])
+      isDataReady.current = true
+      return
+    }
+    if (!isProgressApiAvailable()) {
+      setPinnedTraining([])
+      isDataReady.current = true
+      return
+    }
+    isDataReady.current = false
+    let cancelled = false
+    const load = async () => {
+      const snap = await fetchMyProgress(name)
+      if (cancelled) return
+      if (snap) setServerSnapshot(snap)
+      const serverPins = filterPinnableIds(snap?.pins ?? [])
+      const localPins = loadPinnedTrainingTasks()
+      if (serverPins.length > 0) {
+        setPinnedTraining(serverPins)
+        console.log('[Sync] サーバーから取得完了')
+      } else if (localPins.length > 0) {
+        const merged = getCurrentProgressSnapshot(localPins)
+        if (isProgressApiAvailable()) await postProgress(name, merged)
+        setPinnedTraining(localPins)
+        console.log('[Sync] 初回: localStorage をサーバーにマージしました')
+      } else {
+        setPinnedTraining([])
+        console.log('[Sync] サーバーから取得完了')
+      }
+      isDataReady.current = true
+    }
+    void load()
+    return () => { cancelled = true }
+  }, [isAdminView])
+
   /** 受講生の進捗を定期保存し、ヘッダーの全体進捗％をリアルタイムで更新するための再描画用 */
   const [progressTick, setProgressTick] = useState(0)
   useEffect(() => {
     if (isAdminView || typeof window === 'undefined') return
     const save = () => {
+      if (!isDataReady.current || pinnedTraining === null) {
+        console.log('[Sync] 保存ブロック中')
+        setProgressTick((t) => t + 1)
+        return
+      }
       const name = getDisplayName()
       if (name && name.toLowerCase() !== 'admin') {
         if (getIntroConfirmed()) setIntroConfirmedForUser(name)
-        const snapshot = getCurrentProgressSnapshot()
+        const snapshot = getCurrentProgressSnapshot(pinnedTraining)
         saveProgressSnapshot(name, snapshot)
         if (isProgressApiAvailable()) void postProgress(name, snapshot)
       }
@@ -455,7 +514,7 @@ function App() {
     save()
     const id = setInterval(save, 1000)
     return () => clearInterval(id)
-  }, [isAdminView])
+  }, [isAdminView, pinnedTraining])
 
   // admin 用: アカウント一覧を定期取得し、既存の進捗から自動的に取り込む
   useEffect(() => {
@@ -1014,7 +1073,7 @@ function App() {
                 <div className="mt-3">
                   <ResolvedModulePlaceholder
                     resolution={resolution}
-                    pinnedTraining={pinnedTraining}
+                    pinnedTraining={pinnedTraining ?? []}
                     trainingStatus={trainingStatus}
                     onTogglePin={handleTogglePin}
                     onOpenInfraOrShowIntro={openInfraOrShowIntro}
@@ -1030,14 +1089,14 @@ function App() {
           </div>
 
           {/* ピン留めした課題（検索しなくてもすぐアクセス） */}
-          {pinnedTraining.length > 0 && (
+          {(pinnedTraining ?? []).length > 0 && (
             <section className="mt-6 w-full max-w-2xl rounded-2xl bg-white p-4 text-[11px] text-slate-700 shadow-sm">
               <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
                 PINNED · TRAINING
               </p>
               <p className="mt-1 text-xs text-slate-600">よく使う課題にワンクリックでアクセスできます。</p>
               <ul className="mt-3 space-y-2 text-slate-700">
-                {pinnedTraining.includes('intro') && (
+                {(pinnedTraining ?? []).includes('intro') && (
                   <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
@@ -1064,7 +1123,7 @@ function App() {
                     </button>
                   </li>
                 )}
-                {pinnedTraining.includes('infra-basic-1') && (
+                {(pinnedTraining ?? []).includes('infra-basic-1') && (
                   <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
@@ -1096,7 +1155,7 @@ function App() {
                     </button>
                   </li>
                 )}
-                {pinnedTraining.includes('infra-basic-2') && (
+                {(pinnedTraining ?? []).includes('infra-basic-2') && (
                   <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
@@ -1132,7 +1191,7 @@ function App() {
                     </button>
                   </li>
                 )}
-                {pinnedTraining.includes('infra-basic-3') && (
+                {(pinnedTraining ?? []).includes('infra-basic-3') && (
                   <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
@@ -1252,7 +1311,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
               className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-medium text-slate-600 hover:border-amber-500 hover:text-amber-700"
             >
               <span aria-hidden>📌</span>
-              {pinnedTraining.includes('intro') ? 'ピン解除' : 'ピン留め'}
+              {(pinnedTraining ?? []).includes('intro') ? 'ピン解除' : 'ピン留め'}
             </button>
             {onOpenIntro && (
               <button
@@ -1328,7 +1387,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-slate-800">インフラ基礎課題1</span>
-                  {pinnedTraining.includes('infra-basic-1') && (
+                  {(pinnedTraining ?? []).includes('infra-basic-1') && (
                     <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                       📌
                     </span>
@@ -1345,7 +1404,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                   className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-amber-600"
                 >
                   <span aria-hidden>📌</span>
-                  {pinnedTraining.includes('infra-basic-1') ? 'ピン解除' : 'ピン留め'}
+                  {(pinnedTraining ?? []).includes('infra-basic-1') ? 'ピン解除' : 'ピン留め'}
                 </button>
               </div>
               <button
@@ -1360,7 +1419,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-slate-800">インフラ基礎課題2</span>
-                  {pinnedTraining.includes('infra-basic-2') && (
+                  {(pinnedTraining ?? []).includes('infra-basic-2') && (
                     <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                       📌
                     </span>
@@ -1377,7 +1436,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                   className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-amber-600"
                 >
                   <span aria-hidden>📌</span>
-                  {pinnedTraining.includes('infra-basic-2') ? 'ピン解除' : 'ピン留め'}
+                  {(pinnedTraining ?? []).includes('infra-basic-2') ? 'ピン解除' : 'ピン留め'}
                 </button>
                 {!infra1Cleared && (
                   <p className="mt-1 text-[10px] text-amber-700">インフラ基礎課題1をクリアすると利用できます</p>
@@ -1396,7 +1455,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-slate-800">インフラ基礎課題3</span>
-                  {pinnedTraining.includes('infra-basic-3') && (
+                  {(pinnedTraining ?? []).includes('infra-basic-3') && (
                     <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                       📌
                     </span>
@@ -1413,7 +1472,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                   className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-amber-600"
                 >
                   <span aria-hidden>📌</span>
-                  {pinnedTraining.includes('infra-basic-3') ? 'ピン解除' : 'ピン留め'}
+                  {(pinnedTraining ?? []).includes('infra-basic-3') ? 'ピン解除' : 'ピン留め'}
                 </button>
                 {!infra2Cleared && (
                   <p className="mt-1 text-[10px] text-amber-700">インフラ基礎課題2をクリアすると利用できます</p>
