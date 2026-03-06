@@ -43,11 +43,13 @@ resource "aws_iam_role_policy" "progress_api_dynamodb" {
       Action = [
         "dynamodb:PutItem",
         "dynamodb:GetItem",
-        "dynamodb:Scan"
+        "dynamodb:Scan",
+        "dynamodb:DeleteItem"
       ]
       Resource = [
         aws_dynamodb_table.progress.arn,
         aws_dynamodb_table.accounts.arn,
+        aws_dynamodb_table.sessions.arn,
       ]
     }]
   })
@@ -67,10 +69,15 @@ resource "aws_lambda_function" "progress_api" {
   source_code_hash = data.archive_file.progress_api_zip.output_base64sha256
 
   environment {
-    variables = {
-      TABLE_NAME          = aws_dynamodb_table.progress.name
-      ACCOUNTS_TABLE_NAME = aws_dynamodb_table.accounts.name
-    }
+    variables = merge(
+      {
+        TABLE_NAME          = aws_dynamodb_table.progress.name
+        ACCOUNTS_TABLE_NAME = aws_dynamodb_table.accounts.name
+        SESSIONS_TABLE_NAME = aws_dynamodb_table.sessions.name
+        ALLOWED_ORIGIN      = "https://training-org.neos-nic.jp"
+      },
+      var.admin_password != null && var.admin_password != "" ? { ADMIN_PASSWORD = var.admin_password } : {}
+    )
   }
   tags = local.tags
 }
@@ -79,9 +86,10 @@ resource "aws_apigatewayv2_api" "progress" {
   name          = "${local.app_name}-progress"
   protocol_type = "HTTP"
   cors_configuration {
-    allow_origins = ["*"]
-    allow_methods = ["GET", "PUT", "POST", "DELETE", "OPTIONS"]
-    allow_headers = ["Content-Type"]
+    allow_origins     = ["https://training-org.neos-nic.jp"]
+    allow_methods     = ["GET", "PUT", "POST", "DELETE", "OPTIONS"]
+    allow_headers     = ["Content-Type", "x-session-token"]
+    allow_credentials = true
   }
   tags = local.tags
 }
@@ -145,6 +153,54 @@ resource "aws_apigatewayv2_route" "auth_check_post" {
 resource "aws_apigatewayv2_route" "auth_check_options" {
   api_id    = aws_apigatewayv2_api.progress.id
   route_key = "OPTIONS /auth/check"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
+resource "aws_apigatewayv2_route" "auth_login_post" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "POST /auth/login"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
+resource "aws_apigatewayv2_route" "auth_login_options" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "OPTIONS /auth/login"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
+resource "aws_apigatewayv2_route" "auth_logout_post" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "POST /auth/logout"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
+resource "aws_apigatewayv2_route" "auth_logout_options" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "OPTIONS /auth/logout"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
+resource "aws_apigatewayv2_route" "auth_me_get" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "GET /auth/me"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
+resource "aws_apigatewayv2_route" "auth_me_options" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "OPTIONS /auth/me"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
+resource "aws_apigatewayv2_route" "auth_verify_password_post" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "POST /auth/verify-password"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
+resource "aws_apigatewayv2_route" "auth_verify_password_options" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "OPTIONS /auth/verify-password"
   target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
 }
 

@@ -25,3 +25,22 @@ resource "aws_dynamodb_table" "accounts" {
 
   tags = local.tags
 }
+
+// セッション保存用（sessionId をキー、TTL で自動削除）
+resource "aws_dynamodb_table" "sessions" {
+  name         = "${local.app_name}-sessions"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "sessionId"
+
+  attribute {
+    name = "sessionId"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "expiresAt"
+    enabled        = true
+  }
+
+  tags = local.tags
+}

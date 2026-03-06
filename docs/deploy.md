@@ -1,6 +1,7 @@
 # デプロイ先と https://training-org.neos-nic.jp/
 
 - **main に push** すると GitHub Actions がビルドし、**S3 (`kira-project-dev-web-static`)** にアップロードし、**CloudFront のキャッシュを無効化**します。
+- **GitHub Actions で Terraform が失敗する場合**: リポジトリの **Settings → Secrets and variables → Actions** で `AWS_ACCESS_KEY_ID` と `AWS_SECRET_ACCESS_KEY` が設定されているか確認してください。admin ログイン用に `ADMIN_PASSWORD` シークレットを設定すると、Lambda に渡され admin でログインできます（未設定の場合は admin ログイン不可）。
 - **https://training-org.neos-nic.jp/** に反映されるには、このドメインが**上記 CloudFront ディストリビューション**を指している（CNAME またはエイリアス）必要があります。同じ CloudFront を指していれば、push 後の CI 完了後、数分以内に同 URL に反映されます。
 - **ローカルで S3 にだけデプロイした場合**（`aws s3 sync web/dist/ s3://kira-project-dev-web-static --delete` のみ実行した場合）:
   - CloudFront はキャッシュを持っているため、**キャッシュ無効化**を実行しないと本番 URL に反映されません。

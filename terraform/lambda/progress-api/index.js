@@ -5,6 +5,8 @@ const crypto = require('crypto')
 const client = new DynamoDBClient({})
 const TableName = process.env.TABLE_NAME
 const AccountsTableName = process.env.ACCOUNTS_TABLE_NAME
+const SessionsTableName = process.env.SESSIONS_TABLE_NAME || ''
+const AdminPassword = process.env.ADMIN_PASSWORD || ''
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -105,6 +107,89 @@ async function handler(event) {
         }),
       )
       return json({ ok: true })
+    }
+
+    // セッションログイン（トークン発行）
+    if (method === 'POST' && (path === '/auth/login' || path === '/auth/login/')) {
+      const body = JSON.parse(event.body || '{}')
+      const username = (body.username || '').trim().toLowerCase()
+      const password = typeof body.password === 'string' ? body.password : ''
+      if (!username || !password) {
+        return json({ error: 'username and password required' }, 400)
+      }
+      let ok = false
+      if (username === 'admin') {
+        ok = AdminPassword && password === AdminPassword
+      } else {
+        const res = await client.send(
+          new GetItemCommand({
+            TableName: AccountsTableName,
+            Key: marshall({ username }),
+          }),
+        )
+        if (res.Item) {
+          const account = unmarshall(res.Item)
+          const expected = typeof account.passwordHash === 'string' ? account.passwordHash : ''
+          const actual = crypto.createHash('sha256').update(password).digest('hex')
+          ok = expected && expected === actual
+        }
+      }
+      if (!ok) {
+        return json({ error: 'unauthorized' }, 401)
+      }
+      if (!SessionsTableName) {
+        return json({ ok: true, username })
+      }
+      const sessionId = crypto.randomBytes(24).toString('hex')
+      const expiresAt = Math.floor(Date.now() / 1000) + 24 * 60 * 60
+      await client.send(
+        new PutItemCommand({
+          TableName: SessionsTableName,
+          Item: marshall({
+            sessionId,
+            username,
+            expiresAt,
+          }, { removeUndefinedValues: true }),
+        }),
+      )
+      return json({ ok: true, username, token: sessionId })
+    }
+
+    // ログアウト（セッション削除）
+    if (method === 'POST' && (path === '/auth/logout' || path === '/auth/logout/')) {
+      const token = event.headers?.x-session-token || event.headers?.['x-session-token'] || ''
+      if (SessionsTableName && token) {
+        await client.send(
+          new DeleteItemCommand({
+            TableName: SessionsTableName,
+            Key: marshall({ sessionId: token }),
+          }),
+        )
+      }
+      return json({ ok: true })
+    }
+
+    // 現在のセッション確認
+    if (method === 'GET' && (path === '/auth/me' || path === '/auth/me/')) {
+      const token = event.headers?.x-session-token || event.headers?.['x-session-token'] || ''
+      if (!SessionsTableName || !token) {
+        return json({ error: 'unauthorized' }, 401)
+      }
+      const res = await client.send(
+        new GetItemCommand({
+          TableName: SessionsTableName,
+          Key: marshall({ sessionId: token }),
+        }),
+      )
+      if (!res.Item) {
+        return json({ error: 'unauthorized' }, 401)
+      }
+      const session = unmarshall(res.Item)
+      const expiresAt = session.expiresAt
+      if (expiresAt && parseInt(expiresAt, 10) < Math.floor(Date.now() / 1000)) {
+        return json({ error: 'unauthorized' }, 401)
+      }
+      return json({ username: session.username })
     }
 
     // ログイン可否チェック（LoginPage 用）
