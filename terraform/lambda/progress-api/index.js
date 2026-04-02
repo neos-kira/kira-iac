@@ -48,6 +48,7 @@ async function handler(event) {
         delayedIds: Array.isArray(body.delayedIds) ? body.delayedIds : [],
         updatedAt: body.updatedAt || new Date().toISOString(),
         pins: Array.isArray(body.pins) ? body.pins : [],
+        trainingStartDate: typeof body.trainingStartDate === 'string' ? body.trainingStartDate : null,
         infra4ViDoneSteps: Array.isArray(body.infra4ViDoneSteps) ? body.infra4ViDoneSteps : [],
         infra4ShellDoneQuestions: Array.isArray(body.infra4ShellDoneQuestions) ? body.infra4ShellDoneQuestions : [],
         infra4Rag: typeof body.infra4Rag === 'string' ? body.infra4Rag : null,

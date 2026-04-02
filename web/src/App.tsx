@@ -23,7 +23,7 @@ import {
 import { isJTerada, J_TERADA_ALLOWED_LINKS } from './specialUsers'
 import { getIntroConfirmed, setIntroConfirmedForUser } from './training/introGate'
 import { LOGIN_FLAG_KEY, getCurrentDisplayName } from './auth'
-import { getCurrentProgressSnapshot, saveProgressSnapshot, type TraineeProgressSnapshot } from './traineeProgressStorage'
+import { getCurrentProgressSnapshot, saveProgressSnapshot, restoreProgressToLocalStorage, type TraineeProgressSnapshot } from './traineeProgressStorage'
 import { isProgressApiAvailable, postProgress, fetchMyProgress, fetchProgressFromApi } from './progressApi'
 import { createAccount, fetchAccounts, isAccountApiAvailable, deleteAccount, type Account } from './accountsApi'
 
@@ -496,7 +496,13 @@ function App() {
     const load = async () => {
       const snap = await fetchMyProgress(name)
       if (cancelled) return
-      if (snap) setServerSnapshot(snap)
+      if (snap) {
+        // isDataReady を true にする前に localStorage へ復元する。
+        // これをしないと、別端末ログイン時に save インターバルが空の localStorage を
+        // サーバーに上書き送信してしまう（introConfirmed: false 等で二重破壊になる）。
+        restoreProgressToLocalStorage(name, snap)
+        setServerSnapshot(snap)
+      }
       const serverPins = filterPinnableIds(snap?.pins ?? [])
       const localPins = loadPinnedTrainingTasks()
       if (serverPins.length > 0) {

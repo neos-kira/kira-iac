@@ -47,6 +47,16 @@ export function setIntroConfirmedForUser(username: string): void {
   window.localStorage.setItem(atKey, new Date().toISOString())
 }
 
+/** サーバー復元用: タイムスタンプを保持したまま「はじめに」完了を localStorage に書き戻す。at が null の場合は現在日時を使用。 */
+export function setIntroConfirmedForUserWithTimestamp(username: string, at: string | null): void {
+  if (typeof window === 'undefined' || !username || username.toLowerCase() === 'admin') return
+  const id = username.trim().toLowerCase()
+  const key = `${INTRO_CONFIRMED_KEY}_${id}`
+  const atKey = `${INTRO_CONFIRMED_AT_KEY}_${id}`
+  window.localStorage.setItem(key, 'true')
+  window.localStorage.setItem(atKey, at || new Date().toISOString())
+}
+
 /** 現在ログイン中のユーザーの「はじめに」完了状態をクリアする（進捗リセット用） */
 export function clearIntroForCurrentUser(): void {
   if (typeof window === 'undefined') return

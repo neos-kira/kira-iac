@@ -2,14 +2,27 @@
  * 受講生リストと進捗スナップショットを localStorage に保存し、
  * 管理者画面で admin 以外の受講生（kira-test 等）の進捗を一覧表示するための仕組み。
  */
-import { getIntroConfirmed, getIntroConfirmedAt, getIntroConfirmedForUser, getIntroConfirmedAtForUser } from './training/introGate'
+import { getIntroConfirmed, getIntroConfirmedAt, getIntroConfirmedForUser, getIntroConfirmedAtForUser, setIntroConfirmedForUserWithTimestamp } from './training/introGate'
 import {
   getWbsProgressPercent,
   getChapterProgressList,
   getCurrentProjectDay,
   getDelayedTaskIds,
+  getProgressKey,
+  getTrainingStartDate,
+  TRAINING_START_DATE_KEY,
 } from './training/trainingWbsData'
 import type { ChapterProgress } from './training/trainingWbsData'
+import { INFRA_BASIC_1_CLEARED_KEY } from './training/infraBasic1Data'
+import { L1_CLEARED_KEY } from './training/linuxLevel1Data'
+import { L2_CLEARED_KEY } from './training/linuxLevel2Data'
+import { INFRA_BASIC_3_2_CLEARED_KEY } from './training/infraBasic3Data'
+import {
+  INFRA_BASIC_4_VI_ALL_CLEARED_KEY,
+  INFRA_BASIC_4_SHELL_ALL_CLEARED_KEY,
+  getViStepKey,
+  getShellQuestionKey,
+} from './training/InfraBasic4Data'
 
 const TRAINEE_LIST_KEY = 'kira-admin-trainee-list'
 const PROGRESS_SNAPSHOT_PREFIX = 'kira-progress-snapshot-'
@@ -27,6 +40,8 @@ export type TraineeProgressSnapshot = {
   updatedAt: string
   /** ピン留めした課題ID（サーバー同期用） */
   pins: string[]
+  /** 研修開始日（YYYY-MM-DD）。別端末復元用。 */
+  trainingStartDate?: string | null
   /** 課題4: vi 操作で完了済みのステップ番号一覧（サーバー同期用） */
   infra4ViDoneSteps?: number[]
   /** 課題4: シェルスクリプト演習で完了済みの問題番号一覧（サーバー同期用） */
@@ -88,6 +103,7 @@ export function getCurrentProgressSnapshot(pinsOverride?: string[]): TraineeProg
     delayedIds: getDelayedTaskIds(),
     updatedAt: new Date().toISOString(),
     pins: Array.isArray(pinsOverride) ? pinsOverride : [],
+    trainingStartDate: getTrainingStartDate() || null,
     infra4ViDoneSteps: [],
     infra4ShellDoneQuestions: [],
     infra4Rag: null,
@@ -125,6 +141,7 @@ export function getProgressSnapshot(username: string): TraineeProgressSnapshot |
       delayedIds: Array.isArray(d.delayedIds) ? (d.delayedIds as string[]) : [],
       updatedAt: typeof d.updatedAt === 'string' ? d.updatedAt : '',
       pins: Array.isArray(d.pins) ? (d.pins as string[]) : [],
+      trainingStartDate: typeof (d as any).trainingStartDate === 'string' ? (d as any).trainingStartDate : null,
       infra4ViDoneSteps: Array.isArray((d as any).infra4ViDoneSteps)
         ? ((d as any).infra4ViDoneSteps as number[])
         : [],
@@ -183,8 +200,63 @@ export function getProgressSnapshotLive(username: string): TraineeProgressSnapsh
     delayedIds: getDelayedTaskIds(id),
     updatedAt: new Date().toISOString(),
     pins: [],
+    trainingStartDate: getTrainingStartDate(id) || null,
     infra4ViDoneSteps: [],
     infra4ShellDoneQuestions: [],
     infra4Rag: null,
+  }
+}
+
+/**
+ * サーバーから取得したスナップショットを localStorage に書き戻す。
+ * 別端末ログイン時に進捗が消えないよう、isDataReady を true にする前に必ず呼ぶこと。
+ * 既に値がある場合は上書きしない（端末上での新しい操作を優先）。
+ */
+export function restoreProgressToLocalStorage(username: string, snap: TraineeProgressSnapshot): void {
+  if (typeof window === 'undefined' || !username || username.toLowerCase() === 'admin') return
+  const id = username.trim().toLowerCase()
+
+  // はじめに完了状態（元のタイムスタンプを保持）
+  if (snap.introConfirmed) {
+    setIntroConfirmedForUserWithTimestamp(id, snap.introAt)
+  }
+
+  // 研修開始日（未設定の場合のみ復元）
+  if (snap.trainingStartDate) {
+    const startKey = getProgressKey(TRAINING_START_DATE_KEY, id)
+    if (!window.localStorage.getItem(startKey)) {
+      window.localStorage.setItem(startKey, snap.trainingStartDate)
+    }
+  }
+
+  // チャプタークリアフラグ（chapterProgress の cleared が true のものだけ復元）
+  // index 0→課題1, 1→課題2, 2→課題3, 3→課題4 に対応
+  const CHAPTER_CLEARED_KEYS: string[][] = [
+    [INFRA_BASIC_1_CLEARED_KEY, L1_CLEARED_KEY],
+    [L2_CLEARED_KEY],
+    [INFRA_BASIC_3_2_CLEARED_KEY],
+    [INFRA_BASIC_4_VI_ALL_CLEARED_KEY, INFRA_BASIC_4_SHELL_ALL_CLEARED_KEY],
+  ]
+  if (Array.isArray(snap.chapterProgress)) {
+    snap.chapterProgress.forEach((ch, i) => {
+      if (!ch.cleared) return
+      const keys = CHAPTER_CLEARED_KEYS[i]
+      if (!keys) return
+      keys.forEach((k) => window.localStorage.setItem(getProgressKey(k, id), 'true'))
+    })
+  }
+
+  // 課題4 vi 操作の完了ステップ
+  if (Array.isArray(snap.infra4ViDoneSteps)) {
+    snap.infra4ViDoneSteps.forEach((step) => {
+      window.localStorage.setItem(getProgressKey(getViStepKey(step), id), 'true')
+    })
+  }
+
+  // 課題4 シェルスクリプト演習の完了問題
+  if (Array.isArray(snap.infra4ShellDoneQuestions)) {
+    snap.infra4ShellDoneQuestions.forEach((q) => {
+      window.localStorage.setItem(getProgressKey(getShellQuestionKey(q), id), 'true')
+    })
   }
 }
