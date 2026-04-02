@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { OpenInNewTabButton } from '../components/OpenInNewTabButton'
 import { getTaskProgressList, getTrainingStartDate, setTrainingStartDateFromTask1Start, clearTask1Cache } from './trainingWbsData'
+import { getCurrentDisplayName } from '../auth'
+import { fetchMyProgress } from '../progressApi'
+import { restoreProgressToLocalStorage } from '../traineeProgressStorage'
 
 function getTrainingUrl(path: string) {
   const base = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname || '/'}`.replace(/\/$/, '') || window.location.origin : ''
@@ -19,9 +22,21 @@ export function InfraBasicTopPage() {
   }, [])
 
   useEffect(() => {
-    if (!getTrainingStartDate()) {
-      setShowStartConfirm(true)
+    // localStorage に開始日がなければサーバーから復元を試みてから判定する。
+    // App.tsx の非同期フェッチより先にこのページが表示された場合のレースコンディション対策。
+    const checkAfterRestore = async () => {
+      if (!getTrainingStartDate()) {
+        const username = getCurrentDisplayName()
+        if (username && username.toLowerCase() !== 'admin') {
+          const snap = await fetchMyProgress(username)
+          if (snap) restoreProgressToLocalStorage(username, snap)
+        }
+      }
+      if (!getTrainingStartDate()) {
+        setShowStartConfirm(true)
+      }
     }
+    checkAfterRestore()
   }, [])
 
   const handleConfirmStart = () => {
