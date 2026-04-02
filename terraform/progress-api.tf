@@ -86,9 +86,9 @@ resource "aws_apigatewayv2_api" "progress" {
   name          = "${local.app_name}-progress"
   protocol_type = "HTTP"
   cors_configuration {
-    allow_origins     = ["https://training-org.neos-nic.jp"]
+    allow_origins     = ["https://training-org.neos-nic.jp", "https://d207ajp3bvbh1h.cloudfront.net"]
     allow_methods     = ["GET", "PUT", "POST", "DELETE", "OPTIONS"]
-    allow_headers     = ["Content-Type", "x-session-token"]
+    allow_headers     = ["Content-Type", "x-session-token", "Authorization"]
     allow_credentials = true
   }
   tags = local.tags

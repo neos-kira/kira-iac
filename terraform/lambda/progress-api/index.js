@@ -48,6 +48,9 @@ async function handler(event) {
         delayedIds: Array.isArray(body.delayedIds) ? body.delayedIds : [],
         updatedAt: body.updatedAt || new Date().toISOString(),
         pins: Array.isArray(body.pins) ? body.pins : [],
+        infra4ViDoneSteps: Array.isArray(body.infra4ViDoneSteps) ? body.infra4ViDoneSteps : [],
+        infra4ShellDoneQuestions: Array.isArray(body.infra4ShellDoneQuestions) ? body.infra4ShellDoneQuestions : [],
+        infra4Rag: typeof body.infra4Rag === 'string' ? body.infra4Rag : null,
       }
       await client.send(new PutItemCommand({ TableName, Item: marshall(Item, { removeUndefinedValues: true }) }))
       return json({ ok: true })
@@ -157,7 +160,7 @@ async function handler(event) {
 
     // ログアウト（セッション削除）
     if (method === 'POST' && (path === '/auth/logout' || path === '/auth/logout/')) {
-      const token = event.headers?.x-session-token || event.headers?.['x-session-token'] || ''
+      const token = event.headers?.['x-session-token'] || ''
       if (SessionsTableName && token) {
         await client.send(
           new DeleteItemCommand({
@@ -171,7 +174,7 @@ async function handler(event) {
 
     // 現在のセッション確認
     if (method === 'GET' && (path === '/auth/me' || path === '/auth/me/')) {
-      const token = event.headers?.x-session-token || event.headers?.['x-session-token'] || ''
+      const token = event.headers?.['x-session-token'] || ''
       if (!SessionsTableName || !token) {
         return json({ error: 'unauthorized' }, 401)
       }
