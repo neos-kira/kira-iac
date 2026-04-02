@@ -7,6 +7,35 @@ const BASE_URL = (
     : DEFAULT_API_URL
 ).replace(/\/$/, '')
 
+const SESSION_TOKEN_KEY = 'kira-session-token'
+
+function setCookieValue(name: string, value: string, maxAgeSeconds = 86400): void {
+  if (typeof document === 'undefined') return
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; samesite=lax`
+}
+
+function clearCookieValue(name: string): void {
+  if (typeof document === 'undefined') return
+  document.cookie = `${name}=; path=/; max-age=0; samesite=lax`
+}
+
+async function saveSessionToken(token: string | null) {
+  if (typeof window === 'undefined') return
+  try {
+    if (token) {
+      window.localStorage.setItem(SESSION_TOKEN_KEY, token)
+      setCookieValue(SESSION_TOKEN_KEY, token)
+      console.log('Login Success: Token Saved')
+    } else {
+      window.localStorage.removeItem(SESSION_TOKEN_KEY)
+      clearCookieValue(SESSION_TOKEN_KEY)
+    }
+  } catch {
+    // ignore
+  }
+  await Promise.resolve()
+}
+
 export type Account = {
   username: string
   createdAt?: string
@@ -70,17 +99,24 @@ export async function checkAccount(username: string, password: string): Promise<
       credentials: 'omit',
     })
     const text = await res.text()
-    let data: { ok?: boolean; error?: string } = {}
+    type LoginRes = { ok?: boolean; error?: string; username?: string; token?: string }
+    let data: LoginRes = {}
     try {
-      data = text ? (JSON.parse(text) as { ok?: boolean; error?: string }) : {}
+      data = text ? (JSON.parse(text) as LoginRes) : {}
     } catch {
       if (LOGIN_DEBUG) console.log('[auth] レスポンスパース失敗:', text?.slice(0, 200))
     }
     if (LOGIN_DEBUG) {
       console.log('[auth] レスポンス:', { status: res.status, body: data })
     }
-    if (res.ok && (data.ok === true || 'username' in data)) return true
-    if (res.status === 401) return false
+    if (res.ok && (data.ok === true || 'username' in data)) {
+      if (typeof data.token === 'string' && data.token) await saveSessionToken(data.token)
+      return true
+    }
+    if (res.status === 401) {
+      await saveSessionToken(null)
+      return false
+    }
     if (res.status === 404) return checkAccountAuthCheck(name, password)
     return false
   } catch (err) {

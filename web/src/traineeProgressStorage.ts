@@ -27,6 +27,12 @@ export type TraineeProgressSnapshot = {
   updatedAt: string
   /** ピン留めした課題ID（サーバー同期用） */
   pins: string[]
+  /** 課題4: vi 操作で完了済みのステップ番号一覧（サーバー同期用） */
+  infra4ViDoneSteps?: number[]
+  /** 課題4: シェルスクリプト演習で完了済みの問題番号一覧（サーバー同期用） */
+  infra4ShellDoneQuestions?: number[]
+  /** 課題4: RAG ステータス（green / yellow / red） */
+  infra4Rag?: 'green' | 'yellow' | 'red' | null
 }
 
 /** 受講生IDは小文字統一（kira-test 等）。大文字小文字のずれを防ぐ。 */
@@ -82,6 +88,9 @@ export function getCurrentProgressSnapshot(pinsOverride?: string[]): TraineeProg
     delayedIds: getDelayedTaskIds(),
     updatedAt: new Date().toISOString(),
     pins: Array.isArray(pinsOverride) ? pinsOverride : [],
+    infra4ViDoneSteps: [],
+    infra4ShellDoneQuestions: [],
+    infra4Rag: null,
   }
 }
 
@@ -116,6 +125,16 @@ export function getProgressSnapshot(username: string): TraineeProgressSnapshot |
       delayedIds: Array.isArray(d.delayedIds) ? (d.delayedIds as string[]) : [],
       updatedAt: typeof d.updatedAt === 'string' ? d.updatedAt : '',
       pins: Array.isArray(d.pins) ? (d.pins as string[]) : [],
+      infra4ViDoneSteps: Array.isArray((d as any).infra4ViDoneSteps)
+        ? ((d as any).infra4ViDoneSteps as number[])
+        : [],
+      infra4ShellDoneQuestions: Array.isArray((d as any).infra4ShellDoneQuestions)
+        ? ((d as any).infra4ShellDoneQuestions as number[])
+        : [],
+      infra4Rag:
+        typeof (d as any).infra4Rag === 'string'
+          ? (((d as any).infra4Rag as string) as 'green' | 'yellow' | 'red')
+          : null,
     }
   } catch {
     return null
@@ -150,6 +169,9 @@ export function getProgressSnapshotLive(username: string): TraineeProgressSnapsh
       delayedIds: [],
       updatedAt: new Date().toISOString(),
       pins: [],
+      infra4ViDoneSteps: [],
+      infra4ShellDoneQuestions: [],
+      infra4Rag: null,
     }
   }
   return {
@@ -161,5 +183,8 @@ export function getProgressSnapshotLive(username: string): TraineeProgressSnapsh
     delayedIds: getDelayedTaskIds(id),
     updatedAt: new Date().toISOString(),
     pins: [],
+    infra4ViDoneSteps: [],
+    infra4ShellDoneQuestions: [],
+    infra4Rag: null,
   }
 }

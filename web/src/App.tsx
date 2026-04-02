@@ -22,15 +22,15 @@ import {
 } from './training/trainingWbsData'
 import { isJTerada, J_TERADA_ALLOWED_LINKS } from './specialUsers'
 import { getIntroConfirmed, setIntroConfirmedForUser } from './training/introGate'
-import { LOGIN_FLAG_KEY } from './auth'
+import { LOGIN_FLAG_KEY, getCurrentDisplayName } from './auth'
 import { getCurrentProgressSnapshot, saveProgressSnapshot, type TraineeProgressSnapshot } from './traineeProgressStorage'
 import { isProgressApiAvailable, postProgress, fetchMyProgress, fetchProgressFromApi } from './progressApi'
 import { createAccount, fetchAccounts, isAccountApiAvailable, deleteAccount, type Account } from './accountsApi'
 
-type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3'
+type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3' | 'infra-basic-4'
 type PinnableId = TrainingTaskId | 'intro'
 
-const VALID_PIN_IDS: PinnableId[] = ['intro', 'infra-basic-1', 'infra-basic-2', 'infra-basic-3']
+const VALID_PIN_IDS: PinnableId[] = ['intro', 'infra-basic-1', 'infra-basic-2', 'infra-basic-3', 'infra-basic-4']
 function filterPinnableIds(ids: string[]): PinnableId[] {
   return ids.filter((id): id is PinnableId => VALID_PIN_IDS.includes(id as PinnableId))
 }
@@ -87,8 +87,17 @@ function saveSearchHistory(history: string[]) {
 }
 const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
 function getDisplayName(): string {
-  if (typeof window === 'undefined') return 'kira-test'
-  return window.localStorage.getItem(USER_DISPLAY_NAME_KEY) || 'kira-test'
+  return getCurrentDisplayName()
+}
+
+function isKiraTestUser(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    const name = getDisplayName().trim().toLowerCase()
+    return name === 'kira-test'
+  } catch {
+    return false
+  }
 }
 
 function loadPinnedTrainingTasks(): PinnableId[] {
@@ -131,6 +140,10 @@ function handleLogout() {
     window.sessionStorage.removeItem(ADMIN_SESSION_KEY)
     window.localStorage.removeItem(USER_DISPLAY_NAME_KEY)
     window.localStorage.removeItem(LOGIN_FLAG_KEY)
+    window.localStorage.removeItem('kira-session-token')
+    document.cookie = 'kira-user-display-name=; path=/; max-age=0; samesite=lax'
+    document.cookie = 'kira-user-logged-in=; path=/; max-age=0; samesite=lax'
+    document.cookie = 'kira-session-token=; path=/; max-age=0; samesite=lax'
     const base = (window.location.origin + window.location.pathname + (window.location.search || '')).replace(/\/$/, '') || window.location.origin
     window.location.href = base + '#/login'
   } catch {
@@ -182,8 +195,8 @@ function JTeradaRestrictedView() {
 }
 
 function App() {
-  const displayName = getDisplayName()
-  if (isJTerada(displayName) && isTask1Cleared()) {
+  const rawDisplayName = getDisplayName()
+  if (isJTerada(rawDisplayName) && isTask1Cleared()) {
     return <JTeradaRestrictedView />
   }
 
@@ -366,14 +379,24 @@ function App() {
   }, [])
 
   /** 保存処理の唯一の入口。isDataReady かつ pinnedTraining !== null のときだけ PUT する。 */
-  const guardedSavePins = useCallback((name: string, pins: PinnableId[]) => {
-    if (!isDataReady.current) {
-      console.log('[Sync] 保存ブロック中')
-      return
-    }
-    const base = getCurrentProgressSnapshot(pins)
-    if (isProgressApiAvailable()) void postProgress(name, base)
-  }, [])
+  const guardedSavePins = useCallback(
+    (name: string, pins: PinnableId[]) => {
+      if (!isDataReady.current) {
+        console.log('[Sync] 保存ブロック中')
+        return
+      }
+      const base = getCurrentProgressSnapshot(pins)
+      const merged = {
+        ...base,
+        infra4ViDoneSteps: serverSnapshot?.infra4ViDoneSteps ?? base.infra4ViDoneSteps ?? [],
+        infra4ShellDoneQuestions:
+          serverSnapshot?.infra4ShellDoneQuestions ?? base.infra4ShellDoneQuestions ?? [],
+        infra4Rag: serverSnapshot?.infra4Rag ?? base.infra4Rag ?? null,
+      }
+      if (isProgressApiAvailable()) void postProgress(name, merged)
+    },
+    [serverSnapshot],
+  )
 
   const handleTogglePin = useCallback((id: PinnableId) => {
     const name = getDisplayName().trim().toLowerCase()
@@ -450,7 +473,9 @@ function App() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showSearchHistory])
 
-  const isAdminView = getDisplayName()?.toLowerCase() === 'admin'
+  const displayName = getDisplayName()?.toLowerCase()
+  const isAdminView = displayName === 'admin'
+  const isKiraTest = isKiraTestUser()
 
   /** 初回のみ: サーバーから進捗を取得し pinnedTraining をセット。必要なら localStorage を 1 回だけサーバーにマージ。完了後に isDataReady を true にする。 */
   useEffect(() => {
@@ -505,7 +530,14 @@ function App() {
       const name = getDisplayName()
       if (name && name.toLowerCase() !== 'admin') {
         if (getIntroConfirmed()) setIntroConfirmedForUser(name)
-        const snapshot = getCurrentProgressSnapshot(pinnedTraining)
+        const base = getCurrentProgressSnapshot(pinnedTraining)
+        const snapshot = {
+          ...base,
+          infra4ViDoneSteps: serverSnapshot?.infra4ViDoneSteps ?? base.infra4ViDoneSteps ?? [],
+          infra4ShellDoneQuestions:
+            serverSnapshot?.infra4ShellDoneQuestions ?? base.infra4ShellDoneQuestions ?? [],
+          infra4Rag: serverSnapshot?.infra4Rag ?? base.infra4Rag ?? null,
+        }
         saveProgressSnapshot(name, snapshot)
         if (isProgressApiAvailable()) void postProgress(name, snapshot)
       }
@@ -514,7 +546,7 @@ function App() {
     save()
     const id = setInterval(save, 1000)
     return () => clearInterval(id)
-  }, [isAdminView, pinnedTraining])
+  }, [isAdminView, pinnedTraining, serverSnapshot])
 
   // admin 用: アカウント一覧を定期取得し、既存の進捗から自動的に取り込む
   useEffect(() => {
@@ -1177,13 +1209,13 @@ function App() {
                         <span aria-hidden>📌</span>
                         ピン解除
                       </button>
-                      {!(trainingStatus.infraToolsCleared && trainingStatus.linuxL1Cleared) && (
+                      {!isKiraTest && !(trainingStatus.infraToolsCleared && trainingStatus.linuxL1Cleared) && (
                         <p className="mt-1 text-[10px] text-amber-700">インフラ基礎課題1をクリアすると利用できます</p>
                       )}
                     </div>
                     <button
                       type="button"
-                      disabled={!(trainingStatus.infraToolsCleared && trainingStatus.linuxL1Cleared)}
+                      disabled={!isKiraTest && !(trainingStatus.infraToolsCleared && trainingStatus.linuxL1Cleared)}
                       onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-2-top'))}
                       className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
@@ -1214,13 +1246,13 @@ function App() {
                         <span aria-hidden>📌</span>
                         ピン解除
                       </button>
-                      {!trainingStatus.linuxL2Cleared && (
+                      {!isKiraTest && !trainingStatus.linuxL2Cleared && (
                         <p className="mt-1 text-[10px] text-amber-700">インフラ基礎課題2をクリアすると利用できます</p>
                       )}
                     </div>
                     <button
                       type="button"
-                      disabled={!trainingStatus.linuxL2Cleared}
+                      disabled={!isKiraTest && !trainingStatus.linuxL2Cleared}
                       onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-3-top'))}
                       className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
@@ -1430,21 +1462,21 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                     </span>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onTogglePin('infra-basic-2')}
-                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-amber-600"
-                >
-                  <span aria-hidden>📌</span>
-                  {(pinnedTraining ?? []).includes('infra-basic-2') ? 'ピン解除' : 'ピン留め'}
-                </button>
-                {!infra1Cleared && (
-                  <p className="mt-1 text-[10px] text-amber-700">インフラ基礎課題1をクリアすると利用できます</p>
-                )}
+              <button
+                type="button"
+                onClick={() => onTogglePin('infra-basic-2')}
+                className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-amber-600"
+              >
+                <span aria-hidden>📌</span>
+                {(pinnedTraining ?? []).includes('infra-basic-2') ? 'ピン解除' : 'ピン留め'}
+              </button>
+              {!isKiraTestUser() && !infra1Cleared && (
+                <p className="mt-1 text-[10px] text-amber-700">インフラ基礎課題1をクリアすると利用できます</p>
+              )}
               </div>
               <button
                 type="button"
-                disabled={!infra1Cleared}
+                disabled={!isKiraTestUser() && !infra1Cleared}
                 onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-2-top'))}
                 className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -1474,14 +1506,45 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                   <span aria-hidden>📌</span>
                   {(pinnedTraining ?? []).includes('infra-basic-3') ? 'ピン解除' : 'ピン留め'}
                 </button>
-                {!infra2Cleared && (
+                {!isKiraTestUser() && !infra2Cleared && (
                   <p className="mt-1 text-[10px] text-amber-700">インフラ基礎課題2をクリアすると利用できます</p>
                 )}
               </div>
               <button
                 type="button"
-                disabled={!infra2Cleared}
+                disabled={!isKiraTestUser() && !infra2Cleared}
                 onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-3-top'))}
+                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                別タブで開く
+              </button>
+            </li>
+            <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-slate-800">インフラ基礎課題4（vi & シェルスクリプト演習）</span>
+                  {(pinnedTraining ?? []).includes('infra-basic-4') && (
+                    <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                      📌
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onTogglePin('infra-basic-4')}
+                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-amber-600"
+                >
+                  <span aria-hidden>📌</span>
+                  {(pinnedTraining ?? []).includes('infra-basic-4') ? 'ピン解除' : 'ピン留め'}
+                </button>
+                {!isKiraTestUser() && !infra3Cleared && (
+                  <p className="mt-1 text-[10px] text-amber-700">インフラ基礎課題3をクリアすると利用できます</p>
+                )}
+              </div>
+              <button
+                type="button"
+                disabled={!isKiraTestUser() && !infra3Cleared}
+                onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-4'))}
                 className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 別タブで開く

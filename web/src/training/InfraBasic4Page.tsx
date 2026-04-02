@@ -1,199 +1,317 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getProgressKey } from './trainingWbsData'
-import {
-  AL2023_DAYS,
-  INFRA_BASIC_4_CLEARED_KEY,
-  getDayClearedKey,
-  getDayDevLogKey,
-  loadDayDevLog,
-  saveDayDevLog,
-  isDayCleared,
-  setDayCleared,
-  setAl2023AllClearedIfDone,
-  getAl2023ClearedCount,
-} from './InfraBasic4Data'
+import { getCurrentUsername } from '../auth'
+import { VI_STEPS, SHELL_QUESTIONS, type InfraBasic4Rag } from './InfraBasic4Data'
+import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
+import { getCurrentProgressSnapshot } from '../traineeProgressStorage'
+import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
 
-function getTrainingUrl(path: string): string {
-  const base =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}${window.location.pathname || '/'}`.replace(/\/$/, '') || window.location.origin
-      : ''
-  return `${base}#${path}`
+type VirtualFs = {
+  viNeOS: string
+  scripts: Record<string, string>
 }
 
-function useProgressKeys() {
-  const resolveClearedKey = useCallback((day: number) => getProgressKey(getDayClearedKey(day)), [])
-  const resolveDevLogKey = useCallback((day: number) => getProgressKey(getDayDevLogKey(day)), [])
-  return { resolveClearedKey, resolveDevLogKey }
+function InlineTerminal({
+  value,
+  onChange,
+  output,
+}: {
+  value: string
+  onChange: (v: string) => void
+  output: string
+}) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-900 text-slate-50 shadow-inner">
+      <div className="flex items-center gap-2 border-b border-slate-700 bg-slate-800 px-3 py-1.5 text-[11px] text-slate-300">
+        <span className="flex h-2 w-2 rounded-full bg-rose-500" />
+        <span className="flex h-2 w-2 rounded-full bg-amber-500" />
+        <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
+        <span className="ml-2 font-mono text-[10px]">mock-terminal</span>
+      </div>
+      <div className="grid gap-2 p-3">
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="min-h-[80px] w-full resize-y rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 font-mono text-[12px] text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          placeholder="$ vi viNeOS\n$ ls\n$ cat viNeOS"
+          spellCheck={false}
+        />
+        <pre className="min-h-[40px] whitespace-pre-wrap rounded-md border border-slate-800 bg-slate-950 px-2 py-1.5 font-mono text-[11px] text-slate-200">
+          {output || '$ '}
+        </pre>
+      </div>
+    </div>
+  )
 }
 
 export function InfraBasic4Page() {
   const navigate = useNavigate()
-  const { resolveClearedKey, resolveDevLogKey } = useProgressKeys()
-  const [devLogs, setDevLogs] = useState<Record<number, string>>(() =>
-    Object.fromEntries(AL2023_DAYS.map((d) => [d.day, loadDayDevLog(d.day, resolveDevLogKey(d.day))]))
-  )
-  const [cleared, setCleared] = useState<Record<number, boolean>>(() =>
-    Object.fromEntries(AL2023_DAYS.map((d) => [d.day, isDayCleared(d.day, resolveClearedKey(d.day))]))
-  )
-  const clearedCount = getAl2023ClearedCount(resolveClearedKey)
+  const username = getCurrentUsername()
+  const isKiraTest = username === 'kira-test'
 
-  const refreshCleared = useCallback(() => {
-    setCleared(Object.fromEntries(AL2023_DAYS.map((d) => [d.day, isDayCleared(d.day, resolveClearedKey(d.day))])))
-  }, [resolveClearedKey])
+  const [, setSnapshot] = useState<TraineeProgressSnapshot | null>(null)
+  const [viDone, setViDone] = useState<Record<number, boolean>>({})
+  const [shellDone, setShellDone] = useState<Record<number, boolean>>({})
+  const [rag, setRag] = useState<InfraBasic4Rag | null>(null)
+  const [fs, setFs] = useState<VirtualFs>({ viNeOS: '', scripts: {} })
+  const [terminalInput, setTerminalInput] = useState<Record<string, string>>({})
+  const [terminalOutput] = useState<Record<string, string>>({})
+
+  const viDoneCount = VI_STEPS.filter((s) => viDone[s.step]).length
+  const shellDoneCount = SHELL_QUESTIONS.filter((s) => shellDone[s.q]).length
+  const viAll = viDoneCount === VI_STEPS.length
+  const shellUnlocked = isKiraTest || viAll
 
   useEffect(() => {
-    document.title = 'インフラ基礎課題4 - AL2023 10日間プロジェクト'
+    document.title = 'インフラ基礎課題4 - vi & シェルスクリプト'
   }, [])
 
-  const handleDevLogChange = (day: number, value: string) => {
-    setDevLogs((prev) => ({ ...prev, [day]: value }))
-    saveDayDevLog(day, value, resolveDevLogKey(day))
+  useEffect(() => {
+    if (!isProgressApiAvailable() || typeof window === 'undefined') return
+    const name = username.trim().toLowerCase()
+    if (!name || name === 'admin') return
+    let cancelled = false
+    const load = async () => {
+      const snap = (await fetchMyProgress(name)) ?? getCurrentProgressSnapshot()
+      if (cancelled) return
+      setSnapshot(snap)
+      const viSteps = Array.isArray(snap.infra4ViDoneSteps) ? snap.infra4ViDoneSteps : []
+      const shellQs = Array.isArray(snap.infra4ShellDoneQuestions) ? snap.infra4ShellDoneQuestions : []
+      const viState: Record<number, boolean> = {}
+      VI_STEPS.forEach((s) => {
+        viState[s.step] = viSteps.includes(s.step)
+      })
+      const shellState: Record<number, boolean> = {}
+      SHELL_QUESTIONS.forEach((q) => {
+        shellState[q.q] = shellQs.includes(q.q)
+      })
+      setViDone(viState)
+      setShellDone(shellState)
+      setRag(snap.infra4Rag ?? null)
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [username])
+
+  const applyUpdate = async (updater: (prev: TraineeProgressSnapshot) => TraineeProgressSnapshot) => {
+    if (!isProgressApiAvailable() || typeof window === 'undefined') return
+    const name = username.trim().toLowerCase()
+    if (!name || name === 'admin') return
+    setSnapshot((prev) => {
+      const base = prev ?? getCurrentProgressSnapshot()
+      const next = updater({ ...base })
+      void postProgress(name, next)
+      return next
+    })
   }
 
-  const handleMarkDayComplete = (day: number, done: boolean) => {
-    setDayCleared(day, done, resolveClearedKey(day))
-    setAl2023AllClearedIfDone(getProgressKey(INFRA_BASIC_4_CLEARED_KEY), resolveClearedKey)
-    refreshCleared()
+  const handleToggleVi = (step: number, checked: boolean) => {
+    setViDone((prev) => ({ ...prev, [step]: checked }))
+    void applyUpdate((snap) => {
+      const current = Array.isArray(snap.infra4ViDoneSteps) ? snap.infra4ViDoneSteps : []
+      const set = new Set(current)
+      if (checked) set.add(step)
+      else set.delete(step)
+      return { ...snap, infra4ViDoneSteps: Array.from(set).sort((a, b) => a - b) }
+    })
+  }
+
+  const handleToggleShell = (q: number, checked: boolean) => {
+    setShellDone((prev) => ({ ...prev, [q]: checked }))
+    void applyUpdate((snap) => {
+      const current = Array.isArray(snap.infra4ShellDoneQuestions) ? snap.infra4ShellDoneQuestions : []
+      const set = new Set(current)
+      if (checked) set.add(q)
+      else set.delete(q)
+      return { ...snap, infra4ShellDoneQuestions: Array.from(set).sort((a, b) => a - b) }
+    })
+  }
+
+  const handleSetRag = (next: InfraBasic4Rag) => {
+    setRag(next)
+    void applyUpdate((snap) => ({ ...snap, infra4Rag: next }))
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200">
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        {/* ヘッダー */}
-        <header className="flex flex-wrap items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 text-2xl" aria-hidden>🖥️</span>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">TRAINING · INFRA</p>
-              <h1 className="mt-0.5 bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-2xl font-bold text-transparent">
-                インフラ基礎課題4（Amazon Linux 2023 構築プロジェクト）
-              </h1>
-            </div>
+    <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
+      <div className="mx-auto max-w-2xl space-y-6">
+        <header className="flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+              TRAINING · INFRA BASIC
+            </p>
+            <h1 className="mt-1 text-xl font-semibold text-slate-800">インフラ基礎課題4（vi & シェルスクリプト演習）</h1>
+            <p className="mt-1 text-xs text-slate-600">
+              4-1 vi操作と 4-2 シェルスクリプトの厳選20問を、ブラウザ上のターミナル風シミュレーターで実施します。
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="rounded-lg border border-slate-700 bg-slate-800/80 px-4 py-2">
-              <span className="text-xs text-slate-400">進捗</span>
-              <p className="text-lg font-bold text-white">{clearedCount} / 10 日</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="rounded-lg border border-slate-600 bg-slate-800/80 px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700"
-            >
-              トップへ戻る
-            </button>
-          </div>
-        </header>
-
-        <p className="text-sm text-slate-400 mb-8">
-          Amazon Linux 2 から AL2023 への移行・新規構築をテーマとした10日間の工程です。各日の作業ログ（DevLog）と品質チェックで実務ワークフローを管理します。
-        </p>
-
-        {/* Day 1〜10 */}
-        <div className="space-y-8">
-          {AL2023_DAYS.map((dayDef) => {
-            const isCleared = cleared[dayDef.day]
-            const devLog = devLogs[dayDef.day] ?? ''
-
-            return (
-              <section
-                key={dayDef.day}
-                className="rounded-2xl border border-slate-700 bg-slate-800/60 shadow-xl overflow-hidden"
-              >
-                {/* Day ヘッダー */}
-                <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-slate-700 bg-slate-900/50">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-violet-600/80 to-purple-600/80 text-lg font-bold text-white">
-                      Day {dayDef.day}
-                    </span>
-                    <div>
-                      <h2 className="text-base font-bold text-white">{dayDef.title}</h2>
-                      <p className="text-xs text-slate-400 mt-0.5">{dayDef.description}</p>
-                    </div>
-                  </div>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isCleared}
-                      onChange={(e) => handleMarkDayComplete(dayDef.day, e.target.checked)}
-                      className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-violet-500 focus:ring-violet-500"
-                    />
-                    <span className="text-sm font-medium text-slate-300">この工程を完了にする</span>
-                  </label>
-                </div>
-
-                <div className="p-5 space-y-5">
-                  {/* 目的 */}
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">目的</p>
-                    <ul className="list-disc list-inside text-sm text-slate-300 space-y-1">
-                      {dayDef.objectives.map((obj, i) => (
-                        <li key={i}>{obj}</li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* 作業日記（DevLog）ターミナル風 */}
-                  <div>
-                    <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
-                      <span aria-hidden>⚙️</span> 作業ログ（DevLog）
-                    </p>
-                    <div className="rounded-xl border border-slate-600 bg-slate-950 overflow-hidden font-mono text-sm">
-                      <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-700 bg-slate-800/80 text-slate-400 text-xs">
-                        <span className="w-2 h-2 rounded-full bg-rose-500" />
-                        <span className="w-2 h-2 rounded-full bg-amber-500" />
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <span className="ml-2">terminal — コマンドや気づきを記録</span>
-                      </div>
-                      <textarea
-                        value={devLog}
-                        onChange={(e) => handleDevLogChange(dayDef.day, e.target.value)}
-                        placeholder={`# Day ${dayDef.day} の作業メモ\n$ command\n# 気づき・メモ`}
-                        className="w-full min-h-[140px] p-4 bg-slate-950 text-slate-300 placeholder:text-slate-600 resize-y focus:outline-none focus:ring-0"
-                        spellCheck={false}
-                      />
-                    </div>
-                  </div>
-
-                  {/* QA（品質保証）セクション */}
-                  <div>
-                    <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
-                      <span aria-hidden>✅</span> 品質チェック項目
-                    </p>
-                    <div className="grid gap-3 sm:grid-cols-1">
-                      {dayDef.qaChecklist.map((qa, i) => (
-                        <div
-                          key={i}
-                          className="flex gap-3 rounded-xl border border-slate-600 bg-slate-900/50 p-4"
-                        >
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-700 text-base" aria-hidden>
-                            {qa.icon}
-                          </span>
-                          <div>
-                            <p className="font-medium text-slate-200">{qa.label}</p>
-                            <p className="text-xs text-slate-400 mt-0.5">{qa.description}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </section>
-            )
-          })}
-        </div>
-
-        <div className="mt-8 flex justify-center">
           <button
             type="button"
-            onClick={() => (window.location.href = getTrainingUrl('/'))}
-            className="rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-500/25 hover:from-violet-500 hover:to-purple-500"
+            onClick={() => navigate('/')}
+            className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
           >
-            トップに戻る
+            トップへ戻る
           </button>
-        </div>
+        </header>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">ステータス</p>
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+            <span>
+              4-1: {viDoneCount}/{VI_STEPS.length} 問 / 4-2: {shellDoneCount}/{SHELL_QUESTIONS.length} 問
+            </span>
+            <div className="ml-auto flex items-center gap-1 text-[11px]">
+              <span className="text-slate-500">RAG:</span>
+              {(['green', 'yellow', 'red'] as InfraBasic4Rag[]).map((v) => {
+                const active = rag === v
+                const base =
+                  v === 'green'
+                    ? 'bg-emerald-500 text-white'
+                    : v === 'yellow'
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-rose-500 text-white'
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => handleSetRag(v)}
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${base} ${
+                      active ? 'opacity-100' : 'opacity-40 hover:opacity-80'
+                    }`}
+                  >
+                    {v.toUpperCase()}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <p className="mt-1 text-[11px] text-slate-500">
+            {isKiraTest ? 'kira-test は 4-2 も最初から操作できます。'
+              : '通常ユーザーは 4-1 を全問クリアすると 4-2 がアンロックされます。'}
+          </p>
+        </section>
+
+        {/* 4-1: vi */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">4-1</p>
+              <h2 className="mt-1 text-sm font-semibold text-slate-800">vi操作マスター（10問）</h2>
+              <p className="mt-1 text-[11px] text-slate-600">
+                下のターミナル風入力欄はブラウザ内の仮想環境です。viNeOS という仮想ファイルに対して操作を実行します。
+              </p>
+            </div>
+          </div>
+          <InlineTerminal
+            value={terminalInput.vi ?? ''}
+            onChange={(v) =>
+              setTerminalInput((prev) => ({
+                ...prev,
+                vi: v,
+              }))
+            }
+            output={terminalOutput.vi ?? ''}
+          />
+          <ul className="mt-4 space-y-2 text-sm">
+            {VI_STEPS.map((s) => (
+              <li key={s.step} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-[12px] font-semibold text-slate-800">
+                      Step {s.step}. {s.label}
+                    </p>
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      ヒント: viNeOS の内容は下部の「仮想ファイル内容」から直接編集できます。実務では必ず保存前に内容を確認します。
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleVi(s.step, !viDone[s.step])}
+                    className={`ml-2 rounded-lg px-2 py-1 text-[11px] font-medium ${
+                      viDone[s.step]
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : 'bg-slate-100 text-slate-700 border border-slate-200'
+                    }`}
+                  >
+                    {viDone[s.step] ? '済' : '未完了'}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
+            <p className="text-[11px] font-semibold text-slate-700">仮想ファイル: viNeOS</p>
+            <textarea
+              value={fs.viNeOS}
+              onChange={(e) =>
+                setFs((prev) => ({
+                  ...prev,
+                  viNeOS: e.target.value,
+                }))
+              }
+              className="mt-2 min-h-[80px] w-full resize-y rounded-md border border-slate-300 bg-slate-50 px-2 py-1.5 font-mono text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              placeholder="ここに viNeOS の内容が表示されます。"
+            />
+          </div>
+        </section>
+
+        {/* 4-2: shell */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">4-2</p>
+              <h2 className="mt-1 text-sm font-semibold text-slate-800">シェルスクリプト演習（10問）</h2>
+              <p className="mt-1 text-[11px] text-slate-600">
+                仮想スクリプトファイル（script1.sh など）の内容を編集し、Verify で要件を満たしているか確認します。
+              </p>
+            </div>
+            {!shellUnlocked && !isKiraTest && (
+              <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-700 border border-amber-200">
+                4-1 を全問クリアするとアンロック
+              </span>
+            )}
+          </div>
+          <InlineTerminal
+            value={terminalInput.shell ?? ''}
+            onChange={(v) =>
+              setTerminalInput((prev) => ({
+                ...prev,
+                shell: v,
+              }))
+            }
+            output={terminalOutput.shell ?? ''}
+          />
+          <div className={shellUnlocked ? 'mt-4 space-y-2' : 'mt-4 space-y-2 pointer-events-none select-none opacity-60'}>
+            {SHELL_QUESTIONS.map((q) => (
+              <div key={q.q} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-[12px] font-semibold text-slate-800">
+                      Q{q.q}. {q.title}
+                    </p>
+                    <p className="mt-1 text-[11px] text-slate-600">{q.detail}</p>
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      クイックリファレンス: if, for, while, 関数定義、"$var"、exit 0/1 など基本構文を確認しましょう。
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleShell(q.q, !shellDone[q.q])}
+                    className={`ml-2 rounded-lg px-2 py-1 text-[11px] font-medium ${
+                      shellDone[q.q]
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : 'bg-slate-100 text-slate-700 border border-slate-200'
+                    }`}
+                  >
+                    {shellDone[q.q] ? '済' : '未完了'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   )

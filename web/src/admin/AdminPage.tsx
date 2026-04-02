@@ -3,12 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { getTraineeList, getProgressSnapshotLive } from '../traineeProgressStorage'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 import { fetchProgressFromApi, isProgressApiAvailable } from '../progressApi'
-
-const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
+import { getCurrentDisplayName } from '../auth'
 
 function getDisplayName(): string {
-  if (typeof window === 'undefined') return ''
-  return window.localStorage.getItem(USER_DISPLAY_NAME_KEY) || ''
+  return getCurrentDisplayName()
 }
 
 /** 合格日を MM/DD 形式で返す */

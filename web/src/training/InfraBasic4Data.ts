@@ -1,171 +1,58 @@
 /**
- * インフラ基礎課題4: Amazon Linux 2023 構築プロジェクト（10日間）
- * AL2 → AL2023 移行・新規構築の実務ワークフロー
+ * インフラ基礎課題4: vi演習 + シェルスクリプト演習（2部構成）
+ * - 4-1 vi操作マスター（厳選10問）
+ * - 4-2 シェルスクリプト演習（厳選10問）
  */
 
-export const INFRA_BASIC_4_STORAGE_PREFIX = 'kira-al2023'
-export const INFRA_BASIC_4_CLEARED_KEY = 'kira-infra-basic-4-all-cleared'
+export const INFRA_BASIC_4_STORAGE_PREFIX = 'kira-infra-basic-4'
 
-/** Day N の完了フラグ用 localStorage キー */
-export function getDayClearedKey(day: number): string {
-  return `${INFRA_BASIC_4_STORAGE_PREFIX}-day-${day}-cleared`
-}
+/** 課題4（全体）のクリアフラグ */
+export const INFRA_BASIC_4_CLEARED_KEY = `${INFRA_BASIC_4_STORAGE_PREFIX}-all-cleared`
 
-/** Day N の作業ログ（DevLog）用 localStorage キー */
-export function getDayDevLogKey(day: number): string {
-  return `${INFRA_BASIC_4_STORAGE_PREFIX}-day-${day}-devlog`
-}
+/** 4-1 vi 操作（全20ステップ）の完了フラグ（WBS用） */
+export const INFRA_BASIC_4_VI_ALL_CLEARED_KEY = `${INFRA_BASIC_4_STORAGE_PREFIX}-vi-all-cleared`
 
-/** 全10日分の完了キー（trainingWbsData の subTasks 用） */
-export const AL2023_DAY_CLEARED_KEYS: string[] = Array.from({ length: 10 }, (_, i) => getDayClearedKey(i + 1))
+/** 4-2 シェルスクリプト（全11問）の完了フラグ（WBS用） */
+export const INFRA_BASIC_4_SHELL_ALL_CLEARED_KEY = `${INFRA_BASIC_4_STORAGE_PREFIX}-shell-all-cleared`
 
-export type DayQAItem = {
-  icon: string
-  label: string
-  description: string
-}
+/** 課題4（全体）のRAGステータス（green / yellow / red） */
+export const INFRA_BASIC_4_RAG_KEY = `${INFRA_BASIC_4_STORAGE_PREFIX}-rag`
 
-export type DayDef = {
-  day: number
-  title: string
-  description: string
-  objectives: string[]
-  qaChecklist: DayQAItem[]
-}
+export type InfraBasic4Rag = 'green' | 'yellow' | 'red'
 
-/** 品質チェックの共通項目（cp -p, diff 等） */
-const COMMON_QA: DayQAItem[] = [
-  { icon: '💾', label: 'cp -p による属性保持バックアップ（.org）', description: '設定変更前に cp -p でタイムスタンプを維持したバックアップ（例: config.conf.org）を作成しているか' },
-  { icon: '⚙️', label: 'diff による設定変更の妥当性確認', description: '変更後に diff コマンドで差分を確認し、意図した変更のみが入っているか検証しているか' },
+export type ViStepDef = { step: number; label: string }
+export type ShellQuestionDef = { q: number; title: string; detail: string }
+
+export const VI_STEPS: ViStepDef[] = [
+  { step: 1, label: 'viNeOS を新規作成して開く（vi viNeOS）' },
+  { step: 2, label: '1行目に自己紹介文を書き、:wq で保存して終了する' },
+  { step: 3, label: '行番号表示をONにする（:set number）' },
+  { step: 4, label: '任意の単語を / 検索し、n / N で移動する' },
+  { step: 5, label: '1行削除（dd）と複数行削除（3dd）を試す' },
+  { step: 6, label: 'yy / p で1行コピー＆貼り付けを行う' },
+  { step: 7, label: '0 / $ / gg / G で行頭・行末・先頭・末尾へ移動する' },
+  { step: 8, label: 'u / Ctrl+r で取り消しとやり直しを試す' },
+  { step: 9, label: ':%s/old/new/g で全置換を実行する' },
+  { step: 10, label: ':%s/old/new/gc で確認付き置換を実行する' },
 ]
 
-export const AL2023_DAYS: DayDef[] = [
-  {
-    day: 1,
-    title: '環境調査・要件整理',
-    description: '既存 AL2 環境の調査と AL2023 移行要件の整理。ネットワーク情報（例: 192.168.X.X の範囲）は特定を避け抽象化して記録する。',
-    objectives: ['AL2 のパッケージ・設定一覧の取得', '移行対象サービスの洗い出し', '作業ログの記録開始'],
-    qaChecklist: [
-      ...COMMON_QA,
-      { icon: '🖥️', label: 'サーバ情報の抽象化', description: 'IPアドレス等は 192.168.X.X のように特定できない形式で記録しているか' },
-    ],
-  },
-  {
-    day: 2,
-    title: 'AL2023 インスタンス準備',
-    description: 'Amazon Linux 2023 の EC2 インスタンス起動と初期接続。セキュリティグループ・キーペアの設定を記録する。',
-    objectives: ['AL2023 AMI の選択と起動', 'SSH 接続確認', 'ホスト名・タイムゾーン設定'],
-    qaChecklist: [
-      ...COMMON_QA,
-      { icon: '🛡️', label: 'Security 設定の記録', description: 'セキュリティグループ・ファイアウォール方針をドキュメントに残しているか' },
-    ],
-  },
-  {
-    day: 3,
-    title: 'パッケージ管理（dnf）と基本構築',
-    description: 'dnf によるパッケージ導入。変更前には必ず cp -p で設定のバックアップを取得する。',
-    objectives: ['dnf update と必須パッケージのインストール', '/etc 配下の設定バックアップ（.org）', 'diff による変更確認の習慣化'],
-    qaChecklist: COMMON_QA,
-  },
-  {
-    day: 4,
-    title: 'Web サーバ（Nginx）の導入',
-    description: 'Nginx のインストールと基本設定。nginx.conf を編集する前に cp -p で nginx.conf.org を作成する。',
-    objectives: ['Nginx のインストールと有効化', 'nginx.conf のバックアップと編集', 'diff nginx.conf.org nginx.conf で確認'],
-    qaChecklist: COMMON_QA,
-  },
-  {
-    day: 5,
-    title: 'SSH 設定の hardening',
-    description: 'sshd_config のバックアップ（cp -p）のうえで、PermitRootLogin 等の設定を変更し、diff で確認する。',
-    objectives: ['sshd_config の .org バックアップ', '必要に応じた設定変更', '変更後の diff 確認と再起動'],
-    qaChecklist: COMMON_QA,
-  },
-  {
-    day: 6,
-    title: 'ログ・監視の整備',
-    description: 'ログローテーションや監視のための設定。設定ファイルはすべて .org を取ってから編集する。',
-    objectives: ['logrotate 等の設定', 'ログ出力先の統一', 'バックアップと diff の実施'],
-    qaChecklist: COMMON_QA,
-  },
-  {
-    day: 7,
-    title: 'アプリケーション層の移行準備',
-    description: 'AL2 で動作していたアプリの依存関係を AL2023 用に整理。機密情報は 192.168.X.X やクライアントX に置換して記録する。',
-    objectives: ['依存パッケージのリスト化', '環境変数・設定の抽象化', '移行手順書のドラフト'],
-    qaChecklist: [
-      ...COMMON_QA,
-      { icon: '🤖', label: '機密情報の抽象化', description: 'IP・顧客名等を特定できない形式（192.168.X.X、クライアントX）に置換しているか' },
-    ],
-  },
-  {
-    day: 8,
-    title: '結合テスト・ロールバック手順の確認',
-    description: '.org から復元する手順を実践し、ロールバックが可能なことを確認する。',
-    objectives: ['主要設定の .org からの復元テスト', 'ロールバック手順の文書化', 'diff による復元確認'],
-    qaChecklist: COMMON_QA,
-  },
-  {
-    day: 9,
-    title: '本番切り替えリハーサル',
-    description: '切り替え手順の最終確認。バックアップ一覧と diff 確認チェックリストを揃える。',
-    objectives: ['切り替え手順の実行練習', 'バックアップ一覧の最終確認', '品質チェック項目の実施'],
-    qaChecklist: COMMON_QA,
-  },
-  {
-    day: 10,
-    title: '完了報告・振り返り',
-    description: '10日間の作業ログと品質チェック結果をまとめ、振り返りを記録する。',
-    objectives: ['全工程の DevLog と QA の整理', '所感・改善点の記録', 'プロジェクト完了のマーク'],
-    qaChecklist: [
-      ...COMMON_QA,
-      { icon: '✅', label: '全工程の品質チェック完了', description: 'Day 1〜9 の cp -p / diff 等の監査項目が実施済みか' },
-    ],
-  },
+export const SHELL_QUESTIONS: ShellQuestionDef[] = [
+  { q: 1, title: '引数チェック', detail: '引数が無い場合は使い方を表示して終了するスクリプト' },
+  { q: 2, title: '変数とダブルクォート', detail: '変数展開を必ずダブルクォートで囲むスクリプト' },
+  { q: 3, title: 'if と終了ステータス', detail: 'コマンド成功/失敗でメッセージを切り替えるスクリプト' },
+  { q: 4, title: 'for ループ', detail: '1〜3 をループして表示するスクリプト' },
+  { q: 5, title: 'while ループ', detail: '条件を満たすまでカウントアップするスクリプト' },
+  { q: 6, title: '関数化', detail: 'メッセージ出力処理を関数に切り出したスクリプト' },
+  { q: 7, title: 'ファイル存在チェック', detail: '指定ファイルが無ければエラー終了するスクリプト' },
+  { q: 8, title: 'ログ出力', detail: '日時付きでログファイルに追記するスクリプト' },
+  { q: 9, title: '標準出力/標準エラー', detail: '正常系と異常系で出力先を分けるスクリプト' },
+  { q: 10, title: '堅牢化', detail: 'set -euo pipefail の考え方を取り入れたスクリプト' },
 ]
 
-/** devLogKey を省略した場合は getDayDevLogKey(day) を使用（後方互換） */
-export function loadDayDevLog(day: number, devLogKey?: string): string {
-  if (typeof window === 'undefined') return ''
-  const key = devLogKey ?? getDayDevLogKey(day)
-  return window.localStorage.getItem(key) ?? ''
+export function getViStepKey(step: number): string {
+  return `${INFRA_BASIC_4_STORAGE_PREFIX}-vi-step-${step}`
 }
 
-/** devLogKey を省略した場合は getDayDevLogKey(day) を使用（後方互換） */
-export function saveDayDevLog(day: number, content: string, devLogKey?: string): void {
-  if (typeof window === 'undefined') return
-  const key = devLogKey ?? getDayDevLogKey(day)
-  window.localStorage.setItem(key, content)
-}
-
-/** clearedKey を省略した場合は getDayClearedKey(day) を使用（後方互換） */
-export function isDayCleared(day: number, clearedKey?: string): boolean {
-  if (typeof window === 'undefined') return false
-  const key = clearedKey ?? getDayClearedKey(day)
-  return window.localStorage.getItem(key) === 'true'
-}
-
-/** clearedKey を省略した場合は getDayClearedKey(day) を使用（後方互換） */
-export function setDayCleared(day: number, cleared: boolean, clearedKey?: string): void {
-  if (typeof window === 'undefined') return
-  const key = clearedKey ?? getDayClearedKey(day)
-  window.localStorage.setItem(key, cleared ? 'true' : 'false')
-}
-
-export function getAl2023ClearedCount(resolveClearedKey?: (day: number) => string): number {
-  if (typeof window === 'undefined') return 0
-  return AL2023_DAYS.filter((d) => isDayCleared(d.day, resolveClearedKey?.(d.day))).length
-}
-
-export function isAl2023AllCleared(resolveClearedKey?: (day: number) => string): boolean {
-  return getAl2023ClearedCount(resolveClearedKey) === 10
-}
-
-/** allClearedKey / resolveClearedKey を省略した場合はグローバルキーを使用（後方互換） */
-export function setAl2023AllClearedIfDone(allClearedKey?: string, resolveClearedKey?: (day: number) => string): void {
-  if (typeof window === 'undefined') return
-  const key = allClearedKey ?? INFRA_BASIC_4_CLEARED_KEY
-  if (isAl2023AllCleared(resolveClearedKey)) {
-    window.localStorage.setItem(key, 'true')
-  }
+export function getShellQuestionKey(q: number): string {
+  return `${INFRA_BASIC_4_STORAGE_PREFIX}-shell-q-${q}`
 }

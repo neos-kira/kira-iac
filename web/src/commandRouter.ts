@@ -82,6 +82,19 @@ export async function resolveCommand(
     }
   }
   if (
+    /インフラ基礎課題4|課題4/.test(text) ||
+    /vi操作|vi演習/.test(text) ||
+    /シェルスクリプト/.test(text) ||
+    lower.includes('shell script')
+  ) {
+    return {
+      feature: 'training',
+      displayName: 'インフラ基礎課題4（vi & シェルスクリプト演習）',
+      reason: '課題4（vi & シェルスクリプト）に関するキーワードを検出しました。',
+      training: { category: 'infra' },
+    }
+  }
+  if (
     /インフラ研修|インフラ\s*トレーニング/.test(text) ||
     (lower.includes('training') && lower.includes('infra'))
   ) {

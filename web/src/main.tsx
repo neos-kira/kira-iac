@@ -1,11 +1,11 @@
-import { StrictMode } from 'react'
+import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { DeskOpenProvider, useDeskOpen } from './deskOpenContext'
 import './index.css'
 import App from './App.tsx'
 import { LoginPage } from './LoginPage'
-import { isLoggedIn } from './auth'
+import { getCurrentDisplayName, isLoggedIn } from './auth'
 import { isJTerada } from './specialUsers'
 import { isTask1Cleared } from './training/trainingWbsData'
 import { LinuxLevel1Page } from './training/LinuxLevel1Page'
@@ -42,11 +42,8 @@ function RoutesWithDeskMargin({ children }: { children: React.ReactNode }) {
 import { IntroGate } from './components/IntroGate'
 import { Task1Gate, Task2Gate } from './components/TaskGates'
 
-const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
-
 function getDisplayName(): string {
-  if (typeof window === 'undefined') return ''
-  return window.localStorage.getItem(USER_DISPLAY_NAME_KEY) || ''
+  return getCurrentDisplayName()
 }
 
 /** j-terada が課題1クリア後はトップ以外のルートにアクセスさせず "/" へリダイレクトする */
@@ -60,10 +57,34 @@ function JTeradaRestrictGuard() {
   return <Navigate to="/" replace />
 }
 
+function LoginReloadGuard() {
+  const loc = useLocation()
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const hasCookieToken = document.cookie.includes('kira-session-token=')
+    const hasToken = !!window.localStorage.getItem('kira-session-token') || hasCookieToken
+    const loggedIn = isLoggedIn()
+    const tried = window.sessionStorage.getItem('kira-login-reload-tried') === '1'
+    const pathname = (loc.pathname || '').replace(/^\/+/, '') || '/'
+    if (loggedIn) {
+      window.sessionStorage.removeItem('kira-login-reload-tried')
+      return
+    }
+    if (pathname === 'login' || pathname === '') return
+    if (hasToken && !tried) {
+      console.log('LoginReloadGuard: token detected but auth not ready. Reloading once...')
+      window.sessionStorage.setItem('kira-login-reload-tried', '1')
+      window.location.reload()
+    }
+  }, [loc.pathname])
+  return null
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <HashRouter>
       <DeskOpenProvider>
+        <LoginReloadGuard />
         <JTeradaRestrictGuard />
         <RoutesWithDeskMargin>
           <Routes>

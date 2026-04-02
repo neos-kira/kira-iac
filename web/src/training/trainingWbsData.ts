@@ -7,9 +7,10 @@ import { INFRA_BASIC_3_1_DONE_KEY, INFRA_BASIC_3_2_CLEARED_KEY, INFRA_BASIC_3_2_
 import { INFRA_BASIC_21_STORAGE_KEY } from './infraBasic21Data'
 import {
   INFRA_BASIC_4_CLEARED_KEY,
-  AL2023_DAYS,
-  getDayClearedKey,
-  getDayDevLogKey,
+  INFRA_BASIC_4_VI_ALL_CLEARED_KEY,
+  INFRA_BASIC_4_SHELL_ALL_CLEARED_KEY,
+  getViStepKey,
+  getShellQuestionKey,
 } from './InfraBasic4Data'
 
 export const TRAINING_START_DATE_KEY = 'kira-training-start-date'
@@ -109,15 +110,16 @@ export const TRAINING_TASKS: TrainingTaskDef[] = [
   },
   {
     id: 'infra-basic-4',
-    label: 'インフラ基礎課題4（Amazon Linux 2023 構築プロジェクト）',
+    label: 'インフラ基礎課題4（vi & シェルスクリプト演習）',
     labelShort: '課題4',
     path: '/training/infra-basic-4',
     estimatedDays: 10,
     clearedKey: INFRA_BASIC_4_CLEARED_KEY,
-    subTasks: AL2023_DAYS.map((d) => ({
-      label: `Day ${d.day} ${d.title}`,
-      clearedKey: getDayClearedKey(d.day),
-    })),
+    clearedKeys: [INFRA_BASIC_4_VI_ALL_CLEARED_KEY, INFRA_BASIC_4_SHELL_ALL_CLEARED_KEY],
+    subTasks: [
+      { label: '4-1 vi操作演習', clearedKey: INFRA_BASIC_4_VI_ALL_CLEARED_KEY },
+      { label: '4-2 シェルスクリプト演習', clearedKey: INFRA_BASIC_4_SHELL_ALL_CLEARED_KEY },
+    ],
   },
 ]
 
@@ -195,9 +197,13 @@ export function clearAllTrainingProgress(): void {
   window.localStorage.removeItem(getProgressKey(INFRA_BASIC_3_2_STATE_KEY))
   window.localStorage.removeItem(getProgressKey(INFRA_BASIC_3_2_CLEARED_KEY))
   window.localStorage.removeItem(getProgressKey(INFRA_BASIC_4_CLEARED_KEY))
-  for (let day = 1; day <= 10; day++) {
-    window.localStorage.removeItem(getProgressKey(getDayClearedKey(day)))
-    window.localStorage.removeItem(getProgressKey(getDayDevLogKey(day)))
+  window.localStorage.removeItem(getProgressKey(INFRA_BASIC_4_VI_ALL_CLEARED_KEY))
+  window.localStorage.removeItem(getProgressKey(INFRA_BASIC_4_SHELL_ALL_CLEARED_KEY))
+  for (let step = 1; step <= 20; step++) {
+    window.localStorage.removeItem(getProgressKey(getViStepKey(step)))
+  }
+  for (let q = 1; q <= 11; q++) {
+    window.localStorage.removeItem(getProgressKey(getShellQuestionKey(q)))
   }
 }
 

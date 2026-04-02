@@ -317,6 +317,15 @@ export function InfraWbsPage() {
           <div className="space-y-4">
             {progressList.map((task, taskIndex) => {
               const colors = getColors(taskIndex)
+              const rag = task.id === 'infra-basic-4' ? (serverSnapshot?.infra4Rag ?? null) : null
+              const ragBadge =
+                rag === 'green'
+                  ? { label: 'GREEN', cls: 'border-emerald-400/40 bg-emerald-600/15 text-emerald-300' }
+                  : rag === 'yellow'
+                    ? { label: 'YELLOW', cls: 'border-amber-400/40 bg-amber-600/15 text-amber-300' }
+                    : rag === 'red'
+                      ? { label: 'RED', cls: 'border-rose-400/40 bg-rose-600/15 text-rose-300' }
+                      : null
               return (
                 <article
                   key={task.id}
@@ -338,6 +347,11 @@ export function InfraWbsPage() {
                           課題{taskIndex + 1}
                         </span>
                         <span className="text-base font-semibold text-slate-800">{task.label}</span>
+                        {ragBadge && (
+                          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${ragBadge.cls}`}>
+                            {ragBadge.label}
+                          </span>
+                        )}
                         {task.cleared && (
                           <span className="rounded-full bg-emerald-600/25 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
                             クリア済
