@@ -9,8 +9,9 @@ import {
   INFRA_BASIC_1_STORAGE_KEY,
   type InfraBasic1StoredState,
 } from './infraBasic1Data'
-import { fetchMyProgress } from '../progressApi'
+import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
 import { getCurrentDisplayName } from '../auth'
+import { getCurrentProgressSnapshot } from '../traineeProgressStorage'
 
 function copyToClipboard(text: string): Promise<boolean> {
   const doFallback = (): boolean => {
@@ -116,7 +117,7 @@ export function InfraBasic1Page() {
     [],
   )
 
-  const toggleSectionDone = useCallback((sectionId: string) => {
+  const toggleSectionDone = useCallback(async (sectionId: string) => {
     setState((prev) => {
       const sectionDone = { ...prev.sectionDone, [sectionId]: !prev.sectionDone[sectionId] }
       const next = { ...prev, sectionDone }
@@ -137,6 +138,13 @@ export function InfraBasic1Page() {
 
       return next
     })
+
+    // ① localStorage書き込み完了後にDynamoDB即時同期
+    const username = getCurrentDisplayName().trim().toLowerCase()
+    if (username && username !== 'admin' && isProgressApiAvailable()) {
+      const snap = getCurrentProgressSnapshot()
+      await postProgress(username, snap)
+    }
   }, [])
 
   const isChecked = (index: number) => (state.checkboxes ?? [])[index] === true

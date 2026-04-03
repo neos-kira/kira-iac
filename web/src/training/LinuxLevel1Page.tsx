@@ -231,7 +231,7 @@ export function LinuxLevel1Page() {
     setLastResult(correct ? 'correct' : 'wrong')
   }
 
-  function goNext() {
+  async function goNext() {
     const isLast = queueIdx >= queue.length - 1
     if (isLast) {
       // 採点
@@ -248,6 +248,12 @@ export function LinuxLevel1Page() {
 
       if (pass && newPartsCleared.every(Boolean)) {
         window.localStorage.setItem(clearedKey, 'true')
+        // ① localStorage書き込み完了後にDynamoDB即時同期
+        const username = getCurrentDisplayName().trim().toLowerCase()
+        if (username && username !== 'admin' && isProgressApiAvailable()) {
+          const snap = getCurrentProgressSnapshot()
+          await postProgress(username, snap)
+        }
         setPhase('all_clear')
       } else {
         setPhase('part_result')

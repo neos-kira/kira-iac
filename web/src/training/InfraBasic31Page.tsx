@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getProgressKey } from './trainingWbsData'
 import { INFRA_BASIC_3_1_DONE_KEY } from './infraBasic3Data'
+import { getCurrentDisplayName } from '../auth'
+import { postProgress, isProgressApiAvailable } from '../progressApi'
+import { getCurrentProgressSnapshot } from '../traineeProgressStorage'
 
 export function InfraBasic31Page() {
   const navigate = useNavigate()
@@ -15,11 +18,17 @@ export function InfraBasic31Page() {
     document.title = 'インフラ基礎課題3-1 OS・仮想化・クラウド解説'
   }, [])
 
-  const handleAckChange = (checked: boolean) => {
+  const handleAckChange = async (checked: boolean) => {
     setAck(checked)
     if (typeof window !== 'undefined') {
       if (checked) window.localStorage.setItem(key, 'true')
       else window.localStorage.removeItem(key)
+    }
+    // ① localStorage書き込み完了後にDynamoDB即時同期
+    const username = getCurrentDisplayName().trim().toLowerCase()
+    if (username && username !== 'admin' && isProgressApiAvailable()) {
+      const snap = getCurrentProgressSnapshot()
+      await postProgress(username, snap)
     }
   }
 

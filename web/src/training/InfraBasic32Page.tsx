@@ -10,6 +10,9 @@ import {
 } from './infraBasic3Data'
 import type { InfraBasic32Answers, InfraBasic32Result } from './infraBasic3Data'
 import type { MouseEvent } from 'react'
+import { getCurrentDisplayName } from '../auth'
+import { postProgress, isProgressApiAvailable } from '../progressApi'
+import { getCurrentProgressSnapshot } from '../traineeProgressStorage'
 
 type QuestionId = keyof InfraBasic32Answers
 
@@ -203,7 +206,7 @@ export function InfraBasic32Page() {
     })
   }
 
-  const handleEvaluate = () => {
+  const handleEvaluate = async () => {
     const nextResults: Record<QuestionId, InfraBasic32Result> = { ...INFRA_BASIC_3_2_DEFAULT_STATE.results }
       ; (Object.keys(state.answers) as QuestionId[]).forEach((id) => {
         nextResults[id] = evaluateAnswer(id, state.answers[id])
@@ -226,6 +229,13 @@ export function InfraBasic32Page() {
       } else {
         window.localStorage.removeItem(clearedKey)
       }
+    }
+
+    // ① localStorage書き込み完了後にDynamoDB即時同期
+    const username = getCurrentDisplayName().trim().toLowerCase()
+    if (username && username !== 'admin' && isProgressApiAvailable()) {
+      const snap = getCurrentProgressSnapshot()
+      await postProgress(username, snap)
     }
 
     setSummary(
