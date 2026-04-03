@@ -746,9 +746,13 @@ function App() {
 
   const navigate = useNavigate()
   const delayed = (serverSnapshot?.delayedIds?.length ?? getDelayedTaskIds().length) > 0
-  const progressPct = typeof serverSnapshot?.wbsPercent === 'number' ? serverSnapshot.wbsPercent : getWbsProgressPercent()
+  // DynamoDB取得完了まで null を返す（チラつき防止）。取得後は serverSnapshot.wbsPercent を正とする。
+  const progressPct = pinnedTraining === null
+    ? null
+    : (typeof serverSnapshot?.wbsPercent === 'number' ? serverSnapshot.wbsPercent : getWbsProgressPercent())
   const taskList = getTaskProgressList()
-  const inProgressTasks = taskList.filter((t) => !t.cleared && t.subTasks.some((s) => s.status !== 'not_started'))
+  // 課題1〜4を順に見て、クリアされていない最初の課題だけ「実施中」バッジに使う（複数表示しない）
+  const firstInProgressTask = taskList.find((t) => !t.cleared && t.subTasks.some((s) => s.status !== 'not_started')) ?? null
 
   return (
     <div className="min-h-screen bg-white text-slate-800">
@@ -773,30 +777,25 @@ function App() {
                   {delayed ? '遅延あり' : '遅延なし'}
                 </button>
                 <span data-refresh={progressTick} className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 shrink-0">
-                  全体進捗:{progressPct}%
+                  全体進捗:{progressPct !== null ? `${progressPct}%` : '--'}
                 </span>
-                {inProgressTasks.map((task) => {
-                  let hoverTitle = `${task.labelShort}を再開`
-                  if (task.id === 'infra-basic-1') {
-                    const l1Part = (serverSnapshot?.l1CurrentPart ?? 0) + 1
-                    const l1Q = (serverSnapshot?.l1CurrentQuestion ?? 0) + 1
-                    hoverTitle = `第${l1Part}部 ${l1Q}/10問から再開`
-                  } else if (task.id === 'infra-basic-2') {
-                    const l2Q = (serverSnapshot?.l2CurrentQuestion ?? 0) + 1
-                    hoverTitle = `${l2Q}/10問から再開`
-                  }
+                {firstInProgressTask !== null && (() => {
+                  const task = firstInProgressTask
+                  const isL1InProgress = task.id === 'infra-basic-1' && typeof serverSnapshot?.l1CurrentPart === 'number'
+                  const badgeLabel = isL1InProgress
+                    ? `実施中: 課題1 第${(serverSnapshot!.l1CurrentPart!) + 1}部 ${(serverSnapshot!.l1CurrentQuestion ?? 0) + 1}/10問`
+                    : `実施中: ${task.labelShort}`
                   return (
                     <button
-                      key={task.id}
                       type="button"
                       onClick={() => openInfraOrShowIntro(getTrainingUrl(task.path))}
-                      title={hoverTitle}
+                      title={badgeLabel}
                       className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 shrink-0 hover:bg-amber-200"
                     >
-                      実施中: {task.labelShort}
+                      {badgeLabel}
                     </button>
                   )
-                })}
+                })()}
               </>
             )}
             <span className="text-sm text-slate-700">{getDisplayName()}</span>
