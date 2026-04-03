@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { setIntroConfirmed, setIntroConfirmedForUser, getIntroConfirmed, clearIntroForCurrentUser } from './introGate'
+import { setIntroConfirmed, setIntroConfirmedForUser, clearIntroForCurrentUser } from './introGate'
 import { getCurrentDisplayName } from '../auth'
 import { Confetti } from '../components/Confetti'
 import { INTRO_RISK_QUESTIONS } from './introRiskData'
@@ -75,16 +75,6 @@ const STANDARDS: Array<{
   },
 ]
 
-const QUIZ_QUESTIONS: { id: number; question: string; choices: string[]; correctIndex: number }[] = [
-  { id: 0, question: '状況を整理し報告する際に最も意識すべきフレームワークは？', choices: ['5W1H', 'PDCA', 'KPI', 'OKR'], correctIndex: 0 },
-  { id: 1, question: '外部AIツールに機密情報（顧客名・IPアドレス等）を入力する際の適切な対応は？', choices: ['顧客名・IPアドレスを適切に抽象化・匿名化してからAIに入力する', 'そのまま入力する', '入力しない', '暗号化して入力する'], correctIndex: 0 },
-  { id: 2, question: '離席時に徹底すべき基本的な行動は？', choices: ['画面をロックし、入館証を携行する', 'ディスプレイの電源を切る', '書類をしまう', 'ログアウトするのみ'], correctIndex: 0 },
-  { id: 3, question: '解決困難な問題が発生した際の正しい初動は？', choices: ['一人で抱え込まず、迅速に報告・相談する', '自分で解決するまで待つ', '記録だけ残す', '上司に任せる'], correctIndex: 0 },
-  { id: 4, question: '設定変更作業の「直前」に必ず行うべき工程は？', choices: ['現状のバックアップを取得する', '変更内容を文書化する', '承認を得る', 'テスト環境で実施する'], correctIndex: 0 },
-]
-
-const CHOICE_LABELS = ['A', 'B', 'C', 'D']
-
 // ── Step 2-4 ──────────────────────────────────────────────────────────────────
 
 const STEP_SECTION: Record<number, string> = {
@@ -142,12 +132,7 @@ export function IntroPage() {
   const navigate = useNavigate()
   const usernameAtMountRef = useRef<string | null>(null)
 
-  // Step 1 quiz state
-  const [answers, setAnswers] = useState<number[]>(() => QUIZ_QUESTIONS.map(() => -1))
-  const [confirmed, setConfirmed] = useState(false)
-  const [showReview, setShowReview] = useState(false)
-
-  // Multi-step state
+  // 現在表示するステップ（DynamoDBのintroStepが正）
   const [step, setStep] = useState<number>(1)
   const [sectionQIdx, setSectionQIdx] = useState(0)
   const [riskAnswers, setRiskAnswers] = useState<Record<string, string>>({})
@@ -162,6 +147,10 @@ export function IntroPage() {
   const [isScoring, setIsScoring] = useState(false)
 
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
+  // DynamoDB取得完了前はローディング表示（ユーザーが存在する場合のみ）
+  const [isLoadingProgress, setIsLoadingProgress] = useState(true)
+  // 今のセッションで初めてStep5に到達したか（コンフェッティ表示判定）
+  const [freshCompletion, setFreshCompletion] = useState(false)
 
   // ── マウント: DynamoDB復元 ────────────────────────────────────────────────
   useEffect(() => {
@@ -169,48 +158,47 @@ export function IntroPage() {
     const username = getCurrentDisplayName().trim().toLowerCase()
     if (usernameAtMountRef.current === null) usernameAtMountRef.current = username
 
-    if (!username || username === 'admin') return
+    if (!username || username === 'admin') {
+      // admin・未ログインはDynamoDB不使用、ステップ1から開始
+      setIsLoadingProgress(false)
+      return
+    }
+
     fetchMyProgress(username).then((snap) => {
-      if (!snap) return
+      if (!snap) {
+        setIsLoadingProgress(false)
+        return
+      }
       setServerSnapshot(snap)
 
-      // DynamoDBが唯一の正: introStep === 5 かつ introConfirmed のみ完了とみなす
+      // DynamoDBが唯一の正: introStep===5 かつ introConfirmed のみ完了
       if (snap.introStep === 5 && snap.introConfirmed) {
         setIntroConfirmedForUser(username)
-        setConfirmed(true)
       } else {
-        // 旧完了ユーザーリセット: introConfirmedだがstep<5の場合はlocalStorageをクリア
-        if (snap.introConfirmed && (snap.introStep ?? 0) < 5) {
-          clearIntroForCurrentUser()
-        }
-        setConfirmed(false)
+        // introStep<5 の場合はlocalStorageをクリアして再開させる
+        clearIntroForCurrentUser()
       }
 
       const savedAnswers = snap.introRiskAnswers ?? {}
       if (Object.keys(savedAnswers).length > 0) setRiskAnswers(savedAnswers)
 
+      // introStep に応じてステップを復元（1〜5 すべて対応）
       const savedStep = snap.introStep
-      if (typeof savedStep === 'number' && savedStep >= 2 && savedStep <= 4) {
+      if (typeof savedStep === 'number' && savedStep >= 1 && savedStep <= 5) {
         setStep(savedStep)
-        const secName = STEP_SECTION[savedStep] ?? ''
-        const sqs = INTRO_RISK_QUESTIONS.filter((q) => q.section === secName)
-        const answeredIds = new Set(Object.keys(savedAnswers))
-        const answeredCount = sqs.filter((q) => answeredIds.has(q.id)).length
-        setSectionQIdx(Math.min(answeredCount, Math.max(0, sqs.length - 1)))
+        // steps 2-4: sectionQIdx を回答済み数から復元
+        if (savedStep >= 2 && savedStep <= 4) {
+          const secName = STEP_SECTION[savedStep] ?? ''
+          const sqs = INTRO_RISK_QUESTIONS.filter((q) => q.section === secName)
+          const answeredIds = new Set(Object.keys(savedAnswers))
+          const answeredCount = sqs.filter((q) => answeredIds.has(q.id)).length
+          setSectionQIdx(Math.min(answeredCount, Math.max(0, sqs.length - 1)))
+        }
       }
+
+      setIsLoadingProgress(false)
     })
   }, [])
-
-  // ── confirmed → per-user 同期 ─────────────────────────────────────────────
-  useEffect(() => {
-    if (!confirmed) return
-    const username = getCurrentDisplayName().trim().toLowerCase()
-    if (!username || username === 'admin') return
-    const sync = () => setIntroConfirmedForUser(username)
-    sync()
-    const id = setInterval(sync, 1000)
-    return () => clearInterval(id)
-  }, [confirmed])
 
   // ── セクション・現在問題の導出 ────────────────────────────────────────────
   const sectionName = STEP_SECTION[step] ?? ''
@@ -224,16 +212,6 @@ export function IntroPage() {
     setCurrentInput('')
     setCurrentResult(null)
   }, [currentQuestion?.id])
-
-  // ── Step 1 quiz ──────────────────────────────────────────────────────────
-  const allAnswered = answers.every((a) => a >= 0)
-  const allCorrect = allAnswered && QUIZ_QUESTIONS.every((q, i) => answers[i] === q.correctIndex)
-
-  const setAnswer = (i: number, ci: number) => {
-    setAnswers((prev) => {
-      const next = [...prev]; next[i] = ci; return next
-    })
-  }
 
   // ── [開発用] はじめにリセット ────────────────────────────────────────────
   const handleDevReset = async () => {
@@ -251,7 +229,6 @@ export function IntroPage() {
         updatedAt: new Date().toISOString(),
       })
     }
-    setConfirmed(false)
     setStep(1)
     setSectionQIdx(0)
     setRiskAnswers({})
@@ -259,8 +236,7 @@ export function IntroPage() {
     setMcResult(null)
     setCurrentInput('')
     setCurrentResult(null)
-    setAnswers(QUIZ_QUESTIONS.map(() => -1))
-    setShowReview(false)
+    setFreshCompletion(false)
   }
 
   // ── トップに戻る（中断保存） ─────────────────────────────────────────────
@@ -398,7 +374,7 @@ export function IntroPage() {
     try {
       if (isLastInSection) {
         if (nextStep === 5) {
-          // 完了
+          // 全ステップ完了
           setTrainingStartDateFromTask1Start()
           const trainingStartDate = getTrainingStartDate() || null
           const introAt = new Date().toISOString()
@@ -419,7 +395,7 @@ export function IntroPage() {
               updatedAt: new Date().toISOString(),
             })
           }
-          setConfirmed(true)
+          setFreshCompletion(true)
         } else {
           // 次のセクション
           const username = getCurrentDisplayName().trim().toLowerCase()
@@ -447,7 +423,7 @@ export function IntroPage() {
   const topBar = (
     <div className="flex items-center justify-between mb-6">
       <div>
-        {(confirmed || step > 1) && (
+        {step > 1 && (
           <button
             type="button"
             onClick={handleDevReset}
@@ -482,27 +458,18 @@ export function IntroPage() {
     </div>
   )
 
-  // ── Render: 確認済み（見返し前） ─────────────────────────────────────────
-  if (confirmed && step !== 5 && !showReview) {
-    return pageLayout(
-      <>
-        {headerBlock}
-        <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-6 space-y-4">
-          <p className="text-sm text-slate-600">確認済みです。インフラ基礎課題へアクセスできます。</p>
-          <button
-            type="button"
-            onClick={() => setShowReview(true)}
-            className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
-          >
-            「はじめに」を見返す
-          </button>
-        </div>
-      </>
+  // ── Render: ローディング ─────────────────────────────────────────────────
+  const username = getCurrentDisplayName().trim().toLowerCase()
+  if (isLoadingProgress && username && username !== 'admin') {
+    return (
+      <div className="min-h-screen bg-slate-100 text-slate-800 p-6 flex items-center justify-center">
+        <p className="text-sm text-slate-500">読み込み中...</p>
+      </div>
     )
   }
 
-  // ── Render: Step 5 完了画面 ───────────────────────────────────────────────
-  if (step === 5) {
+  // ── Render: Step 5 完了画面（初回完了: コンフェッティ付き） ──────────────
+  if (step === 5 && freshCompletion) {
     return (
       <div className="min-h-screen bg-slate-100 text-slate-800 p-6">
         <Confetti />
@@ -530,143 +497,90 @@ export function IntroPage() {
     )
   }
 
-  // ── Render: Step 1 行動基準確認 ──────────────────────────────────────────
-  if (step === 1 || showReview) {
+  // ── Render: Step 5 確認済みバナー（再アクセス時） ────────────────────────
+  if (step === 5) {
     return pageLayout(
       <>
-        {confirmed && showReview && (
-          <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-4 mb-6">
-            <p className="text-sm text-slate-600">確認済みです。下記の内容はいつでも見返せます。</p>
-          </div>
-        )}
         {headerBlock}
-        {!showReview && <StepProgress current={1} />}
+        <StepProgress current={5} />
+        <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-6 space-y-3">
+          <p className="text-base font-semibold text-emerald-700">✓ 確認済みです。</p>
+          <p className="text-sm text-slate-600">インフラ基礎課題へアクセスできます。</p>
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
+          >
+            トップページへ →
+          </button>
+        </div>
+      </>
+    )
+  }
+
+  // ── Render: Step 1 行動基準確認 ──────────────────────────────────────────
+  if (step === 1) {
+    return pageLayout(
+      <>
+        {headerBlock}
+        <StepProgress current={1} />
 
         <div className="flex items-center gap-3 mb-2">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-base" aria-hidden>🖥️</span>
           <h1 className="text-xl font-bold text-slate-800">プロフェッショナルの5つの行動基準</h1>
         </div>
         <p className="text-sm text-slate-600 mb-6">
-          プロフェッショナルとして信頼を獲得するための『5つの行動基準』を確認し、各項目の確認テストに答えてください。
+          プロフェッショナルとして信頼を獲得するための『5つの行動基準』を確認し、次のステップの確認テストに進んでください。
         </p>
 
         <div className="space-y-4">
           {STANDARDS.map((s, i) => {
             const accent = CARD_ACCENTS[i]
-            const q = QUIZ_QUESTIONS[i]
             return (
-              <div key={i} className="space-y-4">
-                <div className="rounded-xl bg-white border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${accent.bg} text-base`} aria-hidden>
-                        {s.icon}
-                      </span>
-                      <h2 className="text-base font-semibold text-slate-800">■{s.title}</h2>
+              <div key={i} className="rounded-xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${accent.bg} text-base`} aria-hidden>
+                      {s.icon}
+                    </span>
+                    <h2 className="text-base font-semibold text-slate-800">■{s.title}</h2>
+                  </div>
+                  {s.codeExample ? (
+                    <pre className="rounded-lg bg-slate-800 text-slate-300 p-4 text-xs leading-relaxed font-mono overflow-x-auto mb-3">
+                      {s.codeExample}
+                    </pre>
+                  ) : null}
+                  <p className="text-sm text-slate-700">{s.body}</p>
+                  {s.exampleCorrect != null && s.exampleWrong != null ? (
+                    <div className="mt-3 space-y-2">
+                      <p className="flex items-baseline gap-2 text-xs">
+                        <span className="shrink-0 rounded bg-emerald-100 px-1.5 py-0.5 font-semibold text-emerald-700">正</span>
+                        <span className="text-slate-600 border-l-2 border-emerald-200 pl-2">{s.exampleCorrect}</span>
+                      </p>
+                      <p className="flex items-baseline gap-2 text-xs">
+                        <span className="shrink-0 rounded bg-rose-100 px-1.5 py-0.5 font-semibold text-rose-700">誤</span>
+                        <span className="text-slate-600 border-l-2 border-rose-200 pl-2">{s.exampleWrong}</span>
+                      </p>
                     </div>
-                    {s.codeExample ? (
-                      <pre className="rounded-lg bg-slate-800 text-slate-300 p-4 text-xs leading-relaxed font-mono overflow-x-auto mb-3">
-                        {s.codeExample}
-                      </pre>
-                    ) : null}
-                    <p className="text-sm text-slate-700">{s.body}</p>
-                    {s.exampleCorrect != null && s.exampleWrong != null ? (
-                      <div className="mt-3 space-y-2">
-                        <p className="flex items-baseline gap-2 text-xs">
-                          <span className="shrink-0 rounded bg-emerald-100 px-1.5 py-0.5 font-semibold text-emerald-700">正</span>
-                          <span className="text-slate-600 border-l-2 border-emerald-200 pl-2">{s.exampleCorrect}</span>
-                        </p>
-                        <p className="flex items-baseline gap-2 text-xs">
-                          <span className="shrink-0 rounded bg-rose-100 px-1.5 py-0.5 font-semibold text-rose-700">誤</span>
-                          <span className="text-slate-600 border-l-2 border-rose-200 pl-2">{s.exampleWrong}</span>
-                        </p>
-                      </div>
-                    ) : s.example ? (
-                      <p className="mt-2 text-xs text-slate-500 border-l-2 border-slate-200 pl-3">{s.example}</p>
-                    ) : null}
-                  </div>
+                  ) : s.example ? (
+                    <p className="mt-2 text-xs text-slate-500 border-l-2 border-slate-200 pl-3">{s.example}</p>
+                  ) : null}
                 </div>
-
-                {!showReview && (
-                  <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-5">
-                    <p className="text-sm text-slate-600 mb-1">理解度チェック</p>
-                    <p className="text-base font-semibold text-slate-800 mb-4">{i + 1}. {q.question}</p>
-                    <ul className="space-y-2">
-                      {q.choices.map((c, ci) => {
-                        const isSelected = answers[i] === ci
-                        const showCorrect = answers[i] >= 0 && isSelected && ci === q.correctIndex
-                        const showWrong = answers[i] >= 0 && isSelected && ci !== q.correctIndex
-                        return (
-                          <li key={ci}>
-                            <label
-                              className={`flex items-center gap-3 rounded-lg border px-4 py-3 cursor-pointer transition-colors ${
-                                showCorrect
-                                  ? 'border-emerald-300 bg-emerald-50'
-                                  : showWrong
-                                    ? 'border-amber-200 bg-amber-50'
-                                    : isSelected
-                                      ? 'border-sky-200 bg-sky-50'
-                                      : 'border-slate-200 bg-white hover:bg-slate-50'
-                              }`}
-                            >
-                              <span
-                                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                                  showCorrect
-                                    ? 'bg-emerald-500 text-white'
-                                    : showWrong
-                                      ? 'bg-amber-500 text-white'
-                                      : isSelected
-                                        ? 'bg-sky-200 text-sky-800'
-                                        : 'bg-slate-200 text-slate-500'
-                                }`}
-                              >
-                                {showCorrect ? '✓' : CHOICE_LABELS[ci]}
-                              </span>
-                              <span className="text-sm text-slate-800">{c}</span>
-                              <input
-                                type="radio"
-                                name={`q-${q.id}`}
-                                checked={answers[i] === ci}
-                                onChange={() => setAnswer(i, ci)}
-                                className="sr-only"
-                              />
-                            </label>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                    {answers[i] >= 0 && (
-                      <div className="mt-3 space-y-2" role="status">
-                        <p className={`text-sm font-medium animate-[fadeIn_0.3s_ease-out] ${answers[i] === q.correctIndex ? 'text-emerald-600' : 'text-amber-600'}`}>
-                          {answers[i] === q.correctIndex ? '✓ 正解' : `△ 不正解。正解は「${q.choices[q.correctIndex]}」です。`}
-                        </p>
-                        <p className="text-xs text-slate-600 border-l-2 border-slate-200 pl-3 animate-[fadeIn_0.3s_ease-out]">
-                          {s.exampleCorrect}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             )
           })}
         </div>
 
-        {!showReview && (
-          <div className="mt-6">
-            <button
-              type="button"
-              onClick={handleStep1Complete}
-              disabled={!allCorrect || isScoring}
-              className="w-full rounded-lg bg-indigo-600 py-3.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isScoring ? '保存中...' : '確認しました'}
-            </button>
-            {allAnswered && !allCorrect && (
-              <p className="mt-2 text-xs text-center text-amber-600">全問正解で次のステップに進めます。</p>
-            )}
-          </div>
-        )}
+        <div className="mt-6">
+          <button
+            type="button"
+            onClick={handleStep1Complete}
+            disabled={isScoring}
+            className="w-full rounded-lg bg-indigo-600 py-3.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isScoring ? '保存中...' : '確認しました・次へ →'}
+          </button>
+        </div>
       </>
     )
   }
@@ -729,7 +643,7 @@ export function IntroPage() {
                                 : 'bg-slate-200 text-slate-500'
                       }`}
                     >
-                      {showCorrect && isSelected ? '✓' : showMissed ? '!' : CHOICE_LABELS[ci]}
+                      {showCorrect && isSelected ? '✓' : showMissed ? '!' : String.fromCharCode(65 + ci)}
                     </span>
                     <span className="text-sm text-slate-800 flex-1">{choice}</span>
                     <input

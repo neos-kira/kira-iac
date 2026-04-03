@@ -15,7 +15,14 @@ function introConfirmedAtKey(): string {
   return name ? `${INTRO_CONFIRMED_AT_KEY}_${name}` : INTRO_CONFIRMED_AT_KEY
 }
 
-export function getIntroConfirmed(): boolean {
+/**
+ * はじめに確認済み判定。
+ * introStep を渡した場合、DynamoDB の値が 5 未満なら localStorageの値に関わらず false を返す。
+ * App.tsx では必ず serverSnapshot?.introStep を引数として渡すこと。
+ */
+export function getIntroConfirmed(introStep?: number): boolean {
+  // DynamoDB の introStep が 5 未満なら未完了扱い
+  if (introStep !== undefined && introStep < 5) return false
   if (typeof window === 'undefined') return false
   const key = introConfirmedKey()
   const legacy = window.localStorage.getItem(LEGACY_KEY) === 'true'

@@ -247,7 +247,7 @@ function App() {
 
   /** インフラ課題系URL: はじめに未完了ならポップアップ、完了なら開く */
   function openInfraOrShowIntro(url: string) {
-    if (getIntroConfirmed()) {
+    if (getIntroConfirmed(serverSnapshot?.introStep)) {
       window.open(url, '_blank')
     } else {
       setShowIntroRequiredPopup(true)
@@ -450,14 +450,14 @@ function App() {
     }
     if (cat === 'linuxLevel1') {
       if (openedRef.current === 'linuxLevel1') return
-      if (!getIntroConfirmed()) setShowIntroRequiredPopup(true)
+      if (!getIntroConfirmed(serverSnapshot?.introStep)) setShowIntroRequiredPopup(true)
       else {
         window.open(getTrainingUrl('/training/linux-level1'), '_blank')
         openedRef.current = 'linuxLevel1'
       }
     } else if (cat === 'linuxLevel2') {
       if (openedRef.current === 'linuxLevel2') return
-      if (!getIntroConfirmed()) setShowIntroRequiredPopup(true)
+      if (!getIntroConfirmed(serverSnapshot?.introStep)) setShowIntroRequiredPopup(true)
       else {
         window.open(getTrainingUrl('/training/linux-level2'), '_blank')
         openedRef.current = 'linuxLevel2'
@@ -573,7 +573,7 @@ function App() {
       }
       const name = getDisplayName()
       if (name && name.toLowerCase() !== 'admin') {
-        if (getIntroConfirmed()) setIntroConfirmedForUser(name)
+        if (getIntroConfirmed(serverSnapshot?.introStep)) setIntroConfirmedForUser(name)
         const base = getCurrentProgressSnapshot(pinnedTraining)
         const snapshot = {
           ...base,
@@ -781,7 +781,7 @@ function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (getIntroConfirmed()) window.location.hash = '#/training/infra-wbs'
+                    if (getIntroConfirmed(serverSnapshot?.introStep)) window.location.hash = '#/training/infra-wbs'
                     else setShowIntroRequiredPopup(true)
                   }}
                   className={`rounded-full px-3 py-1.5 text-xs font-medium text-white shrink-0 ${delayed ? 'bg-rose-500' : 'bg-emerald-500'}`}
@@ -1083,7 +1083,7 @@ function App() {
           <>
           <div className="w-full max-w-2xl space-y-6">
             {/* はじめに未完了時：メッセージとリンクを最上部に表示（admin では表示しない） */}
-            {!getIntroConfirmed() && (
+            {!getIntroConfirmed(serverSnapshot?.introStep) && (
               <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 shadow-sm">
                 <p className="text-sm font-semibold text-amber-800">はじめに</p>
                 <p className="mt-2 text-sm text-slate-700">
@@ -1097,7 +1097,7 @@ function App() {
               </div>
             )}
             {/* 今やること: はじめに途中の場合（step 2-4）、再開ボタンを表示 */}
-            {!getIntroConfirmed() && (serverSnapshot?.introStep ?? 1) >= 2 && (serverSnapshot?.introStep ?? 1) <= 4 && (
+            {!getIntroConfirmed(serverSnapshot?.introStep) && (serverSnapshot?.introStep ?? 1) >= 2 && (serverSnapshot?.introStep ?? 1) <= 4 && (
               <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
                 <h2 className="mt-2 text-base font-semibold text-slate-800">今やること</h2>
@@ -1112,7 +1112,7 @@ function App() {
               </div>
             )}
             {/* 今やること: はじめに完了後・課題1-1未完了時に表示 */}
-            {getIntroConfirmed() && !trainingStatus.infraToolsCleared && (
+            {getIntroConfirmed(serverSnapshot?.introStep) && !trainingStatus.infraToolsCleared && (
               <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
                 <h2 className="mt-2 text-base font-semibold text-slate-800">今やること</h2>
@@ -1297,7 +1297,7 @@ function App() {
                     onOpenInfraOrShowIntro={openInfraOrShowIntro}
                     onOpenIntro={() => { window.location.hash = '#/training/intro' }}
                     onOpenWbs={() => {
-                      if (getIntroConfirmed()) window.location.hash = '#/training/infra-wbs'
+                      if (getIntroConfirmed(serverSnapshot?.introStep)) window.location.hash = '#/training/infra-wbs'
                       else setShowIntroRequiredPopup(true)
                     }}
                   />
@@ -1450,7 +1450,7 @@ function App() {
             </section>
           )}
 
-          {(canResumeL1 || canResumeL2 || canResumeInfra1) && getDisplayName()?.toLowerCase() !== 'admin' && getIntroConfirmed() && (
+          {(canResumeL1 || canResumeL2 || canResumeInfra1) && getDisplayName()?.toLowerCase() !== 'admin' && getIntroConfirmed(serverSnapshot?.introStep) && (
             <section className="mt-6 w-full max-w-2xl rounded-2xl border border-amber-300 bg-amber-50/80 p-4 text-[11px] text-slate-700 shadow-sm">
               <div className="flex items-center justify-between gap-2">
                 <div>
