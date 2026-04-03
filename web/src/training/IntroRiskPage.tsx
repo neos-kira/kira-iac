@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { INTRO_RISK_QUESTIONS, INTRO_RISK_CLEARED_KEY } from './introRiskData'
 import type { RiskQuestion } from './introRiskData'
-import { getProgressKey } from './trainingWbsData'
+import { getProgressKey, setTrainingStartDateFromTask1Start, getTrainingStartDate } from './trainingWbsData'
 import { getCurrentDisplayName } from '../auth'
 import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
@@ -141,6 +141,18 @@ export function IntroRiskPage() {
   const handleNext = async () => {
     const isLast = currentIndex + 1 >= INTRO_RISK_QUESTIONS.length
     if (isLast) {
+      // 全問合格時に研修開始日を設定（未設定の場合のみ今日の日付を保存）
+      setTrainingStartDateFromTask1Start()
+      const trainingStartDate = getTrainingStartDate() || null
+
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem(getProgressKey(INTRO_RISK_CLEARED_KEY), 'true')
+        } catch {
+          // ignore
+        }
+      }
+
       const username = getCurrentDisplayName().trim().toLowerCase()
       if (username && username !== 'admin' && isProgressApiAvailable()) {
         const base: TraineeProgressSnapshot = serverSnapshot ?? EMPTY_SNAPSHOT
@@ -149,15 +161,9 @@ export function IntroRiskPage() {
           introRiskCurrentQuestion: INTRO_RISK_QUESTIONS.length,
           introRiskAnswers: answers,
           introRiskCleared: true,
+          trainingStartDate,
           updatedAt: new Date().toISOString(),
         })
-      }
-      if (typeof window !== 'undefined') {
-        try {
-          window.localStorage.setItem(getProgressKey(INTRO_RISK_CLEARED_KEY), 'true')
-        } catch {
-          // ignore
-        }
       }
       setIsCompleted(true)
     } else {

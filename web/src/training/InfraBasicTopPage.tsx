@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { OpenInNewTabButton } from '../components/OpenInNewTabButton'
-import { getTaskProgressList, getTrainingStartDate, setTrainingStartDateFromTask1Start, clearTask1Cache } from './trainingWbsData'
+import { getTaskProgressList, getTrainingStartDate, clearTask1Cache } from './trainingWbsData'
 import { getCurrentDisplayName } from '../auth'
-import { fetchMyProgress, postProgress } from '../progressApi'
-import { restoreProgressToLocalStorage, getCurrentProgressSnapshot, type TraineeProgressSnapshot } from '../traineeProgressStorage'
+import { fetchMyProgress } from '../progressApi'
+import { restoreProgressToLocalStorage, type TraineeProgressSnapshot } from '../traineeProgressStorage'
 
 function getTrainingUrl(path: string) {
   const base = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname || '/'}`.replace(/\/$/, '') || window.location.origin : ''
@@ -13,8 +13,6 @@ function getTrainingUrl(path: string) {
 
 export function InfraBasicTopPage() {
   const navigate = useNavigate()
-  const [showStartConfirm, setShowStartConfirm] = useState(false)
-  const [showStartMessage, setShowStartMessage] = useState(false)
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const taskProgress = getTaskProgressList().find((t) => t.id === 'infra-basic-1')
 
@@ -23,87 +21,22 @@ export function InfraBasicTopPage() {
   }, [])
 
   useEffect(() => {
-    // localStorage に開始日がなければサーバーから復元を試みてから判定する。
-    // App.tsx の非同期フェッチより先にこのページが表示された場合のレースコンディション対策。
-    const checkAfterRestore = async () => {
+    // バッジ表示用にサーバーデータを取得・復元する
+    const load = async () => {
       const username = getCurrentDisplayName()
-      if (!getTrainingStartDate()) {
-        if (username && username.toLowerCase() !== 'admin') {
-          const snap = await fetchMyProgress(username)
-          if (snap) {
-            restoreProgressToLocalStorage(username, snap)
-            setServerSnapshot(snap)
-          }
-        }
-      } else if (username && username.toLowerCase() !== 'admin') {
-        // 開始日はあるがバッジ表示用にサーバーデータを取得する
-        const snap = await fetchMyProgress(username)
-        if (snap) setServerSnapshot(snap)
-      }
-      if (!getTrainingStartDate()) {
-        setShowStartConfirm(true)
+      if (!username || username.toLowerCase() === 'admin') return
+      const snap = await fetchMyProgress(username)
+      if (snap) {
+        restoreProgressToLocalStorage(username, snap)
+        setServerSnapshot(snap)
       }
     }
-    checkAfterRestore()
+    load()
   }, [])
-
-  const handleConfirmStart = () => {
-    setTrainingStartDateFromTask1Start()
-    setShowStartConfirm(false)
-    setShowStartMessage(true)
-    // localStorage に保存後、即座にサーバーへ同期する。
-    // App.tsx のインターバルはこのルートでは動いていないため、ここで明示的に POST する。
-    const username = getCurrentDisplayName()
-    if (username && username.toLowerCase() !== 'admin') {
-      const snap = getCurrentProgressSnapshot()
-      postProgress(username, snap)
-    }
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-2xl space-y-6">
-        {showStartConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-              <h2 className="text-base font-semibold text-slate-800">インフラ研修を開始しますか？</h2>
-              <p className="mt-3 text-[13px] text-slate-600">
-                開始すると、開始日から土日祝日を除いた営業日で課題1〜3の期限が設定され、WBSで進捗を確認できます。
-              </p>
-              <div className="mt-6 flex gap-3">
-                <button
-                  type="button"
-                  onClick={handleConfirmStart}
-                  className="flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
-                >
-                  開始する
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowStartConfirm(false)}
-                  className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
-                >
-                  キャンセル
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        {showStartMessage && (
-          <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-slate-700">
-            <p className="font-medium text-indigo-700">研修を開始します。</p>
-            <p className="mt-2 text-[13px] leading-relaxed text-slate-600">
-              土日祝日を除いた日程で期限設定しますので、期限を守りながら研修を進めていきましょう。
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowStartMessage(false)}
-              className="mt-3 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
-            >
-              閉じる
-            </button>
-          </div>
-        )}
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">TRAINING · INFRA</p>

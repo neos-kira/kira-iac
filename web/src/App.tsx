@@ -19,6 +19,7 @@ import {
   getTaskProgressList,
   getWbsProgressPercent,
   getDelayedTaskIds,
+  getTrainingStartDate,
   isTask1Cleared,
 } from './training/trainingWbsData'
 import { isJTerada, J_TERADA_ALLOWED_LINKS } from './specialUsers'
@@ -746,7 +747,9 @@ function App() {
   }, [isAdminView])
 
   const navigate = useNavigate()
-  const delayed = (serverSnapshot?.delayedIds?.length ?? getDelayedTaskIds().length) > 0
+  // trainingStartDate が未設定の場合は遅延判定しない（導入課題完了前は「遅延なし」扱い）
+  const trainingStarted = !!(serverSnapshot?.trainingStartDate ?? getTrainingStartDate())
+  const delayed = trainingStarted && (serverSnapshot?.delayedIds?.length ?? getDelayedTaskIds().length) > 0
   // DynamoDB取得完了まで null を返す（チラつき防止）。取得後は serverSnapshot.wbsPercent を正とする。
   const progressPct = pinnedTraining === null
     ? null
