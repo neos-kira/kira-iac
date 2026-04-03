@@ -52,15 +52,37 @@ async function handler(event) {
         infra4ViDoneSteps: Array.isArray(body.infra4ViDoneSteps) ? body.infra4ViDoneSteps : [],
         infra4ShellDoneQuestions: Array.isArray(body.infra4ShellDoneQuestions) ? body.infra4ShellDoneQuestions : [],
         infra4Rag: typeof body.infra4Rag === 'string' ? body.infra4Rag : null,
+        // Linux30問 中断・再開
+        l1CurrentPart: typeof body.l1CurrentPart === 'number' ? body.l1CurrentPart : 0,
+        l1CurrentQuestion: typeof body.l1CurrentQuestion === 'number' ? body.l1CurrentQuestion : 0,
+        l1WrongIds: Array.isArray(body.l1WrongIds) ? body.l1WrongIds : [],
+        // TCP/IP10問 中断・再開
+        l2CurrentQuestion: typeof body.l2CurrentQuestion === 'number' ? body.l2CurrentQuestion : 0,
+        l2WrongIds: Array.isArray(body.l2WrongIds) ? body.l2WrongIds : [],
+        // 課題1-1 チェックボックス状態
+        infra1Checkboxes: Array.isArray(body.infra1Checkboxes) ? body.infra1Checkboxes : [],
+        infra1SectionDone: body.infra1SectionDone && typeof body.infra1SectionDone === 'object' ? body.infra1SectionDone : {},
+        // 課題3-2 記述回答
+        infra32Answers: body.infra32Answers && typeof body.infra32Answers === 'object' ? body.infra32Answers : {},
+        // EC2接続情報（受講生ごと）
+        ec2Host: typeof body.ec2Host === 'string' ? body.ec2Host : null,
+        ec2Username: typeof body.ec2Username === 'string' ? body.ec2Username : null,
+        ec2Password: typeof body.ec2Password === 'string' ? body.ec2Password : null,
+        // テナントID（マルチテナント対応）
+        tenantId: typeof body.tenantId === 'string' ? body.tenantId : 'default',
       }
       await client.send(new PutItemCommand({ TableName, Item: marshall(Item, { removeUndefinedValues: true }) }))
       return json({ ok: true })
     }
 
-    // 全受講生の進捗取得
+    // 全受講生の進捗取得（tenantId 指定時はフィルタ）
     if (method === 'GET' && (path === '/progress' || path === '/progress/')) {
       const { Items } = await client.send(new ScanCommand({ TableName }))
-      const trainees = (Items || []).map((item) => unmarshall(item))
+      let trainees = (Items || []).map((item) => unmarshall(item))
+      const tenantId = event.queryStringParameters?.tenantId
+      if (tenantId) {
+        trainees = trainees.filter((t) => (t.tenantId || 'default') === tenantId)
+      }
       return json({ trainees })
     }
 
@@ -95,6 +117,36 @@ async function handler(event) {
       const { Items } = await client.send(new ScanCommand({ TableName: AccountsTableName }))
       const accounts = (Items || []).map((item) => unmarshall(item))
       return json({ accounts })
+    }
+
+    // パスワードリセット（admin 用）
+    if (method === 'PUT' && (path === '/accounts/password' || path === '/accounts/password/')) {
+      const body = JSON.parse(event.body || '{}')
+      const username = (body.username || '').trim().toLowerCase()
+      const newPassword = typeof body.newPassword === 'string' ? body.newPassword : ''
+      if (!username || username === 'admin' || !newPassword) {
+        return json({ error: 'invalid username or password' }, 400)
+      }
+      const existing = await client.send(
+        new GetItemCommand({
+          TableName: AccountsTableName,
+          Key: marshall({ username }),
+        }),
+      )
+      if (!existing.Item) {
+        return json({ error: 'user not found' }, 404)
+      }
+      const passwordHash = crypto.createHash('sha256').update(newPassword).digest('hex')
+      await client.send(
+        new PutItemCommand({
+          TableName: AccountsTableName,
+          Item: marshall(
+            { ...unmarshall(existing.Item), passwordHash },
+            { removeUndefinedValues: true },
+          ),
+        }),
+      )
+      return json({ ok: true })
     }
 
     // アカウント削除（admin 用）

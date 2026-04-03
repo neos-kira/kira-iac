@@ -144,6 +144,18 @@ resource "aws_apigatewayv2_route" "accounts_delete" {
   target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
 }
 
+resource "aws_apigatewayv2_route" "accounts_password_put" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "PUT /accounts/password"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
+resource "aws_apigatewayv2_route" "accounts_password_options" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "OPTIONS /accounts/password"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
 resource "aws_apigatewayv2_route" "auth_check_post" {
   api_id    = aws_apigatewayv2_api.progress.id
   route_key = "POST /auth/check"
