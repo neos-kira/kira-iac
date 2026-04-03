@@ -240,8 +240,9 @@ export function IntroPage() {
   }
 
   // ── トップに戻る（中断保存） ─────────────────────────────────────────────
+  // Step1〜4: 現在のintroStepをDynamoDBに保存してからトップへ遷移
   const handleGoToTop = async () => {
-    if (step >= 2 && step <= 4 && !isScoring) {
+    if (step >= 1 && step <= 4 && !isScoring) {
       setIsScoring(true)
       try {
         const username = getCurrentDisplayName().trim().toLowerCase()
@@ -258,7 +259,7 @@ export function IntroPage() {
         setIsScoring(false)
       }
     }
-    navigate('/')
+    window.location.hash = '#/'
   }
 
   // ── Step 1 完了 ───────────────────────────────────────────────────────────
