@@ -233,7 +233,6 @@ export function LinuxLevel1Page() {
   const isRetry = current ? (current.id in firstAttemptCorrect) : false
   // 再出題バッジは「再出題問題に回答中かつまだ正解していない」ときだけ表示
   const showRetryBadge = isRetry && lastResult !== 'correct'
-  const correctAnswer = current ? (current.choices[current.correctIndex] ?? '') : ''
   const showFeedback = lastResult !== null
 
   const progressLabel = isRetrying

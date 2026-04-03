@@ -9,9 +9,9 @@ import { OpenInNewTabButton } from './components/OpenInNewTabButton'
 import { NeOSLogo } from './components/NeOSLogo'
 import type { CommandResolution } from './commandRouter'
 import { resolveCommand } from './commandRouter'
-import { L1_CLEARED_KEY, L1_PROGRESS_KEY, LINUX_LEVEL1_QUESTIONS } from './training/linuxLevel1Data'
+import { L1_CLEARED_KEY, L1_PROGRESS_KEY } from './training/linuxLevel1Data'
 import { L2_PROGRESS_KEY, TCPIP_LEVEL2_QUESTIONS, L2_CLEARED_KEY } from './training/linuxLevel2Data'
-import { INFRA_BASIC_1_CLEARED_KEY } from './training/infraBasic1Data'
+import { INFRA_BASIC_1_CLEARED_KEY, INFRA_BASIC_1_PARAMS, INFRA_BASIC_1_STORAGE_KEY } from './training/infraBasic1Data'
 import { INFRA_BASIC_3_2_CLEARED_KEY } from './training/infraBasic3Data'
 import {
   getProgressKey,
@@ -224,6 +224,13 @@ function App() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [canResumeInfra1, setCanResumeInfra1] = useState(false)
+  const [ec2Snapshots, setEc2Snapshots] = useState<Record<string, import('./progressApi').TraineeProgressFromApi>>({})
+  const [ec2EditHost, setEc2EditHost] = useState<Record<string, string>>({})
+  const [ec2EditUsername, setEc2EditUsername] = useState<Record<string, string>>({})
+  const [ec2EditPassword, setEc2EditPassword] = useState<Record<string, string>>({})
+  const [showEc2Panel, setShowEc2Panel] = useState(false)
+  const [ec2SaveMsg, setEc2SaveMsg] = useState<string | null>(null)
   const openedRef = useRef<string | null>(null)
   const searchContainerRef = useRef<HTMLDivElement | null>(null)
   const searchFormRef = useRef<HTMLFormElement | null>(null)
@@ -369,8 +376,33 @@ function App() {
   const updateFromStorage = useCallback(() => {
     if (typeof window === 'undefined') return
     try {
-      setCanResumeL1(hasInProgressSession(getProgressKey(L1_PROGRESS_KEY), LINUX_LEVEL1_QUESTIONS.length))
+      // L1: partsCleared ベースで途中確認（hasInProgressSession はL2用の形式なので使えない）
+      try {
+        const l1Raw = window.localStorage.getItem(getProgressKey(L1_PROGRESS_KEY))
+        if (l1Raw) {
+          const l1p = JSON.parse(l1Raw) as { partsCleared?: boolean[] }
+          const pc = Array.isArray(l1p.partsCleared) ? l1p.partsCleared : []
+          setCanResumeL1(pc.some(Boolean) && !pc.every(Boolean))
+        } else {
+          setCanResumeL1(false)
+        }
+      } catch {
+        setCanResumeL1(false)
+      }
       setCanResumeL2(hasInProgressSession(getProgressKey(L2_PROGRESS_KEY), TCPIP_LEVEL2_QUESTIONS.length))
+      // infra1-1: チェックボックス進捗あり かつ未クリア
+      try {
+        const i1Raw = window.localStorage.getItem(getProgressKey(INFRA_BASIC_1_STORAGE_KEY))
+        const i1Cleared = window.localStorage.getItem(getProgressKey(INFRA_BASIC_1_CLEARED_KEY)) === 'true'
+        if (i1Raw && !i1Cleared) {
+          const i1p = JSON.parse(i1Raw) as { checkboxes?: boolean[] }
+          setCanResumeInfra1(Array.isArray(i1p.checkboxes) && i1p.checkboxes.some(Boolean))
+        } else {
+          setCanResumeInfra1(false)
+        }
+      } catch {
+        setCanResumeInfra1(false)
+      }
       setTrainingStatus(readTrainingStatus())
       // ピン留めはサーバー同期のため localStorage からは再読込しない（上書き防止）
     } catch {
@@ -567,6 +599,11 @@ function App() {
       // 進捗APIが利用可能なら、既存の進捗 + j-terada から不足分を自動登録
       if (!isProgressApiAvailable()) return
       const trainees = await fetchProgressFromApi()
+      const snaps: Record<string, import('./progressApi').TraineeProgressFromApi> = {}
+      for (const t of trainees) {
+        if (t.traineeId) snaps[t.traineeId] = t
+      }
+      if (!cancelled) setEc2Snapshots(snaps)
       const baseIds = trainees
         .map((t) => (t.traineeId || '').trim().toLowerCase())
         .filter((id) => id && id !== 'admin')
@@ -667,6 +704,25 @@ function App() {
     setAccounts(list)
   }
 
+  async function saveEc2ForUser(username: string) {
+    setEc2SaveMsg(null)
+    const snap = ec2Snapshots[username]
+    const host = (ec2EditHost[username] ?? snap?.ec2Host ?? '').trim() || null
+    const uname = (ec2EditUsername[username] ?? snap?.ec2Username ?? '').trim() || null
+    const pass = (ec2EditPassword[username] ?? snap?.ec2Password ?? '').trim() || null
+    const base: TraineeProgressSnapshot = snap
+      ? { ...snap }
+      : getCurrentProgressSnapshot()
+    const updated: TraineeProgressSnapshot = { ...base, ec2Host: host, ec2Username: uname, ec2Password: pass }
+    const ok = await postProgress(username, updated)
+    if (ok) {
+      setEc2Snapshots((prev) => ({ ...prev, [username]: { ...base, traineeId: username, ec2Host: host, ec2Username: uname, ec2Password: pass } as import('./progressApi').TraineeProgressFromApi }))
+      setEc2SaveMsg(`${username} のEC2接続情報を保存しました。`)
+    } else {
+      setEc2SaveMsg(`${username} の保存に失敗しました。`)
+    }
+  }
+
   /** 受講生画面用：サーバー側の最新進捗（DynamoDB）のスナップショットを定期取得して同期表示に使う */
   useEffect(() => {
     if (isAdminView || !isProgressApiAvailable() || typeof window === 'undefined') return
@@ -692,9 +748,7 @@ function App() {
   const delayed = (serverSnapshot?.delayedIds?.length ?? getDelayedTaskIds().length) > 0
   const progressPct = typeof serverSnapshot?.wbsPercent === 'number' ? serverSnapshot.wbsPercent : getWbsProgressPercent()
   const taskList = getTaskProgressList()
-  const inProgressLabels = taskList
-    .filter((t) => !t.cleared && t.subTasks.some((s) => s.status !== 'not_started'))
-    .map((t) => t.labelShort)
+  const inProgressTasks = taskList.filter((t) => !t.cleared && t.subTasks.some((s) => s.status !== 'not_started'))
 
   return (
     <div className="min-h-screen bg-white text-slate-800">
@@ -721,11 +775,28 @@ function App() {
                 <span data-refresh={progressTick} className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 shrink-0">
                   全体進捗:{progressPct}%
                 </span>
-                {inProgressLabels.length > 0 && (
-                  <span className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 shrink-0" title="実施中の課題">
-                    実施中: {inProgressLabels.join('・')}
-                  </span>
-                )}
+                {inProgressTasks.map((task) => {
+                  let hoverTitle = `${task.labelShort}を再開`
+                  if (task.id === 'infra-basic-1') {
+                    const l1Part = (serverSnapshot?.l1CurrentPart ?? 0) + 1
+                    const l1Q = (serverSnapshot?.l1CurrentQuestion ?? 0) + 1
+                    hoverTitle = `第${l1Part}部 ${l1Q}/10問から再開`
+                  } else if (task.id === 'infra-basic-2') {
+                    const l2Q = (serverSnapshot?.l2CurrentQuestion ?? 0) + 1
+                    hoverTitle = `${l2Q}/10問から再開`
+                  }
+                  return (
+                    <button
+                      key={task.id}
+                      type="button"
+                      onClick={() => openInfraOrShowIntro(getTrainingUrl(task.path))}
+                      title={hoverTitle}
+                      className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 shrink-0 hover:bg-amber-200"
+                    >
+                      実施中: {task.labelShort}
+                    </button>
+                  )
+                })}
               </>
             )}
             <span className="text-sm text-slate-700">{getDisplayName()}</span>
@@ -927,6 +998,61 @@ function App() {
                         </form>
                       </div>
                     )}
+                    <div className="mt-5">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-[11px] font-medium text-slate-700">EC2接続情報設定</p>
+                        <button
+                          type="button"
+                          onClick={() => setShowEc2Panel((v) => !v)}
+                          className="rounded-lg bg-slate-100 px-2 py-1 text-[10px] text-slate-600 hover:bg-slate-200"
+                        >
+                          {showEc2Panel ? '閉じる' : '展開'}
+                        </button>
+                      </div>
+                      {showEc2Panel && (
+                        <div className="space-y-3 max-h-60 overflow-y-auto">
+                          {accounts.map((a) => {
+                            const snap = ec2Snapshots[a.username]
+                            return (
+                              <div key={a.username} className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                                <p className="text-[11px] font-semibold text-slate-700 mb-1.5">{a.username}</p>
+                                <div className="space-y-1">
+                                  <input
+                                    type="text"
+                                    placeholder={`接続先IP（例: ${INFRA_BASIC_1_PARAMS.host}）`}
+                                    value={ec2EditHost[a.username] ?? snap?.ec2Host ?? ''}
+                                    onChange={(e) => setEc2EditHost((prev) => ({ ...prev, [a.username]: e.target.value }))}
+                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-800 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none"
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder={`ユーザー名（例: ${INFRA_BASIC_1_PARAMS.userKensyu}）`}
+                                    value={ec2EditUsername[a.username] ?? snap?.ec2Username ?? ''}
+                                    onChange={(e) => setEc2EditUsername((prev) => ({ ...prev, [a.username]: e.target.value }))}
+                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-800 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none"
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder={`パスワード（例: ${INFRA_BASIC_1_PARAMS.password}）`}
+                                    value={ec2EditPassword[a.username] ?? snap?.ec2Password ?? ''}
+                                    onChange={(e) => setEc2EditPassword((prev) => ({ ...prev, [a.username]: e.target.value }))}
+                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-800 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => void saveEc2ForUser(a.username)}
+                                    className="mt-1 rounded bg-indigo-600 px-2 py-1 text-[10px] font-medium text-white hover:bg-indigo-700"
+                                  >
+                                    保存
+                                  </button>
+                                </div>
+                              </div>
+                            )
+                          })}
+                          {ec2SaveMsg && <p className="text-[11px] text-emerald-700">{ec2SaveMsg}</p>}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -1270,7 +1396,7 @@ function App() {
             </section>
           )}
 
-          {(canResumeL1 || canResumeL2) && getDisplayName()?.toLowerCase() !== 'admin' && getIntroConfirmed() && (
+          {(canResumeL1 || canResumeL2 || canResumeInfra1) && getDisplayName()?.toLowerCase() !== 'admin' && getIntroConfirmed() && (
             <section className="mt-6 w-full max-w-2xl rounded-2xl border border-amber-300 bg-amber-50/80 p-4 text-[11px] text-slate-700 shadow-sm">
               <div className="flex items-center justify-between gap-2">
                 <div>
@@ -1291,7 +1417,7 @@ function App() {
                     onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level1'))}
                     className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-amber-50"
                   >
-                    インフラ研修1を途中から再開（別タブ）
+                    課題1-2: 第{(serverSnapshot?.l1CurrentPart ?? 0) + 1}部 {(serverSnapshot?.l1CurrentQuestion ?? 0) + 1}/10問から再開 →
                   </button>
                 )}
                 {canResumeL2 && (
@@ -1300,7 +1426,16 @@ function App() {
                     onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level2'))}
                     className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-amber-50"
                   >
-                    インフラ研修2を途中から再開（別タブ）
+                    課題2-2: {(serverSnapshot?.l2CurrentQuestion ?? 0) + 1}/10問から再開 →
+                  </button>
+                )}
+                {canResumeInfra1 && (
+                  <button
+                    type="button"
+                    onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-1'))}
+                    className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-amber-50"
+                  >
+                    課題1-1: 途中から再開 →
                   </button>
                 )}
               </div>

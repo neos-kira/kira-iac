@@ -13,10 +13,10 @@ import {
   TRAINING_START_DATE_KEY,
 } from './training/trainingWbsData'
 import type { ChapterProgress } from './training/trainingWbsData'
-import { INFRA_BASIC_1_CLEARED_KEY } from './training/infraBasic1Data'
-import { L1_CLEARED_KEY } from './training/linuxLevel1Data'
-import { L2_CLEARED_KEY } from './training/linuxLevel2Data'
-import { INFRA_BASIC_3_2_CLEARED_KEY } from './training/infraBasic3Data'
+import { INFRA_BASIC_1_CLEARED_KEY, INFRA_BASIC_1_STORAGE_KEY } from './training/infraBasic1Data'
+import { L1_CLEARED_KEY, L1_PROGRESS_KEY } from './training/linuxLevel1Data'
+import { L2_CLEARED_KEY, L2_PROGRESS_KEY } from './training/linuxLevel2Data'
+import { INFRA_BASIC_3_2_CLEARED_KEY, INFRA_BASIC_3_2_STATE_KEY } from './training/infraBasic3Data'
 import {
   INFRA_BASIC_4_VI_ALL_CLEARED_KEY,
   INFRA_BASIC_4_SHELL_ALL_CLEARED_KEY,
@@ -48,6 +48,28 @@ export type TraineeProgressSnapshot = {
   infra4ShellDoneQuestions?: number[]
   /** 課題4: RAG ステータス（green / yellow / red） */
   infra4Rag?: 'green' | 'yellow' | 'red' | null
+  /** Linux30問: 現在の部インデックス（0始まり） */
+  l1CurrentPart?: number
+  /** Linux30問: 現在の問題インデックス（0始まり） */
+  l1CurrentQuestion?: number
+  /** Linux30問: 間違えた問題IDリスト */
+  l1WrongIds?: string[]
+  /** TCP/IP10問: 現在の問題インデックス（0始まり） */
+  l2CurrentQuestion?: number
+  /** TCP/IP10問: 間違えた問題IDリスト */
+  l2WrongIds?: string[]
+  /** 課題1-1: チェックボックス状態 */
+  infra1Checkboxes?: boolean[]
+  /** 課題1-1: セクション完了状態 */
+  infra1SectionDone?: Record<string, boolean>
+  /** 課題3-2: 記述回答 */
+  infra32Answers?: Record<string, string>
+  /** EC2接続先IP */
+  ec2Host?: string | null
+  /** EC2ユーザー名 */
+  ec2Username?: string | null
+  /** EC2パスワード */
+  ec2Password?: string | null
 }
 
 /** 受講生IDは小文字統一（kira-test 等）。大文字小文字のずれを防ぐ。 */
@@ -94,6 +116,63 @@ export function addTrainee(username: string): void {
 
 /** 現在のグローバル進捗からスナップショットを生成（受講生が利用中に呼ぶ）。pins は呼び出し元でマージする。 */
 export function getCurrentProgressSnapshot(pinsOverride?: string[]): TraineeProgressSnapshot {
+  // L1 progress
+  let l1CurrentPart = 0
+  let l1CurrentQuestion = 0
+  const l1WrongIds: string[] = []
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = window.localStorage.getItem(getProgressKey(L1_PROGRESS_KEY))
+      if (raw) {
+        const p = JSON.parse(raw) as { partsCleared?: boolean[]; currentPart?: number; currentQuestion?: number; wrongIds?: string[] }
+        if (Array.isArray(p.partsCleared)) {
+          const idx = p.partsCleared.findIndex((c) => !c)
+          l1CurrentPart = idx === -1 ? 0 : idx
+        }
+        if (typeof p.currentPart === 'number') l1CurrentPart = p.currentPart
+        if (typeof p.currentQuestion === 'number') l1CurrentQuestion = p.currentQuestion
+      }
+    } catch { /* ignore */ }
+  }
+
+  // L2 progress
+  let l2CurrentQuestion = 0
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = window.localStorage.getItem(getProgressKey(L2_PROGRESS_KEY))
+      if (raw) {
+        const p = JSON.parse(raw) as { currentIndex?: number }
+        if (typeof p.currentIndex === 'number') l2CurrentQuestion = p.currentIndex
+      }
+    } catch { /* ignore */ }
+  }
+
+  // infra1-1 progress
+  let infra1Checkboxes: boolean[] = []
+  let infra1SectionDone: Record<string, boolean> = {}
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = window.localStorage.getItem(getProgressKey(INFRA_BASIC_1_STORAGE_KEY))
+      if (raw) {
+        const p = JSON.parse(raw) as { checkboxes?: boolean[]; sectionDone?: Record<string, boolean> }
+        if (Array.isArray(p.checkboxes)) infra1Checkboxes = p.checkboxes
+        if (p.sectionDone && typeof p.sectionDone === 'object') infra1SectionDone = p.sectionDone
+      }
+    } catch { /* ignore */ }
+  }
+
+  // infra3-2 progress
+  let infra32Answers: Record<string, string> = {}
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = window.localStorage.getItem(getProgressKey(INFRA_BASIC_3_2_STATE_KEY))
+      if (raw) {
+        const p = JSON.parse(raw) as { answers?: Record<string, string> }
+        if (p.answers && typeof p.answers === 'object') infra32Answers = p.answers
+      }
+    } catch { /* ignore */ }
+  }
+
   return {
     introConfirmed: getIntroConfirmed(),
     introAt: getIntroConfirmedAt(),
@@ -107,6 +186,14 @@ export function getCurrentProgressSnapshot(pinsOverride?: string[]): TraineeProg
     infra4ViDoneSteps: [],
     infra4ShellDoneQuestions: [],
     infra4Rag: null,
+    l1CurrentPart,
+    l1CurrentQuestion,
+    l1WrongIds,
+    l2CurrentQuestion,
+    l2WrongIds: [],
+    infra1Checkboxes,
+    infra1SectionDone,
+    infra32Answers,
   }
 }
 
@@ -258,5 +345,49 @@ export function restoreProgressToLocalStorage(username: string, snap: TraineePro
     snap.infra4ShellDoneQuestions.forEach((q) => {
       window.localStorage.setItem(getProgressKey(getShellQuestionKey(q), id), 'true')
     })
+  }
+
+  // L1 part progress（未設定の場合のみ復元）
+  if (typeof snap.l1CurrentPart === 'number' && snap.l1CurrentPart > 0) {
+    const key = getProgressKey(L1_PROGRESS_KEY, id)
+    if (!window.localStorage.getItem(key)) {
+      const partsCleared = [false, false, false]
+      for (let i = 0; i < snap.l1CurrentPart; i++) partsCleared[i] = true
+      window.localStorage.setItem(key, JSON.stringify({
+        partsCleared,
+        currentPart: snap.l1CurrentPart,
+        currentQuestion: snap.l1CurrentQuestion ?? 0,
+      }))
+    }
+  }
+
+  // L2 current question（未設定の場合のみ復元）
+  if (typeof snap.l2CurrentQuestion === 'number' && snap.l2CurrentQuestion > 0) {
+    const key = getProgressKey(L2_PROGRESS_KEY, id)
+    if (!window.localStorage.getItem(key)) {
+      window.localStorage.setItem(key, JSON.stringify({ currentIndex: snap.l2CurrentQuestion, answers: [] }))
+    }
+  }
+
+  // infra1-1 checkboxes（未設定の場合のみ復元）
+  if (Array.isArray(snap.infra1Checkboxes) && snap.infra1Checkboxes.some(Boolean)) {
+    const key = getProgressKey(INFRA_BASIC_1_STORAGE_KEY, id)
+    if (!window.localStorage.getItem(key)) {
+      window.localStorage.setItem(key, JSON.stringify({
+        checkboxes: snap.infra1Checkboxes,
+        sectionDone: snap.infra1SectionDone ?? {},
+      }))
+    }
+  }
+
+  // infra3-2 answers（未設定の場合のみ復元）
+  if (snap.infra32Answers && Object.values(snap.infra32Answers).some((v) => v)) {
+    const key = getProgressKey(INFRA_BASIC_3_2_STATE_KEY, id)
+    if (!window.localStorage.getItem(key)) {
+      window.localStorage.setItem(key, JSON.stringify({
+        answers: snap.infra32Answers,
+        results: {},
+      }))
+    }
   }
 }

@@ -9,6 +9,8 @@ import {
   INFRA_BASIC_1_STORAGE_KEY,
   type InfraBasic1StoredState,
 } from './infraBasic1Data'
+import { fetchMyProgress } from '../progressApi'
+import { getCurrentDisplayName } from '../auth'
 
 function copyToClipboard(text: string): Promise<boolean> {
   const doFallback = (): boolean => {
@@ -73,6 +75,28 @@ export function InfraBasic1Page() {
   const storageKey = getProgressKey(INFRA_BASIC_1_STORAGE_KEY)
   const clearedKey = getProgressKey(INFRA_BASIC_1_CLEARED_KEY)
   const [state, setState] = useState<InfraBasic1StoredState>(() => loadInfraBasic1State(storageKey))
+  const [ec2Params, setEc2Params] = useState<{ host: string; userRoot: string; userKensyu: string; password: string }>({
+    host: INFRA_BASIC_1_PARAMS.host,
+    userRoot: INFRA_BASIC_1_PARAMS.userRoot,
+    userKensyu: INFRA_BASIC_1_PARAMS.userKensyu,
+    password: INFRA_BASIC_1_PARAMS.password,
+  })
+
+  useEffect(() => {
+    const load = async () => {
+      const username = getCurrentDisplayName().trim().toLowerCase()
+      if (!username || username === 'admin') return
+      const snap = await fetchMyProgress(username)
+      if (!snap) return
+      setEc2Params({
+        host: snap.ec2Host || INFRA_BASIC_1_PARAMS.host,
+        userRoot: INFRA_BASIC_1_PARAMS.userRoot,
+        userKensyu: snap.ec2Username || INFRA_BASIC_1_PARAMS.userKensyu,
+        password: snap.ec2Password || INFRA_BASIC_1_PARAMS.password,
+      })
+    }
+    void load()
+  }, [])
 
   useEffect(() => {
     document.title = 'インフラ基礎演習1'
@@ -160,10 +184,10 @@ export function InfraBasic1Page() {
             演習用パラメータ
           </p>
           <div className="mt-3 space-y-2">
-            <CopyRow label="接続先IP" value={INFRA_BASIC_1_PARAMS.host} />
-            <CopyRow label="ユーザ名 (root)" value={INFRA_BASIC_1_PARAMS.userRoot} />
-            <CopyRow label="ユーザ名 (neos-training)" value={INFRA_BASIC_1_PARAMS.userKensyu} />
-            <CopyRow label="共通パスワード" value={INFRA_BASIC_1_PARAMS.password} />
+            <CopyRow label="接続先IP" value={ec2Params.host} />
+            <CopyRow label="ユーザ名 (root)" value={ec2Params.userRoot} />
+            <CopyRow label="ユーザ名 (neos-training)" value={ec2Params.userKensyu} />
+            <CopyRow label="共通パスワード" value={ec2Params.password} />
           </div>
         </section>
 
@@ -193,8 +217,8 @@ export function InfraBasic1Page() {
           tips="現場の鉄則！作業開始前に [設定] > [ログ] から証跡保存を必ず行うこと。"
           items={[
             { idx: 0, checked: isChecked(0), onToggle: () => toggleCheck(0), text: 'TeraTermの用途を調査する' },
-            { idx: 1, checked: isChecked(1), onToggle: () => toggleCheck(1), text: `ホスト ${INFRA_BASIC_1_PARAMS.host} にSSH接続する` },
-            { idx: 2, checked: isChecked(2), onToggle: () => toggleCheck(2), text: `ユーザ: root / パスワード: ${INFRA_BASIC_1_PARAMS.password} でログイン` },
+            { idx: 1, checked: isChecked(1), onToggle: () => toggleCheck(1), text: `ホスト ${ec2Params.host} にSSH接続する` },
+            { idx: 2, checked: isChecked(2), onToggle: () => toggleCheck(2), text: `ユーザ: root / パスワード: ${ec2Params.password} でログイン` },
             { idx: 3, checked: isChecked(3), onToggle: () => toggleCheck(3), text: 'ログイン後、exit でログアウトする' },
           ]}
         />
@@ -237,8 +261,8 @@ export function InfraBasic1Page() {
           onSectionDone={() => toggleSectionDone('winscp')}
           tips="ファイルを置いたら「消す」までが作業。不要なファイルをサーバに残さない。"
           items={[
-            { idx: 7, checked: isChecked(7), onToggle: () => toggleCheck(7), text: `ホスト ${INFRA_BASIC_1_PARAMS.host} に接続` },
-            { idx: 8, checked: isChecked(8), onToggle: () => toggleCheck(8), text: `ユーザ: neos-training / パスワード: ${INFRA_BASIC_1_PARAMS.password} でログイン` },
+            { idx: 7, checked: isChecked(7), onToggle: () => toggleCheck(7), text: `ホスト ${ec2Params.host} に接続` },
+            { idx: 8, checked: isChecked(8), onToggle: () => toggleCheck(8), text: `ユーザ: neos-training / パスワード: ${ec2Params.password} でログイン` },
             { idx: 9, checked: isChecked(9), onToggle: () => toggleCheck(9), text: 'ローカルの2ファイルをサーバの /tmp に転送' },
             { idx: 10, checked: isChecked(10), onToggle: () => toggleCheck(10), text: '転送成功を確認後、サーバ側のファイルを右クリックで削除' },
           ]}
