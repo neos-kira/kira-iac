@@ -1,4 +1,6 @@
 const { DynamoDBClient, PutItemCommand, ScanCommand, GetItemCommand, DeleteItemCommand } = require('@aws-sdk/client-dynamodb')
+const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime')
+const bedrockClient = new BedrockRuntimeClient({ region: 'ap-northeast-1' })
 const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb')
 const crypto = require('crypto')
 
@@ -104,7 +106,7 @@ async function handler(event) {
       return json({ ok: true })
     }
 
-    // AI採点プロキシ（Anthropic Claude API）
+    // AI採点プロキシ（AWS Bedrock Claude）
     if (method === 'POST' && (path === '/ai/score' || path === '/ai/score/')) {
       const session = await verifySession(event)
       if (!session) return json({ error: 'unauthorized' }, 401)
@@ -115,61 +117,44 @@ async function handler(event) {
         return json({ error: 'question, scoringCriteria, answer are required' }, 400)
       }
 
-      const anthropicKey = process.env.ANTHROPIC_API_KEY || ''
-      if (!anthropicKey) {
-        console.error('[ai/score] ANTHROPIC_API_KEY is not set')
-        return json({ error: 'AI scoring is not configured' }, 503)
-      }
-
-      const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': anthropicKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-opus-4-5-20251101',
-          max_tokens: 500,
-          messages: [{
-            role: 'user',
-            content: `あなたはITインフラ研修の採点者です。
+      const prompt = `あなたはITインフラ研修の採点者です。
 以下の採点基準に基づいて回答を採点してください。
 
 採点基準: ${scoringCriteria}
 
 受講生の回答: ${answer}
 
-以下のJSON形式のみで返答してください。
+以下のJSON形式のみで返答してください。前後に余計な文字を含めないこと。
 {
-  "pass": true or false,
+  "pass": true または false,
   "feedback": "合格の場合は良かった点、不合格の場合は具体的な改善点を100字以内で"
-}`,
-          }],
-        }),
-      })
-
-      if (!aiRes.ok) {
-        const errText = await aiRes.text().catch(() => '')
-        console.error('[ai/score] Anthropic API error:', aiRes.status, errText)
-        return json({ error: 'AI API error', status: aiRes.status }, 502)
-      }
-
-      const aiData = await aiRes.json()
-      const text = (aiData.content?.[0]?.text ?? '').trim()
-      // JSONブロックを抽出（greedy: 最初の { から最後の } まで）
-      const match = text.match(/\{[\s\S]*\}/)
-      if (!match) {
-        console.error('[ai/score] No JSON in response:', text)
-        return json({ error: 'Invalid AI response', raw: text }, 502)
-      }
+}`
 
       try {
-        const result = JSON.parse(match[0])
-        return json({ pass: !!result.pass, feedback: String(result.feedback ?? '') })
-      } catch (parseErr) {
-        console.error('[ai/score] JSON parse error:', parseErr, match[0])
-        return json({ error: 'Failed to parse AI response' }, 502)
+        const command = new InvokeModelCommand({
+          modelId: 'anthropic.claude-sonnet-4-5-20250929-v1:0',
+          contentType: 'application/json',
+          accept: 'application/json',
+          body: JSON.stringify({
+            anthropic_version: 'bedrock-2023-05-31',
+            max_tokens: 1000,
+            messages: [{ role: 'user', content: prompt }],
+          }),
+        })
+        const response = await bedrockClient.send(command)
+        const result = JSON.parse(Buffer.from(response.body).toString())
+        const text = (result.content?.[0]?.text ?? '').trim()
+        // JSONブロックを抽出（greedy: 最初の { から最後の } まで）
+        const match = text.match(/\{[\s\S]*\}/)
+        if (!match) {
+          console.error('[ai/score] No JSON in Bedrock response:', text)
+          return json({ error: 'Invalid AI response', raw: text }, 502)
+        }
+        const parsed = JSON.parse(match[0])
+        return json({ pass: !!parsed.pass, feedback: String(parsed.feedback ?? '') })
+      } catch (err) {
+        console.error('[ai/score] Bedrock error:', err)
+        return json({ error: 'AI scoring failed', detail: String(err) }, 502)
       }
     }
 

@@ -4,6 +4,7 @@ import { setIntroConfirmed, setIntroConfirmedForUser, getIntroConfirmed, clearIn
 import { getCurrentDisplayName } from '../auth'
 import { Confetti } from '../components/Confetti'
 import { INTRO_RISK_QUESTIONS } from './introRiskData'
+import type { MCQuestion, EssayQuestion } from './introRiskData'
 import { setTrainingStartDateFromTask1Start, getTrainingStartDate } from './trainingWbsData'
 import { fetchMyProgress, postProgress, isProgressApiAvailable, scoreAnswer } from '../progressApi'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
@@ -84,9 +85,8 @@ const QUIZ_QUESTIONS: { id: number; question: string; choices: string[]; correct
 
 const CHOICE_LABELS = ['A', 'B', 'C', 'D']
 
-// ── Step 2-4: リスク問題 ──────────────────────────────────────────────────────
+// ── Step 2-4 ──────────────────────────────────────────────────────────────────
 
-/** ステップ番号 → セクション名のマッピング */
 const STEP_SECTION: Record<number, string> = {
   2: 'AI利用時の機密保持',
   3: '物理セキュリティ',
@@ -148,15 +148,22 @@ export function IntroPage() {
   const [showReview, setShowReview] = useState(false)
 
   // Multi-step state
-  const [step, setStep] = useState<number>(1)        // 1〜5
-  const [sectionQIdx, setSectionQIdx] = useState(0)  // セクション内の問題インデックス
+  const [step, setStep] = useState<number>(1)
+  const [sectionQIdx, setSectionQIdx] = useState(0)
   const [riskAnswers, setRiskAnswers] = useState<Record<string, string>>({})
+
+  // 選択式問題の状態
+  const [mcSelected, setMcSelected] = useState<number[]>([])
+  const [mcResult, setMcResult] = useState<boolean | null>(null)
+
+  // 記述式問題の状態
   const [currentInput, setCurrentInput] = useState('')
   const [currentResult, setCurrentResult] = useState<ScoringResult | null>(null)
   const [isScoring, setIsScoring] = useState(false)
+
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
 
-  // ── マウント: localStorage確認 + DynamoDB復元 ──────────────────────────────
+  // ── マウント: DynamoDB復元 ────────────────────────────────────────────────
   useEffect(() => {
     document.title = 'はじめに'
     const ok = getIntroConfirmed()
@@ -171,14 +178,11 @@ export function IntroPage() {
       setServerSnapshot(snap)
 
       const savedAnswers = snap.introRiskAnswers ?? {}
-      if (Object.keys(savedAnswers).length > 0) {
-        setRiskAnswers(savedAnswers)
-      }
+      if (Object.keys(savedAnswers).length > 0) setRiskAnswers(savedAnswers)
 
       const savedStep = snap.introStep
       if (typeof savedStep === 'number' && savedStep >= 2 && savedStep <= 4) {
         setStep(savedStep)
-        // セクション内の問題インデックスを回答済み数から復元
         const secName = STEP_SECTION[savedStep] ?? ''
         const sqs = INTRO_RISK_QUESTIONS.filter((q) => q.section === secName)
         const answeredIds = new Set(Object.keys(savedAnswers))
@@ -188,7 +192,7 @@ export function IntroPage() {
     })
   }, [])
 
-  // ── confirmed 状態を per-user キーへ定期同期 ──────────────────────────────
+  // ── confirmed → per-user 同期 ─────────────────────────────────────────────
   useEffect(() => {
     if (!confirmed) return
     const username = getCurrentDisplayName().trim().toLowerCase()
@@ -199,35 +203,33 @@ export function IntroPage() {
     return () => clearInterval(id)
   }, [confirmed])
 
-  // ── Step 2-4: セクション・現在問題の導出 ──────────────────────────────────
+  // ── セクション・現在問題の導出 ────────────────────────────────────────────
   const sectionName = STEP_SECTION[step] ?? ''
   const sectionQuestions = INTRO_RISK_QUESTIONS.filter((q) => q.section === sectionName)
   const currentQuestion = sectionQuestions[sectionQIdx] ?? null
 
-  // 問題が切り替わったら入力・結果をリセット
+  // 問題切替でリセット
   useEffect(() => {
+    setMcSelected([])
+    setMcResult(null)
     setCurrentInput('')
     setCurrentResult(null)
   }, [currentQuestion?.id])
 
-  // ── Step 1 quiz ─────────────────────────────────────────────────────────────
+  // ── Step 1 quiz ──────────────────────────────────────────────────────────
   const allAnswered = answers.every((a) => a >= 0)
   const allCorrect = allAnswered && QUIZ_QUESTIONS.every((q, i) => answers[i] === q.correctIndex)
 
   const setAnswer = (i: number, ci: number) => {
     setAnswers((prev) => {
-      const next = [...prev]
-      next[i] = ci
-      return next
+      const next = [...prev]; next[i] = ci; return next
     })
   }
 
   // ── [開発用] はじめにリセット ────────────────────────────────────────────
   const handleDevReset = async () => {
     if (!window.confirm('【開発用】はじめにの進捗をすべてリセットしますか？\n（localStorageとDynamoDBの両方をリセットします）')) return
-    // 1. localStorage クリア
     clearIntroForCurrentUser()
-    // 2. DynamoDB リセット
     const username = getCurrentDisplayName().trim().toLowerCase()
     if (username && username !== 'admin' && isProgressApiAvailable()) {
       const base = serverSnapshot ?? EMPTY_SNAPSHOT
@@ -240,17 +242,19 @@ export function IntroPage() {
         updatedAt: new Date().toISOString(),
       })
     }
-    // 3. ローカル状態リセット
     setConfirmed(false)
     setStep(1)
     setSectionQIdx(0)
     setRiskAnswers({})
+    setMcSelected([])
+    setMcResult(null)
     setCurrentInput('')
     setCurrentResult(null)
     setAnswers(QUIZ_QUESTIONS.map(() => -1))
     setShowReview(false)
   }
 
+  // ── Step 1 完了 ───────────────────────────────────────────────────────────
   const handleStep1Complete = async () => {
     if (isScoring) return
     setIsScoring(true)
@@ -271,24 +275,62 @@ export function IntroPage() {
     }
   }
 
-  // ── Step 2-4: Lambda プロキシ経由 Claude 採点 ────────────────────────────
+  // ── 選択式: 選択トグル ────────────────────────────────────────────────────
+  const handleMCSelect = (ci: number) => {
+    if (mcResult !== null) return
+    if (currentQuestion?.type === 'single') {
+      setMcSelected([ci])
+    } else {
+      setMcSelected((prev) =>
+        prev.includes(ci) ? prev.filter((i) => i !== ci) : [...prev, ci]
+      )
+    }
+  }
+
+  // ── 選択式: 答え合わせ ────────────────────────────────────────────────────
+  const handleCheckMC = async () => {
+    if (!currentQuestion || currentQuestion.type === 'essay') return
+    const q = currentQuestion as MCQuestion
+    const sortedSel = [...mcSelected].sort((a, b) => a - b)
+    const sortedCorrect = [...q.correctIndices].sort((a, b) => a - b)
+    const isPass =
+      sortedSel.length === sortedCorrect.length &&
+      sortedSel.every((v, i) => v === sortedCorrect[i])
+    setMcResult(isPass)
+
+    if (isPass) {
+      const nextAnswers = { ...riskAnswers, [q.id]: 'PASS' }
+      setRiskAnswers(nextAnswers)
+      const username = getCurrentDisplayName().trim().toLowerCase()
+      if (username && username !== 'admin' && isProgressApiAvailable()) {
+        const base = serverSnapshot ?? EMPTY_SNAPSHOT
+        await postProgress(username, {
+          ...base,
+          introStep: step,
+          introRiskAnswers: nextAnswers,
+          updatedAt: new Date().toISOString(),
+        })
+      }
+    }
+  }
+
+  // ── 記述式: Bedrock採点 ───────────────────────────────────────────────────
   const handleScore = async () => {
-    if (!currentQuestion || !currentInput.trim() || isScoring) return
+    if (!currentQuestion || currentQuestion.type !== 'essay' || !currentInput.trim() || isScoring) return
+    const q = currentQuestion as EssayQuestion
     setIsScoring(true)
     setCurrentResult(null)
-
     try {
       const result = await scoreAnswer({
-        question: currentQuestion.prompt,
-        scoringCriteria: currentQuestion.scoringCriteria,
+        question: q.prompt,
+        scoringCriteria: q.scoringCriteria,
         answer: currentInput,
       })
       setCurrentResult(result)
 
       if (result.pass) {
-        const nextAnswers = { ...riskAnswers, [currentQuestion.id]: currentInput }
+        const nextAnswers = { ...riskAnswers, [q.id]: currentInput }
         setRiskAnswers(nextAnswers)
-
         const username = getCurrentDisplayName().trim().toLowerCase()
         if (username && username !== 'admin' && isProgressApiAvailable()) {
           const base = serverSnapshot ?? EMPTY_SNAPSHOT
@@ -307,28 +349,28 @@ export function IntroPage() {
     }
   }
 
+  // ── リトライ ──────────────────────────────────────────────────────────────
   const handleRetry = () => {
+    setMcSelected([])
+    setMcResult(null)
     setCurrentResult(null)
     setCurrentInput('')
   }
 
-  const handleNextQuestion = async () => {
-    if (isScoring || !currentQuestion) return
+  // ── 次の問題へ / セクション完了 ───────────────────────────────────────────
+  const handleNext = async () => {
+    if (isScoring) return
     setIsScoring(true)
-
     const isLastInSection = sectionQIdx + 1 >= sectionQuestions.length
+    const nextStep = step + 1
 
     try {
       if (isLastInSection) {
-        const nextStep = step + 1
-
         if (nextStep === 5) {
-          // ── 完了処理 ──
+          // 完了
           setTrainingStartDateFromTask1Start()
           const trainingStartDate = getTrainingStartDate() || null
           const introAt = new Date().toISOString()
-
-          // localStorage に確認済みを保存
           const who = usernameAtMountRef.current
           if (who && who !== 'admin') setIntroConfirmedForUser(who)
           else setIntroConfirmed()
@@ -346,10 +388,9 @@ export function IntroPage() {
               updatedAt: new Date().toISOString(),
             })
           }
-
           setConfirmed(true)
         } else {
-          // ── 次のセクションへ ──
+          // 次のセクション
           const username = getCurrentDisplayName().trim().toLowerCase()
           if (username && username !== 'admin' && isProgressApiAvailable()) {
             const base = serverSnapshot ?? EMPTY_SNAPSHOT
@@ -362,15 +403,9 @@ export function IntroPage() {
           }
           setSectionQIdx(0)
         }
-
-        setCurrentResult(null)
-        setCurrentInput('')
         setStep(nextStep)
       } else {
-        // ── セクション内の次の問題へ ──
         setSectionQIdx((prev) => prev + 1)
-        setCurrentResult(null)
-        setCurrentInput('')
       }
     } finally {
       setIsScoring(false)
@@ -416,7 +451,7 @@ export function IntroPage() {
     </div>
   )
 
-  // ── Render: 確認済み（ページを見返す前） ──────────────────────────────────
+  // ── Render: 確認済み（見返し前） ─────────────────────────────────────────
   if (confirmed && step !== 5 && !showReview) {
     return pageLayout(
       <>
@@ -464,7 +499,7 @@ export function IntroPage() {
     )
   }
 
-  // ── Render: Step 1 行動基準確認（または見返しモード） ────────────────────
+  // ── Render: Step 1 行動基準確認 ──────────────────────────────────────────
   if (step === 1 || showReview) {
     return pageLayout(
       <>
@@ -490,7 +525,6 @@ export function IntroPage() {
             const q = QUIZ_QUESTIONS[i]
             return (
               <div key={i} className="space-y-4">
-                {/* 解説 */}
                 <div className="rounded-xl bg-white border border-slate-200 shadow-sm overflow-hidden">
                   <div className="p-5">
                     <div className="flex items-center gap-2 mb-3">
@@ -522,7 +556,6 @@ export function IntroPage() {
                   </div>
                 </div>
 
-                {/* 理解度チェック */}
                 {!showReview && (
                   <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-5">
                     <p className="text-sm text-slate-600 mb-1">理解度チェック</p>
@@ -607,10 +640,136 @@ export function IntroPage() {
     )
   }
 
-  // ── Render: Step 2-4 リスク記述問題 ──────────────────────────────────────
+  // ── Render: Step 2-4 問題 ─────────────────────────────────────────────────
   const isLastInSection = sectionQIdx + 1 >= sectionQuestions.length
   const isLastStep = step === 4
+  const nextBtnLabel = isScoring ? '保存中...' : isLastInSection && isLastStep ? '完了' : isLastInSection ? '次のセクションへ →' : '次へ →'
 
+  // 選択式問題
+  if (currentQuestion && currentQuestion.type !== 'essay') {
+    const q = currentQuestion as MCQuestion
+    return pageLayout(
+      <>
+        {headerBlock}
+        <StepProgress current={step} />
+
+        <div className="mb-5">
+          <h2 className="text-lg font-bold text-slate-800">{sectionName}</h2>
+          <p className="mt-0.5 text-xs text-slate-500">{sectionQIdx + 1} / {sectionQuestions.length}問</p>
+        </div>
+
+        {/* 選択肢カード */}
+        <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-5 space-y-4">
+          <p className="text-sm font-semibold text-slate-800 leading-relaxed">{q.prompt}</p>
+          <ul className="space-y-2">
+            {q.choices.map((choice, ci) => {
+              const isSelected = mcSelected.includes(ci)
+              const isCorrectChoice = q.correctIndices.includes(ci)
+              const showCorrect = mcResult !== null && isCorrectChoice
+              const showWrong = mcResult === false && isSelected && !isCorrectChoice
+              const showMissed = mcResult === false && !isSelected && isCorrectChoice
+              return (
+                <li key={ci}>
+                  <label
+                    className={`flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors ${
+                      mcResult === null ? 'cursor-pointer' : 'cursor-default'
+                    } ${
+                      showCorrect && isSelected
+                        ? 'border-emerald-300 bg-emerald-50'
+                        : showWrong
+                          ? 'border-red-300 bg-red-50'
+                          : showMissed
+                            ? 'border-amber-300 bg-amber-50'
+                            : isSelected
+                              ? 'border-sky-200 bg-sky-50'
+                              : 'border-slate-200 bg-white hover:bg-slate-50'
+                    }`}
+                  >
+                    <span
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                        showCorrect && isSelected
+                          ? 'bg-emerald-500 text-white'
+                          : showWrong
+                            ? 'bg-red-500 text-white'
+                            : showMissed
+                              ? 'bg-amber-500 text-white'
+                              : isSelected
+                                ? 'bg-sky-200 text-sky-800'
+                                : 'bg-slate-200 text-slate-500'
+                      }`}
+                    >
+                      {showCorrect && isSelected ? '✓' : showMissed ? '!' : CHOICE_LABELS[ci]}
+                    </span>
+                    <span className="text-sm text-slate-800 flex-1">{choice}</span>
+                    <input
+                      type={q.type === 'multi' ? 'checkbox' : 'radio'}
+                      name={`mc-${q.id}`}
+                      checked={isSelected}
+                      disabled={mcResult !== null}
+                      onChange={() => handleMCSelect(ci)}
+                      className="sr-only"
+                    />
+                  </label>
+                </li>
+              )
+            })}
+          </ul>
+
+          {mcResult === null && (
+            <button
+              type="button"
+              disabled={mcSelected.length === 0}
+              onClick={handleCheckMC}
+              className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              確認する
+            </button>
+          )}
+        </div>
+
+        {/* 結果フィードバック */}
+        {mcResult !== null && (
+          <div
+            className={`mt-4 rounded-xl border p-5 ${
+              mcResult ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'
+            }`}
+          >
+            <p className={`text-base font-semibold ${mcResult ? 'text-emerald-700' : 'text-red-700'}`}>
+              {mcResult ? '✓ 正解' : '✗ 不正解'}
+            </p>
+            {!mcResult && (
+              <p className="mt-1 text-sm text-slate-700">
+                正しい選択肢をすべて選んでください（{q.type === 'multi' ? '複数選択可' : '単一選択'}）。
+              </p>
+            )}
+            <div className="mt-4">
+              {mcResult ? (
+                <button
+                  type="button"
+                  disabled={isScoring}
+                  onClick={handleNext}
+                  className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {nextBtnLabel}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  className="rounded-xl bg-slate-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
+                >
+                  もう一度
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </>
+    )
+  }
+
+  // 記述式問題（Step 4）
+  const eq = currentQuestion as EssayQuestion | null
   return pageLayout(
     <>
       {headerBlock}
@@ -621,11 +780,14 @@ export function IntroPage() {
         <p className="mt-0.5 text-xs text-slate-500">{sectionQIdx + 1} / {sectionQuestions.length}問</p>
       </div>
 
-      {/* 問題カード */}
+      {/* 記述式問題カード */}
       <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-5 space-y-4">
-        <p className="text-sm font-medium text-slate-800 whitespace-pre-wrap leading-relaxed">
-          {currentQuestion?.prompt ?? ''}
-        </p>
+        <p className="text-sm font-semibold text-slate-800">{eq?.prompt ?? ''}</p>
+        {eq?.scenarioText && (
+          <pre className="rounded-lg bg-slate-50 border border-slate-200 p-4 text-xs leading-relaxed text-slate-700 whitespace-pre-wrap font-sans">
+            {eq.scenarioText}
+          </pre>
+        )}
         <textarea
           className="w-full rounded-xl border border-slate-300 bg-slate-50 p-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none disabled:opacity-60"
           rows={6}
@@ -639,7 +801,7 @@ export function IntroPage() {
             type="button"
             disabled={!currentInput.trim() || isScoring}
             onClick={handleScore}
-            className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 transition-opacity"
+            className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isScoring ? '採点中...' : '採点する'}
           </button>
@@ -657,16 +819,15 @@ export function IntroPage() {
             {currentResult.pass ? '✓ 合格' : '✗ 不合格'}
           </p>
           <p className="mt-2 text-sm text-slate-700 leading-relaxed">{currentResult.feedback}</p>
-
           <div className="mt-4">
             {currentResult.pass ? (
               <button
                 type="button"
                 disabled={isScoring}
-                onClick={handleNextQuestion}
+                onClick={handleNext}
                 className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
               >
-                {isScoring ? '保存中...' : isLastInSection && isLastStep ? '完了' : isLastInSection ? '次のセクションへ →' : '次へ →'}
+                {nextBtnLabel}
               </button>
             ) : (
               <button

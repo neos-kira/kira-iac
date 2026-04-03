@@ -60,6 +60,19 @@ resource "aws_iam_role_policy_attachment" "progress_api_logs" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+resource "aws_iam_role_policy" "progress_api_bedrock" {
+  name   = "bedrock-invoke"
+  role   = aws_iam_role.progress_api.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["bedrock:InvokeModel"]
+      Resource = ["arn:aws:bedrock:ap-northeast-1::foundation-model/anthropic.claude-*"]
+    }]
+  })
+}
+
 resource "aws_lambda_function" "progress_api" {
   function_name = "${local.app_name}-progress-api"
   role          = aws_iam_role.progress_api.arn
