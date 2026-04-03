@@ -74,6 +74,10 @@ export function LinuxLevel1Page() {
 
   // DynamoDB復元済みかどうかのフラグ（useEffect完了前に中断されないよう管理）
   const initPartRef = useRef(initPart)
+  // マウント時点でlocalStorageにL1データが存在したか（復元条件の判定に使う）
+  const hadLocalL1DataRef = useRef(
+    typeof window !== 'undefined' && window.localStorage.getItem(getProgressKey(L1_PROGRESS_KEY)) !== null
+  )
 
   const [partsCleared, setPartsCleared] = useState<boolean[]>(initSave.partsCleared)
   const [activePart, setActivePart] = useState<number>(initPart)
@@ -100,8 +104,9 @@ export function LinuxLevel1Page() {
       if (!snap || typeof snap.l1CurrentPart !== 'number') return
 
       const serverPart = snap.l1CurrentPart
-      // サーバー側の進捗がローカルより大きい場合のみ上書き
-      if (serverPart <= initPartRef.current) return
+      // localStorage が空だった場合は無条件に復元、あった場合はサーバーの方が進んでいる場合のみ上書き
+      const shouldRestore = !hadLocalL1DataRef.current || serverPart > initPartRef.current
+      if (!shouldRestore) return
 
       const newPartsCleared: boolean[] = [false, false, false]
       for (let i = 0; i < serverPart; i++) newPartsCleared[i] = true

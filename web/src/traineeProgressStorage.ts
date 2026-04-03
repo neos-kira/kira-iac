@@ -349,15 +349,20 @@ export function restoreProgressToLocalStorage(username: string, snap: TraineePro
   }
 
   // L1 part progress（未設定の場合のみ復元）
-  if (typeof snap.l1CurrentPart === 'number' && snap.l1CurrentPart > 0) {
+  // l1CurrentPart === 0 でも currentQuestion > 0 や wrongIds がある場合は第1部途中として復元する
+  const hasL1Progress =
+    typeof snap.l1CurrentPart === 'number' &&
+    (snap.l1CurrentPart > 0 || (snap.l1CurrentQuestion ?? 0) > 0 || ((snap.l1WrongIds ?? []).length > 0))
+  if (hasL1Progress) {
     const key = getProgressKey(L1_PROGRESS_KEY, id)
     if (!window.localStorage.getItem(key)) {
       const partsCleared = [false, false, false]
-      for (let i = 0; i < snap.l1CurrentPart; i++) partsCleared[i] = true
+      for (let i = 0; i < (snap.l1CurrentPart ?? 0); i++) partsCleared[i] = true
       window.localStorage.setItem(key, JSON.stringify({
         partsCleared,
-        currentPart: snap.l1CurrentPart,
+        currentPart: snap.l1CurrentPart ?? 0,
         currentQuestion: snap.l1CurrentQuestion ?? 0,
+        wrongIds: snap.l1WrongIds ?? [],
       }))
     }
   }
