@@ -96,6 +96,10 @@ async function handler(event) {
         // 課題クリア状態
         infra1Cleared: typeof body.infra1Cleared === 'boolean' ? body.infra1Cleared : false,
         l1Cleared: typeof body.l1Cleared === 'boolean' ? body.l1Cleared : false,
+        // 導入課題 中断・再開
+        introRiskCurrentQuestion: typeof body.introRiskCurrentQuestion === 'number' ? body.introRiskCurrentQuestion : 0,
+        introRiskAnswers: body.introRiskAnswers && typeof body.introRiskAnswers === 'object' ? body.introRiskAnswers : {},
+        introRiskCleared: !!body.introRiskCleared,
       }
       await client.send(new PutItemCommand({ TableName, Item: marshall(Item, { removeUndefinedValues: true }) }))
       return json({ ok: true })

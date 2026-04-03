@@ -13,6 +13,7 @@ import { L1_CLEARED_KEY, L1_PROGRESS_KEY } from './training/linuxLevel1Data'
 import { L2_PROGRESS_KEY, TCPIP_LEVEL2_QUESTIONS, L2_CLEARED_KEY } from './training/linuxLevel2Data'
 import { INFRA_BASIC_1_CLEARED_KEY, INFRA_BASIC_1_PARAMS, INFRA_BASIC_1_STORAGE_KEY } from './training/infraBasic1Data'
 import { INFRA_BASIC_3_2_CLEARED_KEY } from './training/infraBasic3Data'
+import { INTRO_RISK_CLEARED_KEY } from './training/introRiskData'
 import {
   getProgressKey,
   getTaskProgressList,
@@ -1081,6 +1082,24 @@ function App() {
                   label="はじめに"
                   className="mt-4 inline-flex rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
                 />
+              </div>
+            )}
+            {/* 今やること: はじめに完了後・導入課題未完了時に表示 */}
+            {getIntroConfirmed() && !(serverSnapshot?.introRiskCleared) &&
+              !(typeof window !== 'undefined' && window.localStorage.getItem(getProgressKey(INTRO_RISK_CLEARED_KEY)) === 'true') && (
+              <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
+                <h2 className="mt-2 text-base font-semibold text-slate-800">今やること</h2>
+                <p className="mt-1 text-sm text-slate-700">
+                  インフラ基礎課題に進む前に、導入課題（リスク管理）に取り組んでください。
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { window.location.hash = '#/training/intro-risk' }}
+                  className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
+                >
+                  導入課題を始める →
+                </button>
               </div>
             )}
             {/* j-terada 用：はじめにの下に課題1完了後の案内を表示。課題1クリア前はリンク無効 */}

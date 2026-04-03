@@ -75,6 +75,12 @@ export type TraineeProgressSnapshot = {
   infra1Cleared?: boolean
   /** 課題1-2（Linux30問）クリア済み */
   l1Cleared?: boolean
+  /** 導入課題: 現在の問題インデックス（0始まり） */
+  introRiskCurrentQuestion?: number
+  /** 導入課題: 問題IDと回答のマップ */
+  introRiskAnswers?: Record<string, string>
+  /** 導入課題クリア済み */
+  introRiskCleared?: boolean
 }
 
 /** 受講生IDは小文字統一（kira-test 等）。大文字小文字のずれを防ぐ。 */
