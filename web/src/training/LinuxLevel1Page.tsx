@@ -231,6 +231,8 @@ export function LinuxLevel1Page() {
 
   // ────────── クイズ画面 ──────────
   const isRetry = current ? (current.id in firstAttemptCorrect) : false
+  // 再出題バッジは「再出題問題に回答中かつまだ正解していない」ときだけ表示
+  const showRetryBadge = isRetry && lastResult !== 'correct'
   const correctAnswer = current ? (current.choices[current.correctIndex] ?? '') : ''
   const showFeedback = lastResult !== null
 
@@ -249,7 +251,7 @@ export function LinuxLevel1Page() {
         </h1>
         <div className="mt-1 flex items-center gap-2">
           <p className="text-xs text-slate-500">{progressLabel}</p>
-          {isRetry && (
+          {showRetryBadge && (
             <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
               再出題
             </span>
