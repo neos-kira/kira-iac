@@ -439,7 +439,7 @@ export function IntroPage() {
         onClick={() => { void handleGoToTop() }}
         className="rounded-lg px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 shadow-sm hover:bg-slate-50"
       >
-        トップに戻る
+        トップへ戻る
       </button>
     </div>
   )

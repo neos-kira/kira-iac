@@ -31,7 +31,7 @@ export const INTRO_RISK_QUESTIONS: RiskQuestion[] = [
     id: 'ai-1',
     section: 'AI利用時の機密保持',
     type: 'multi',
-    prompt: '現場でAIに入力してはいけない情報はどれですか？（複数選択可）',
+    prompt: 'AIに入力してはいけない情報はどれですか？（複数選択可）',
     choices: [
       '顧客の個人情報（氏名・連絡先）',
       '社内のソースコード',
