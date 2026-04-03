@@ -119,7 +119,7 @@ export function getCurrentProgressSnapshot(pinsOverride?: string[]): TraineeProg
   // L1 progress
   let l1CurrentPart = 0
   let l1CurrentQuestion = 0
-  const l1WrongIds: string[] = []
+  let l1WrongIds: string[] = []
   if (typeof window !== 'undefined') {
     try {
       const raw = window.localStorage.getItem(getProgressKey(L1_PROGRESS_KEY))
@@ -131,6 +131,7 @@ export function getCurrentProgressSnapshot(pinsOverride?: string[]): TraineeProg
         }
         if (typeof p.currentPart === 'number') l1CurrentPart = p.currentPart
         if (typeof p.currentQuestion === 'number') l1CurrentQuestion = p.currentQuestion
+        if (Array.isArray(p.wrongIds)) l1WrongIds = p.wrongIds as string[]
       }
     } catch { /* ignore */ }
   }
@@ -190,7 +191,7 @@ export function getCurrentProgressSnapshot(pinsOverride?: string[]): TraineeProg
     l1CurrentQuestion,
     l1WrongIds,
     l2CurrentQuestion,
-    l2WrongIds: [],
+    l2WrongIds: [] as string[],
     infra1Checkboxes,
     infra1SectionDone,
     infra32Answers,

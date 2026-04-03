@@ -3,33 +3,57 @@ import { useNavigate } from 'react-router-dom'
 import { getProgressKey } from './trainingWbsData'
 import { LINUX_LEVEL1_QUESTIONS, L1_CLEARED_KEY, L1_PROGRESS_KEY } from './linuxLevel1Data'
 import type { QuizQuestion } from './linuxLevel1Data'
+import { getCurrentProgressSnapshot } from '../traineeProgressStorage'
+import { postProgress, isProgressApiAvailable } from '../progressApi'
+import { getCurrentDisplayName } from '../auth'
+import { fetchMyProgress } from '../progressApi'
 
 const PART_SIZE = 10
 const PASS_SCORE = 8
 const PART_LABELS = ['第1部', '第2部', '第3部']
 const PART_NAMES = ['基本操作', 'サーバ構築必須', '実践問題']
 
-type PartSave = { partsCleared: boolean[] }
-
-function loadPartsCleared(key: string): boolean[] {
-  if (typeof window === 'undefined') return [false, false, false]
-  try {
-    const raw = window.localStorage.getItem(key)
-    if (!raw) return [false, false, false]
-    const parsed = JSON.parse(raw) as Partial<PartSave>
-    if (Array.isArray(parsed.partsCleared) && parsed.partsCleared.length === 3) {
-      return parsed.partsCleared as boolean[]
-    }
-  } catch {
-    // ignore
-  }
-  return [false, false, false]
+type L1Save = {
+  partsCleared: boolean[]
+  currentPart?: number
+  currentQuestion?: number
+  wrongIds?: string[]
 }
 
-function savePartsCleared(key: string, partsCleared: boolean[]) {
+function loadL1Save(key: string): { partsCleared: boolean[]; currentPart: number; currentQuestion: number; wrongIds: string[] } {
+  const defaultVal = { partsCleared: [false, false, false], currentPart: 0, currentQuestion: 0, wrongIds: [] as string[] }
+  if (typeof window === 'undefined') return defaultVal
+  try {
+    const raw = window.localStorage.getItem(key)
+    if (!raw) return defaultVal
+    const parsed = JSON.parse(raw) as Partial<L1Save>
+    const partsCleared =
+      Array.isArray(parsed.partsCleared) && parsed.partsCleared.length === 3
+        ? (parsed.partsCleared as boolean[])
+        : [false, false, false]
+    const firstUncleared = partsCleared.findIndex((c) => !c)
+    const defaultPart = firstUncleared === -1 ? 0 : firstUncleared
+    return {
+      partsCleared,
+      currentPart: typeof parsed.currentPart === 'number' ? parsed.currentPart : defaultPart,
+      currentQuestion: typeof parsed.currentQuestion === 'number' ? parsed.currentQuestion : 0,
+      wrongIds: Array.isArray(parsed.wrongIds) ? (parsed.wrongIds as string[]) : [],
+    }
+  } catch {
+    return defaultVal
+  }
+}
+
+function saveL1State(
+  key: string,
+  partsCleared: boolean[],
+  currentPart: number,
+  currentQuestion: number,
+  wrongIds: string[],
+) {
   if (typeof window === 'undefined') return
   try {
-    window.localStorage.setItem(key, JSON.stringify({ partsCleared }))
+    window.localStorage.setItem(key, JSON.stringify({ partsCleared, currentPart, currentQuestion, wrongIds }))
   } catch {
     // ignore
   }
@@ -39,24 +63,23 @@ function getPartQuestions(partIdx: number): QuizQuestion[] {
   return LINUX_LEVEL1_QUESTIONS.slice(partIdx * PART_SIZE, (partIdx + 1) * PART_SIZE)
 }
 
-function initialActivePart(cleared: boolean[]): number {
-  const next = cleared.findIndex((c) => !c)
-  return next === -1 ? 0 : next
-}
 
 export function LinuxLevel1Page() {
   const navigate = useNavigate()
   const storageKey = getProgressKey(L1_PROGRESS_KEY)
   const clearedKey = getProgressKey(L1_CLEARED_KEY)
 
-  const initCleared = loadPartsCleared(storageKey)
-  const initPart = initialActivePart(initCleared)
+  const initSave = loadL1Save(storageKey)
+  const initPart = initSave.currentPart
 
-  const [partsCleared, setPartsCleared] = useState<boolean[]>(initCleared)
+  // DynamoDB復元済みかどうかのフラグ（useEffect完了前に中断されないよう管理）
+  const initPartRef = useRef(initPart)
+
+  const [partsCleared, setPartsCleared] = useState<boolean[]>(initSave.partsCleared)
   const [activePart, setActivePart] = useState<number>(initPart)
   const [queue, setQueue] = useState<QuizQuestion[]>(getPartQuestions(initPart))
   const [queueIdx, setQueueIdx] = useState(0)
-  // firstAttemptCorrect: questionId → true/false (first attempt result)
+  // firstAttemptCorrect: questionId → true/false (初回回答結果)
   const [firstAttemptCorrect, setFirstAttemptCorrect] = useState<Record<string, boolean>>({})
   const [inputValue, setInputValue] = useState('')
   const [lastResult, setLastResult] = useState<'correct' | 'wrong' | null>(null)
@@ -67,6 +90,36 @@ export function LinuxLevel1Page() {
   useEffect(() => {
     document.title = 'インフラ研修1'
   }, [])
+
+  // DynamoDBから初期状態を復元（優先順位: DynamoDB > localStorage > デフォルト）
+  useEffect(() => {
+    const restore = async () => {
+      const username = getCurrentDisplayName().trim().toLowerCase()
+      if (!username || username === 'admin') return
+      const snap = await fetchMyProgress(username)
+      if (!snap || typeof snap.l1CurrentPart !== 'number') return
+
+      const serverPart = snap.l1CurrentPart
+      // サーバー側の進捗がローカルより大きい場合のみ上書き
+      if (serverPart <= initPartRef.current) return
+
+      const newPartsCleared: boolean[] = [false, false, false]
+      for (let i = 0; i < serverPart; i++) newPartsCleared[i] = true
+
+      setPartsCleared(newPartsCleared)
+      setActivePart(serverPart)
+      setQueue(getPartQuestions(serverPart))
+      setQueueIdx(0)
+      setFirstAttemptCorrect({})
+      setInputValue('')
+      setLastResult(null)
+      setPhase('quiz')
+      setPartScore(0)
+
+      saveL1State(storageKey, newPartsCleared, serverPart, snap.l1CurrentQuestion ?? 0, snap.l1WrongIds ?? [])
+    }
+    void restore()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // フォーカス
   useEffect(() => {
@@ -110,11 +163,7 @@ export function LinuxLevel1Page() {
     if (isLast) {
       // 採点
       const partQs = getPartQuestions(activePart)
-      // firstAttemptCorrect が更新済みの最新値を参照するため state を直接使う
       const updatedCorrect = { ...firstAttemptCorrect }
-      // goNext は lastResult が non-null の時だけ呼ばれる。
-      // handleExecute で setFirstAttemptCorrect が呼ばれた後、再レンダリングされてから
-      // このクロージャがキャプチャされているので firstAttemptCorrect は最新値のはず。
       const score = partQs.filter((q) => updatedCorrect[q.id] === true).length
       setPartScore(score)
 
@@ -122,7 +171,7 @@ export function LinuxLevel1Page() {
       const newPartsCleared = [...partsCleared]
       if (pass) newPartsCleared[activePart] = true
       setPartsCleared(newPartsCleared)
-      savePartsCleared(storageKey, newPartsCleared)
+      saveL1State(storageKey, newPartsCleared, activePart, PART_SIZE, [])
 
       if (pass && newPartsCleared.every(Boolean)) {
         window.localStorage.setItem(clearedKey, 'true')
@@ -146,6 +195,27 @@ export function LinuxLevel1Page() {
     setLastResult(null)
     setPhase('quiz')
     setPartScore(0)
+  }
+
+  /** 中断ボタン: localStorage保存 → DynamoDB同期 → 遷移（awaitで順序保証） */
+  async function handleInterrupt() {
+    // 現在の間違えた問題IDを firstAttemptCorrect から導出
+    const wrongIds = Object.keys(firstAttemptCorrect).filter((id) => firstAttemptCorrect[id] === false)
+    // firstAttemptCount = 現在の部で何問目まで回答したか（0始まり）
+    const currentQuestion = firstAttemptCount
+
+    // ① localStorage に現在の状態を保存
+    saveL1State(storageKey, partsCleared, activePart, currentQuestion, wrongIds)
+
+    // ② DynamoDB に即時同期（awaitで完了を待つ）
+    const username = getCurrentDisplayName().trim().toLowerCase()
+    if (username && username !== 'admin' && isProgressApiAvailable()) {
+      const snap = getCurrentProgressSnapshot()
+      await postProgress(username, snap)
+    }
+
+    // ③ 保存完了後に遷移
+    navigate('/')
   }
 
   // ────────── 全クリア画面 ──────────
@@ -326,7 +396,7 @@ export function LinuxLevel1Page() {
         <div className="mt-6">
           <button
             type="button"
-            onClick={() => { savePartsCleared(storageKey, partsCleared); navigate('/') }}
+            onClick={() => { void handleInterrupt() }}
             className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             中断してトップへ戻る
