@@ -6,6 +6,7 @@ import { getIntroConfirmed, getIntroConfirmedAt, getIntroConfirmedForUser, getIn
 import {
   getWbsProgressPercent,
   getChapterProgressList,
+  getTaskProgressList,
   getCurrentProjectDay,
   getDelayedTaskIds,
   getProgressKey,
@@ -178,8 +179,13 @@ export function getCurrentProgressSnapshot(pinsOverride?: string[]): TraineeProg
     } catch { /* ignore */ }
   }
 
-  const infra1Cleared = typeof window !== 'undefined' ? window.localStorage.getItem(getProgressKey(INFRA_BASIC_1_CLEARED_KEY)) === 'true' : false
-  const l1Cleared = typeof window !== 'undefined' ? window.localStorage.getItem(getProgressKey(L1_CLEARED_KEY)) === 'true' : false
+  // infra1Cleared / l1Cleared はサブタスクのクリア状態から導出する。
+  // localStorage を直接読まず getTaskProgressList() 経由で統一管理することで
+  // 「localStorageは補助的な一時保存のみ」というCLAUDE.mdルールに準拠する。
+  const taskList = getTaskProgressList()
+  const infra1Task = taskList.find((t) => t.id === 'infra-basic-1')
+  const infra1Cleared = infra1Task?.subTasks[0]?.status === 'cleared' || false
+  const l1Cleared = infra1Task?.subTasks[1]?.status === 'cleared' || false
 
   return {
     introConfirmed: getIntroConfirmed(),
