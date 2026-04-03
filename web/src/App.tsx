@@ -1096,6 +1096,21 @@ function App() {
                 />
               </div>
             )}
+            {/* 今やること: はじめに途中の場合（step 2-4）、再開ボタンを表示 */}
+            {!getIntroConfirmed() && (serverSnapshot?.introStep ?? 1) >= 2 && (serverSnapshot?.introStep ?? 1) <= 4 && (
+              <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
+                <h2 className="mt-2 text-base font-semibold text-slate-800">今やること</h2>
+                <p className="mt-1 text-sm text-slate-700">「はじめに」の途中です。続きから再開してください。</p>
+                <button
+                  type="button"
+                  onClick={() => { window.location.hash = '#/training/intro' }}
+                  className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
+                >
+                  はじめに（途中から再開）→
+                </button>
+              </div>
+            )}
             {/* 今やること: はじめに完了後・課題1-1未完了時に表示 */}
             {getIntroConfirmed() && !trainingStatus.infraToolsCleared && (
               <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">

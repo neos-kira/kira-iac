@@ -166,20 +166,23 @@ export function IntroPage() {
   // ── マウント: DynamoDB復元 ────────────────────────────────────────────────
   useEffect(() => {
     document.title = 'はじめに'
-    const ok = getIntroConfirmed()
-    setConfirmed(ok)
     const username = getCurrentDisplayName().trim().toLowerCase()
     if (usernameAtMountRef.current === null) usernameAtMountRef.current = username
-    if (ok && username && username !== 'admin') setIntroConfirmedForUser(username)
 
     if (!username || username === 'admin') return
     fetchMyProgress(username).then((snap) => {
       if (!snap) return
       setServerSnapshot(snap)
 
-      // 旧完了ユーザーリセット: introStep < 5 なら introConfirmed を無効化して再開させる
-      if (snap.introConfirmed && (snap.introStep ?? 0) < 5) {
-        clearIntroForCurrentUser()
+      // DynamoDBが唯一の正: introStep === 5 かつ introConfirmed のみ完了とみなす
+      if (snap.introStep === 5 && snap.introConfirmed) {
+        setIntroConfirmedForUser(username)
+        setConfirmed(true)
+      } else {
+        // 旧完了ユーザーリセット: introConfirmedだがstep<5の場合はlocalStorageをクリア
+        if (snap.introConfirmed && (snap.introStep ?? 0) < 5) {
+          clearIntroForCurrentUser()
+        }
         setConfirmed(false)
       }
 
@@ -258,6 +261,28 @@ export function IntroPage() {
     setCurrentResult(null)
     setAnswers(QUIZ_QUESTIONS.map(() => -1))
     setShowReview(false)
+  }
+
+  // ── トップに戻る（中断保存） ─────────────────────────────────────────────
+  const handleGoToTop = async () => {
+    if (step >= 2 && step <= 4 && !isScoring) {
+      setIsScoring(true)
+      try {
+        const username = getCurrentDisplayName().trim().toLowerCase()
+        if (username && username !== 'admin' && isProgressApiAvailable()) {
+          const base = serverSnapshot ?? EMPTY_SNAPSHOT
+          await postProgress(username, {
+            ...base,
+            introStep: step,
+            introRiskAnswers: riskAnswers,
+            updatedAt: new Date().toISOString(),
+          })
+        }
+      } finally {
+        setIsScoring(false)
+      }
+    }
+    navigate('/')
   }
 
   // ── Step 1 完了 ───────────────────────────────────────────────────────────
@@ -434,7 +459,7 @@ export function IntroPage() {
       </div>
       <button
         type="button"
-        onClick={() => navigate('/')}
+        onClick={() => { void handleGoToTop() }}
         className="rounded-lg px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 shadow-sm hover:bg-slate-50"
       >
         トップに戻る
