@@ -216,6 +216,18 @@ resource "aws_apigatewayv2_route" "auth_verify_password_options" {
   target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
 }
 
+resource "aws_apigatewayv2_route" "ai_score_post" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "POST /ai/score"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
+resource "aws_apigatewayv2_route" "ai_score_options" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "OPTIONS /ai/score"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
 resource "aws_apigatewayv2_stage" "progress" {
   api_id      = aws_apigatewayv2_api.progress.id
   name        = "$default"

@@ -121,6 +121,31 @@ export async function fetchProgressFromApi(): Promise<TraineeProgressFromApi[]> 
   }
 }
 
+export type ScoreResult = { pass: boolean; feedback: string }
+
+/**
+ * Lambdaプロキシ経由でClaude APIによる採点を行う。
+ * API キーはLambdaの環境変数（ANTHROPIC_API_KEY）に設定すること。
+ */
+export async function scoreAnswer(params: {
+  question: string
+  scoringCriteria: string
+  answer: string
+}): Promise<ScoreResult> {
+  if (!BASE_URL) throw new Error('API not configured')
+  const res = await fetch(`${BASE_URL}/ai/score`, {
+    method: 'POST',
+    headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'omit',
+    body: JSON.stringify(params),
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`score API error ${res.status}: ${text}`)
+  }
+  return (await res.json()) as ScoreResult
+}
+
 /** 指定受講生の進捗をサーバーから取得（受講生画面用）。なければ null。 */
 export async function fetchMyProgress(traineeId: string): Promise<TraineeProgressSnapshot | null> {
   if (!BASE_URL) return null

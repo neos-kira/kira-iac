@@ -5,7 +5,7 @@ import { getCurrentDisplayName } from '../auth'
 import { Confetti } from '../components/Confetti'
 import { INTRO_RISK_QUESTIONS } from './introRiskData'
 import { setTrainingStartDateFromTask1Start, getTrainingStartDate } from './trainingWbsData'
-import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
+import { fetchMyProgress, postProgress, isProgressApiAvailable, scoreAnswer } from '../progressApi'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 
 // ── Step 1: 行動基準 ───────────────────────────────────────────────────────────
@@ -271,71 +271,37 @@ export function IntroPage() {
     }
   }
 
-  // ── Step 2-4: Claude API 採点 ──────────────────────────────────────────────
+  // ── Step 2-4: Lambda プロキシ経由 Claude 採点 ────────────────────────────
   const handleScore = async () => {
     if (!currentQuestion || !currentInput.trim() || isScoring) return
     setIsScoring(true)
     setCurrentResult(null)
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': (import.meta.env.VITE_ANTHROPIC_API_KEY as string) ?? '',
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [
-            {
-              role: 'user',
-              content: `あなたはITインフラ研修の採点者です。
-以下の採点基準に基づいて回答を採点してください。
-
-採点基準: ${currentQuestion.scoringCriteria}
-
-受講生の回答: ${currentInput}
-
-以下のJSON形式のみで返答してください。
-{
-  "pass": true or false,
-  "feedback": "合格の場合は良かった点、不合格の場合は具体的な改善点を100字以内で"
-}`,
-            },
-          ],
-        }),
+      const result = await scoreAnswer({
+        question: currentQuestion.prompt,
+        scoringCriteria: currentQuestion.scoringCriteria,
+        answer: currentInput,
       })
+      setCurrentResult(result)
 
-      const data = (await response.json()) as { content?: { type: string; text: string }[] }
-      const text = data.content?.[0]?.text ?? ''
-      const match = text.match(/\{[\s\S]*?\}/)
-      if (match) {
-        const parsed = JSON.parse(match[0]) as ScoringResult
-        setCurrentResult(parsed)
+      if (result.pass) {
+        const nextAnswers = { ...riskAnswers, [currentQuestion.id]: currentInput }
+        setRiskAnswers(nextAnswers)
 
-        if (parsed.pass) {
-          const nextAnswers = { ...riskAnswers, [currentQuestion.id]: currentInput }
-          setRiskAnswers(nextAnswers)
-
-          const username = getCurrentDisplayName().trim().toLowerCase()
-          if (username && username !== 'admin' && isProgressApiAvailable()) {
-            const base = serverSnapshot ?? EMPTY_SNAPSHOT
-            await postProgress(username, {
-              ...base,
-              introStep: step,
-              introRiskAnswers: nextAnswers,
-              updatedAt: new Date().toISOString(),
-            })
-          }
+        const username = getCurrentDisplayName().trim().toLowerCase()
+        if (username && username !== 'admin' && isProgressApiAvailable()) {
+          const base = serverSnapshot ?? EMPTY_SNAPSHOT
+          await postProgress(username, {
+            ...base,
+            introStep: step,
+            introRiskAnswers: nextAnswers,
+            updatedAt: new Date().toISOString(),
+          })
         }
-      } else {
-        setCurrentResult({ pass: false, feedback: '採点結果を取得できませんでした。もう一度お試しください。' })
       }
     } catch {
-      setCurrentResult({ pass: false, feedback: '採点中にエラーが発生しました。もう一度お試しください。' })
+      setCurrentResult({ pass: false, feedback: '採点中にエラーが発生しました。ネットワークを確認してもう一度お試しください。' })
     } finally {
       setIsScoring(false)
     }
