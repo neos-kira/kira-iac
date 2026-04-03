@@ -319,10 +319,7 @@ export function LinuxLevel1Page() {
             {lastResult === 'correct' ? (
               <span className="font-medium">✓ 正解</span>
             ) : (
-              <div>
-                <span className="font-medium">✗ 不正解 — </span>
-                <span className="font-mono text-xs">正解: {correctAnswer}</span>
-              </div>
+              <span className="font-medium">✗ 不正解</span>
             )}
           </div>
         )}
