@@ -16,12 +16,25 @@ const PART_NAMES = ['基本操作', 'サーバ構築必須', '実践問題']
 type L1Save = {
   partsCleared: boolean[]
   currentPart?: number
-  currentQuestion?: number
+  currentQuestion?: number  // firstAttemptCount（初回回答済み問数。表示用）
   wrongIds?: string[]
+  savedQueueIdx?: number    // 中断時点の queueIdx（復元用。currentQuestion と異なる場合あり）
 }
 
-function loadL1Save(key: string): { partsCleared: boolean[]; currentPart: number; currentQuestion: number; wrongIds: string[] } {
-  const defaultVal = { partsCleared: [false, false, false], currentPart: 0, currentQuestion: 0, wrongIds: [] as string[] }
+function loadL1Save(key: string): {
+  partsCleared: boolean[]
+  currentPart: number
+  currentQuestion: number
+  wrongIds: string[]
+  savedQueueIdx: number | undefined
+} {
+  const defaultVal = {
+    partsCleared: [false, false, false],
+    currentPart: 0,
+    currentQuestion: 0,
+    wrongIds: [] as string[],
+    savedQueueIdx: undefined as number | undefined,
+  }
   if (typeof window === 'undefined') return defaultVal
   try {
     const raw = window.localStorage.getItem(key)
@@ -38,6 +51,7 @@ function loadL1Save(key: string): { partsCleared: boolean[]; currentPart: number
       currentPart: typeof parsed.currentPart === 'number' ? parsed.currentPart : defaultPart,
       currentQuestion: typeof parsed.currentQuestion === 'number' ? parsed.currentQuestion : 0,
       wrongIds: Array.isArray(parsed.wrongIds) ? (parsed.wrongIds as string[]) : [],
+      savedQueueIdx: typeof parsed.savedQueueIdx === 'number' ? parsed.savedQueueIdx : undefined,
     }
   } catch {
     return defaultVal
@@ -50,12 +64,50 @@ function saveL1State(
   currentPart: number,
   currentQuestion: number,
   wrongIds: string[],
+  savedQueueIdx?: number,
 ) {
   if (typeof window === 'undefined') return
   try {
-    window.localStorage.setItem(key, JSON.stringify({ partsCleared, currentPart, currentQuestion, wrongIds }))
+    window.localStorage.setItem(key, JSON.stringify({ partsCleared, currentPart, currentQuestion, wrongIds, savedQueueIdx }))
   } catch {
     // ignore
+  }
+}
+
+/**
+ * 保存データから quiz の初期状態（queue / queueIdx / firstAttemptCorrect）を復元する。
+ * - wrongIds を末尾に追加した queue を再構築する
+ * - savedQueueIdx（なければ currentQuestion）を queueIdx として使う
+ * - queueIdx が queue 範囲外なら 0 にリセット（例: 部クリア後の次部への移行時）
+ */
+function buildRestoredL1State(save: ReturnType<typeof loadL1Save>, partIdx: number) {
+  const basePartQs = getPartQuestions(partIdx)
+  const wrongSet = new Set(save.wrongIds)
+
+  // 初回回答済み問の正誤を復元
+  const firstAttemptCorrect: Record<string, boolean> = {}
+  for (let i = 0; i < save.currentQuestion && i < PART_SIZE; i++) {
+    const q = basePartQs[i]
+    if (q) firstAttemptCorrect[q.id] = !wrongSet.has(q.id)
+  }
+
+  // 不正解問を末尾に追加した queue を再構築
+  const queue: QuizQuestion[] = [
+    ...basePartQs,
+    ...save.wrongIds
+      .map((id) => basePartQs.find((q) => q.id === id))
+      .filter((q): q is QuizQuestion => q !== undefined),
+  ]
+
+  // savedQueueIdx がなければ currentQuestion をフォールバックとして使う
+  const rawQueueIdx = save.savedQueueIdx ?? save.currentQuestion
+  // queue 範囲内かチェック（部クリア後など範囲外になる場合は 0 にリセット）
+  const validPosition = rawQueueIdx > 0 && rawQueueIdx < queue.length
+  return {
+    queue,
+    queueIdx: validPosition ? rawQueueIdx : 0,
+    // 有効な途中位置のときだけ firstAttemptCorrect を復元（新規開始時はリセット）
+    firstAttemptCorrect: validPosition ? firstAttemptCorrect : {},
   }
 }
 
@@ -71,6 +123,8 @@ export function LinuxLevel1Page() {
 
   const initSave = loadL1Save(storageKey)
   const initPart = initSave.currentPart
+  // 中断前の状態（queue / queueIdx / firstAttemptCorrect）を保存データから復元
+  const initRestored = buildRestoredL1State(initSave, initPart)
 
   // DynamoDB復元済みかどうかのフラグ（useEffect完了前に中断されないよう管理）
   const initPartRef = useRef(initPart)
@@ -81,10 +135,11 @@ export function LinuxLevel1Page() {
 
   const [partsCleared, setPartsCleared] = useState<boolean[]>(initSave.partsCleared)
   const [activePart, setActivePart] = useState<number>(initPart)
-  const [queue, setQueue] = useState<QuizQuestion[]>(getPartQuestions(initPart))
-  const [queueIdx, setQueueIdx] = useState(0)
+  // 中断前の queue（不正解問を末尾追加済み）・queueIdx・firstAttemptCorrect を復元
+  const [queue, setQueue] = useState<QuizQuestion[]>(initRestored.queue)
+  const [queueIdx, setQueueIdx] = useState(initRestored.queueIdx)
   // firstAttemptCorrect: questionId → true/false (初回回答結果)
-  const [firstAttemptCorrect, setFirstAttemptCorrect] = useState<Record<string, boolean>>({})
+  const [firstAttemptCorrect, setFirstAttemptCorrect] = useState<Record<string, boolean>>(initRestored.firstAttemptCorrect)
   const [inputValue, setInputValue] = useState('')
   const [lastResult, setLastResult] = useState<'correct' | 'wrong' | null>(null)
   const [phase, setPhase] = useState<'quiz' | 'part_result' | 'all_clear'>('quiz')
@@ -108,20 +163,33 @@ export function LinuxLevel1Page() {
       const shouldRestore = !hadLocalL1DataRef.current || serverPart > initPartRef.current
       if (!shouldRestore) return
 
+      const serverCurrentQuestion = snap.l1CurrentQuestion ?? 0
+      const serverWrongIds = snap.l1WrongIds ?? []
+
       const newPartsCleared: boolean[] = [false, false, false]
       for (let i = 0; i < serverPart; i++) newPartsCleared[i] = true
 
+      // DynamoDB データから queue / queueIdx / firstAttemptCorrect を復元
+      const serverSaveLike = {
+        partsCleared: newPartsCleared,
+        currentPart: serverPart,
+        currentQuestion: serverCurrentQuestion,
+        wrongIds: serverWrongIds,
+        savedQueueIdx: undefined as number | undefined,
+      }
+      const serverRestored = buildRestoredL1State(serverSaveLike, serverPart)
+
       setPartsCleared(newPartsCleared)
       setActivePart(serverPart)
-      setQueue(getPartQuestions(serverPart))
-      setQueueIdx(0)
-      setFirstAttemptCorrect({})
+      setQueue(serverRestored.queue)
+      setQueueIdx(serverRestored.queueIdx)
+      setFirstAttemptCorrect(serverRestored.firstAttemptCorrect)
       setInputValue('')
       setLastResult(null)
       setPhase('quiz')
       setPartScore(0)
 
-      saveL1State(storageKey, newPartsCleared, serverPart, snap.l1CurrentQuestion ?? 0, snap.l1WrongIds ?? [])
+      saveL1State(storageKey, newPartsCleared, serverPart, serverCurrentQuestion, serverWrongIds)
     }
     void restore()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -206,11 +274,13 @@ export function LinuxLevel1Page() {
   async function handleInterrupt() {
     // 現在の間違えた問題IDを firstAttemptCorrect から導出
     const wrongIds = Object.keys(firstAttemptCorrect).filter((id) => firstAttemptCorrect[id] === false)
-    // firstAttemptCount = 現在の部で何問目まで回答したか（0始まり）
+    // firstAttemptCount = 初回回答済み問数（表示用）
     const currentQuestion = firstAttemptCount
+    // queueIdx = 実際のキュー上の位置（復元用。再出題フェーズでは currentQuestion と異なる）
+    const savedQueueIdx = queueIdx
 
-    // ① localStorage に現在の状態を保存
-    saveL1State(storageKey, partsCleared, activePart, currentQuestion, wrongIds)
+    // ① localStorage に現在の状態を保存（savedQueueIdx も含める）
+    saveL1State(storageKey, partsCleared, activePart, currentQuestion, wrongIds, savedQueueIdx)
 
     // ② DynamoDB に即時同期（awaitで完了を待つ）
     const username = getCurrentDisplayName().trim().toLowerCase()
