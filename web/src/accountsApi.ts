@@ -143,6 +143,22 @@ async function checkAccountAuthCheck(username: string, password: string): Promis
   }
 }
 
+export async function resetPassword(username: string, newPassword: string): Promise<boolean> {
+  if (!BASE_URL) return false
+  const name = username.trim().toLowerCase()
+  if (!name || name === 'admin' || !newPassword) return false
+  try {
+    const res = await fetch(`${BASE_URL}/accounts/password`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: name, newPassword }),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 export async function deleteAccount(username: string): Promise<boolean> {
   if (!BASE_URL) return false
   const name = username.trim().toLowerCase()
