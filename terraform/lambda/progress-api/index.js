@@ -70,6 +70,9 @@ async function handler(event) {
         ec2Password: typeof body.ec2Password === 'string' ? body.ec2Password : null,
         // テナントID（マルチテナント対応）
         tenantId: typeof body.tenantId === 'string' ? body.tenantId : 'default',
+        // 課題クリア状態
+        infra1Cleared: typeof body.infra1Cleared === 'boolean' ? body.infra1Cleared : false,
+        l1Cleared: typeof body.l1Cleared === 'boolean' ? body.l1Cleared : false,
       }
       await client.send(new PutItemCommand({ TableName, Item: marshall(Item, { removeUndefinedValues: true }) }))
       return json({ ok: true })
