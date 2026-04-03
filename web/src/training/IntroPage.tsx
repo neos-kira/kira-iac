@@ -151,6 +151,9 @@ export function IntroPage() {
   const [isLoadingProgress, setIsLoadingProgress] = useState(true)
   // 今のセッションで初めてStep5に到達したか（コンフェッティ表示判定）
   const [freshCompletion, setFreshCompletion] = useState(false)
+  // 中断保存ボタンの状態
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   // ── マウント: DynamoDB復元 ────────────────────────────────────────────────
   useEffect(() => {
@@ -239,27 +242,36 @@ export function IntroPage() {
     setFreshCompletion(false)
   }
 
-  // ── トップに戻る（中断保存） ─────────────────────────────────────────────
-  // Step1〜4: 現在のintroStepをDynamoDBに保存してからトップへ遷移
-  const handleGoToTop = async () => {
-    if (step >= 1 && step <= 4 && !isScoring) {
-      setIsScoring(true)
-      try {
-        const username = getCurrentDisplayName().trim().toLowerCase()
-        if (username && username !== 'admin' && isProgressApiAvailable()) {
-          const base = serverSnapshot ?? EMPTY_SNAPSHOT
-          await postProgress(username, {
-            ...base,
-            introStep: step,
-            introRiskAnswers: riskAnswers,
-            updatedAt: new Date().toISOString(),
-          })
+  // ── 中断して保存（Step1〜4） ──────────────────────────────────────────────
+  // ① disabled + 「保存中...」表示
+  // ② DynamoDBに保存（await完了・res===trueを確認）
+  // ③ 保存成功のみトップへ遷移 / 失敗時はエラー表示してボタン再有効化
+  const handleSuspend = async () => {
+    if (isSaving) return
+    setIsSaving(true)
+    setSaveError(null)
+    try {
+      const uname = getCurrentDisplayName().trim().toLowerCase()
+      if (uname && uname !== 'admin' && isProgressApiAvailable()) {
+        const base = serverSnapshot ?? EMPTY_SNAPSHOT
+        const ok = await postProgress(uname, {
+          ...base,
+          introStep: step,
+          introRiskAnswers: riskAnswers,
+          updatedAt: new Date().toISOString(),
+        })
+        if (!ok) {
+          setSaveError('保存に失敗しました。もう一度お試しください。')
+          return
         }
-      } finally {
-        setIsScoring(false)
       }
+      // 保存完了後にトップへ遷移
+      window.location.hash = '#/'
+    } catch {
+      setSaveError('保存に失敗しました。もう一度お試しください。')
+    } finally {
+      setIsSaving(false)
     }
-    window.location.hash = '#/'
   }
 
   // ── Step 1 完了 ───────────────────────────────────────────────────────────
@@ -424,7 +436,7 @@ export function IntroPage() {
   const topBar = (
     <div className="flex items-center justify-between mb-6">
       <div>
-        {step > 1 && (
+        {step > 1 && step < 5 && (
           <button
             type="button"
             onClick={handleDevReset}
@@ -434,13 +446,30 @@ export function IntroPage() {
           </button>
         )}
       </div>
-      <button
-        type="button"
-        onClick={() => { void handleGoToTop() }}
-        className="rounded-lg px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 shadow-sm hover:bg-slate-50"
-      >
-        トップへ戻る
-      </button>
+      {/* Step1〜4: 中断して保存ボタン / Step5: シンプルなトップへボタン */}
+      {step >= 1 && step <= 4 ? (
+        <div className="flex flex-col items-end gap-1">
+          <button
+            type="button"
+            onClick={() => { void handleSuspend() }}
+            disabled={isSaving}
+            className="rounded-lg px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSaving ? '保存中...' : '中断して保存 →'}
+          </button>
+          {saveError && (
+            <p className="text-xs text-red-600">{saveError}</p>
+          )}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="rounded-lg px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 shadow-sm hover:bg-slate-50"
+        >
+          トップへ
+        </button>
+      )}
     </div>
   )
 
