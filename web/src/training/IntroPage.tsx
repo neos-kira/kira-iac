@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { setIntroConfirmed, setIntroConfirmedForUser, getIntroConfirmed } from './introGate'
+import { setIntroConfirmed, setIntroConfirmedForUser, getIntroConfirmed, clearIntroForCurrentUser } from './introGate'
 import { getCurrentDisplayName } from '../auth'
 import { Confetti } from '../components/Confetti'
 import { INTRO_RISK_QUESTIONS } from './introRiskData'
@@ -222,6 +222,35 @@ export function IntroPage() {
     })
   }
 
+  // ── [開発用] はじめにリセット ────────────────────────────────────────────
+  const handleDevReset = async () => {
+    if (!window.confirm('【開発用】はじめにの進捗をすべてリセットしますか？\n（localStorageとDynamoDBの両方をリセットします）')) return
+    // 1. localStorage クリア
+    clearIntroForCurrentUser()
+    // 2. DynamoDB リセット
+    const username = getCurrentDisplayName().trim().toLowerCase()
+    if (username && username !== 'admin' && isProgressApiAvailable()) {
+      const base = serverSnapshot ?? EMPTY_SNAPSHOT
+      await postProgress(username, {
+        ...base,
+        introConfirmed: false,
+        introAt: null,
+        introStep: 1,
+        introRiskAnswers: {},
+        updatedAt: new Date().toISOString(),
+      })
+    }
+    // 3. ローカル状態リセット
+    setConfirmed(false)
+    setStep(1)
+    setSectionQIdx(0)
+    setRiskAnswers({})
+    setCurrentInput('')
+    setCurrentResult(null)
+    setAnswers(QUIZ_QUESTIONS.map(() => -1))
+    setShowReview(false)
+  }
+
   const handleStep1Complete = async () => {
     if (isScoring) return
     setIsScoring(true)
@@ -384,7 +413,18 @@ export function IntroPage() {
 
   // ── レイアウトヘルパー ────────────────────────────────────────────────────
   const topBar = (
-    <div className="flex items-center justify-end mb-6">
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        {(confirmed || step > 1) && (
+          <button
+            type="button"
+            onClick={handleDevReset}
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100"
+          >
+            🔧 はじめにをリセット（開発用）
+          </button>
+        )}
+      </div>
       <button
         type="button"
         onClick={() => navigate('/')}
