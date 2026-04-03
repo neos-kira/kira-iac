@@ -4,7 +4,7 @@ import { OpenInNewTabButton } from '../components/OpenInNewTabButton'
 import { getTaskProgressList, getTrainingStartDate, setTrainingStartDateFromTask1Start, clearTask1Cache } from './trainingWbsData'
 import { getCurrentDisplayName } from '../auth'
 import { fetchMyProgress, postProgress } from '../progressApi'
-import { restoreProgressToLocalStorage, getCurrentProgressSnapshot } from '../traineeProgressStorage'
+import { restoreProgressToLocalStorage, getCurrentProgressSnapshot, type TraineeProgressSnapshot } from '../traineeProgressStorage'
 
 function getTrainingUrl(path: string) {
   const base = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname || '/'}`.replace(/\/$/, '') || window.location.origin : ''
@@ -15,6 +15,7 @@ export function InfraBasicTopPage() {
   const navigate = useNavigate()
   const [showStartConfirm, setShowStartConfirm] = useState(false)
   const [showStartMessage, setShowStartMessage] = useState(false)
+  const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const taskProgress = getTaskProgressList().find((t) => t.id === 'infra-basic-1')
 
   useEffect(() => {
@@ -25,12 +26,19 @@ export function InfraBasicTopPage() {
     // localStorage に開始日がなければサーバーから復元を試みてから判定する。
     // App.tsx の非同期フェッチより先にこのページが表示された場合のレースコンディション対策。
     const checkAfterRestore = async () => {
+      const username = getCurrentDisplayName()
       if (!getTrainingStartDate()) {
-        const username = getCurrentDisplayName()
         if (username && username.toLowerCase() !== 'admin') {
           const snap = await fetchMyProgress(username)
-          if (snap) restoreProgressToLocalStorage(username, snap)
+          if (snap) {
+            restoreProgressToLocalStorage(username, snap)
+            setServerSnapshot(snap)
+          }
         }
+      } else if (username && username.toLowerCase() !== 'admin') {
+        // 開始日はあるがバッジ表示用にサーバーデータを取得する
+        const snap = await fetchMyProgress(username)
+        if (snap) setServerSnapshot(snap)
       }
       if (!getTrainingStartDate()) {
         setShowStartConfirm(true)
@@ -138,7 +146,17 @@ export function InfraBasicTopPage() {
         )}
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          {/* 課題1-1 カード */}
+          <div className="relative flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            {serverSnapshot !== null && (() => {
+              if (serverSnapshot.infra1Cleared) {
+                return <span className="absolute right-3 top-3 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">完了</span>
+              }
+              if (serverSnapshot.infra1Checkboxes?.some(Boolean)) {
+                return <span className="absolute right-3 top-3 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">実施中</span>
+              }
+              return <span className="absolute right-3 top-3 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">未着手</span>
+            })()}
             <div>
               <p className="text-[11px] text-slate-500">課題1-1 · 使用ツール</p>
               <h2 className="mt-1 text-sm font-semibold text-slate-800">インフラ基礎演習1</h2>
@@ -154,7 +172,20 @@ export function InfraBasicTopPage() {
             </div>
           </div>
 
-          <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          {/* 課題1-2 カード */}
+          <div className="relative flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            {serverSnapshot !== null && (() => {
+              if (serverSnapshot.l1Cleared) {
+                return <span className="absolute right-3 top-3 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">完了</span>
+              }
+              const hasL1Progress = (serverSnapshot.l1CurrentPart ?? 0) > 0 || (serverSnapshot.l1CurrentQuestion ?? 0) > 0 || (serverSnapshot.l1WrongIds?.length ?? 0) > 0
+              if (hasL1Progress) {
+                const partNum = (serverSnapshot.l1CurrentPart ?? 0) + 1
+                const qNum = (serverSnapshot.l1CurrentQuestion ?? 0) + 1
+                return <span className="absolute right-3 top-3 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">実施中: 第{partNum}部 {qNum}/10問</span>
+              }
+              return <span className="absolute right-3 top-3 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">未着手</span>
+            })()}
             <div>
               <p className="text-[11px] text-slate-500">課題1-2 · LINUXコマンド</p>
               <h2 className="mt-1 text-sm font-semibold text-slate-800">Linuxコマンド30問</h2>

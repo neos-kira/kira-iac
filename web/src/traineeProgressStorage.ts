@@ -70,6 +70,10 @@ export type TraineeProgressSnapshot = {
   ec2Username?: string | null
   /** EC2パスワード */
   ec2Password?: string | null
+  /** 課題1-1（ツール演習）クリア済み */
+  infra1Cleared?: boolean
+  /** 課題1-2（Linux30問）クリア済み */
+  l1Cleared?: boolean
 }
 
 /** 受講生IDは小文字統一（kira-test 等）。大文字小文字のずれを防ぐ。 */
@@ -174,6 +178,9 @@ export function getCurrentProgressSnapshot(pinsOverride?: string[]): TraineeProg
     } catch { /* ignore */ }
   }
 
+  const infra1Cleared = typeof window !== 'undefined' ? window.localStorage.getItem(getProgressKey(INFRA_BASIC_1_CLEARED_KEY)) === 'true' : false
+  const l1Cleared = typeof window !== 'undefined' ? window.localStorage.getItem(getProgressKey(L1_CLEARED_KEY)) === 'true' : false
+
   return {
     introConfirmed: getIntroConfirmed(),
     introAt: getIntroConfirmedAt(),
@@ -195,6 +202,8 @@ export function getCurrentProgressSnapshot(pinsOverride?: string[]): TraineeProg
     infra1Checkboxes,
     infra1SectionDone,
     infra32Answers,
+    infra1Cleared,
+    l1Cleared,
   }
 }
 
@@ -394,6 +403,22 @@ export function restoreProgressToLocalStorage(username: string, snap: TraineePro
         answers: snap.infra32Answers,
         results: {},
       }))
+    }
+  }
+
+  // infra1Cleared（未設定の場合のみ復元）
+  if (snap.infra1Cleared) {
+    const key = getProgressKey(INFRA_BASIC_1_CLEARED_KEY, id)
+    if (!window.localStorage.getItem(key)) {
+      window.localStorage.setItem(key, 'true')
+    }
+  }
+
+  // l1Cleared（未設定の場合のみ復元）
+  if (snap.l1Cleared) {
+    const key = getProgressKey(L1_CLEARED_KEY, id)
+    if (!window.localStorage.getItem(key)) {
+      window.localStorage.setItem(key, 'true')
     }
   }
 }

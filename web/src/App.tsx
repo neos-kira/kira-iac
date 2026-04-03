@@ -781,14 +781,24 @@ function App() {
                 </span>
                 {firstInProgressTask !== null && (() => {
                   const task = firstInProgressTask
-                  const isL1InProgress = task.id === 'infra-basic-1' && typeof serverSnapshot?.l1CurrentPart === 'number'
+                  const hasL1Progress =
+                    (serverSnapshot?.l1CurrentPart ?? 0) > 0 ||
+                    (serverSnapshot?.l1CurrentQuestion ?? 0) > 0 ||
+                    (serverSnapshot?.l1WrongIds?.length ?? 0) > 0
+                  const isL1InProgress = task.id === 'infra-basic-1' && hasL1Progress
                   const badgeLabel = isL1InProgress
                     ? `実施中: 課題1 第${(serverSnapshot!.l1CurrentPart!) + 1}部 ${(serverSnapshot!.l1CurrentQuestion ?? 0) + 1}/10問`
                     : `実施中: ${task.labelShort}`
+                  const badgeUrl = (() => {
+                    if (task.id === 'infra-basic-1') {
+                      return hasL1Progress ? getTrainingUrl('/training/linux-level1') : getTrainingUrl(task.path)
+                    }
+                    return getTrainingUrl(task.path)
+                  })()
                   return (
                     <button
                       type="button"
-                      onClick={() => openInfraOrShowIntro(getTrainingUrl(task.path))}
+                      onClick={() => openInfraOrShowIntro(badgeUrl)}
                       title={badgeLabel}
                       className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 shrink-0 hover:bg-amber-200"
                     >
