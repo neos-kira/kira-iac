@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { OpenInNewTabButton } from '../components/OpenInNewTabButton'
 import { getTaskProgressList, getTrainingStartDate, setTrainingStartDateFromTask1Start, clearTask1Cache } from './trainingWbsData'
 import { getCurrentDisplayName } from '../auth'
-import { fetchMyProgress } from '../progressApi'
-import { restoreProgressToLocalStorage } from '../traineeProgressStorage'
+import { fetchMyProgress, postProgress } from '../progressApi'
+import { restoreProgressToLocalStorage, getCurrentProgressSnapshot } from '../traineeProgressStorage'
 
 function getTrainingUrl(path: string) {
   const base = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname || '/'}`.replace(/\/$/, '') || window.location.origin : ''
@@ -43,6 +43,13 @@ export function InfraBasicTopPage() {
     setTrainingStartDateFromTask1Start()
     setShowStartConfirm(false)
     setShowStartMessage(true)
+    // localStorage に保存後、即座にサーバーへ同期する。
+    // App.tsx のインターバルはこのルートでは動いていないため、ここで明示的に POST する。
+    const username = getCurrentDisplayName()
+    if (username && username.toLowerCase() !== 'admin') {
+      const snap = getCurrentProgressSnapshot()
+      postProgress(username, snap)
+    }
   }
 
   return (
