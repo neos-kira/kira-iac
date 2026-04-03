@@ -30,6 +30,53 @@ NIC（Neos IT College）の研修管理プラットフォーム。
 - localStorageは補助的な一時保存のみに使うこと
 - localStorageのみに保存して終わりにしないこと
 
+## アーキテクチャの大前提（最重要）
+
+### データフローの正しい方向
+```
+ユーザーの操作
+↓
+① DynamoDBに即時保存（postProgress）
+↓
+② 画面の状態を更新
+↓
+③ localStorageはキャッシュとして書く（任意）
+```
+
+### 絶対にやってはいけないこと
+- localStorageから読んでDynamoDBに書く
+  （localStorageが空の端末では全データが失われる）
+- getCurrentProgressSnapshot()をpostProgressの
+  直前に呼ぶ
+  （localStorageベースのsnapshotをDynamoDBに
+  上書きしてしまう）
+
+### 正しいpostProgressの呼び方
+操作で変化した値を直接引数として渡す。
+getCurrentProgressSnapshot()は使わない。
+
+【悪い例】
+```typescript
+const snap = getCurrentProgressSnapshot()
+await postProgress(username, snap)
+```
+
+【良い例】
+```typescript
+await postProgress(username, {
+  ...serverSnapshot,
+  l1CurrentPart: newPart,
+  l1CurrentQuestion: newIndex,
+  updatedAt: new Date().toISOString(),
+})
+```
+
+### serverSnapshotの扱い
+- 常にDynamoDBから取得した最新値を保持する
+- 操作のたびにserverSnapshotをベースにして
+  変化した値だけ上書きしてpostProgressに渡す
+- localStorageは参照しない
+
 ## ビルド・デプロイ
 - 修正後は必ずビルドエラーと型エラーがないことを確認する
 - エラーがある場合は報告してから修正を続けること

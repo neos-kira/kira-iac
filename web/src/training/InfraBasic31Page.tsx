@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { getProgressKey } from './trainingWbsData'
 import { INFRA_BASIC_3_1_DONE_KEY } from './infraBasic3Data'
 import { getCurrentDisplayName } from '../auth'
-import { postProgress, isProgressApiAvailable } from '../progressApi'
-import { getCurrentProgressSnapshot } from '../traineeProgressStorage'
+import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
+import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 
 export function InfraBasic31Page() {
   const navigate = useNavigate()
@@ -13,9 +13,16 @@ export function InfraBasic31Page() {
     if (typeof window === 'undefined') return false
     return window.localStorage.getItem(key) === 'true'
   })
+  const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
 
   useEffect(() => {
     document.title = 'インフラ基礎課題3-1 OS・仮想化・クラウド解説'
+  }, [])
+
+  useEffect(() => {
+    const username = getCurrentDisplayName().trim().toLowerCase()
+    if (!username || username === 'admin') return
+    fetchMyProgress(username).then(snap => { if (snap) setServerSnapshot(snap) })
   }, [])
 
   const handleAckChange = async (checked: boolean) => {
@@ -27,8 +34,14 @@ export function InfraBasic31Page() {
     // ① localStorage書き込み完了後にDynamoDB即時同期
     const username = getCurrentDisplayName().trim().toLowerCase()
     if (username && username !== 'admin' && isProgressApiAvailable()) {
-      const snap = getCurrentProgressSnapshot()
-      await postProgress(username, snap)
+      const base: TraineeProgressSnapshot = serverSnapshot ?? {
+        introConfirmed: false, introAt: null, wbsPercent: 0, chapterProgress: [],
+        currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
+      }
+      await postProgress(username, {
+        ...base,
+        updatedAt: new Date().toISOString(),
+      })
     }
   }
 

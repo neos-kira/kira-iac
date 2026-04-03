@@ -11,7 +11,7 @@ import {
 } from './infraBasic1Data'
 import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
 import { getCurrentDisplayName } from '../auth'
-import { getCurrentProgressSnapshot } from '../traineeProgressStorage'
+import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 
 function copyToClipboard(text: string): Promise<boolean> {
   const doFallback = (): boolean => {
@@ -76,6 +76,7 @@ export function InfraBasic1Page() {
   const storageKey = getProgressKey(INFRA_BASIC_1_STORAGE_KEY)
   const clearedKey = getProgressKey(INFRA_BASIC_1_CLEARED_KEY)
   const [state, setState] = useState<InfraBasic1StoredState>(() => loadInfraBasic1State(storageKey))
+  const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const [ec2Params, setEc2Params] = useState<{ host: string; userRoot: string; userKensyu: string; password: string }>({
     host: INFRA_BASIC_1_PARAMS.host,
     userRoot: INFRA_BASIC_1_PARAMS.userRoot,
@@ -89,6 +90,8 @@ export function InfraBasic1Page() {
       if (!username || username === 'admin') return
       const snap = await fetchMyProgress(username)
       if (!snap) return
+      // DynamoDB最新値を保持（postProgressのベースとして使う）
+      setServerSnapshot(snap)
       setEc2Params({
         host: snap.ec2Host || INFRA_BASIC_1_PARAMS.host,
         userRoot: INFRA_BASIC_1_PARAMS.userRoot,
@@ -117,35 +120,41 @@ export function InfraBasic1Page() {
     [],
   )
 
-  const toggleSectionDone = useCallback(async (sectionId: string) => {
-    setState((prev) => {
-      const sectionDone = { ...prev.sectionDone, [sectionId]: !prev.sectionDone[sectionId] }
-      const next = { ...prev, sectionDone }
-      saveInfraBasic1State(next, storageKey)
+  const toggleSectionDone = async (sectionId: string) => {
+    // 最新 state から次の状態を計算
+    const sectionDone = { ...state.sectionDone, [sectionId]: !state.sectionDone[sectionId] }
+    const checkboxes = state.checkboxes ?? []
+    const next: InfraBasic1StoredState = { ...state, sectionDone }
 
-      if (typeof window !== 'undefined') {
-        const allDone = INFRA_BASIC_1_SECTION_IDS.every((id) => sectionDone[id])
-        try {
-          if (allDone) {
-            window.localStorage.setItem(clearedKey, 'true')
-          } else {
-            window.localStorage.removeItem(clearedKey)
-          }
-        } catch {
-          // ignore
-        }
-      }
+    // ① localStorage に保存（補助キャッシュ）
+    saveInfraBasic1State(next, storageKey)
+    const allDone = INFRA_BASIC_1_SECTION_IDS.every((id) => sectionDone[id])
+    if (typeof window !== 'undefined') {
+      try {
+        if (allDone) window.localStorage.setItem(clearedKey, 'true')
+        else window.localStorage.removeItem(clearedKey)
+      } catch { /* ignore */ }
+    }
 
-      return next
-    })
+    // ② React state を更新
+    setState(next)
 
-    // ① localStorage書き込み完了後にDynamoDB即時同期
+    // ③ DynamoDB即時同期：serverSnapshotをベースに変化した値だけ上書き
     const username = getCurrentDisplayName().trim().toLowerCase()
     if (username && username !== 'admin' && isProgressApiAvailable()) {
-      const snap = getCurrentProgressSnapshot()
-      await postProgress(username, snap)
+      const base: TraineeProgressSnapshot = serverSnapshot ?? {
+        introConfirmed: false, introAt: null, wbsPercent: 0, chapterProgress: [],
+        currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
+      }
+      await postProgress(username, {
+        ...base,
+        infra1Checkboxes: checkboxes,
+        infra1SectionDone: sectionDone,
+        infra1Cleared: allDone,
+        updatedAt: new Date().toISOString(),
+      })
     }
-  }, [])
+  }
 
   const isChecked = (index: number) => (state.checkboxes ?? [])[index] === true
   const isSectionDone = (id: string) => state.sectionDone[id] === true

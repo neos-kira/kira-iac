@@ -22,6 +22,22 @@ function json(body, status = 200) {
   }
 }
 
+/** セッション検証：有効なセッションオブジェクトを返す。無効なら null。 */
+async function verifySession(event) {
+  const token =
+    event.headers?.['authorization']?.replace('Bearer ', '') ||
+    event.headers?.['x-session-token'] || ''
+  if (!token || !SessionsTableName) return null
+  const res = await client.send(new GetItemCommand({
+    TableName: SessionsTableName,
+    Key: marshall({ sessionId: token }),
+  }))
+  if (!res.Item) return null
+  const session = unmarshall(res.Item)
+  if (session.expiresAt < Math.floor(Date.now() / 1000)) return null
+  return session
+}
+
 async function handler(event) {
   if (event.requestContext?.http?.method === 'OPTIONS') {
     return { statusCode: 204, headers: corsHeaders, body: '' }
@@ -33,10 +49,17 @@ async function handler(event) {
   try {
     // 進捗保存
     if (method === 'PUT' && (path === '/progress' || path === '/progress/')) {
+      const session = await verifySession(event)
+      if (!session) return json({ error: 'unauthorized' }, 401)
+
       const body = JSON.parse(event.body || '{}')
       const traineeId = (body.traineeId || '').trim().toLowerCase()
       if (!traineeId || traineeId === 'admin') {
         return json({ error: 'invalid traineeId' }, 400)
+      }
+      // admin以外は自分のデータのみ更新可能
+      if (session.username !== 'admin' && traineeId !== session.username) {
+        return json({ error: 'forbidden' }, 403)
       }
       const Item = {
         traineeId,
@@ -80,11 +103,18 @@ async function handler(event) {
 
     // 全受講生の進捗取得（tenantId 指定時はフィルタ）
     if (method === 'GET' && (path === '/progress' || path === '/progress/')) {
+      const session = await verifySession(event)
+      if (!session) return json({ error: 'unauthorized' }, 401)
+
       const { Items } = await client.send(new ScanCommand({ TableName }))
       let trainees = (Items || []).map((item) => unmarshall(item))
       const tenantId = event.queryStringParameters?.tenantId
       if (tenantId) {
         trainees = trainees.filter((t) => (t.tenantId || 'default') === tenantId)
+      }
+      // admin以外は自分のデータのみ返す
+      if (session.username !== 'admin') {
+        trainees = trainees.filter((t) => (t.traineeId || '').toLowerCase() === session.username.toLowerCase())
       }
       return json({ trainees })
     }

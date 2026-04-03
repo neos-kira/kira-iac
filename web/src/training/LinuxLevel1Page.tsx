@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { getProgressKey } from './trainingWbsData'
 import { LINUX_LEVEL1_QUESTIONS, L1_CLEARED_KEY, L1_PROGRESS_KEY } from './linuxLevel1Data'
 import type { QuizQuestion } from './linuxLevel1Data'
-import { getCurrentProgressSnapshot } from '../traineeProgressStorage'
+import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 import { postProgress, isProgressApiAvailable } from '../progressApi'
 import { getCurrentDisplayName } from '../auth'
 import { fetchMyProgress } from '../progressApi'
@@ -133,6 +133,9 @@ export function LinuxLevel1Page() {
     typeof window !== 'undefined' && window.localStorage.getItem(getProgressKey(L1_PROGRESS_KEY)) !== null
   )
 
+  // DynamoDBから取得した最新値（postProgressのベース）
+  const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
+
   const [partsCleared, setPartsCleared] = useState<boolean[]>(initSave.partsCleared)
   const [activePart, setActivePart] = useState<number>(initPart)
   // 中断前の queue（不正解問を末尾追加済み）・queueIdx・firstAttemptCorrect を復元
@@ -156,6 +159,8 @@ export function LinuxLevel1Page() {
       const username = getCurrentDisplayName().trim().toLowerCase()
       if (!username || username === 'admin') return
       const snap = await fetchMyProgress(username)
+      // DynamoDB最新値を保持（postProgressのベースとして使う）
+      if (snap) setServerSnapshot(snap)
       if (!snap || typeof snap.l1CurrentPart !== 'number') return
 
       const serverPart = snap.l1CurrentPart
@@ -248,11 +253,21 @@ export function LinuxLevel1Page() {
 
       if (pass && newPartsCleared.every(Boolean)) {
         window.localStorage.setItem(clearedKey, 'true')
-        // ① localStorage書き込み完了後にDynamoDB即時同期
+        // DynamoDB即時同期：serverSnapshotをベースに変化した値だけ上書き
         const username = getCurrentDisplayName().trim().toLowerCase()
         if (username && username !== 'admin' && isProgressApiAvailable()) {
-          const snap = getCurrentProgressSnapshot()
-          await postProgress(username, snap)
+          const base: TraineeProgressSnapshot = serverSnapshot ?? {
+            introConfirmed: false, introAt: null, wbsPercent: 0, chapterProgress: [],
+            currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
+          }
+          await postProgress(username, {
+            ...base,
+            l1Cleared: true,
+            l1CurrentPart: activePart,
+            l1CurrentQuestion: PART_SIZE,
+            l1WrongIds: [],
+            updatedAt: new Date().toISOString(),
+          })
         }
         setPhase('all_clear')
       } else {
@@ -288,11 +303,20 @@ export function LinuxLevel1Page() {
     // ① localStorage に現在の状態を保存（savedQueueIdx も含める）
     saveL1State(storageKey, partsCleared, activePart, currentQuestion, wrongIds, savedQueueIdx)
 
-    // ② DynamoDB に即時同期（awaitで完了を待つ）
+    // ② DynamoDB に即時同期：serverSnapshotをベースに変化した値だけ上書き
     const username = getCurrentDisplayName().trim().toLowerCase()
     if (username && username !== 'admin' && isProgressApiAvailable()) {
-      const snap = getCurrentProgressSnapshot()
-      await postProgress(username, snap)
+      const base: TraineeProgressSnapshot = serverSnapshot ?? {
+        introConfirmed: false, introAt: null, wbsPercent: 0, chapterProgress: [],
+        currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
+      }
+      await postProgress(username, {
+        ...base,
+        l1CurrentPart: activePart,
+        l1CurrentQuestion: currentQuestion,
+        l1WrongIds: wrongIds,
+        updatedAt: new Date().toISOString(),
+      })
     }
 
     // ③ 保存完了後に遷移

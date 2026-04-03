@@ -11,8 +11,8 @@ import {
 import type { InfraBasic32Answers, InfraBasic32Result } from './infraBasic3Data'
 import type { MouseEvent } from 'react'
 import { getCurrentDisplayName } from '../auth'
-import { postProgress, isProgressApiAvailable } from '../progressApi'
-import { getCurrentProgressSnapshot } from '../traineeProgressStorage'
+import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
+import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 
 type QuestionId = keyof InfraBasic32Answers
 
@@ -175,6 +175,7 @@ export function InfraBasic32Page() {
   const stateKey = getProgressKey(INFRA_BASIC_3_2_STATE_KEY)
   const clearedKey = getProgressKey(INFRA_BASIC_3_2_CLEARED_KEY)
   const [state, setState] = useState(() => loadInfraBasic32State(stateKey))
+  const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const [summary, setSummary] = useState<string>('')
   const [copyToast, setCopyToast] = useState<{
     visible: boolean
@@ -190,6 +191,12 @@ export function InfraBasic32Page() {
 
   useEffect(() => {
     document.title = 'インフラ基礎課題3-2 OS・仮想化・クラウド理解度チェック'
+  }, [])
+
+  useEffect(() => {
+    const username = getCurrentDisplayName().trim().toLowerCase()
+    if (!username || username === 'admin') return
+    fetchMyProgress(username).then(snap => { if (snap) setServerSnapshot(snap) })
   }, [])
 
   const updateAnswer = (id: QuestionId, value: string) => {
@@ -234,8 +241,15 @@ export function InfraBasic32Page() {
     // ① localStorage書き込み完了後にDynamoDB即時同期
     const username = getCurrentDisplayName().trim().toLowerCase()
     if (username && username !== 'admin' && isProgressApiAvailable()) {
-      const snap = getCurrentProgressSnapshot()
-      await postProgress(username, snap)
+      const base: TraineeProgressSnapshot = serverSnapshot ?? {
+        introConfirmed: false, introAt: null, wbsPercent: 0, chapterProgress: [],
+        currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
+      }
+      await postProgress(username, {
+        ...base,
+        infra32Answers: nextState.answers,
+        updatedAt: new Date().toISOString(),
+      })
     }
 
     setSummary(

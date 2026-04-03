@@ -1,17 +1,24 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getProgressKey } from './trainingWbsData'
 import { TrainingQuizFrame } from './TrainingQuizFrame'
 import { TCPIP_LEVEL2_QUESTIONS, L2_PROGRESS_KEY, L2_CLEARED_KEY } from './linuxLevel2Data'
 import { getCurrentDisplayName } from '../auth'
-import { postProgress, isProgressApiAvailable } from '../progressApi'
-import { getCurrentProgressSnapshot } from '../traineeProgressStorage'
+import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
+import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 
 export function LinuxLevel2Page() {
   const navigate = useNavigate()
+  const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
 
   useEffect(() => {
     document.title = 'インフラ基礎課題2-2 TCP/IP理解度チェック10問'
+  }, [])
+
+  useEffect(() => {
+    const username = getCurrentDisplayName().trim().toLowerCase()
+    if (!username || username === 'admin') return
+    fetchMyProgress(username).then(snap => { if (snap) setServerSnapshot(snap) })
   }, [])
 
   return (
@@ -29,11 +36,19 @@ export function LinuxLevel2Page() {
             // ignore
           }
         }
-        // ① localStorage書き込み完了後にDynamoDB即時同期
+        // DynamoDB即時同期：serverSnapshotをベースに変化した値だけ上書き
         const username = getCurrentDisplayName().trim().toLowerCase()
         if (username && username !== 'admin' && isProgressApiAvailable()) {
-          const snap = getCurrentProgressSnapshot()
-          await postProgress(username, snap)
+          const base: TraineeProgressSnapshot = serverSnapshot ?? {
+            introConfirmed: false, introAt: null, wbsPercent: 0, chapterProgress: [],
+            currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
+          }
+          await postProgress(username, {
+            ...base,
+            l2CurrentQuestion: 0,
+            l2WrongIds: [],
+            updatedAt: new Date().toISOString(),
+          })
         }
         window.alert('インフラ研修2をクリアしました。')
       }}
