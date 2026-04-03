@@ -3,8 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { getCurrentUsername } from '../auth'
 import { VI_STEPS, SHELL_QUESTIONS, type InfraBasic4Rag } from './InfraBasic4Data'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
-import { getCurrentProgressSnapshot } from '../traineeProgressStorage'
 import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
+
+const EMPTY_SNAPSHOT: TraineeProgressSnapshot = {
+  introConfirmed: false, introAt: null, wbsPercent: 0,
+  chapterProgress: [], currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
+}
 
 type VirtualFs = {
   viNeOS: string
@@ -72,9 +76,10 @@ export function InfraBasic4Page() {
     if (!name || name === 'admin') return
     let cancelled = false
     const load = async () => {
-      const snap = (await fetchMyProgress(name)) ?? getCurrentProgressSnapshot()
+      const snap = await fetchMyProgress(name)
       if (cancelled) return
-      setSnapshot(snap)
+      // DynamoDB未取得時は EMPTY_SNAPSHOT を使う（localStorageは参照しない）
+      setSnapshot(snap ?? EMPTY_SNAPSHOT)
       const viSteps = Array.isArray(snap.infra4ViDoneSteps) ? snap.infra4ViDoneSteps : []
       const shellQs = Array.isArray(snap.infra4ShellDoneQuestions) ? snap.infra4ShellDoneQuestions : []
       const viState: Record<number, boolean> = {}
@@ -100,8 +105,9 @@ export function InfraBasic4Page() {
     const name = username.trim().toLowerCase()
     if (!name || name === 'admin') return
     setSnapshot((prev) => {
-      const base = prev ?? getCurrentProgressSnapshot()
-      const next = updater({ ...base })
+      // DynamoDBデータ未取得時はlocalStorageを参照せずスキップ
+      if (!prev) return prev
+      const next = updater({ ...prev })
       void postProgress(name, next)
       return next
     })

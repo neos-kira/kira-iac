@@ -24,7 +24,7 @@ import {
 import { isJTerada, J_TERADA_ALLOWED_LINKS } from './specialUsers'
 import { getIntroConfirmed, setIntroConfirmedForUser, clearIntroForCurrentUser } from './training/introGate'
 import { LOGIN_FLAG_KEY, getCurrentDisplayName } from './auth'
-import { getCurrentProgressSnapshot, saveProgressSnapshot, restoreProgressToLocalStorage, type TraineeProgressSnapshot } from './traineeProgressStorage'
+import { saveProgressSnapshot, restoreProgressToLocalStorage, type TraineeProgressSnapshot } from './traineeProgressStorage'
 import { isProgressApiAvailable, postProgress, fetchMyProgress, fetchProgressFromApi } from './progressApi'
 import { createAccount, fetchAccounts, isAccountApiAvailable, deleteAccount, type Account } from './accountsApi'
 
@@ -418,13 +418,14 @@ function App() {
         console.log('[Sync] 保存ブロック中')
         return
       }
-      const base = getCurrentProgressSnapshot(pins)
+      // DynamoDBデータ未取得時はスキップ（localStorageを参照しない）
+      if (!serverSnapshot) return
       const merged = {
-        ...base,
-        infra4ViDoneSteps: serverSnapshot?.infra4ViDoneSteps ?? base.infra4ViDoneSteps ?? [],
-        infra4ShellDoneQuestions:
-          serverSnapshot?.infra4ShellDoneQuestions ?? base.infra4ShellDoneQuestions ?? [],
-        infra4Rag: serverSnapshot?.infra4Rag ?? base.infra4Rag ?? null,
+        ...serverSnapshot,
+        pins: pins as string[],
+        infra4ViDoneSteps: serverSnapshot.infra4ViDoneSteps ?? [],
+        infra4ShellDoneQuestions: serverSnapshot.infra4ShellDoneQuestions ?? [],
+        infra4Rag: serverSnapshot.infra4Rag ?? null,
       }
       if (isProgressApiAvailable()) void postProgress(name, merged)
     },
@@ -547,7 +548,8 @@ function App() {
         setPinnedTraining(serverPins)
         console.log('[Sync] サーバーから取得完了')
       } else if (localPins.length > 0) {
-        const merged = getCurrentProgressSnapshot(localPins)
+        // DynamoDBデータ（snap）をベースにpinsだけを追加して保存（localStorageをベースにしない）
+        const merged = { ...(snap ?? {} as TraineeProgressSnapshot), pins: localPins as string[] }
         if (isProgressApiAvailable()) await postProgress(name, merged)
         setPinnedTraining(localPins)
         console.log('[Sync] 初回: localStorage をサーバーにマージしました')
@@ -574,13 +576,18 @@ function App() {
       const name = getDisplayName()
       if (name && name.toLowerCase() !== 'admin') {
         if (getIntroConfirmed(serverSnapshot?.introStep)) setIntroConfirmedForUser(name)
-        const base = getCurrentProgressSnapshot(pinnedTraining)
+        // serverSnapshotをベースにする（localStorageから読まない）
+        if (!serverSnapshot) {
+          setProgressTick((t) => t + 1)
+          return
+        }
         const snapshot = {
-          ...base,
-          infra4ViDoneSteps: serverSnapshot?.infra4ViDoneSteps ?? base.infra4ViDoneSteps ?? [],
-          infra4ShellDoneQuestions:
-            serverSnapshot?.infra4ShellDoneQuestions ?? base.infra4ShellDoneQuestions ?? [],
-          infra4Rag: serverSnapshot?.infra4Rag ?? base.infra4Rag ?? null,
+          ...serverSnapshot,
+          pins: (pinnedTraining ?? []) as string[],
+          infra4ViDoneSteps: serverSnapshot.infra4ViDoneSteps ?? [],
+          infra4ShellDoneQuestions: serverSnapshot.infra4ShellDoneQuestions ?? [],
+          infra4Rag: serverSnapshot.infra4Rag ?? null,
+          updatedAt: new Date().toISOString(),
         }
         saveProgressSnapshot(name, snapshot)
         if (isProgressApiAvailable()) void postProgress(name, snapshot)
@@ -716,9 +723,10 @@ function App() {
     const host = (ec2EditHost[username] ?? snap?.ec2Host ?? '').trim() || null
     const uname = (ec2EditUsername[username] ?? snap?.ec2Username ?? '').trim() || null
     const pass = (ec2EditPassword[username] ?? snap?.ec2Password ?? '').trim() || null
+    // snapはDynamoDB取得済みデータ。未取得時はlocalStorageを参照せず空ベースを使う
     const base: TraineeProgressSnapshot = snap
       ? { ...snap }
-      : getCurrentProgressSnapshot()
+      : { introConfirmed: false, introAt: null, wbsPercent: 0, chapterProgress: [], currentDay: 0, delayedIds: [], updatedAt: '', pins: [] }
     const updated: TraineeProgressSnapshot = { ...base, ec2Host: host, ec2Username: uname, ec2Password: pass }
     const ok = await postProgress(username, updated)
     if (ok) {
