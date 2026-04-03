@@ -22,7 +22,7 @@ import {
   isTask1Cleared,
 } from './training/trainingWbsData'
 import { isJTerada, J_TERADA_ALLOWED_LINKS } from './specialUsers'
-import { getIntroConfirmed, setIntroConfirmedForUser } from './training/introGate'
+import { getIntroConfirmed, setIntroConfirmedForUser, clearIntroForCurrentUser } from './training/introGate'
 import { LOGIN_FLAG_KEY, getCurrentDisplayName } from './auth'
 import { getCurrentProgressSnapshot, saveProgressSnapshot, restoreProgressToLocalStorage, type TraineeProgressSnapshot } from './traineeProgressStorage'
 import { isProgressApiAvailable, postProgress, fetchMyProgress, fetchProgressFromApi } from './progressApi'
@@ -530,6 +530,11 @@ function App() {
       const snap = await fetchMyProgress(name)
       if (cancelled) return
       if (snap) {
+        // 旧完了ユーザーリセット: introStep < 5 なら introConfirmed を無効化する。
+        // 新しい選択式・記述式問題を追加したため、Step5到達済みのみ完了とみなす。
+        if (snap.introConfirmed && (snap.introStep ?? 0) < 5) {
+          clearIntroForCurrentUser()
+        }
         // isDataReady を true にする前に localStorage へ復元する。
         // これをしないと、別端末ログイン時に save インターバルが空の localStorage を
         // サーバーに上書き送信してしまう（introConfirmed: false 等で二重破壊になる）。
@@ -733,7 +738,12 @@ function App() {
     let cancelled = false
     const load = async () => {
       const snap = await fetchMyProgress(name)
-      if (!cancelled && snap) setServerSnapshot(snap)
+      if (!cancelled && snap) {
+        if (snap.introConfirmed && (snap.introStep ?? 0) < 5) {
+          clearIntroForCurrentUser()
+        }
+        setServerSnapshot(snap)
+      }
     }
     void load()
     const id = window.setInterval(() => {

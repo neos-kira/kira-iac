@@ -177,6 +177,12 @@ export function IntroPage() {
       if (!snap) return
       setServerSnapshot(snap)
 
+      // 旧完了ユーザーリセット: introStep < 5 なら introConfirmed を無効化して再開させる
+      if (snap.introConfirmed && (snap.introStep ?? 0) < 5) {
+        clearIntroForCurrentUser()
+        setConfirmed(false)
+      }
+
       const savedAnswers = snap.introRiskAnswers ?? {}
       if (Object.keys(savedAnswers).length > 0) setRiskAnswers(savedAnswers)
 
