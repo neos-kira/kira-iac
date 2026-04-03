@@ -20,7 +20,6 @@ import { InfraBasic32Page } from './training/InfraBasic32Page'
 import { InfraBasic4Page } from './training/InfraBasic4Page'
 import { InfraWbsPage } from './training/InfraWbsPage'
 import { IntroPage } from './training/IntroPage'
-import { IntroRiskPage } from './training/IntroRiskPage'
 import { AdminPage } from './admin/AdminPage'
 import { MentorDesk } from './components/MentorDesk'
 
@@ -104,7 +103,6 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/training/infra-basic-4" element={<IntroGate><InfraBasic4Page /></IntroGate>} />
           <Route path="/training/infra-wbs" element={<IntroGate><InfraWbsPage /></IntroGate>} />
           <Route path="/training/intro" element={<IntroPage />} />
-          <Route path="/training/intro-risk" element={<IntroGate><IntroRiskPage /></IntroGate>} />
           </Routes>
         </RoutesWithDeskMargin>
         <MentorDeskOrNull />

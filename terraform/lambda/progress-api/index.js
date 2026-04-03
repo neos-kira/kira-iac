@@ -97,9 +97,8 @@ async function handler(event) {
         infra1Cleared: typeof body.infra1Cleared === 'boolean' ? body.infra1Cleared : false,
         l1Cleared: typeof body.l1Cleared === 'boolean' ? body.l1Cleared : false,
         // 導入課題 中断・再開
-        introRiskCurrentQuestion: typeof body.introRiskCurrentQuestion === 'number' ? body.introRiskCurrentQuestion : 0,
+        introStep: typeof body.introStep === 'number' ? body.introStep : 1,
         introRiskAnswers: body.introRiskAnswers && typeof body.introRiskAnswers === 'object' ? body.introRiskAnswers : {},
-        introRiskCleared: !!body.introRiskCleared,
       }
       await client.send(new PutItemCommand({ TableName, Item: marshall(Item, { removeUndefinedValues: true }) }))
       return json({ ok: true })
