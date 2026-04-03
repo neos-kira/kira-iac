@@ -244,34 +244,29 @@ export function IntroPage() {
 
   // ── 中断して保存（Step1〜4） ──────────────────────────────────────────────
   // ① disabled + 「保存中...」表示
-  // ② DynamoDBに保存（await完了・res===trueを確認）
-  // ③ 保存成功のみトップへ遷移 / 失敗時はエラー表示してボタン再有効化
+  // ② DynamoDBへ保存を試みる（await完了を待つ）
+  // ③ 保存成功・失敗に関わらずトップへ遷移（ベストエフォート保存）
+  //    セッション切れ・ネットワーク起因の失敗でナビゲートをブロックしない
   const handleSuspend = async () => {
     if (isSaving) return
     setIsSaving(true)
-    setSaveError(null)
     try {
       const uname = getCurrentDisplayName().trim().toLowerCase()
       if (uname && uname !== 'admin' && isProgressApiAvailable()) {
         const base = serverSnapshot ?? EMPTY_SNAPSHOT
-        const ok = await postProgress(uname, {
+        await postProgress(uname, {
           ...base,
           introStep: step,
           introRiskAnswers: riskAnswers,
           updatedAt: new Date().toISOString(),
         })
-        if (!ok) {
-          setSaveError('保存に失敗しました。もう一度お試しください。')
-          return
-        }
       }
-      // 保存完了後にトップへ遷移
-      window.location.hash = '#/'
     } catch {
-      setSaveError('保存に失敗しました。もう一度お試しください。')
+      // 保存失敗でも遷移する（セッション切れ等でユーザー操作をブロックしない）
     } finally {
       setIsSaving(false)
     }
+    window.location.hash = '#/'
   }
 
   // ── Step 1 完了 ───────────────────────────────────────────────────────────
