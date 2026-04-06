@@ -23,9 +23,9 @@ import {
 } from './training/trainingWbsData'
 import { isJTerada, J_TERADA_ALLOWED_LINKS } from './specialUsers'
 import { VI_STEPS, SHELL_QUESTIONS } from './training/InfraBasic4Data'
-import { getIntroConfirmed, setIntroConfirmedForUser, clearIntroForCurrentUser } from './training/introGate'
+import { getIntroConfirmed, clearIntroForCurrentUser } from './training/introGate'
 import { LOGIN_FLAG_KEY, getCurrentDisplayName } from './auth'
-import { saveProgressSnapshot, restoreProgressToLocalStorage, type TraineeProgressSnapshot } from './traineeProgressStorage'
+import { restoreProgressToLocalStorage, type TraineeProgressSnapshot } from './traineeProgressStorage'
 import { isProgressApiAvailable, postProgress, fetchMyProgress, fetchProgressFromApi } from './progressApi'
 import { createAccount, fetchAccounts, isAccountApiAvailable, deleteAccount, type Account } from './accountsApi'
 
@@ -521,41 +521,6 @@ function App() {
     return () => { cancelled = true }
   }, [isAdminView])
 
-  /** 受講生の進捗を定期保存し、ヘッダーの全体進捗％をリアルタイムで更新するための再描画用 */
-  const [progressTick, setProgressTick] = useState(0)
-  useEffect(() => {
-    if (isAdminView || typeof window === 'undefined') return
-    const save = () => {
-      if (!isDataReady.current || pinnedTraining === null) {
-        console.log('[Sync] 保存ブロック中')
-        setProgressTick((t) => t + 1)
-        return
-      }
-      const name = getDisplayName()
-      if (name && name.toLowerCase() !== 'admin') {
-        if (getIntroConfirmed(serverSnapshot?.introStep)) setIntroConfirmedForUser(name)
-        // serverSnapshotをベースにする（localStorageから読まない）
-        if (!serverSnapshot) {
-          setProgressTick((t) => t + 1)
-          return
-        }
-        const snapshot = {
-          ...serverSnapshot,
-          pins: (pinnedTraining ?? []) as string[],
-          infra4ViDoneSteps: serverSnapshot.infra4ViDoneSteps ?? [],
-          infra4ShellDoneQuestions: serverSnapshot.infra4ShellDoneQuestions ?? [],
-          infra4Rag: serverSnapshot.infra4Rag ?? null,
-          updatedAt: new Date().toISOString(),
-        }
-        saveProgressSnapshot(name, snapshot)
-        if (isProgressApiAvailable()) void postProgress(name, snapshot)
-      }
-      setProgressTick((t) => t + 1)
-    }
-    save()
-    const id = setInterval(save, 1000)
-    return () => clearInterval(id)
-  }, [isAdminView, pinnedTraining, serverSnapshot])
 
   // admin 用: アカウント一覧を定期取得し、既存の進捗から自動的に取り込む
   useEffect(() => {
@@ -755,7 +720,7 @@ function App() {
                 >
                   {delayed ? '遅延あり' : '遅延なし'}
                 </button>
-                <span data-refresh={progressTick} className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 shrink-0">
+                <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 shrink-0">
                   全体進捗:{progressPct !== null ? `${progressPct}%` : '--'}
                 </span>
                 {/* はじめに途中（Step2〜4）の場合はヘッダーにバッジ表示 */}
