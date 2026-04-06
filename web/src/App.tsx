@@ -1034,8 +1034,8 @@ function App() {
           ) : (
           <>
           <div className="w-full max-w-2xl space-y-6">
-            {/* はじめに未完了時：メッセージとリンクを最上部に表示（admin では表示しない） */}
-            {!getIntroConfirmed(serverSnapshot?.introStep) && (
+            {/* はじめに未開始時のみ：案内バナーを表示（途中の場合は「つづきから」カードで対応） */}
+            {serverSnapshot && !getIntroConfirmed(serverSnapshot.introStep) && (serverSnapshot.introStep ?? 1) <= 1 && (
               <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 shadow-sm">
                 <p className="text-sm font-semibold text-amber-800">はじめに</p>
                 <p className="mt-2 text-sm text-slate-700">
