@@ -16,7 +16,6 @@ import { INFRA_BASIC_3_2_CLEARED_KEY } from './training/infraBasic3Data'
 import {
   getProgressKey,
   getTaskProgressList,
-  getWbsProgressPercent,
   getDelayedTaskIds,
   getTrainingStartDate,
   isTask1Cleared,
@@ -690,10 +689,22 @@ function App() {
   // trainingStartDate が未設定の場合は遅延判定しない（導入課題完了前は「遅延なし」扱い）
   const trainingStarted = !!(serverSnapshot?.trainingStartDate ?? getTrainingStartDate())
   const delayed = trainingStarted && (serverSnapshot?.delayedIds?.length ?? getDelayedTaskIds().length) > 0
-  // DynamoDB取得完了まで null を返す（チラつき防止）。取得後は serverSnapshot.wbsPercent を正とする。
-  const progressPct = pinnedTraining === null
+  // DynamoDB取得完了まで null を返す（チラつき防止）。取得後はサブタスクのクリア数から計算。
+  const progressPct = pinnedTraining === null || !serverSnapshot
     ? null
-    : (typeof serverSnapshot?.wbsPercent === 'number' ? serverSnapshot.wbsPercent : getWbsProgressPercent())
+    : (() => {
+        const s = serverSnapshot
+        const ch = Array.isArray(s.chapterProgress) ? s.chapterProgress : []
+        const subCleared = [
+          (s.introStep ?? 0) >= 5 && s.introConfirmed ? 1 : 0,     // はじめに
+          s.infra1Cleared ? 1 : 0,                                   // 1-1
+          s.l1Cleared ? 1 : 0,                                       // 1-2
+          ch[1]?.cleared ? 1 : 0,                                    // 2-x
+          ch[2]?.cleared ? 1 : 0,                                    // 3-x
+          ch[3]?.cleared ? 1 : 0,                                    // 4-x
+        ].reduce((a, b) => a + b, 0)
+        return Math.round(subCleared / 8 * 100)
+      })()
   const taskList = getTaskProgressList()
   // 課題1〜4を順に見て、クリアされていない最初の課題だけ「実施中」バッジに使う（複数表示しない）
   const firstInProgressTask = taskList.find((t) => !t.cleared && t.subTasks.some((s) => s.status !== 'not_started')) ?? null
@@ -1037,19 +1048,27 @@ function App() {
                 />
               </div>
             )}
-            {/* 今やること: 優先順位に従い最初に一致するカードを表示 */}
+            {/* つづきから: serverSnapshot取得完了後に優先順位で最初に一致するカードを表示 */}
             {(() => {
               const snap = serverSnapshot
-              const introStep = snap?.introStep ?? 1
-              const introConfirmed = getIntroConfirmed(snap?.introStep)
+              if (!snap) return null // DynamoDB取得完了前は表示しない
+
+              const introStep = snap.introStep ?? 1
+              const introConfirmed = getIntroConfirmed(snap.introStep)
 
               // ① はじめに途中（step 2-4）
               if (!introConfirmed && introStep >= 2 && introStep <= 4) {
+                const stepLabels: Record<number, string> = {
+                  2: 'はじめに · AI利用・機密保持 Step2/5',
+                  3: 'はじめに · 物理セキュリティ Step3/5',
+                  4: 'はじめに · インシデント報告 Step4/5',
+                }
                 return (
                   <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">はじめに（途中から再開）Step {introStep}/5</h2>
-                    <button type="button" onClick={() => window.open(getTrainingUrl('/training/intro'), '_blank')} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">続きから始める →</button>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
+                    <p className="mt-1 text-sm text-slate-700">{stepLabels[introStep]}</p>
+                    <button type="button" onClick={() => window.open(getTrainingUrl('/training/intro'), '_blank')} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1057,78 +1076,83 @@ function App() {
               if (!introConfirmed) return null
 
               // ② 課題1-1が途中
-              const infra1InProgress = (snap?.infra1Checkboxes ?? []).some(Boolean) && !(snap?.infra1Cleared ?? false)
+              const infra1InProgress = (snap.infra1Checkboxes ?? []).some(Boolean) && !(snap.infra1Cleared ?? false)
               if (infra1InProgress) {
                 return (
                   <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">課題1-1 ツール演習（途中から再開）</h2>
-                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-1'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">続きから始める →</button>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
+                    <p className="mt-1 text-sm text-slate-700">課題1-1 ツール演習</p>
+                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-1'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }
 
               // ③ 課題1-2が途中
-              const l1Part = snap?.l1CurrentPart ?? 0
-              const l1Q = snap?.l1CurrentQuestion ?? 0
-              const l1InProgress = (l1Part > 0 || l1Q > 0) && !(snap?.l1Cleared ?? false)
+              const l1Part = snap.l1CurrentPart ?? 0
+              const l1Q = snap.l1CurrentQuestion ?? 0
+              const l1InProgress = (l1Part > 0 || l1Q > 0) && !(snap.l1Cleared ?? false)
               if (l1InProgress) {
                 const partLabels = ['基本操作', 'サーバー構築', '実践問題']
                 const partLabel = partLabels[l1Part] ?? '基本操作'
                 return (
                   <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">課題1-2 Linuxコマンド</h2>
-                    <p className="mt-1 text-sm text-slate-700">{partLabel} {l1Q}/10問</p>
-                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level1'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">続きから始める →</button>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
+                    <p className="mt-1 text-sm text-slate-700">課題1-2 Linuxコマンド · {partLabel} {l1Q}/10問</p>
+                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level1'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }
 
               // ④ 課題2-2が途中
-              const l2Q = snap?.l2CurrentQuestion ?? 0
+              const l2Q = snap.l2CurrentQuestion ?? 0
               if (l2Q > 0) {
                 return (
                   <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">課題2-2 TCP/IP {l2Q}/10問</h2>
-                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level2'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">続きから始める →</button>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
+                    <p className="mt-1 text-sm text-slate-700">課題2-2 TCP/IP {l2Q}/10問</p>
+                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level2'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }
 
               // ⑤ 課題3-2が途中
-              const infra32InProgress = Object.values(snap?.infra32Answers ?? {}).some((v) => v && String(v).trim())
+              const infra32InProgress = Object.values(snap.infra32Answers ?? {}).some((v) => v && String(v).trim())
               if (infra32InProgress) {
                 return (
                   <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">課題3-2 理解度チェック（途中から再開）</h2>
-                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-3-2'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">続きから始める →</button>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
+                    <p className="mt-1 text-sm text-slate-700">課題3-2 理解度チェック</p>
+                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-3-2'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }
 
               // ⑥ 課題4-1が途中
-              const vi4Done = (snap?.infra4ViDoneSteps ?? []).length
+              const vi4Done = (snap.infra4ViDoneSteps ?? []).length
               if (vi4Done > 0 && vi4Done < VI_STEPS.length) {
                 return (
                   <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">課題4-1 vi演習（途中から再開）</h2>
-                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-4'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">続きから始める →</button>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
+                    <p className="mt-1 text-sm text-slate-700">課題4-1 vi演習</p>
+                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-4'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }
 
               // ⑦ 課題4-2が途中
-              const shell4Done = (snap?.infra4ShellDoneQuestions ?? []).length
+              const shell4Done = (snap.infra4ShellDoneQuestions ?? []).length
               if (shell4Done > 0 && shell4Done < SHELL_QUESTIONS.length) {
                 return (
                   <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">課題4-2 シェルスクリプト（途中から再開）</h2>
-                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-4'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">続きから始める →</button>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
+                    <p className="mt-1 text-sm text-slate-700">課題4-2 シェルスクリプト</p>
+                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-4'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1137,8 +1161,8 @@ function App() {
               if (!trainingStatus.infraToolsCleared) {
                 return (
                   <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">今やること</h2>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">インフラ基礎課題1-1（ツール演習）に取り組んでください。</p>
                     <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-top'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">課題1-1を始める →</button>
                   </div>
