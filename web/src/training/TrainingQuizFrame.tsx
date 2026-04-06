@@ -8,7 +8,10 @@ type Props = {
   totalRequired: number
   onClear?: () => void
   storageKey?: string
-  onInterrupt?: () => void
+  /** DynamoDBから取得した再開位置。提供された場合はlocalStorageより優先する */
+  serverInitialIndex?: number
+  /** 中断時: 現在インデックスと回答配列を受け取りDynamoDB保存する。trueなら遷移、falseならエラー表示 */
+  onInterrupt?: (currentIndex: number, answers: number[]) => Promise<boolean>
 }
 
 type SavedProgress = {
@@ -65,13 +68,19 @@ export function TrainingQuizFrame({
   totalRequired,
   onClear,
   storageKey,
+  serverInitialIndex,
   onInterrupt,
 }: Props) {
   const total = questions.length
-  const initial = loadProgress(storageKey, total)
+  // serverInitialIndex が提供された場合はそちらを優先（localStorageは参照しない）
+  const initial = typeof serverInitialIndex === 'number' && serverInitialIndex > 0 && serverInitialIndex < total
+    ? { currentIndex: serverInitialIndex, answers: [] as number[] }
+    : loadProgress(storageKey, total)
   const [currentIndex, setCurrentIndex] = useState(initial.currentIndex)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [answers, setAnswers] = useState<number[]>(initial.answers)
+  const [isSuspending, setIsSuspending] = useState(false)
+  const [suspendError, setSuspendError] = useState<string | null>(null)
 
   const current = questions[currentIndex]
   const answeredCount = answers.length
@@ -102,9 +111,20 @@ export function TrainingQuizFrame({
     clearProgress(storageKey)
   }
 
-  function interrupt() {
-    saveProgress(storageKey, currentIndex, answers)
-    if (onInterrupt) onInterrupt()
+  async function interrupt() {
+    if (isSuspending) return
+    setIsSuspending(true)
+    setSuspendError(null)
+    if (onInterrupt) {
+      const ok = await onInterrupt(currentIndex, answers)
+      if (!ok) {
+        setSuspendError('保存に失敗しました')
+        setIsSuspending(false)
+        return
+      }
+    }
+    setIsSuspending(false)
+    window.location.hash = '#/'
   }
 
   if (isFinished) {
@@ -189,13 +209,17 @@ export function TrainingQuizFrame({
           >
             {currentIndex < total - 1 ? '次へ' : '終了して得点を見る'}
           </button>
-          <button
-            type="button"
-            onClick={interrupt}
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            中断してトップへ戻る
-          </button>
+          <div className="flex flex-col gap-1">
+            <button
+              type="button"
+              onClick={() => { void interrupt() }}
+              disabled={isSuspending}
+              className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSuspending ? '保存中...' : '中断して保存 →'}
+            </button>
+            {suspendError && <p className="text-xs text-red-600">{suspendError}</p>}
+          </div>
         </div>
       </div>
     </div>

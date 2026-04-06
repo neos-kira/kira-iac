@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { getProgressKey } from './trainingWbsData'
 import {
   INFRA_BASIC_1_PARAMS,
-  loadInfraBasic1State,
   saveInfraBasic1State,
   INFRA_BASIC_1_CLEARED_KEY,
   INFRA_BASIC_1_STORAGE_KEY,
@@ -12,6 +11,11 @@ import {
 import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
 import { getCurrentDisplayName } from '../auth'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
+
+const EMPTY_SNAPSHOT: TraineeProgressSnapshot = {
+  introConfirmed: false, introAt: null, wbsPercent: 0,
+  chapterProgress: [], currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
+}
 
 function copyToClipboard(text: string): Promise<boolean> {
   const doFallback = (): boolean => {
@@ -75,7 +79,10 @@ export function InfraBasic1Page() {
   const navigate = useNavigate()
   const storageKey = getProgressKey(INFRA_BASIC_1_STORAGE_KEY)
   const clearedKey = getProgressKey(INFRA_BASIC_1_CLEARED_KEY)
-  const [state, setState] = useState<InfraBasic1StoredState>(() => loadInfraBasic1State(storageKey))
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [state, setState] = useState<InfraBasic1StoredState>({ checkboxes: [], sectionDone: {} })
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const [ec2Params, setEc2Params] = useState<{ host: string; userRoot: string; userKensyu: string; password: string }>({
     host: INFRA_BASIC_1_PARAMS.host,
@@ -87,17 +94,26 @@ export function InfraBasic1Page() {
   useEffect(() => {
     const load = async () => {
       const username = getCurrentDisplayName().trim().toLowerCase()
-      if (!username || username === 'admin') return
+      if (!username || username === 'admin') {
+        setIsLoading(false)
+        return
+      }
       const snap = await fetchMyProgress(username)
-      if (!snap) return
-      // DynamoDB最新値を保持（postProgressのベースとして使う）
-      setServerSnapshot(snap)
-      setEc2Params({
-        host: snap.ec2Host || INFRA_BASIC_1_PARAMS.host,
-        userRoot: INFRA_BASIC_1_PARAMS.userRoot,
-        userKensyu: snap.ec2Username || INFRA_BASIC_1_PARAMS.userKensyu,
-        password: snap.ec2Password || INFRA_BASIC_1_PARAMS.password,
-      })
+      if (snap) {
+        setServerSnapshot(snap)
+        setEc2Params({
+          host: snap.ec2Host || INFRA_BASIC_1_PARAMS.host,
+          userRoot: INFRA_BASIC_1_PARAMS.userRoot,
+          userKensyu: snap.ec2Username || INFRA_BASIC_1_PARAMS.userKensyu,
+          password: snap.ec2Password || INFRA_BASIC_1_PARAMS.password,
+        })
+        // serverSnapshotから状態を復元（localStorageは参照しない）
+        setState({
+          checkboxes: snap.infra1Checkboxes ?? [],
+          sectionDone: snap.infra1SectionDone ?? {},
+        })
+      }
+      setIsLoading(false)
     }
     void load()
   }, [])
@@ -156,8 +172,39 @@ export function InfraBasic1Page() {
     }
   }
 
+  const handleSuspend = async () => {
+    if (isSaving) return
+    setIsSaving(true)
+    setSaveError(null)
+    const username = getCurrentDisplayName().trim().toLowerCase()
+    if (username && username !== 'admin' && isProgressApiAvailable()) {
+      const base = serverSnapshot ?? EMPTY_SNAPSHOT
+      const ok = await postProgress(username, {
+        ...base,
+        infra1Checkboxes: state.checkboxes ?? [],
+        infra1SectionDone: state.sectionDone,
+        updatedAt: new Date().toISOString(),
+      })
+      if (!ok) {
+        setSaveError('保存に失敗しました')
+        setIsSaving(false)
+        return
+      }
+    }
+    setIsSaving(false)
+    window.location.hash = '#/'
+  }
+
   const isChecked = (index: number) => (state.checkboxes ?? [])[index] === true
   const isSectionDone = (id: string) => state.sectionDone[id] === true
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-sm text-slate-500">読み込み中...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
@@ -170,13 +217,17 @@ export function InfraBasic1Page() {
             </p>
             <h1 className="mt-1 text-xl font-semibold text-slate-800">インフラ基礎演習1</h1>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-          >
-            トップへ戻る
-          </button>
+          <div className="flex flex-col items-end gap-1">
+            <button
+              type="button"
+              onClick={() => { void handleSuspend() }}
+              disabled={isSaving}
+              className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSaving ? '保存中...' : '中断して保存 →'}
+            </button>
+            {saveError && <p className="text-xs text-red-600">{saveError}</p>}
+          </div>
         </div>
 
         {/* 前提 */}

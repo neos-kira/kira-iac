@@ -22,6 +22,7 @@ import {
   isTask1Cleared,
 } from './training/trainingWbsData'
 import { isJTerada, J_TERADA_ALLOWED_LINKS } from './specialUsers'
+import { VI_STEPS, SHELL_QUESTIONS } from './training/InfraBasic4Data'
 import { getIntroConfirmed, setIntroConfirmedForUser, clearIntroForCurrentUser } from './training/introGate'
 import { LOGIN_FLAG_KEY, getCurrentDisplayName } from './auth'
 import { saveProgressSnapshot, restoreProgressToLocalStorage, type TraineeProgressSnapshot } from './traineeProgressStorage'
@@ -1114,45 +1115,122 @@ function App() {
                 />
               </div>
             )}
-            {/* 今やること: はじめに途中の場合（step 2-4）、ステップ別に再開ボタンを表示 */}
-            {!getIntroConfirmed(serverSnapshot?.introStep) && (serverSnapshot?.introStep ?? 1) >= 2 && (serverSnapshot?.introStep ?? 1) <= 4 && (() => {
-              const iStep = serverSnapshot?.introStep ?? 2
-              const stepLabel =
-                iStep === 2 ? 'AI利用・機密保持 Step2/5' :
-                iStep === 3 ? '物理セキュリティ Step3/5' :
-                              'インシデント報告 Step4/5'
-              return (
-                <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
-                  <h2 className="mt-2 text-base font-semibold text-slate-800">はじめに（途中から再開）</h2>
-                  <p className="mt-1 text-sm text-slate-700">{stepLabel}</p>
-                  <button
-                    type="button"
-                    onClick={() => window.open(getTrainingUrl('/training/intro'), '_blank')}
-                    className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
-                  >
-                    続きから始める →
-                  </button>
-                </div>
-              )
+            {/* 今やること: 優先順位に従い最初に一致するカードを表示 */}
+            {(() => {
+              const snap = serverSnapshot
+              const introStep = snap?.introStep ?? 1
+              const introConfirmed = getIntroConfirmed(snap?.introStep)
+
+              // ① はじめに途中（step 2-4）
+              if (!introConfirmed && introStep >= 2 && introStep <= 4) {
+                const stepLabel =
+                  introStep === 2 ? 'AI利用・機密保持 Step2/5' :
+                  introStep === 3 ? '物理セキュリティ Step3/5' :
+                                    'インシデント報告 Step4/5'
+                return (
+                  <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">はじめに（途中から再開）</h2>
+                    <p className="mt-1 text-sm text-slate-700">{stepLabel}</p>
+                    <button type="button" onClick={() => window.open(getTrainingUrl('/training/intro'), '_blank')} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">続きから始める →</button>
+                  </div>
+                )
+              }
+
+              if (!introConfirmed) return null
+
+              // ② 課題1-1が途中
+              const infra1InProgress = (snap?.infra1Checkboxes ?? []).some(Boolean) && !(snap?.infra1Cleared ?? false)
+              if (infra1InProgress) {
+                return (
+                  <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">課題1-1 ツール演習（途中から再開）</h2>
+                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-1'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">続きから始める →</button>
+                  </div>
+                )
+              }
+
+              // ③ 課題1-2が途中
+              const l1Part = snap?.l1CurrentPart ?? 0
+              const l1Q = snap?.l1CurrentQuestion ?? 0
+              const l1InProgress = (l1Part > 0 || l1Q > 0) && !(snap?.l1Cleared ?? false)
+              if (l1InProgress) {
+                const partLabels = ['基本操作', 'サーバー構築', '実践問題']
+                const partLabel = partLabels[l1Part] ?? '基本操作'
+                return (
+                  <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">課題1-2 Linuxコマンド（途中から再開）</h2>
+                    <p className="mt-1 text-sm text-slate-700">{partLabel} {l1Q + 1}/10問</p>
+                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level1'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">続きから始める →</button>
+                  </div>
+                )
+              }
+
+              // ④ 課題2-2が途中
+              const l2Q = snap?.l2CurrentQuestion ?? 0
+              if (l2Q > 0) {
+                return (
+                  <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">課題2-2 TCP/IP（途中から再開）</h2>
+                    <p className="mt-1 text-sm text-slate-700">{l2Q + 1}/10問</p>
+                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level2'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">続きから始める →</button>
+                  </div>
+                )
+              }
+
+              // ⑤ 課題3-2が途中
+              const infra32InProgress = Object.values(snap?.infra32Answers ?? {}).some((v) => v && String(v).trim())
+              if (infra32InProgress) {
+                return (
+                  <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">課題3-2 理解度チェック（途中から再開）</h2>
+                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-3-2'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">続きから始める →</button>
+                  </div>
+                )
+              }
+
+              // ⑥ 課題4-1が途中
+              const vi4Done = (snap?.infra4ViDoneSteps ?? []).length
+              if (vi4Done > 0 && vi4Done < VI_STEPS.length) {
+                return (
+                  <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">課題4-1 vi演習（途中から再開）</h2>
+                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-4'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">続きから始める →</button>
+                  </div>
+                )
+              }
+
+              // ⑦ 課題4-2が途中
+              const shell4Done = (snap?.infra4ShellDoneQuestions ?? []).length
+              if (shell4Done > 0 && shell4Done < SHELL_QUESTIONS.length) {
+                return (
+                  <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">課題4-2 シェルスクリプト（途中から再開）</h2>
+                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-4'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">続きから始める →</button>
+                  </div>
+                )
+              }
+
+              // どれも途中でない場合: 課題1-1未開始なら「始める」カード
+              if (!trainingStatus.infraToolsCleared) {
+                return (
+                  <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">今やること</h2>
+                    <p className="mt-1 text-sm text-slate-700">インフラ基礎課題1-1（ツール演習）に取り組んでください。</p>
+                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-top'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">課題1-1を始める →</button>
+                  </div>
+                )
+              }
+
+              return null
             })()}
-            {/* 今やること: はじめに完了後・課題1-1未完了時に表示 */}
-            {getIntroConfirmed(serverSnapshot?.introStep) && !trainingStatus.infraToolsCleared && (
-              <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
-                <h2 className="mt-2 text-base font-semibold text-slate-800">今やること</h2>
-                <p className="mt-1 text-sm text-slate-700">
-                  インフラ基礎課題1-1（ツール演習）に取り組んでください。
-                </p>
-                <button
-                  type="button"
-                  onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-top'))}
-                  className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
-                >
-                  課題1-1を始める →
-                </button>
-              </div>
-            )}
             {/* j-terada 用：はじめにの下に課題1完了後の案内を表示。課題1クリア前はリンク無効 */}
             {isJTerada(getDisplayName()) && (
               <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">

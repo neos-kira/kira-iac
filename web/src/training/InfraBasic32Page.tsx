@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { getProgressKey } from './trainingWbsData'
 import {
   INFRA_BASIC_3_2_CLEARED_KEY,
   INFRA_BASIC_3_2_DEFAULT_STATE,
   INFRA_BASIC_3_2_STATE_KEY,
-  loadInfraBasic32State,
   saveInfraBasic32State,
 } from './infraBasic3Data'
 import type { InfraBasic32Answers, InfraBasic32Result } from './infraBasic3Data'
@@ -13,6 +11,11 @@ import type { MouseEvent } from 'react'
 import { getCurrentDisplayName } from '../auth'
 import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
+
+const EMPTY_SNAPSHOT: TraineeProgressSnapshot = {
+  introConfirmed: false, introAt: null, wbsPercent: 0,
+  chapterProgress: [], currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
+}
 
 type QuestionId = keyof InfraBasic32Answers
 
@@ -171,10 +174,12 @@ function evaluateAnswer(id: QuestionId, raw: string): EvalResult {
 }
 
 export function InfraBasic32Page() {
-  const navigate = useNavigate()
   const stateKey = getProgressKey(INFRA_BASIC_3_2_STATE_KEY)
   const clearedKey = getProgressKey(INFRA_BASIC_3_2_CLEARED_KEY)
-  const [state, setState] = useState(() => loadInfraBasic32State(stateKey))
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [state, setState] = useState(INFRA_BASIC_3_2_DEFAULT_STATE)
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const [summary, setSummary] = useState<string>('')
   const [copyToast, setCopyToast] = useState<{
@@ -194,10 +199,49 @@ export function InfraBasic32Page() {
   }, [])
 
   useEffect(() => {
-    const username = getCurrentDisplayName().trim().toLowerCase()
-    if (!username || username === 'admin') return
-    fetchMyProgress(username).then(snap => { if (snap) setServerSnapshot(snap) })
+    const load = async () => {
+      const username = getCurrentDisplayName().trim().toLowerCase()
+      if (!username || username === 'admin') {
+        setIsLoading(false)
+        return
+      }
+      const snap = await fetchMyProgress(username)
+      if (snap) {
+        setServerSnapshot(snap)
+        // serverSnapshotから回答を復元（localStorageは参照しない）
+        if (snap.infra32Answers && Object.keys(snap.infra32Answers).length > 0) {
+          setState((prev) => ({
+            ...prev,
+            answers: { ...prev.answers, ...snap.infra32Answers },
+          }))
+        }
+      }
+      setIsLoading(false)
+    }
+    void load()
   }, [])
+
+  const handleSuspend = async () => {
+    if (isSaving) return
+    setIsSaving(true)
+    setSaveError(null)
+    const username = getCurrentDisplayName().trim().toLowerCase()
+    if (username && username !== 'admin' && isProgressApiAvailable()) {
+      const base = serverSnapshot ?? EMPTY_SNAPSHOT
+      const ok = await postProgress(username, {
+        ...base,
+        infra32Answers: state.answers,
+        updatedAt: new Date().toISOString(),
+      })
+      if (!ok) {
+        setSaveError('保存に失敗しました')
+        setIsSaving(false)
+        return
+      }
+    }
+    setIsSaving(false)
+    window.location.hash = '#/'
+  }
 
   const updateAnswer = (id: QuestionId, value: string) => {
     setState((prev) => {
@@ -358,6 +402,14 @@ export function InfraBasic32Page() {
     return <span className={color}>{r.pass ? '現場レベルで合格' : '方向性は良いが要ブラッシュアップ'}</span>
   }
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-sm text-slate-500">読み込み中...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-3xl space-y-6">
@@ -368,13 +420,17 @@ export function InfraBasic32Page() {
               インフラ基礎課題3-2 OS・仮想化・クラウド 理解度チェック
             </h1>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-          >
-            トップへ戻る
-          </button>
+          <div className="flex flex-col items-end gap-1">
+            <button
+              type="button"
+              onClick={() => { void handleSuspend() }}
+              disabled={isSaving}
+              className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSaving ? '保存中...' : '中断して保存 →'}
+            </button>
+            {saveError && <p className="text-xs text-red-600">{saveError}</p>}
+          </div>
         </div>
 
         {/* Q1〜Q8 */}

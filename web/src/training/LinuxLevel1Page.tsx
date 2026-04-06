@@ -135,6 +135,9 @@ export function LinuxLevel1Page() {
 
   // DynamoDBから取得した最新値（postProgressのベース）
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const [partsCleared, setPartsCleared] = useState<boolean[]>(initSave.partsCleared)
   const [activePart, setActivePart] = useState<number>(initPart)
@@ -157,16 +160,25 @@ export function LinuxLevel1Page() {
   useEffect(() => {
     const restore = async () => {
       const username = getCurrentDisplayName().trim().toLowerCase()
-      if (!username || username === 'admin') return
+      if (!username || username === 'admin') {
+        setIsLoading(false)
+        return
+      }
       const snap = await fetchMyProgress(username)
       // DynamoDB最新値を保持（postProgressのベースとして使う）
       if (snap) setServerSnapshot(snap)
-      if (!snap || typeof snap.l1CurrentPart !== 'number') return
+      if (!snap || typeof snap.l1CurrentPart !== 'number') {
+        setIsLoading(false)
+        return
+      }
 
       const serverPart = snap.l1CurrentPart
       // localStorage が空だった場合は無条件に復元、あった場合はサーバーの方が進んでいる場合のみ上書き
       const shouldRestore = !hadLocalL1DataRef.current || serverPart > initPartRef.current
-      if (!shouldRestore) return
+      if (!shouldRestore) {
+        setIsLoading(false)
+        return
+      }
 
       const serverCurrentQuestion = snap.l1CurrentQuestion ?? 0
       const serverWrongIds = snap.l1WrongIds ?? []
@@ -195,6 +207,7 @@ export function LinuxLevel1Page() {
       setPartScore(0)
 
       saveL1State(storageKey, newPartsCleared, serverPart, serverCurrentQuestion, serverWrongIds)
+      setIsLoading(false)
     }
     void restore()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -291,16 +304,17 @@ export function LinuxLevel1Page() {
     setPartScore(0)
   }
 
-  /** 中断ボタン: localStorage保存 → DynamoDB同期 → 遷移（awaitで順序保証） */
+  /** 中断ボタン: DynamoDB保存 → ok なら遷移、失敗なら表示 */
   async function handleInterrupt() {
-    // 現在の間違えた問題IDを firstAttemptCorrect から導出
+    if (isSaving) return
+    setIsSaving(true)
+    setSaveError(null)
+
     const wrongIds = Object.keys(firstAttemptCorrect).filter((id) => firstAttemptCorrect[id] === false)
-    // firstAttemptCount = 初回回答済み問数（表示用）
     const currentQuestion = firstAttemptCount
-    // queueIdx = 実際のキュー上の位置（復元用。再出題フェーズでは currentQuestion と異なる）
     const savedQueueIdx = queueIdx
 
-    // ① localStorage に現在の状態を保存（savedQueueIdx も含める）
+    // ① localStorage に現在の状態をキャッシュ保存
     saveL1State(storageKey, partsCleared, activePart, currentQuestion, wrongIds, savedQueueIdx)
 
     // ② DynamoDB に即時同期：serverSnapshotをベースに変化した値だけ上書き
@@ -310,17 +324,32 @@ export function LinuxLevel1Page() {
         introConfirmed: false, introAt: null, wbsPercent: 0, chapterProgress: [],
         currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
       }
-      await postProgress(username, {
+      const ok = await postProgress(username, {
         ...base,
         l1CurrentPart: activePart,
         l1CurrentQuestion: currentQuestion,
         l1WrongIds: wrongIds,
         updatedAt: new Date().toISOString(),
       })
+      if (!ok) {
+        setSaveError('保存に失敗しました')
+        setIsSaving(false)
+        return
+      }
     }
 
     // ③ 保存完了後に遷移
-    navigate('/')
+    setIsSaving(false)
+    window.location.hash = '#/'
+  }
+
+  // ────────── 読み込み中 ──────────
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-sm text-slate-500">読み込み中...</p>
+      </div>
+    )
   }
 
   // ────────── 全クリア画面 ──────────
@@ -498,14 +527,16 @@ export function LinuxLevel1Page() {
           </div>
         )}
 
-        <div className="mt-6">
+        <div className="mt-6 flex flex-col gap-1">
           <button
             type="button"
             onClick={() => { void handleInterrupt() }}
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            disabled={isSaving}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            中断してトップへ戻る
+            {isSaving ? '保存中...' : '中断して保存 →'}
           </button>
+          {saveError && <p className="text-xs text-red-600">{saveError}</p>}
         </div>
       </div>
     </div>

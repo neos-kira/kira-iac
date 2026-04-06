@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { getCurrentUsername } from '../auth'
 import { VI_STEPS, SHELL_QUESTIONS, type InfraBasic4Rag } from './InfraBasic4Data'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
@@ -49,14 +48,15 @@ function InlineTerminal({
 }
 
 export function InfraBasic4Page() {
-  const navigate = useNavigate()
   const username = getCurrentUsername()
   const isKiraTest = username === 'kira-test'
 
-  const [, setSnapshot] = useState<TraineeProgressSnapshot | null>(null)
+  const [snapshot, setSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const [viDone, setViDone] = useState<Record<number, boolean>>({})
   const [shellDone, setShellDone] = useState<Record<number, boolean>>({})
   const [rag, setRag] = useState<InfraBasic4Rag | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [fs, setFs] = useState<VirtualFs>({ viNeOS: '', scripts: {} })
   const [terminalInput, setTerminalInput] = useState<Record<string, string>>({})
   const [terminalOutput] = useState<Record<string, string>>({})
@@ -79,9 +79,10 @@ export function InfraBasic4Page() {
       const snap = await fetchMyProgress(name)
       if (cancelled) return
       // DynamoDB未取得時は EMPTY_SNAPSHOT を使う（localStorageは参照しない）
-      setSnapshot(snap ?? EMPTY_SNAPSHOT)
-      const viSteps = Array.isArray(snap.infra4ViDoneSteps) ? snap.infra4ViDoneSteps : []
-      const shellQs = Array.isArray(snap.infra4ShellDoneQuestions) ? snap.infra4ShellDoneQuestions : []
+      const resolved = snap ?? EMPTY_SNAPSHOT
+      setSnapshot(resolved)
+      const viSteps = Array.isArray(resolved.infra4ViDoneSteps) ? resolved.infra4ViDoneSteps : []
+      const shellQs = Array.isArray(resolved.infra4ShellDoneQuestions) ? resolved.infra4ShellDoneQuestions : []
       const viState: Record<number, boolean> = {}
       VI_STEPS.forEach((s) => {
         viState[s.step] = viSteps.includes(s.step)
@@ -92,7 +93,7 @@ export function InfraBasic4Page() {
       })
       setViDone(viState)
       setShellDone(shellState)
-      setRag(snap.infra4Rag ?? null)
+      setRag(resolved.infra4Rag ?? null)
     }
     void load()
     return () => {
@@ -104,13 +105,11 @@ export function InfraBasic4Page() {
     if (!isProgressApiAvailable() || typeof window === 'undefined') return
     const name = username.trim().toLowerCase()
     if (!name || name === 'admin') return
-    setSnapshot((prev) => {
-      // DynamoDBデータ未取得時はlocalStorageを参照せずスキップ
-      if (!prev) return prev
-      const next = updater({ ...prev })
-      void postProgress(name, next)
-      return next
-    })
+    // DynamoDBデータ未取得時はlocalStorageを参照せずスキップ
+    if (!snapshot) return
+    const next = updater({ ...snapshot })
+    setSnapshot(next)
+    void postProgress(name, next)
   }
 
   const handleToggleVi = (step: number, checked: boolean) => {
@@ -140,6 +139,32 @@ export function InfraBasic4Page() {
     void applyUpdate((snap) => ({ ...snap, infra4Rag: next }))
   }
 
+  const handleSuspend = async () => {
+    if (isSaving) return
+    setIsSaving(true)
+    setSaveError(null)
+    const name = username.trim().toLowerCase()
+    if (name && name !== 'admin' && isProgressApiAvailable()) {
+      const base = snapshot ?? EMPTY_SNAPSHOT
+      const viSteps = VI_STEPS.filter((s) => viDone[s.step]).map((s) => s.step)
+      const shellQs = SHELL_QUESTIONS.filter((q) => shellDone[q.q]).map((q) => q.q)
+      const ok = await postProgress(name, {
+        ...base,
+        infra4ViDoneSteps: viSteps,
+        infra4ShellDoneQuestions: shellQs,
+        infra4Rag: rag,
+        updatedAt: new Date().toISOString(),
+      })
+      if (!ok) {
+        setSaveError('保存に失敗しました')
+        setIsSaving(false)
+        return
+      }
+    }
+    setIsSaving(false)
+    window.location.hash = '#/'
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-2xl space-y-6">
@@ -153,13 +178,17 @@ export function InfraBasic4Page() {
               4-1 vi操作と 4-2 シェルスクリプトの厳選20問を、ブラウザ上のターミナル風シミュレーターで実施します。
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-          >
-            トップへ戻る
-          </button>
+          <div className="flex flex-col items-end gap-1">
+            <button
+              type="button"
+              onClick={() => { void handleSuspend() }}
+              disabled={isSaving}
+              className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSaving ? '保存中...' : '中断して保存 →'}
+            </button>
+            {saveError && <p className="text-xs text-red-600">{saveError}</p>}
+          </div>
         </header>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
