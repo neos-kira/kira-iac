@@ -52,6 +52,8 @@ export async function postProgress(traineeId: string, snapshot: TraineeProgressS
   if (!BASE_URL) return false
   const id = traineeId.trim().toLowerCase()
   if (!id || id === 'admin') return false
+  const token = getSessionToken()
+  console.log('[Sync] postProgress 開始:', { traineeId: id, hasToken: !!token })
   try {
     const res = await fetch(`${BASE_URL}/progress`, {
       method: 'PUT',
@@ -59,30 +61,33 @@ export async function postProgress(traineeId: string, snapshot: TraineeProgressS
       credentials: 'omit',
       body: JSON.stringify({ traineeId: id, ...snapshot }),
     })
+    console.log('[Sync] postProgress レスポンス:', { status: res.status, ok: res.ok })
     if (!res.ok) {
-      // Authorization ヘッダー等で CORS/認証が絡む場合でも、サーバーが無認証で受けられる構成に備えてフォールバックする。
-      console.log('[Sync] postProgress failed:', { status: res.status })
+      const errText = await res.text().catch(() => '')
+      console.log('[Sync] postProgress エラー詳細:', errText)
       const fallback = await fetch(`${BASE_URL}/progress`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'omit',
         body: JSON.stringify({ traineeId: id, ...snapshot }),
       })
+      console.log('[Sync] postProgress fallback:', { status: fallback.status, ok: fallback.ok })
       return fallback.ok
     }
     return res.ok
-  } catch {
-    // fetch が CORS 等で落ちる場合も、ヘッダー無しで再試行する
+  } catch (err) {
+    console.log('[Sync] postProgress 例外(CORS?):', err)
     try {
-      console.log('[Sync] postProgress exception: retry without auth headers')
       const fallback = await fetch(`${BASE_URL}/progress`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'omit',
         body: JSON.stringify({ traineeId: id, ...snapshot }),
       })
+      console.log('[Sync] postProgress fallback(例外後):', { status: fallback.status, ok: fallback.ok })
       return fallback.ok
-    } catch {
+    } catch (err2) {
+      console.log('[Sync] postProgress fallbackも例外:', err2)
       return false
     }
   }

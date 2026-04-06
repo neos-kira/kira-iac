@@ -248,14 +248,18 @@ export function IntroPage() {
     setIsSaving(true)
     setSaveError(null)
     const uname = getCurrentDisplayName().trim().toLowerCase()
+    console.log('[中断保存] username:', uname)
+    console.log('[中断保存] serverSnapshot:', serverSnapshot)
     if (uname && uname !== 'admin' && isProgressApiAvailable()) {
       const base = serverSnapshot ?? EMPTY_SNAPSHOT
-      const ok = await postProgress(uname, {
+      const payload = {
         ...base,
         introStep: step,
         introRiskAnswers: riskAnswers,
         updatedAt: new Date().toISOString(),
-      })
+      }
+      const ok = await postProgress(uname, payload)
+      console.log('[中断保存] postProgress結果:', ok)
       if (!ok) {
         setSaveError('保存に失敗しました')
         setIsSaving(false)
