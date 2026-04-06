@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { setIntroConfirmed, setIntroConfirmedForUser, clearIntroForCurrentUser } from './introGate'
 import { getCurrentDisplayName } from '../auth'
 import { Confetti } from '../components/Confetti'
+import { NeOSLogo } from '../components/NeOSLogo'
 import { INTRO_RISK_QUESTIONS } from './introRiskData'
 import type { MCQuestion, EssayQuestion } from './introRiskData'
 import { setTrainingStartDateFromTask1Start, getTrainingStartDate } from './trainingWbsData'
@@ -216,32 +217,6 @@ export function IntroPage() {
     setCurrentResult(null)
   }, [currentQuestion?.id])
 
-  // ── [開発用] はじめにリセット ────────────────────────────────────────────
-  const handleDevReset = async () => {
-    if (!window.confirm('【開発用】はじめにの進捗をすべてリセットしますか？\n（localStorageとDynamoDBの両方をリセットします）')) return
-    clearIntroForCurrentUser()
-    const username = getCurrentDisplayName().trim().toLowerCase()
-    if (username && username !== 'admin' && isProgressApiAvailable()) {
-      const base = serverSnapshot ?? EMPTY_SNAPSHOT
-      await postProgress(username, {
-        ...base,
-        introConfirmed: false,
-        introAt: null,
-        introStep: 1,
-        introRiskAnswers: {},
-        updatedAt: new Date().toISOString(),
-      })
-    }
-    setStep(1)
-    setSectionQIdx(0)
-    setRiskAnswers({})
-    setMcSelected([])
-    setMcResult(null)
-    setCurrentInput('')
-    setCurrentResult(null)
-    setFreshCompletion(false)
-  }
-
   // ── 中断して保存（Step1〜4） ──────────────────────────────────────────────
   const handleSuspend = async () => {
     if (isSaving) return
@@ -431,18 +406,9 @@ export function IntroPage() {
   // ── レイアウトヘルパー ────────────────────────────────────────────────────
   const topBar = (
     <div className="flex items-center justify-between mb-6">
-      <div>
-        {step > 1 && step < 5 && (
-          <button
-            type="button"
-            onClick={handleDevReset}
-            className="rounded-lg px-3 py-1.5 text-xs font-medium text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100"
-          >
-            🔧 はじめにをリセット（開発用）
-          </button>
-        )}
-      </div>
-      {/* Step1〜4: 中断して保存ボタン / Step5: シンプルなトップへボタン */}
+      <button type="button" onClick={() => { void handleSuspend() }} className="cursor-pointer hover:opacity-80">
+        <NeOSLogo height={32} />
+      </button>
       {step >= 1 && step <= 4 ? (
         <div className="flex flex-col items-end gap-1">
           <button

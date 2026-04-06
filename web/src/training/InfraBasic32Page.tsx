@@ -11,6 +11,7 @@ import type { MouseEvent } from 'react'
 import { getCurrentDisplayName } from '../auth'
 import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
+import { NeOSLogo } from '../components/NeOSLogo'
 
 const EMPTY_SNAPSHOT: TraineeProgressSnapshot = {
   introConfirmed: false, introAt: null, wbsPercent: 0,
@@ -414,12 +415,9 @@ export function InfraBasic32Page() {
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-3xl space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">TRAINING · INFRA BASIC</p>
-            <h1 className="mt-1 text-xl font-semibold text-slate-800">
-              インフラ基礎課題3-2 OS・仮想化・クラウド 理解度チェック
-            </h1>
-          </div>
+          <button type="button" onClick={() => { void handleSuspend() }} className="cursor-pointer hover:opacity-80">
+            <NeOSLogo height={32} />
+          </button>
           <div className="flex flex-col items-end gap-1">
             <button
               type="button"

@@ -3,6 +3,7 @@ import { getCurrentUsername } from '../auth'
 import { VI_STEPS, SHELL_QUESTIONS, type InfraBasic4Rag } from './InfraBasic4Data'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
+import { NeOSLogo } from '../components/NeOSLogo'
 
 const EMPTY_SNAPSHOT: TraineeProgressSnapshot = {
   introConfirmed: false, introAt: null, wbsPercent: 0,
@@ -169,15 +170,9 @@ export function InfraBasic4Page() {
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-2xl space-y-6">
         <header className="flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-              TRAINING · INFRA BASIC
-            </p>
-            <h1 className="mt-1 text-xl font-semibold text-slate-800">インフラ基礎課題4（vi & シェルスクリプト演習）</h1>
-            <p className="mt-1 text-xs text-slate-600">
-              4-1 vi操作と 4-2 シェルスクリプトの厳選20問を、ブラウザ上のターミナル風シミュレーターで実施します。
-            </p>
-          </div>
+          <button type="button" onClick={() => { void handleSuspend() }} className="cursor-pointer hover:opacity-80">
+            <NeOSLogo height={32} />
+          </button>
           <div className="flex flex-col items-end gap-1">
             <button
               type="button"

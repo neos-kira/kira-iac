@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { OpenInNewTabButton } from '../components/OpenInNewTabButton'
+import { NeOSLogo } from '../components/NeOSLogo'
 import { getTaskProgressList, getTrainingStartDate, clearTask1Cache } from './trainingWbsData'
 import { getCurrentDisplayName } from '../auth'
 import { fetchMyProgress } from '../progressApi'
@@ -12,7 +12,6 @@ function getTrainingUrl(path: string) {
 }
 
 export function InfraBasicTopPage() {
-  const navigate = useNavigate()
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const taskProgress = getTaskProgressList().find((t) => t.id === 'infra-basic-1')
 
@@ -38,16 +37,8 @@ export function InfraBasicTopPage() {
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">TRAINING · INFRA</p>
-            <h1 className="mt-1 text-xl font-semibold text-slate-800">インフラ基礎課題1</h1>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-          >
-            トップへ戻る
+          <button type="button" onClick={() => { window.location.hash = '#/' }} className="cursor-pointer hover:opacity-80">
+            <NeOSLogo height={32} />
           </button>
         </div>
 

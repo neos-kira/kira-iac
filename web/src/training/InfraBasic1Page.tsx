@@ -10,6 +10,7 @@ import {
 } from './infraBasic1Data'
 import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
 import { getCurrentDisplayName } from '../auth'
+import { NeOSLogo } from '../components/NeOSLogo'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 
 const EMPTY_SNAPSHOT: TraineeProgressSnapshot = {
@@ -211,12 +212,9 @@ export function InfraBasic1Page() {
       <div className="mx-auto max-w-2xl space-y-6">
         {/* ヘッダー */}
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-              TRAINING · INFRA BASIC
-            </p>
-            <h1 className="mt-1 text-xl font-semibold text-slate-800">インフラ基礎演習1</h1>
-          </div>
+          <button type="button" onClick={() => { void handleSuspend() }} className="cursor-pointer hover:opacity-80">
+            <NeOSLogo height={32} />
+          </button>
           <div className="flex flex-col items-end gap-1">
             <button
               type="button"

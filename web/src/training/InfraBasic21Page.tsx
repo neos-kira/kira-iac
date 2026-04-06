@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { NeOSLogo } from '../components/NeOSLogo'
 import { getProgressKey } from './trainingWbsData'
 import {
   INFRA_BASIC_21_DEFAULT_STATE,
@@ -40,7 +40,6 @@ function copyToClipboard(text: string): Promise<boolean> {
 }
 
 export function InfraBasic21Page() {
-  const navigate = useNavigate()
   const storageKey = getProgressKey(INFRA_BASIC_21_STORAGE_KEY)
   const [state, setState] = useState<InfraBasic21StoredState>(() => loadInfraBasic21State(storageKey))
   const [copiedReport, setCopiedReport] = useState(false)
@@ -354,18 +353,8 @@ export function InfraBasic21Page() {
       <div className="mx-auto max-w-3xl space-y-6">
         {/* ヘッダー */}
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-              TRAINING · INFRA BASIC
-            </p>
-            <h1 className="mt-1 text-xl font-semibold text-slate-800">インフラ基礎課題2-1 ネットワーク実践編</h1>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-slate-500 hover:text-slate-800"
-          >
-            トップへ戻る
+          <button type="button" onClick={() => { window.location.hash = '#/' }} className="cursor-pointer hover:opacity-80">
+            <NeOSLogo height={32} />
           </button>
         </div>
 

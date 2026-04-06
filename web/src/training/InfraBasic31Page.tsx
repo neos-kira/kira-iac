@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { getProgressKey } from './trainingWbsData'
 import { INFRA_BASIC_3_1_DONE_KEY } from './infraBasic3Data'
 import { getCurrentDisplayName } from '../auth'
 import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
+import { NeOSLogo } from '../components/NeOSLogo'
 
 export function InfraBasic31Page() {
-  const navigate = useNavigate()
   const key = getProgressKey(INFRA_BASIC_3_1_DONE_KEY)
   const [ack, setAck] = useState(() => {
     if (typeof window === 'undefined') return false
@@ -50,16 +49,8 @@ export function InfraBasic31Page() {
       <div className="mx-auto max-w-3xl space-y-6">
         {/* ヘッダー */}
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-8000">TRAINING · INFRA BASIC</p>
-            <h1 className="mt-1 text-xl font-semibold text-slate-800">インフラ基礎課題3-1 OS・仮想化・クラウドの理解</h1>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-          >
-            トップへ戻る
+          <button type="button" onClick={() => { window.location.hash = '#/' }} className="cursor-pointer hover:opacity-80">
+            <NeOSLogo height={32} />
           </button>
         </div>
 

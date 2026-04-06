@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { NeOSLogo } from '../components/NeOSLogo'
 import {
   getTaskProgressList,
   getTrainingStartDate,
@@ -21,7 +21,6 @@ function getTrainingUrl(path: string) {
 }
 
 export function InfraWbsPage() {
-  const navigate = useNavigate()
   const [progressList, setProgressList] = useState(() => getTaskProgressList())
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const startDate = getTrainingStartDate()
@@ -161,21 +160,8 @@ export function InfraWbsPage() {
     <div className="min-h-screen bg-slate-50 p-6 text-slate-800">
       <div className="mx-auto max-w-2xl space-y-8">
         <header className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-8000">
-              TRAINING · WBS
-            </p>
-            <h1 className="mt-1 text-xl font-semibold text-slate-800">インフラ基礎 研修WBS</h1>
-            <p className="mt-1 text-[11px] text-slate-8000">
-              ※ 期限は土日祝日を除く営業日で計算しています
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-          >
-            トップへ戻る
+          <button type="button" onClick={() => { window.location.hash = '#/' }} className="cursor-pointer hover:opacity-80">
+            <NeOSLogo height={32} />
           </button>
         </header>
 
