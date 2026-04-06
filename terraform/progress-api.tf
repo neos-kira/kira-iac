@@ -101,7 +101,7 @@ resource "aws_apigatewayv2_api" "progress" {
   cors_configuration {
     allow_origins     = ["https://training-org.neos-nic.jp", "https://d207ajp3bvbh1h.cloudfront.net"]
     allow_methods     = ["GET", "PUT", "POST", "DELETE", "OPTIONS"]
-    allow_headers     = ["Content-Type", "x-session-token", "Authorization"]
+    allow_headers     = ["Content-Type", "x-session-token", "Authorization", "Cache-Control"]
     allow_credentials = true
   }
   tags = local.tags
@@ -126,12 +126,6 @@ resource "aws_apigatewayv2_route" "progress_get" {
   target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
 }
 
-resource "aws_apigatewayv2_route" "progress_options" {
-  api_id    = aws_apigatewayv2_api.progress.id
-  route_key = "OPTIONS /progress"
-  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
-}
-
 # アカウント作成・一覧・認証チェック用のルート
 resource "aws_apigatewayv2_route" "accounts_post" {
   api_id    = aws_apigatewayv2_api.progress.id
@@ -142,12 +136,6 @@ resource "aws_apigatewayv2_route" "accounts_post" {
 resource "aws_apigatewayv2_route" "accounts_get" {
   api_id    = aws_apigatewayv2_api.progress.id
   route_key = "GET /accounts"
-  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
-}
-
-resource "aws_apigatewayv2_route" "accounts_options" {
-  api_id    = aws_apigatewayv2_api.progress.id
-  route_key = "OPTIONS /accounts"
   target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
 }
 
@@ -163,21 +151,9 @@ resource "aws_apigatewayv2_route" "accounts_password_put" {
   target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
 }
 
-resource "aws_apigatewayv2_route" "accounts_password_options" {
-  api_id    = aws_apigatewayv2_api.progress.id
-  route_key = "OPTIONS /accounts/password"
-  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
-}
-
 resource "aws_apigatewayv2_route" "auth_check_post" {
   api_id    = aws_apigatewayv2_api.progress.id
   route_key = "POST /auth/check"
-  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
-}
-
-resource "aws_apigatewayv2_route" "auth_check_options" {
-  api_id    = aws_apigatewayv2_api.progress.id
-  route_key = "OPTIONS /auth/check"
   target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
 }
 
@@ -187,21 +163,9 @@ resource "aws_apigatewayv2_route" "auth_login_post" {
   target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
 }
 
-resource "aws_apigatewayv2_route" "auth_login_options" {
-  api_id    = aws_apigatewayv2_api.progress.id
-  route_key = "OPTIONS /auth/login"
-  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
-}
-
 resource "aws_apigatewayv2_route" "auth_logout_post" {
   api_id    = aws_apigatewayv2_api.progress.id
   route_key = "POST /auth/logout"
-  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
-}
-
-resource "aws_apigatewayv2_route" "auth_logout_options" {
-  api_id    = aws_apigatewayv2_api.progress.id
-  route_key = "OPTIONS /auth/logout"
   target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
 }
 
@@ -211,33 +175,15 @@ resource "aws_apigatewayv2_route" "auth_me_get" {
   target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
 }
 
-resource "aws_apigatewayv2_route" "auth_me_options" {
-  api_id    = aws_apigatewayv2_api.progress.id
-  route_key = "OPTIONS /auth/me"
-  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
-}
-
 resource "aws_apigatewayv2_route" "auth_verify_password_post" {
   api_id    = aws_apigatewayv2_api.progress.id
   route_key = "POST /auth/verify-password"
   target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
 }
 
-resource "aws_apigatewayv2_route" "auth_verify_password_options" {
-  api_id    = aws_apigatewayv2_api.progress.id
-  route_key = "OPTIONS /auth/verify-password"
-  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
-}
-
 resource "aws_apigatewayv2_route" "ai_score_post" {
   api_id    = aws_apigatewayv2_api.progress.id
   route_key = "POST /ai/score"
-  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
-}
-
-resource "aws_apigatewayv2_route" "ai_score_options" {
-  api_id    = aws_apigatewayv2_api.progress.id
-  route_key = "OPTIONS /ai/score"
   target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
 }
 
