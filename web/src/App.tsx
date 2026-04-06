@@ -9,9 +9,9 @@ import { OpenInNewTabButton } from './components/OpenInNewTabButton'
 import { NeOSLogo } from './components/NeOSLogo'
 import type { CommandResolution } from './commandRouter'
 import { resolveCommand } from './commandRouter'
-import { L1_CLEARED_KEY, L1_PROGRESS_KEY } from './training/linuxLevel1Data'
-import { L2_PROGRESS_KEY, TCPIP_LEVEL2_QUESTIONS, L2_CLEARED_KEY } from './training/linuxLevel2Data'
-import { INFRA_BASIC_1_CLEARED_KEY, INFRA_BASIC_1_PARAMS, INFRA_BASIC_1_STORAGE_KEY } from './training/infraBasic1Data'
+import { L1_CLEARED_KEY } from './training/linuxLevel1Data'
+import { L2_CLEARED_KEY } from './training/linuxLevel2Data'
+import { INFRA_BASIC_1_CLEARED_KEY, INFRA_BASIC_1_PARAMS } from './training/infraBasic1Data'
 import { INFRA_BASIC_3_2_CLEARED_KEY } from './training/infraBasic3Data'
 import {
   getProgressKey,
@@ -123,18 +123,6 @@ function getTrainingUrl(path: string) {
   return `${base}#${path}`
 }
 
-/** 途中保存（未完了）のセッションがあるときだけ true */
-function hasInProgressSession(storageKey: string, total: number): boolean {
-  if (typeof window === 'undefined') return false
-  try {
-    const raw = window.localStorage.getItem(storageKey)
-    if (!raw) return false
-    const parsed = JSON.parse(raw) as { answers?: unknown[] }
-    return Array.isArray(parsed.answers) && parsed.answers.length > 0 && parsed.answers.length < total
-  } catch {
-    return false
-  }
-}
 
 function handleLogout() {
   if (typeof window === 'undefined') return
@@ -205,8 +193,6 @@ function App() {
   const [input, setInput] = useState('')
   const [resolution, setResolution] = useState<CommandResolution | null>(null)
   const [isThinking, setIsThinking] = useState(false)
-  const [canResumeL1, setCanResumeL1] = useState(false)
-  const [canResumeL2, setCanResumeL2] = useState(false)
   const [trainingStatus, setTrainingStatus] = useState<TrainingStatus>(() => readTrainingStatus())
   /** 初期値 null = 未ロード。サーバー取得完了まで PUT をブロックするため。 */
   const [pinnedTraining, setPinnedTraining] = useState<PinnableId[] | null>(null)
@@ -226,7 +212,6 @@ function App() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const [canResumeInfra1, setCanResumeInfra1] = useState(false)
   const [ec2Snapshots, setEc2Snapshots] = useState<Record<string, import('./progressApi').TraineeProgressFromApi>>({})
   const [ec2EditHost, setEc2EditHost] = useState<Record<string, string>>({})
   const [ec2EditUsername, setEc2EditUsername] = useState<Record<string, string>>({})
@@ -378,35 +363,7 @@ function App() {
   const updateFromStorage = useCallback(() => {
     if (typeof window === 'undefined') return
     try {
-      // L1: partsCleared ベースで途中確認（hasInProgressSession はL2用の形式なので使えない）
-      try {
-        const l1Raw = window.localStorage.getItem(getProgressKey(L1_PROGRESS_KEY))
-        if (l1Raw) {
-          const l1p = JSON.parse(l1Raw) as { partsCleared?: boolean[] }
-          const pc = Array.isArray(l1p.partsCleared) ? l1p.partsCleared : []
-          setCanResumeL1(pc.some(Boolean) && !pc.every(Boolean))
-        } else {
-          setCanResumeL1(false)
-        }
-      } catch {
-        setCanResumeL1(false)
-      }
-      setCanResumeL2(hasInProgressSession(getProgressKey(L2_PROGRESS_KEY), TCPIP_LEVEL2_QUESTIONS.length))
-      // infra1-1: チェックボックス進捗あり かつ未クリア
-      try {
-        const i1Raw = window.localStorage.getItem(getProgressKey(INFRA_BASIC_1_STORAGE_KEY))
-        const i1Cleared = window.localStorage.getItem(getProgressKey(INFRA_BASIC_1_CLEARED_KEY)) === 'true'
-        if (i1Raw && !i1Cleared) {
-          const i1p = JSON.parse(i1Raw) as { checkboxes?: boolean[] }
-          setCanResumeInfra1(Array.isArray(i1p.checkboxes) && i1p.checkboxes.some(Boolean))
-        } else {
-          setCanResumeInfra1(false)
-        }
-      } catch {
-        setCanResumeInfra1(false)
-      }
       setTrainingStatus(readTrainingStatus())
-      // ピン留めはサーバー同期のため localStorage からは再読込しない（上書き防止）
     } catch {
       // ignore
     }
@@ -1123,15 +1080,10 @@ function App() {
 
               // ① はじめに途中（step 2-4）
               if (!introConfirmed && introStep >= 2 && introStep <= 4) {
-                const stepLabel =
-                  introStep === 2 ? 'AI利用・機密保持 Step2/5' :
-                  introStep === 3 ? '物理セキュリティ Step3/5' :
-                                    'インシデント報告 Step4/5'
                 return (
                   <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">はじめに（途中から再開）</h2>
-                    <p className="mt-1 text-sm text-slate-700">{stepLabel}</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">はじめに（途中から再開）Step {introStep}/5</h2>
                     <button type="button" onClick={() => window.open(getTrainingUrl('/training/intro'), '_blank')} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">続きから始める →</button>
                   </div>
                 )
@@ -1161,8 +1113,8 @@ function App() {
                 return (
                   <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">課題1-2 Linuxコマンド（途中から再開）</h2>
-                    <p className="mt-1 text-sm text-slate-700">{partLabel} {l1Q + 1}/10問</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">課題1-2 Linuxコマンド</h2>
+                    <p className="mt-1 text-sm text-slate-700">{partLabel} {l1Q}/10問</p>
                     <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level1'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">続きから始める →</button>
                   </div>
                 )
@@ -1174,8 +1126,7 @@ function App() {
                 return (
                   <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">TODAY · NEXT</p>
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">課題2-2 TCP/IP（途中から再開）</h2>
-                    <p className="mt-1 text-sm text-slate-700">{l2Q + 1}/10問</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">課題2-2 TCP/IP {l2Q}/10問</h2>
                     <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level2'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">続きから始める →</button>
                   </div>
                 )
@@ -1553,51 +1504,6 @@ function App() {
             </section>
           )}
 
-          {(canResumeL1 || canResumeL2 || canResumeInfra1) && getDisplayName()?.toLowerCase() !== 'admin' && getIntroConfirmed(serverSnapshot?.introStep) && (
-            <section className="mt-6 w-full max-w-2xl rounded-2xl border border-amber-300 bg-amber-50/80 p-4 text-[11px] text-slate-700 shadow-sm">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-amber-700">
-                    TRAINING · RESUME
-                  </p>
-                  <p className="mt-1 text-xs font-medium text-slate-800">中断中の研修にすぐ戻れます</p>
-                  <p className="mt-1 text-[11px] text-slate-600">
-                    以前ブラウザで解いていた問題の続きに、そのままジャンプします。新しいタブで開きます。
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                {canResumeL1 && (
-                  <button
-                    type="button"
-                    onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level1'))}
-                    className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-amber-50"
-                  >
-                    課題1-2: 第{(serverSnapshot?.l1CurrentPart ?? 0) + 1}部 {(serverSnapshot?.l1CurrentQuestion ?? 0) + 1}/10問から再開 →
-                  </button>
-                )}
-                {canResumeL2 && (
-                  <button
-                    type="button"
-                    onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level2'))}
-                    className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-amber-50"
-                  >
-                    課題2-2: {(serverSnapshot?.l2CurrentQuestion ?? 0) + 1}/10問から再開 →
-                  </button>
-                )}
-                {canResumeInfra1 && (
-                  <button
-                    type="button"
-                    onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-1'))}
-                    className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-amber-50"
-                  >
-                    課題1-1: 途中から再開 →
-                  </button>
-                )}
-              </div>
-            </section>
-          )}
 
           </>
           )}
