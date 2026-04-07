@@ -1036,8 +1036,8 @@ function App() {
           ) : (
           <>
           <div className="w-full max-w-2xl space-y-6">
-            {/* はじめに未開始時のみ：案内バナーを表示（途中の場合は「つづきから」カードで対応） */}
-            {serverSnapshot && !getIntroConfirmed(serverSnapshot.introStep) && (serverSnapshot.introStep ?? 1) <= 1 && (
+            {/* はじめに未開始時（introStepが0または未設定）のみ：案内バナーを表示 */}
+            {serverSnapshot && !getIntroConfirmed(serverSnapshot.introStep) && !serverSnapshot.introStep && (
               <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 shadow-sm">
                 <p className="text-sm font-semibold text-amber-800">はじめに</p>
                 <p className="mt-2 text-sm text-slate-700">
@@ -1055,12 +1055,13 @@ function App() {
               const snap = serverSnapshot
               if (!snap) return null // DynamoDB取得完了前は表示しない
 
-              const introStep = snap.introStep ?? 1
+              const introStep = snap.introStep ?? 0
               const introConfirmed = getIntroConfirmed(snap.introStep)
 
-              // ① はじめに途中（step 2-4）
-              if (!introConfirmed && introStep >= 2 && introStep <= 4) {
+              // ① はじめに途中（step 1-4）
+              if (!introConfirmed && introStep >= 1 && introStep <= 4) {
                 const stepLabels: Record<number, string> = {
+                  1: 'はじめに · 行動基準の確認 Step1/5',
                   2: 'はじめに · AI利用・機密保持 Step2/5',
                   3: 'はじめに · 物理セキュリティ Step3/5',
                   4: 'はじめに · インシデント報告 Step4/5',
@@ -1070,7 +1071,7 @@ function App() {
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">{stepLabels[introStep]}</p>
-                    <button type="button" onClick={() => window.open(getTrainingUrl('/training/intro'), '_blank')} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
+                    <button type="button" onClick={() => { window.location.hash = '#/training/intro' }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }

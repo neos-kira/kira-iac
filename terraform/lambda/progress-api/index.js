@@ -98,8 +98,8 @@ async function handler(event) {
         // 課題クリア状態
         infra1Cleared: typeof body.infra1Cleared === 'boolean' ? body.infra1Cleared : false,
         l1Cleared: typeof body.l1Cleared === 'boolean' ? body.l1Cleared : false,
-        // 導入課題 中断・再開
-        introStep: typeof body.introStep === 'number' ? body.introStep : 1,
+        // 導入課題 中断・再開（デフォルトは0=未開始）
+        introStep: typeof body.introStep === 'number' ? body.introStep : 0,
         introRiskAnswers: body.introRiskAnswers && typeof body.introRiskAnswers === 'object' ? body.introRiskAnswers : {},
       }
       await client.send(new PutItemCommand({ TableName, Item: marshall(Item, { removeUndefinedValues: true }) }))

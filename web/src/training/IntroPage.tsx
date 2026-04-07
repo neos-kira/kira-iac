@@ -168,8 +168,16 @@ export function IntroPage() {
       return
     }
 
-    fetchMyProgress(username).then((snap) => {
-      if (!snap) {
+    fetchMyProgress(username).then(async (snap) => {
+      // snapが存在しない、またはintroStepが未設定/0の場合は新規開始としてintroStep=1で初期化保存
+      if (!snap || !snap.introStep) {
+        const base = snap ?? EMPTY_SNAPSHOT
+        const initialized = { ...base, introStep: 1, updatedAt: new Date().toISOString() }
+        if (isProgressApiAvailable()) {
+          await postProgress(username, initialized)
+        }
+        setServerSnapshot(initialized)
+        setStep(1)
         setIsLoadingProgress(false)
         return
       }
