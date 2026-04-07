@@ -1110,7 +1110,7 @@ function App() {
                   <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
-                    <p className="mt-1 text-sm text-slate-700">課題1-2 · {partLabel} {l1Q}/10問</p>
+                    <p className="mt-1 text-sm text-slate-700">課題1-2 · {partLabel} {l1Q + 1}/10問</p>
                     <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level1'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
@@ -1136,7 +1136,7 @@ function App() {
                   <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
-                    <p className="mt-1 text-sm text-slate-700">課題2-2 · TCP/IP {l2Q}/10問</p>
+                    <p className="mt-1 text-sm text-slate-700">課題2-2 · TCP/IP {l2Q + 1}/10問</p>
                     <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level2'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
