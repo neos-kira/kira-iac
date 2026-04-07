@@ -247,15 +247,6 @@ function App() {
     return Number(snap?.introStep ?? 0) >= 5 && snap?.introConfirmed === true
   }
 
-  /** インフラ課題系URL: はじめに未完了ならポップアップ、完了なら開く */
-  function openInfraOrShowIntro(url: string) {
-    if (checkIntroCompletedNow()) {
-      window.open(url, '_blank')
-    } else {
-      setShowIntroRequiredPopup(true)
-    }
-  }
-
   function goToIntroAndClosePopup() {
     setShowIntroRequiredPopup(false)
     window.location.hash = '#/training/intro'
@@ -792,7 +783,10 @@ function App() {
                   return (
                     <button
                       type="button"
-                      onClick={() => openInfraOrShowIntro(badgeUrl)}
+                      onClick={() => {
+                        if (checkIntroCompletedNow()) window.open(badgeUrl, '_blank')
+                        else setShowIntroRequiredPopup(true)
+                      }}
                       title={badgeLabel}
                       className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 shrink-0 hover:bg-amber-200"
                     >
@@ -1386,7 +1380,10 @@ function App() {
                     pinnedTraining={pinnedTraining ?? []}
                     trainingStatus={trainingStatus}
                     onTogglePin={handleTogglePin}
-                    onOpenInfraOrShowIntro={openInfraOrShowIntro}
+                    onOpenInfraOrShowIntro={(url: string) => {
+                      if (checkIntroCompletedNow()) window.open(url, '_blank')
+                      else setShowIntroRequiredPopup(true)
+                    }}
                     onOpenIntro={() => { window.location.hash = '#/training/intro' }}
                     onOpenWbs={() => {
                       if (checkIntroCompletedNow()) window.location.hash = '#/training/infra-wbs'
@@ -1458,7 +1455,10 @@ function App() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-top'))}
+                      onClick={() => {
+                        if (checkIntroCompletedNow()) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank')
+                        else setShowIntroRequiredPopup(true)
+                      }}
                       className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700"
                     >
                       別タブで開く
@@ -1494,7 +1494,10 @@ function App() {
                     <button
                       type="button"
                       disabled={!isKiraTest && !(trainingStatus.infraToolsCleared && trainingStatus.linuxL1Cleared)}
-                      onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-2-top'))}
+                      onClick={() => {
+                        if (checkIntroCompletedNow()) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank')
+                        else setShowIntroRequiredPopup(true)
+                      }}
                       className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       別タブで開く
@@ -1531,7 +1534,10 @@ function App() {
                     <button
                       type="button"
                       disabled={!isKiraTest && !trainingStatus.linuxL2Cleared}
-                      onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-3-top'))}
+                      onClick={() => {
+                        if (checkIntroCompletedNow()) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
+                        else setShowIntroRequiredPopup(true)
+                      }}
                       className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       別タブで開く
