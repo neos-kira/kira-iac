@@ -24,6 +24,14 @@ function json(body, status = 200) {
   }
 }
 
+/** GET /progress 用：introConfirmed が未設定/false のレコードに対して introStep から推定する */
+function inferIntroConfirmed(item, inferredStep) {
+  if (item.introConfirmed === true) return true
+  // introStep が 5 以上なら完了済みとみなす
+  if (Number.isFinite(inferredStep) && inferredStep >= 5) return true
+  return false
+}
+
 /** GET /progress 用：introStep が未設定または0のレコードに対して他フィールドから推定する */
 function inferIntroStep(item) {
   // introStep が 1 以上で設定されている場合はそのまま使う（0/null/undefined は推定対象）
@@ -201,8 +209,12 @@ async function handler(event) {
       if (session.username !== 'admin') {
         trainees = trainees.filter((t) => (t.traineeId || '').toLowerCase() === session.username.toLowerCase())
       }
-      // introStep が未設定のレコードに対して他フィールドから推定して補完する
-      trainees = trainees.map((t) => ({ ...t, introStep: inferIntroStep(t) }))
+      // introStep / introConfirmed が未設定のレコードに対して他フィールドから推定して補完する
+      trainees = trainees.map((t) => {
+        const introStep = inferIntroStep(t)
+        const introConfirmed = inferIntroConfirmed(t, introStep)
+        return { ...t, introStep, introConfirmed }
+      })
       return json({ trainees })
     }
 
