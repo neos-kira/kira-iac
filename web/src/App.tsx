@@ -659,6 +659,7 @@ function App() {
   }
 
   /** 受講生画面用：サーバー側の最新進捗（DynamoDB）のスナップショットを定期取得して同期表示に使う */
+  const prevSnapshotStrRef = useRef('')
   useEffect(() => {
     if (isAdminView || !isProgressApiAvailable() || typeof window === 'undefined') return
     const name = getDisplayName().trim().toLowerCase()
@@ -667,12 +668,15 @@ function App() {
     let cancelled = false
     const load = async () => {
       const snap = await fetchMyProgress(name)
-      if (!cancelled && snap) {
-        if (snap.introConfirmed && (snap.introStep ?? 0) < 5) {
-          clearIntroForCurrentUser()
-        }
-        setServerSnapshot(snap)
+      if (cancelled || !snap) return
+      if (snap.introConfirmed && (snap.introStep ?? 0) < 5) {
+        clearIntroForCurrentUser()
       }
+      // 前回と同じデータならstate更新しない（チラつき防止）
+      const newStr = JSON.stringify(snap)
+      if (newStr === prevSnapshotStrRef.current) return
+      prevSnapshotStrRef.current = newStr
+      setServerSnapshot(snap)
     }
     void load()
     const id = window.setInterval(() => {
@@ -1036,30 +1040,43 @@ function App() {
           ) : (
           <>
           <div className="w-full max-w-2xl space-y-6">
-            {/* はじめに未開始時（introStepが0または未設定）のみ：案内バナーを表示 */}
-            {serverSnapshot && !getIntroConfirmed(serverSnapshot.introStep) && !serverSnapshot.introStep && (
-              <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 shadow-sm">
-                <p className="text-sm font-semibold text-amber-800">はじめに</p>
-                <p className="mt-2 text-sm text-slate-700">
-                  インフラ基礎課題に進む前に、「はじめに」でプロフェッショナルとしての行動基準を確認してください。
-                </p>
-                <OpenInNewTabButton
-                  url={getTrainingUrl('/training/intro')}
-                  label="はじめに"
-                  className="mt-4 inline-flex rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
-                />
-              </div>
-            )}
-            {/* つづきから: serverSnapshot取得完了後に優先順位で最初に一致するカードを表示 */}
+            {/* つづきから / はじめに案内バナー: serverSnapshot確定後に一度だけ表示を決定 */}
             {(() => {
+              // ── ローディング: serverSnapshot未取得時はスケルトンのみ表示 ──
+              if (!serverSnapshot) {
+                return (
+                  <div className="rounded-2xl border-2 border-slate-200 bg-slate-100 p-6 shadow-sm animate-pulse">
+                    <div className="h-3 w-20 rounded bg-slate-200" />
+                    <div className="mt-3 h-5 w-32 rounded bg-slate-200" />
+                    <div className="mt-3 h-4 w-3/4 rounded bg-slate-200" />
+                    <div className="mt-5 h-10 w-36 rounded-xl bg-slate-200" />
+                  </div>
+                )
+              }
+
               const snap = serverSnapshot
-              if (!snap) return null // DynamoDB取得完了前は表示しない
-
               const introStep = snap.introStep ?? 0
-              const introConfirmed = getIntroConfirmed(snap.introStep)
+              const introCompleted = introStep === 5 && snap.introConfirmed === true
 
-              // ① はじめに途中（step 1-4）
-              if (!introConfirmed && introStep >= 1 && introStep <= 4) {
+              // ── ③ introStepが0/未設定（新規ユーザー）: はじめに案内バナーのみ ──
+              if (!introCompleted && (!introStep || introStep === 0)) {
+                return (
+                  <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 shadow-sm">
+                    <p className="text-sm font-semibold text-amber-800">はじめに</p>
+                    <p className="mt-2 text-sm text-slate-700">
+                      インフラ基礎課題に進む前に、「はじめに」でプロフェッショナルとしての行動基準を確認してください。
+                    </p>
+                    <OpenInNewTabButton
+                      url={getTrainingUrl('/training/intro')}
+                      label="はじめに"
+                      className="mt-4 inline-flex rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
+                    />
+                  </div>
+                )
+              }
+
+              // ── ① introStep 1-4（はじめに途中）: つづきからカードのみ ──
+              if (!introCompleted && introStep >= 1 && introStep <= 4) {
                 const stepLabels: Record<number, string> = {
                   1: 'はじめに · 行動基準の確認 Step1/5',
                   2: 'はじめに · AI利用・機密保持 Step2/5',
@@ -1076,22 +1093,10 @@ function App() {
                 )
               }
 
-              if (!introConfirmed) return null
+              // ── ② introStep 5 完了済み: 課題進捗で「つづきから」を判定 ──
+              if (!introCompleted) return null
 
-              // ② 課題1-1が途中
-              const infra1InProgress = (snap.infra1Checkboxes ?? []).some(Boolean) && !(snap.infra1Cleared ?? false)
-              if (infra1InProgress) {
-                return (
-                  <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
-                    <p className="mt-1 text-sm text-slate-700">課題1-1 ツール演習</p>
-                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-1'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
-                  </div>
-                )
-              }
-
-              // ③ 課題1-2が途中
+              // 課題1-2途中（最優先）
               const l1Part = snap.l1CurrentPart ?? 0
               const l1Q = snap.l1CurrentQuestion ?? 0
               const l1InProgress = (l1Part > 0 || l1Q > 0) && !(snap.l1Cleared ?? false)
@@ -1102,76 +1107,78 @@ function App() {
                   <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
-                    <p className="mt-1 text-sm text-slate-700">課題1-2 Linuxコマンド · {partLabel} {l1Q}/10問</p>
+                    <p className="mt-1 text-sm text-slate-700">課題1-2 · {partLabel} {l1Q}/10問</p>
                     <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level1'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }
 
-              // ④ 課題2-2が途中
+              // 課題1-1途中
+              const infra1InProgress = (snap.infra1Checkboxes ?? []).some(Boolean) && !(snap.infra1Cleared ?? false)
+              if (infra1InProgress) {
+                return (
+                  <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
+                    <p className="mt-1 text-sm text-slate-700">課題1-1 · ツール演習（途中から再開）</p>
+                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-1'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
+                  </div>
+                )
+              }
+
+              // 課題2-2途中
               const l2Q = snap.l2CurrentQuestion ?? 0
               if (l2Q > 0) {
                 return (
                   <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
-                    <p className="mt-1 text-sm text-slate-700">課題2-2 TCP/IP {l2Q}/10問</p>
+                    <p className="mt-1 text-sm text-slate-700">課題2-2 · TCP/IP {l2Q}/10問</p>
                     <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level2'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }
 
-              // ⑤ 課題3-2が途中
+              // 課題3-2途中
               const infra32InProgress = Object.values(snap.infra32Answers ?? {}).some((v) => v && String(v).trim())
               if (infra32InProgress) {
                 return (
                   <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
-                    <p className="mt-1 text-sm text-slate-700">課題3-2 理解度チェック</p>
+                    <p className="mt-1 text-sm text-slate-700">課題3-2 · 理解度チェック(途中から再開)</p>
                     <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-3-2'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }
 
-              // ⑥ 課題4-1が途中
+              // 課題4-1途中
               const vi4Done = (snap.infra4ViDoneSteps ?? []).length
               if (vi4Done > 0 && vi4Done < VI_STEPS.length) {
                 return (
                   <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
-                    <p className="mt-1 text-sm text-slate-700">課題4-1 vi演習</p>
+                    <p className="mt-1 text-sm text-slate-700">課題4-1 · vi演習(途中から再開)</p>
                     <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-4'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }
 
-              // ⑦ 課題4-2が途中
+              // 課題4-2途中
               const shell4Done = (snap.infra4ShellDoneQuestions ?? []).length
               if (shell4Done > 0 && shell4Done < SHELL_QUESTIONS.length) {
                 return (
                   <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
-                    <p className="mt-1 text-sm text-slate-700">課題4-2 シェルスクリプト</p>
+                    <p className="mt-1 text-sm text-slate-700">課題4-2 · シェルスクリプト(途中から再開)</p>
                     <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-4'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }
 
-              // どれも途中でない場合: 課題1-1未開始なら「始める」カード
-              if (!trainingStatus.infraToolsCleared) {
-                return (
-                  <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
-                    <p className="mt-1 text-sm text-slate-700">インフラ基礎課題1-1（ツール演習）に取り組んでください。</p>
-                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-top'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">課題1-1を始める →</button>
-                  </div>
-                )
-              }
-
+              // 全課題完了: つづきからカードを非表示
               return null
             })()}
             {/* j-terada 用：はじめにの下に課題1完了後の案内を表示。課題1クリア前はリンク無効 */}
