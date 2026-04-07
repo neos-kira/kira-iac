@@ -24,6 +24,28 @@ function json(body, status = 200) {
   }
 }
 
+/** GET /progress 用：introStep が未設定のレコードに対して他フィールドから推定する */
+function inferIntroStep(item) {
+  // 既にintroStepが設定されている場合はそのまま使う
+  if (item.introStep !== undefined && item.introStep !== null) {
+    return Number(item.introStep)
+  }
+  // introConfirmedがtrueなら完了済み
+  if (item.introConfirmed === true) {
+    return 5
+  }
+  // 課題の進捗があれば完了済みとみなす
+  if (
+    (Array.isArray(item.chapterProgress) && item.chapterProgress.length > 0) ||
+    (typeof item.l1CurrentPart === 'number' && item.l1CurrentPart > 0) ||
+    (typeof item.l1CurrentQuestion === 'number' && item.l1CurrentQuestion > 0)
+  ) {
+    return 5
+  }
+  // それ以外は未開始
+  return 0
+}
+
 /** セッション検証：有効なセッションオブジェクトを返す。無効なら null。 */
 async function verifySession(event) {
   const token =
@@ -173,6 +195,8 @@ async function handler(event) {
       if (session.username !== 'admin') {
         trainees = trainees.filter((t) => (t.traineeId || '').toLowerCase() === session.username.toLowerCase())
       }
+      // introStep が未設定のレコードに対して他フィールドから推定して補完する
+      trainees = trainees.map((t) => ({ ...t, introStep: inferIntroStep(t) }))
       return json({ trainees })
     }
 

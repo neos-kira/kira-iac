@@ -1060,13 +1060,10 @@ function App() {
               }
 
               const snap = serverSnapshot
-              // introStep を確実に数値型へ変換（DynamoDB Number型が文字列で返るケースに対応）
               const introStep = Number(snap.introStep ?? 0)
-              const introCompleted = introStep === 5 && snap.introConfirmed === true
-              console.log('[Debug] introStep:', snap.introStep, typeof snap.introStep, '→ normalized:', introStep)
 
-              // ── ③ introStepが0/未設定（新規ユーザー）: はじめに案内バナーのみ ──
-              if (!introCompleted && (!introStep || introStep === 0)) {
+              // ── introStepが0: はじめに案内バナーのみ ──
+              if (introStep === 0) {
                 return (
                   <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 shadow-sm">
                     <p className="text-sm font-semibold text-amber-800">はじめに</p>
@@ -1082,8 +1079,8 @@ function App() {
                 )
               }
 
-              // ── ① introStep 1-4（はじめに途中）: つづきからカードのみ ──
-              if (!introCompleted && introStep >= 1 && introStep <= 4) {
+              // ── introStep 1-4: つづきからカード（はじめにの続き）──
+              if (introStep >= 1 && introStep <= 4) {
                 const stepLabels: Record<number, string> = {
                   1: 'はじめに · 行動基準の確認 Step1/5',
                   2: 'はじめに · AI利用・機密保持 Step2/5',
@@ -1100,8 +1097,7 @@ function App() {
                 )
               }
 
-              // ── ② introStep 5 完了済み: 課題進捗で「つづきから」を判定 ──
-              if (!introCompleted) return null
+              // ── introStep 5以上: 課題進捗で「つづきから」を判定 ──
 
               // 課題1-2途中（最優先）
               const l1Part = snap.l1CurrentPart ?? 0
