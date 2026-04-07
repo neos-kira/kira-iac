@@ -16,23 +16,13 @@ function introConfirmedAtKey(): string {
 }
 
 /**
- * はじめに確認済み判定。
- * introStep を渡した場合、DynamoDB の値が 5 未満なら localStorageの値に関わらず false を返す。
- * App.tsx では必ず serverSnapshot?.introStep を引数として渡すこと。
+ * はじめに確認済み判定（serverSnapshotベース、localStorage非依存）。
+ * introStep を必ず渡すこと。引数なしの呼び出しは false を返す。
  */
 export function getIntroConfirmed(introStep?: number): boolean {
-  // DynamoDB の introStep が 5 未満なら未完了扱い（文字列で来ても安全に判定）
-  if (introStep !== undefined && introStep !== null) {
-    const n = Number(introStep)
-    if (Number.isFinite(n) && n < 5) return false
-  }
-  if (typeof window === 'undefined') return false
-  const key = introConfirmedKey()
-  const legacy = window.localStorage.getItem(LEGACY_KEY) === 'true'
-  const perUser = window.localStorage.getItem(key) === 'true'
-  if (perUser) return true
-  if (getCurrentUsername() === '' && legacy) return true
-  return false
+  if (introStep === undefined || introStep === null) return false
+  const n = Number(introStep)
+  return Number.isFinite(n) && n >= 5
 }
 
 /** はじめにクリア日時（ISO文字列）。未クリアなら null */

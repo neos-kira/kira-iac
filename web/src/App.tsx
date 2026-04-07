@@ -21,7 +21,7 @@ import {
 } from './training/trainingWbsData'
 import { isJTerada, J_TERADA_ALLOWED_LINKS } from './specialUsers'
 import { VI_STEPS, SHELL_QUESTIONS } from './training/InfraBasic4Data'
-import { getIntroConfirmed, clearIntroForCurrentUser } from './training/introGate'
+import { clearIntroForCurrentUser } from './training/introGate'
 import { LOGIN_FLAG_KEY, getCurrentDisplayName } from './auth'
 import { restoreProgressToLocalStorage, type TraineeProgressSnapshot } from './traineeProgressStorage'
 import { isProgressApiAvailable, postProgress, fetchMyProgress, fetchProgressFromApi } from './progressApi'
@@ -229,9 +229,14 @@ function App() {
   /** 矢印キーで履歴を選択した場合のみ true。Enter で履歴項目を送信する判定に使用 */
   const historyNavigatedWithKeyboardRef = useRef(false)
 
+  /** はじめに完了判定（serverSnapshotベース、localStorage非依存、全ユーザー共通） */
+  const isIntroCompleted =
+    Number(serverSnapshot?.introStep ?? 0) >= 5 &&
+    serverSnapshot?.introConfirmed === true
+
   /** インフラ課題系URL: はじめに未完了ならポップアップ、完了なら開く */
   function openInfraOrShowIntro(url: string) {
-    if (getIntroConfirmed(serverSnapshot?.introStep)) {
+    if (isIntroCompleted) {
       window.open(url, '_blank')
     } else {
       setShowIntroRequiredPopup(true)
@@ -407,14 +412,14 @@ function App() {
     }
     if (cat === 'linuxLevel1') {
       if (openedRef.current === 'linuxLevel1') return
-      if (!getIntroConfirmed(serverSnapshot?.introStep)) setShowIntroRequiredPopup(true)
+      if (!isIntroCompleted) setShowIntroRequiredPopup(true)
       else {
         window.open(getTrainingUrl('/training/linux-level1'), '_blank')
         openedRef.current = 'linuxLevel1'
       }
     } else if (cat === 'linuxLevel2') {
       if (openedRef.current === 'linuxLevel2') return
-      if (!getIntroConfirmed(serverSnapshot?.introStep)) setShowIntroRequiredPopup(true)
+      if (!isIntroCompleted) setShowIntroRequiredPopup(true)
       else {
         window.open(getTrainingUrl('/training/linux-level2'), '_blank')
         openedRef.current = 'linuxLevel2'
@@ -729,7 +734,7 @@ function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (getIntroConfirmed(serverSnapshot?.introStep)) window.location.hash = '#/training/infra-wbs'
+                    if (isIntroCompleted) window.location.hash = '#/training/infra-wbs'
                     else setShowIntroRequiredPopup(true)
                   }}
                   className={`rounded-full px-3 py-1.5 text-xs font-medium text-white shrink-0 ${delayed ? 'bg-rose-500' : 'bg-emerald-500'}`}
@@ -743,7 +748,7 @@ function App() {
                 {/* はじめに途中（Step2〜4）の場合はヘッダーにバッジ表示 */}
                 {(() => {
                   const step = Number(serverSnapshot?.introStep ?? 0)
-                  if (getIntroConfirmed(serverSnapshot?.introStep)) return null
+                  if (isIntroCompleted) return null
                   if (step < 1 || step > 4) return null
                   return (
                     <button
@@ -1111,7 +1116,10 @@ function App() {
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">課題1-2 · {partLabel} {l1Q + 1}/10問</p>
-                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level1'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
+                    <button type="button" onClick={() => {
+                      if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level1'), '_blank')
+                      else setShowIntroRequiredPopup(true)
+                    }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1124,7 +1132,10 @@ function App() {
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">課題1-1 · ツール演習（途中から再開）</p>
-                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-1'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
+                    <button type="button" onClick={() => {
+                      if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-1'), '_blank')
+                      else setShowIntroRequiredPopup(true)
+                    }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1137,7 +1148,10 @@ function App() {
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">課題2-2 · TCP/IP {l2Q + 1}/10問</p>
-                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/linux-level2'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
+                    <button type="button" onClick={() => {
+                      if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level2'), '_blank')
+                      else setShowIntroRequiredPopup(true)
+                    }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1150,7 +1164,10 @@ function App() {
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">課題3-2 · 理解度チェック(途中から再開)</p>
-                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-3-2'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
+                    <button type="button" onClick={() => {
+                      if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
+                      else setShowIntroRequiredPopup(true)
+                    }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1163,7 +1180,10 @@ function App() {
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">課題4-1 · vi演習(途中から再開)</p>
-                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-4'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
+                    <button type="button" onClick={() => {
+                      if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
+                      else setShowIntroRequiredPopup(true)
+                    }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1176,7 +1196,10 @@ function App() {
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">課題4-2 · シェルスクリプト(途中から再開)</p>
-                    <button type="button" onClick={() => openInfraOrShowIntro(getTrainingUrl('/training/infra-basic-4'))} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
+                    <button type="button" onClick={() => {
+                      if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
+                      else setShowIntroRequiredPopup(true)
+                    }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1353,7 +1376,7 @@ function App() {
                     onOpenInfraOrShowIntro={openInfraOrShowIntro}
                     onOpenIntro={() => { window.location.hash = '#/training/intro' }}
                     onOpenWbs={() => {
-                      if (getIntroConfirmed(serverSnapshot?.introStep)) window.location.hash = '#/training/infra-wbs'
+                      if (isIntroCompleted) window.location.hash = '#/training/infra-wbs'
                       else setShowIntroRequiredPopup(true)
                     }}
                   />

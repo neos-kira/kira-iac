@@ -1,24 +1,42 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getIntroConfirmed } from '../training/introGate'
+import { fetchMyProgress } from '../progressApi'
+import { getCurrentDisplayName } from '../auth'
 
 type Props = { children: React.ReactNode }
 
 /**
  * はじめに（プロフェッショナル確認テスト）未完了の場合、
  * インフラ基礎課題へのアクセスをブロックし /training/intro へリダイレクトする。
+ * serverSnapshotベースで判定する（localStorage非依存）。
  */
 export function IntroGate({ children }: Props) {
   const navigate = useNavigate()
+  const [status, setStatus] = useState<'loading' | 'allowed' | 'blocked'>('loading')
 
   useEffect(() => {
-    if (!getIntroConfirmed()) {
+    let cancelled = false
+    const check = async () => {
+      const username = getCurrentDisplayName().trim().toLowerCase()
+      if (!username || username === 'admin') {
+        if (!cancelled) setStatus('allowed')
+        return
+      }
+      const snap = await fetchMyProgress(username)
+      if (cancelled) return
+      const completed = !!snap && Number(snap.introStep ?? 0) >= 5 && snap.introConfirmed === true
+      setStatus(completed ? 'allowed' : 'blocked')
+    }
+    void check()
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    if (status === 'blocked') {
       navigate('/training/intro', { replace: true })
     }
-  }, [navigate])
+  }, [status, navigate])
 
-  if (!getIntroConfirmed()) {
-    return null
-  }
+  if (status !== 'allowed') return null
   return <>{children}</>
 }
