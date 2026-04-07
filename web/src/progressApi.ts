@@ -160,8 +160,17 @@ export async function fetchMyProgress(traineeId: string): Promise<TraineeProgres
   const me = all.find((t) => (t.traineeId || '').trim().toLowerCase() === id)
   if (!me) return null
   const pins = Array.isArray(me.pins) ? me.pins : []
-  if (typeof console !== 'undefined' && console.log) {
-    console.log('[Sync] fetchMyProgress 取得:', { traineeId: id, pinsCount: pins.length })
-  }
-  return { ...me, pins }
+  // introStep を確実に数値型へ変換（DynamoDB Number型が文字列で返るケースに対応）
+  const rawIntroStep = (me as Record<string, unknown>).introStep
+  const introStep = rawIntroStep === null || rawIntroStep === undefined || rawIntroStep === ''
+    ? 0
+    : Number(rawIntroStep)
+  console.log('[Sync] fetchMyProgress 取得:', {
+    traineeId: id,
+    pinsCount: pins.length,
+    rawIntroStep,
+    rawIntroStepType: typeof rawIntroStep,
+    normalizedIntroStep: introStep,
+  })
+  return { ...me, pins, introStep: Number.isFinite(introStep) ? introStep : 0 }
 }

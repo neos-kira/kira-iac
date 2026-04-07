@@ -21,8 +21,11 @@ function introConfirmedAtKey(): string {
  * App.tsx では必ず serverSnapshot?.introStep を引数として渡すこと。
  */
 export function getIntroConfirmed(introStep?: number): boolean {
-  // DynamoDB の introStep が 5 未満なら未完了扱い
-  if (introStep !== undefined && introStep < 5) return false
+  // DynamoDB の introStep が 5 未満なら未完了扱い（文字列で来ても安全に判定）
+  if (introStep !== undefined && introStep !== null) {
+    const n = Number(introStep)
+    if (Number.isFinite(n) && n < 5) return false
+  }
   if (typeof window === 'undefined') return false
   const key = introConfirmedKey()
   const legacy = window.localStorage.getItem(LEGACY_KEY) === 'true'

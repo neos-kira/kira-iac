@@ -489,7 +489,7 @@ function App() {
       if (snap) {
         // 旧完了ユーザーリセット: introStep < 5 なら introConfirmed を無効化する。
         // 新しい選択式・記述式問題を追加したため、Step5到達済みのみ完了とみなす。
-        if (snap.introConfirmed && (snap.introStep ?? 0) < 5) {
+        if (snap.introConfirmed && Number(snap.introStep ?? 0) < 5) {
           clearIntroForCurrentUser()
         }
         // isDataReady を true にする前に localStorage へ復元する。
@@ -669,7 +669,7 @@ function App() {
     const load = async () => {
       const snap = await fetchMyProgress(name)
       if (cancelled || !snap) return
-      if (snap.introConfirmed && (snap.introStep ?? 0) < 5) {
+      if (snap.introConfirmed && Number(snap.introStep ?? 0) < 5) {
         clearIntroForCurrentUser()
       }
       // 前回と同じデータならstate更新しない（チラつき防止）
@@ -691,7 +691,7 @@ function App() {
   const navigate = useNavigate()
   // 「はじめに」（introStep === 5 かつ introConfirmed）完了後 かつ trainingStartDate が設定されている場合のみ遅延判定する
   const trainingStarted = !!serverSnapshot
-    && serverSnapshot.introStep === 5
+    && Number(serverSnapshot.introStep ?? 0) === 5
     && serverSnapshot.introConfirmed === true
     && !!serverSnapshot.trainingStartDate
   const delayed = trainingStarted && (serverSnapshot?.delayedIds?.length ?? getDelayedTaskIds().length) > 0
@@ -702,7 +702,7 @@ function App() {
         const s = serverSnapshot
         const ch = Array.isArray(s.chapterProgress) ? s.chapterProgress : []
         const subCleared = [
-          (s.introStep ?? 0) >= 5 && s.introConfirmed ? 1 : 0,     // はじめに
+          Number(s.introStep ?? 0) >= 5 && s.introConfirmed ? 1 : 0,     // はじめに
           s.infra1Cleared ? 1 : 0,                                   // 1-1
           s.l1Cleared ? 1 : 0,                                       // 1-2
           ch[1]?.cleared ? 1 : 0,                                    // 2-x
@@ -741,15 +741,20 @@ function App() {
                   全体進捗:{progressPct !== null ? `${progressPct}%` : '--'}
                 </span>
                 {/* はじめに途中（Step2〜4）の場合はヘッダーにバッジ表示 */}
-                {!getIntroConfirmed(serverSnapshot?.introStep) && (serverSnapshot?.introStep ?? 1) >= 2 && (serverSnapshot?.introStep ?? 1) <= 4 && (
-                  <button
-                    type="button"
-                    onClick={() => { window.location.hash = '#/training/intro' }}
-                    className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 shrink-0 hover:bg-amber-200"
-                  >
-                    はじめに Step {serverSnapshot?.introStep ?? 2}/5
-                  </button>
-                )}
+                {(() => {
+                  const step = Number(serverSnapshot?.introStep ?? 0)
+                  if (getIntroConfirmed(serverSnapshot?.introStep)) return null
+                  if (step < 1 || step > 4) return null
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => { window.location.hash = '#/training/intro' }}
+                      className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 shrink-0 hover:bg-amber-200"
+                    >
+                      はじめに Step {step}/5
+                    </button>
+                  )
+                })()}
                 {firstInProgressTask !== null && (() => {
                   const task = firstInProgressTask
                   const hasL1Progress =
@@ -1055,8 +1060,10 @@ function App() {
               }
 
               const snap = serverSnapshot
-              const introStep = snap.introStep ?? 0
+              // introStep を確実に数値型へ変換（DynamoDB Number型が文字列で返るケースに対応）
+              const introStep = Number(snap.introStep ?? 0)
               const introCompleted = introStep === 5 && snap.introConfirmed === true
+              console.log('[Debug] introStep:', snap.introStep, typeof snap.introStep, '→ normalized:', introStep)
 
               // ── ③ introStepが0/未設定（新規ユーザー）: はじめに案内バナーのみ ──
               if (!introCompleted && (!introStep || introStep === 0)) {
