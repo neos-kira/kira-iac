@@ -195,6 +195,8 @@ function App() {
   /** 初期値 null = 未ロード。サーバー取得完了まで PUT をブロックするため。 */
   const [pinnedTraining, setPinnedTraining] = useState<PinnableId[] | null>(null)
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
+  /** ボタン押下時に最新の serverSnapshot を参照するための ref（state遅延を回避） */
+  const serverSnapshotRef = useRef<TraineeProgressSnapshot | null>(null)
   /** サーバー初回 GET が完了し pinnedTraining に反映されるまで true にしない。それまでは保存処理をブロック。 */
   const isDataReady = useRef(false)
   const [showIntroRequiredPopup, setShowIntroRequiredPopup] = useState(false)
@@ -229,14 +231,25 @@ function App() {
   /** 矢印キーで履歴を選択した場合のみ true。Enter で履歴項目を送信する判定に使用 */
   const historyNavigatedWithKeyboardRef = useRef(false)
 
-  /** はじめに完了判定（serverSnapshotベース、localStorage非依存、全ユーザー共通） */
+  /** はじめに完了判定（serverSnapshotベース、レンダリング用） */
   const isIntroCompleted =
     Number(serverSnapshot?.introStep ?? 0) >= 5 &&
     serverSnapshot?.introConfirmed === true
 
+  /** serverSnapshotが更新されるたびにrefを同期する */
+  useEffect(() => {
+    serverSnapshotRef.current = serverSnapshot
+  }, [serverSnapshot])
+
+  /** ボタン押下時の最新値判定（refから取得してstate遅延を回避） */
+  const checkIntroCompletedNow = (): boolean => {
+    const snap = serverSnapshotRef.current
+    return Number(snap?.introStep ?? 0) >= 5 && snap?.introConfirmed === true
+  }
+
   /** インフラ課題系URL: はじめに未完了ならポップアップ、完了なら開く */
   function openInfraOrShowIntro(url: string) {
-    if (isIntroCompleted) {
+    if (checkIntroCompletedNow()) {
       window.open(url, '_blank')
     } else {
       setShowIntroRequiredPopup(true)
@@ -734,7 +747,7 @@ function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (isIntroCompleted) window.location.hash = '#/training/infra-wbs'
+                    if (checkIntroCompletedNow()) window.location.hash = '#/training/infra-wbs'
                     else setShowIntroRequiredPopup(true)
                   }}
                   className={`rounded-full px-3 py-1.5 text-xs font-medium text-white shrink-0 ${delayed ? 'bg-rose-500' : 'bg-emerald-500'}`}
@@ -1117,7 +1130,7 @@ function App() {
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">課題1-2 · {partLabel} {l1Q + 1}/10問</p>
                     <button type="button" onClick={() => {
-                      if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level1'), '_blank')
+                      if (checkIntroCompletedNow()) window.open(getTrainingUrl('/training/linux-level1'), '_blank')
                       else setShowIntroRequiredPopup(true)
                     }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
@@ -1133,7 +1146,7 @@ function App() {
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">課題1-1 · ツール演習（途中から再開）</p>
                     <button type="button" onClick={() => {
-                      if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-1'), '_blank')
+                      if (checkIntroCompletedNow()) window.open(getTrainingUrl('/training/infra-basic-1'), '_blank')
                       else setShowIntroRequiredPopup(true)
                     }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
@@ -1149,7 +1162,7 @@ function App() {
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">課題2-2 · TCP/IP {l2Q + 1}/10問</p>
                     <button type="button" onClick={() => {
-                      if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level2'), '_blank')
+                      if (checkIntroCompletedNow()) window.open(getTrainingUrl('/training/linux-level2'), '_blank')
                       else setShowIntroRequiredPopup(true)
                     }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
@@ -1165,7 +1178,7 @@ function App() {
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">課題3-2 · 理解度チェック(途中から再開)</p>
                     <button type="button" onClick={() => {
-                      if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
+                      if (checkIntroCompletedNow()) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
                       else setShowIntroRequiredPopup(true)
                     }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
@@ -1181,7 +1194,7 @@ function App() {
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">課題4-1 · vi演習(途中から再開)</p>
                     <button type="button" onClick={() => {
-                      if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
+                      if (checkIntroCompletedNow()) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
                       else setShowIntroRequiredPopup(true)
                     }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
@@ -1197,7 +1210,7 @@ function App() {
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">課題4-2 · シェルスクリプト(途中から再開)</p>
                     <button type="button" onClick={() => {
-                      if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
+                      if (checkIntroCompletedNow()) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
                       else setShowIntroRequiredPopup(true)
                     }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
                   </div>
@@ -1376,7 +1389,7 @@ function App() {
                     onOpenInfraOrShowIntro={openInfraOrShowIntro}
                     onOpenIntro={() => { window.location.hash = '#/training/intro' }}
                     onOpenWbs={() => {
-                      if (isIntroCompleted) window.location.hash = '#/training/infra-wbs'
+                      if (checkIntroCompletedNow()) window.location.hash = '#/training/infra-wbs'
                       else setShowIntroRequiredPopup(true)
                     }}
                   />
