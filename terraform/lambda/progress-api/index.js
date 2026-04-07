@@ -24,21 +24,27 @@ function json(body, status = 200) {
   }
 }
 
-/** GET /progress 用：introStep が未設定のレコードに対して他フィールドから推定する */
+/** GET /progress 用：introStep が未設定または0のレコードに対して他フィールドから推定する */
 function inferIntroStep(item) {
-  // 既にintroStepが設定されている場合はそのまま使う
-  if (item.introStep !== undefined && item.introStep !== null) {
-    return Number(item.introStep)
+  // introStep が 1 以上で設定されている場合はそのまま使う（0/null/undefined は推定対象）
+  const explicit = Number(item.introStep)
+  if (Number.isFinite(explicit) && explicit > 0) {
+    return explicit
   }
   // introConfirmedがtrueなら完了済み
   if (item.introConfirmed === true) {
     return 5
   }
-  // 課題の進捗があれば完了済みとみなす
+  // 実進捗があれば完了済みとみなす（chapterProgress は全ユーザー共通のテンプレが入るため、percent>0 のものがあるかで判定）
+  const hasChapterProgress = Array.isArray(item.chapterProgress)
+    && item.chapterProgress.some((c) => (typeof c?.percent === 'number' && c.percent > 0) || c?.cleared === true)
   if (
-    (Array.isArray(item.chapterProgress) && item.chapterProgress.length > 0) ||
-    (typeof item.l1CurrentPart === 'number' && item.l1CurrentPart > 0) ||
-    (typeof item.l1CurrentQuestion === 'number' && item.l1CurrentQuestion > 0)
+    hasChapterProgress
+    || (typeof item.l1CurrentPart === 'number' && item.l1CurrentPart > 0)
+    || (typeof item.l1CurrentQuestion === 'number' && item.l1CurrentQuestion > 0)
+    || (typeof item.l2CurrentQuestion === 'number' && item.l2CurrentQuestion > 0)
+    || item.infra1Cleared === true
+    || item.l1Cleared === true
   ) {
     return 5
   }
