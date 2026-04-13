@@ -24,6 +24,13 @@ import {
   getViStepKey,
   getShellQuestionKey,
 } from './training/InfraBasic4Data'
+import {
+  INFRA5_PHASE1_CLEARED_KEY,
+  INFRA5_PHASE2_CLEARED_KEY,
+  INFRA5_PHASE3_CLEARED_KEY,
+  INFRA5_PHASE4_CLEARED_KEY,
+  INFRA5_PHASE5_CLEARED_KEY,
+} from './training/InfraBasic5Data'
 
 const TRAINEE_LIST_KEY = 'kira-admin-trainee-list'
 const PROGRESS_SNAPSHOT_PREFIX = 'kira-progress-snapshot-'
@@ -224,6 +231,10 @@ export function getCurrentProgressSnapshot(pinsOverride?: string[]): TraineeProg
     infra32Answers,
     infra1Cleared,
     l1Cleared,
+    infra5PhaseDone: [],
+    infra5BuildDone: [],
+    infra5TroubleDone: [],
+    infra5SecDone: [],
   }
 }
 
@@ -321,6 +332,10 @@ export function getProgressSnapshotLive(username: string): TraineeProgressSnapsh
     infra4ViDoneSteps: [],
     infra4ShellDoneQuestions: [],
     infra4Rag: null,
+    infra5PhaseDone: [],
+    infra5BuildDone: [],
+    infra5TroubleDone: [],
+    infra5SecDone: [],
   }
 }
 
@@ -347,12 +362,13 @@ export function restoreProgressToLocalStorage(username: string, snap: TraineePro
   }
 
   // チャプタークリアフラグ（chapterProgress の cleared が true のものだけ復元）
-  // index 0→課題1, 1→課題2, 2→課題3, 3→課題4 に対応
+  // index 0→課題1, 1→課題2, 2→課題3, 3→課題4, 4→課題5 に対応
   const CHAPTER_CLEARED_KEYS: string[][] = [
     [INFRA_BASIC_1_CLEARED_KEY, L1_CLEARED_KEY],
     [L2_CLEARED_KEY],
     [INFRA_BASIC_3_2_CLEARED_KEY],
     [INFRA_BASIC_4_VI_ALL_CLEARED_KEY, INFRA_BASIC_4_SHELL_ALL_CLEARED_KEY],
+    [INFRA5_PHASE1_CLEARED_KEY, INFRA5_PHASE2_CLEARED_KEY, INFRA5_PHASE3_CLEARED_KEY, INFRA5_PHASE4_CLEARED_KEY, INFRA5_PHASE5_CLEARED_KEY],
   ]
   if (Array.isArray(snap.chapterProgress)) {
     snap.chapterProgress.forEach((ch, i) => {
@@ -374,6 +390,21 @@ export function restoreProgressToLocalStorage(username: string, snap: TraineePro
   if (Array.isArray(snap.infra4ShellDoneQuestions)) {
     snap.infra4ShellDoneQuestions.forEach((q) => {
       window.localStorage.setItem(getProgressKey(getShellQuestionKey(q), id), 'true')
+    })
+  }
+
+  // 課題5 フェーズ完了キーの復元
+  if (Array.isArray(snap.infra5PhaseDone)) {
+    const phaseKeys = [
+      INFRA5_PHASE1_CLEARED_KEY,
+      INFRA5_PHASE2_CLEARED_KEY,
+      INFRA5_PHASE3_CLEARED_KEY,
+      INFRA5_PHASE4_CLEARED_KEY,
+      INFRA5_PHASE5_CLEARED_KEY,
+    ]
+    snap.infra5PhaseDone.forEach((phase) => {
+      const k = phaseKeys[phase - 1]
+      if (k) window.localStorage.setItem(getProgressKey(k, id), 'true')
     })
   }
 

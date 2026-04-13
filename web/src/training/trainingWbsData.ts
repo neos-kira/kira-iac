@@ -206,7 +206,7 @@ export function clearTask1Cache(): void {
   window.localStorage.removeItem(getProgressKey(L1_CLEARED_KEY))
 }
 
-/** 全研修進捗をクリア（開始日・課題1〜4・L1/L2等）。進捗リセット用。 */
+/** 全研修進捗をクリア（開始日・課題1〜5・L1/L2等）。進捗リセット用。 */
 export function clearAllTrainingProgress(): void {
   if (typeof window === 'undefined') return
   window.localStorage.removeItem(getProgressKey(TRAINING_START_DATE_KEY))
@@ -229,6 +229,13 @@ export function clearAllTrainingProgress(): void {
   for (let q = 1; q <= 11; q++) {
     window.localStorage.removeItem(getProgressKey(getShellQuestionKey(q)))
   }
+  // 課題5
+  window.localStorage.removeItem(getProgressKey(INFRA5_CLEARED_KEY))
+  window.localStorage.removeItem(getProgressKey(INFRA5_PHASE1_CLEARED_KEY))
+  window.localStorage.removeItem(getProgressKey(INFRA5_PHASE2_CLEARED_KEY))
+  window.localStorage.removeItem(getProgressKey(INFRA5_PHASE3_CLEARED_KEY))
+  window.localStorage.removeItem(getProgressKey(INFRA5_PHASE4_CLEARED_KEY))
+  window.localStorage.removeItem(getProgressKey(INFRA5_PHASE5_CLEARED_KEY))
 }
 
 /** 課題の期限日（YYYY-MM-DD）。土日祝を除く営業日で累積日数分先 */
