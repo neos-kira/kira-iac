@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { getCurrentUsername } from '../auth'
-import { VI_STEPS, SHELL_QUESTIONS, type InfraBasic4Rag } from './InfraBasic4Data'
+import { VI_STEPS, SHELL_QUESTIONS } from './InfraBasic4Data'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 import { fetchMyProgress, postProgress, isProgressApiAvailable, scoreAnswerV2 } from '../progressApi'
 
@@ -32,7 +32,6 @@ export function InfraBasic4Page() {
   const [snapshot, setSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const [viDone, setViDone] = useState<Record<number, boolean>>({})
   const [shellDone, setShellDone] = useState<Record<number, boolean>>({})
-  const [rag, setRag] = useState<InfraBasic4Rag | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
@@ -72,7 +71,6 @@ export function InfraBasic4Page() {
       })
       setViDone(viState)
       setShellDone(shellState)
-      setRag(resolved.infra4Rag ?? null)
     }
     void load()
     return () => {
@@ -181,11 +179,6 @@ export function InfraBasic4Page() {
     [shellAnswers, markShellDone],
   )
 
-  const handleSetRag = (next: InfraBasic4Rag) => {
-    setRag(next)
-    void applyUpdate((snap) => ({ ...snap, infra4Rag: next }))
-  }
-
   const handleSuspend = async () => {
     if (isSaving) return
     setIsSaving(true)
@@ -199,7 +192,6 @@ export function InfraBasic4Page() {
         ...base,
         infra4ViDoneSteps: viSteps,
         infra4ShellDoneQuestions: shellQs,
-        infra4Rag: rag,
         updatedAt: new Date().toISOString(),
       })
       if (!ok) {
@@ -236,38 +228,8 @@ export function InfraBasic4Page() {
         {/* ステータス */}
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">ステータス</p>
-          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
-            <span>
-              4-1: {viDoneCount}/{VI_STEPS.length} 問 / 4-2: {shellDoneCount}/{SHELL_QUESTIONS.length} 問
-            </span>
-            <div className="ml-auto flex items-center gap-1 text-[11px]">
-              <span className="text-slate-500">RAG:</span>
-              {(['green', 'yellow', 'red'] as InfraBasic4Rag[]).map((v) => {
-                const active = rag === v
-                const base =
-                  v === 'green'
-                    ? 'bg-emerald-500 text-white'
-                    : v === 'yellow'
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-rose-500 text-white'
-                return (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => handleSetRag(v)}
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${base} ${
-                      active ? 'opacity-100' : 'opacity-40 hover:opacity-80'
-                    }`}
-                  >
-                    {v.toUpperCase()}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-          <p className="mt-1 text-[11px] text-slate-500">
-            {isKiraTest ? 'kira-test は 4-2 も最初から操作できます。'
-              : '通常ユーザーは 4-1 を全問クリアすると 4-2 がアンロックされます。'}
+          <p className="mt-2 text-sm">
+            4-1: {viDoneCount}/{VI_STEPS.length} 問完了 / 4-2: {shellDoneCount}/{SHELL_QUESTIONS.length} 問完了
           </p>
         </section>
 
