@@ -567,7 +567,13 @@ export function IntroPage() {
   // ── Render: Step 1 オリエンテーション ────────────────────────────────────
   if (step === 1) {
     const SKILL_TAGS = ['サーバー構築', '障害対応', 'セキュリティ']
-    const FLOW_STEPS = [1, 2, 3, 4, 5]
+    const FLOW_STEPS = [
+      { num: 1, label: '行動基準' },
+      { num: 2, label: 'Linux' },
+      { num: 3, label: 'Network' },
+      { num: 4, label: 'vi/Shell' },
+      { num: 5, label: '構築' },
+    ]
     return pageLayout(
       <>
         {headerBlock}
@@ -575,7 +581,7 @@ export function IntroPage() {
 
         {/* ヒーローセクション */}
         <section
-          className="rounded-xl p-6 mb-4"
+          className="rounded-xl p-6 mb-6"
           style={{ background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)' }}
         >
           <h1 className="text-2xl font-bold text-white leading-tight">
@@ -587,13 +593,17 @@ export function IntroPage() {
         </section>
 
         {/* AI講師セクション */}
-        <section className="rounded-xl bg-slate-100 p-5 mb-4 flex items-start gap-4">
+        <section className="rounded-xl bg-slate-100 p-4 mb-5 flex items-start gap-4">
           <div
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full"
             style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' }}
           >
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l.893 3.572A1.125 1.125 0 0119.615 20h-2.866a1.125 1.125 0 01-1.078-1.128L15.5 15.3m4.3 0l-.893 3.572A1.125 1.125 0 0117.829 20H6.171a1.125 1.125 0 01-1.078-1.128L5 15.3" />
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <rect x="5" y="4" width="14" height="12" rx="2" />
+              <circle cx="9" cy="10" r="1.5" fill="currentColor" />
+              <circle cx="15" cy="10" r="1.5" fill="currentColor" />
+              <path strokeLinecap="round" d="M9 20v-4M15 20v-4M7 16h10" />
+              <path strokeLinecap="round" d="M12 4V2M8 4V3M16 4V3" />
             </svg>
           </div>
           <div>
@@ -622,20 +632,23 @@ export function IntroPage() {
         </section>
 
         {/* 全体の流れ */}
-        <section className="rounded-xl bg-white border border-slate-200 shadow-sm p-5 mb-6">
+        <section className="rounded-xl bg-white border border-slate-200 shadow-sm p-5 mb-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-4">全体の流れ</p>
-          <div className="flex items-center justify-between">
-            {FLOW_STEPS.map((num, i) => (
-              <div key={num} className="flex items-center">
-                <div
-                  className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${
-                    num === 1 ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-500'
-                  }`}
-                >
-                  {num}
+          <div className="flex items-start justify-between">
+            {FLOW_STEPS.map((step, i) => (
+              <div key={step.num} className="flex items-center">
+                <div className="flex flex-col items-center">
+                  <div
+                    className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${
+                      step.num === 1 ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-500'
+                    }`}
+                  >
+                    {step.num}
+                  </div>
+                  <span className="mt-1.5 text-[10px] text-slate-500 text-center whitespace-nowrap">{step.label}</span>
                 </div>
                 {i < FLOW_STEPS.length - 1 && (
-                  <div className="w-6 sm:w-10 h-0.5 bg-slate-200 mx-1" />
+                  <div className="w-4 sm:w-8 h-0.5 bg-slate-200 mx-0.5 mt-[18px] self-start" />
                 )}
               </div>
             ))}
