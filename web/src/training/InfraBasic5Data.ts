@@ -31,22 +31,25 @@ export type ParamField = {
   label: string
   placeholder: string
   type: 'text' | 'password'
+  group: 'server' | 'web' | 'db'
 }
 
-export const WEB_PARAMS: ParamField[] = [
-  { id: 'webIp', label: 'WebサーバーIPアドレス', placeholder: '例: 10.0.1.10', type: 'text' },
-  { id: 'webPort', label: 'Webサーバーポート番号', placeholder: '例: 80', type: 'text' },
-  { id: 'webOs', label: 'OS', placeholder: '例: Amazon Linux 2023', type: 'text' },
+// 1台構成: WebサーバーとDBを同居させる
+export const SERVER_PARAMS: ParamField[] = [
+  // サーバー基本情報
+  { id: 'serverIp', label: 'サーバーIPアドレス', placeholder: '例: 10.0.1.10', type: 'text', group: 'server' },
+  { id: 'serverOs', label: 'OS', placeholder: '例: Amazon Linux 2023', type: 'text', group: 'server' },
+  // Webサーバー設定
+  { id: 'webPort', label: 'Webサーバーポート番号', placeholder: '例: 80', type: 'text', group: 'web' },
+  // データベース設定
+  { id: 'dbName', label: 'DB名', placeholder: '例: myappdb', type: 'text', group: 'db' },
+  { id: 'dbUser', label: 'DBユーザー名', placeholder: '例: appuser', type: 'text', group: 'db' },
+  { id: 'dbPassword', label: 'DBパスワード', placeholder: '********', type: 'password', group: 'db' },
 ]
 
-export const DB_PARAMS: ParamField[] = [
-  { id: 'dbIp', label: 'DBサーバーIPアドレス', placeholder: '例: 10.0.2.10', type: 'text' },
-  { id: 'dbPort', label: 'DBサーバーポート番号', placeholder: '例: 3306', type: 'text' },
-  { id: 'dbOs', label: 'OS', placeholder: '例: Amazon Linux 2023', type: 'text' },
-  { id: 'dbName', label: 'DB名', placeholder: '例: myappdb', type: 'text' },
-  { id: 'dbUser', label: 'DBユーザー名', placeholder: '例: appuser', type: 'text' },
-  { id: 'dbPassword', label: 'DBパスワード', placeholder: '********', type: 'password' },
-]
+// 後方互換性のため残す（空配列）
+export const WEB_PARAMS: ParamField[] = []
+export const DB_PARAMS: ParamField[] = []
 
 // --- 5-3 サーバー構築実践 ---
 

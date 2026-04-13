@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { getCurrentUsername } from '../auth'
 import {
-  WEB_PARAMS, DB_PARAMS,
+  SERVER_PARAMS,
   BUILD_QUESTIONS, TROUBLE_QUESTIONS, SECURITY_QUESTIONS,
   PHASE_CLEARED_KEYS,
 } from './InfraBasic5Data'
@@ -147,16 +147,15 @@ export function InfraBasic5Page() {
 
   // --- 5-1: パラメーターシート採点 ---
   const scoreParams = useCallback(async () => {
-    const allParams = [...WEB_PARAMS, ...DB_PARAMS]
-    const filled = allParams.every((p) => (paramValues[p.id] ?? '').trim())
+    const filled = SERVER_PARAMS.every((p) => (paramValues[p.id] ?? '').trim())
     if (!filled) return
 
-    const summary = allParams.map((p) => `${p.label}: ${paramValues[p.id]}`).join('\n')
+    const summary = SERVER_PARAMS.map((p) => `${p.label}: ${paramValues[p.id]}`).join('\n')
     setParamScore({ status: 'scoring' })
     try {
       const result = await scoreAnswerV2({
-        question: 'WebサーバーとDBサーバーの構築パラメーターシートをレビューしてください。\n\n' + summary,
-        scoringCriteria: 'IPアドレスがプライベートIP範囲であること。ポート番号が適切であること（Web:80/443, DB:3306等）。OSが指定されていること。DB名・ユーザー名が設定されていること。パスワードが空でないこと。全項目が埋まっていること。',
+        question: 'サーバー構築パラメーターシートをレビューしてください（1台にWebサーバーとDBを同居させる構成）。\n\n' + summary,
+        scoringCriteria: 'IPアドレスがプライベートIP範囲であること。ポート番号が適切であること（Web:80/443）。OSが指定されていること。DB名・ユーザー名が設定されていること。パスワードが空でないこと。全項目が埋まっていること。',
         answer: summary,
       })
       setParamScore({ status: 'done', rating: result.rating, comment: result.comment, advice: result.advice })
@@ -172,9 +171,9 @@ export function InfraBasic5Page() {
     setProcedureScore({ status: 'scoring' })
     try {
       const result = await scoreAnswerV2({
-        question: 'Webサーバー構築手順とDBサーバー構築手順をレビューしてください。\n\n【Webサーバー構築手順】\n' + webProcedure + '\n\n【DBサーバー構築手順】\n' + dbProcedure,
-        scoringCriteria: '手順として成立していること。パッケージのインストール、起動、設定、確認の流れが含まれていること。Webサーバー（Apache/Nginx）とDBサーバー（MySQL/MariaDB）の構築手順が書かれていること。順序が論理的であること。',
-        answer: '【Webサーバー】\n' + webProcedure + '\n\n【DBサーバー】\n' + dbProcedure,
+        question: '1台のEC2サーバーにWebサーバー（Apache）とデータベース（MySQL）をインストールする手順をレビューしてください。\n\n【① Webサーバー構築手順】\n' + webProcedure + '\n\n【② データベース構築手順】\n' + dbProcedure,
+        scoringCriteria: '手順として成立していること。パッケージのインストール、起動、自動起動設定、確認の流れが含まれていること。Apache（httpd）とMySQL（mysql-server）の構築手順が書かれていること。順序が論理的で、同一サーバー上で実行可能な手順であること。',
+        answer: '【① Webサーバー】\n' + webProcedure + '\n\n【② データベース】\n' + dbProcedure,
       })
       setProcedureScore({ status: 'done', rating: result.rating, comment: result.comment, advice: result.advice })
       if (result.rating === 'pass') markPhaseDone(2)
@@ -301,6 +300,7 @@ export function InfraBasic5Page() {
     const done = phaseDone[phase]
     const unlocked = phase === 1 || phaseDone[phase - 1]
     const isOpen = openPhase === phase
+    const lockLabel = `5-${phase - 1}完了でアンロック`
     return (
       <button
         type="button"
@@ -322,7 +322,7 @@ export function InfraBasic5Page() {
         )}
         {!unlocked && (
           <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 border border-amber-200">
-            前フェーズをクリアするとアンロック
+            {lockLabel}
           </span>
         )}
       </button>
@@ -376,9 +376,9 @@ export function InfraBasic5Page() {
         <section className="rounded-2xl border border-teal-200 bg-teal-50 p-4 shadow-soft-card">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-teal-700">EC2 サーバー構築演習</p>
           <div className="mt-2 space-y-1 text-[12px] text-teal-900">
-            <p>この課題では実際にEC2サーバーを2台構築します。</p>
-            <p>パラメーターシートと手順書を自分で作り、</p>
-            <p>その通りに構築・トラブル対応まで行います。</p>
+            <p>この課題では実際にEC2サーバーを1台構築します。</p>
+            <p>Webサーバー（Apache/Nginx）とデータベース（MySQL/MariaDB）を1台に同居させる構成です。</p>
+            <p>パラメーターシートと手順書を自分で作り、その通りに構築・トラブル対応まで行います。</p>
           </div>
         </section>
 
@@ -386,49 +386,75 @@ export function InfraBasic5Page() {
         <section className="space-y-2">
           <PhaseHeader phase={1} label="5-1 パラメーターシート作成" />
           {openPhase === 1 && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card space-y-4">
+            <div className="space-y-4">
               {phaseDone[1] ? (
-                <p className="text-[12px] text-emerald-700 font-semibold">✅ パラメーターシートのレビューが完了しました。</p>
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft-card">
+                  <p className="text-[12px] text-emerald-700 font-semibold">✅ パラメーターシートのレビューが完了しました。</p>
+                </div>
               ) : (
                 <>
-                  <div>
-                    <p className="text-[12px] font-semibold text-slate-800 mb-2">Webサーバー</p>
-                    {WEB_PARAMS.map((p) => (
-                      <div key={p.id} className="mb-2">
+                  <p className="text-[12px] text-slate-600">構築するサーバーの情報を入力してください。この情報をもとに手順書を作成します。</p>
+                  {/* サーバー情報カード */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-soft-card">
+                    <p className="text-[14px] font-medium text-slate-800 mb-4">サーバー情報</p>
+
+                    {/* サーバー基本情報 */}
+                    <p className="text-[12px] font-medium text-slate-700 mb-2">サーバー基本情報</p>
+                    {SERVER_PARAMS.filter((p) => p.group === 'server').map((p) => (
+                      <div key={p.id} className="mb-3">
                         <label className="text-[11px] text-slate-600">{p.label}</label>
                         <input
                           type={p.type}
                           value={paramValues[p.id] ?? ''}
                           onChange={(e) => setParamValues((prev) => ({ ...prev, [p.id]: e.target.value }))}
                           placeholder={p.placeholder}
-                          className="mt-0.5 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                          className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
                         />
                       </div>
                     ))}
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-semibold text-slate-800 mb-2">DBサーバー</p>
-                    {DB_PARAMS.map((p) => (
-                      <div key={p.id} className="mb-2">
+
+                    {/* Webサーバー設定 */}
+                    <p className="text-[12px] font-medium text-slate-700 mb-2 mt-5">Webサーバー設定</p>
+                    {SERVER_PARAMS.filter((p) => p.group === 'web').map((p) => (
+                      <div key={p.id} className="mb-3">
                         <label className="text-[11px] text-slate-600">{p.label}</label>
                         <input
                           type={p.type}
                           value={paramValues[p.id] ?? ''}
                           onChange={(e) => setParamValues((prev) => ({ ...prev, [p.id]: e.target.value }))}
                           placeholder={p.placeholder}
-                          className="mt-0.5 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                          className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                        />
+                      </div>
+                    ))}
+
+                    {/* データベース設定 */}
+                    <p className="text-[12px] font-medium text-slate-700 mb-2 mt-5">データベース設定</p>
+                    {SERVER_PARAMS.filter((p) => p.group === 'db').map((p) => (
+                      <div key={p.id} className="mb-3">
+                        <label className="text-[11px] text-slate-600">{p.label}</label>
+                        <input
+                          type={p.type}
+                          value={paramValues[p.id] ?? ''}
+                          onChange={(e) => setParamValues((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                          placeholder={p.placeholder}
+                          className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
                         />
                       </div>
                     ))}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => { void scoreParams() }}
-                    disabled={paramScore.status === 'scoring' || ![...WEB_PARAMS, ...DB_PARAMS].every((p) => (paramValues[p.id] ?? '').trim())}
-                    className="rounded-lg bg-teal-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {paramScore.status === 'scoring' ? 'AIレビュー中...' : 'AIにレビューしてもらう'}
-                  </button>
+
+                  {/* 区切り線とボタン */}
+                  <div className="border-t border-slate-200 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => { void scoreParams() }}
+                      disabled={paramScore.status === 'scoring' || !SERVER_PARAMS.every((p) => (paramValues[p.id] ?? '').trim())}
+                      className="w-full rounded-lg bg-teal-600 px-4 py-2.5 text-[12px] font-medium text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {paramScore.status === 'scoring' ? 'AIレビュー中...' : 'AIにレビューしてもらう'}
+                    </button>
+                  </div>
                   <ScoreResult score={paramScore} />
                 </>
               )}
@@ -445,36 +471,41 @@ export function InfraBasic5Page() {
                 <p className="text-[12px] text-emerald-700 font-semibold">✅ 手順書のレビューが完了しました。</p>
               ) : (
                 <>
-                  <div>
-                    <p className="text-[12px] font-semibold text-slate-800 mb-1">Webサーバー構築手順を自分の言葉で書いてください</p>
-                    <textarea
-                      value={webProcedure}
-                      onChange={(e) => setWebProcedure(e.target.value)}
-                      rows={8}
-                      className="w-full resize-y rounded-md border border-slate-300 bg-white px-2 py-1.5 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                      placeholder="例: 1. SSHでEC2に接続する&#10;2. sudo dnf install httpd -y&#10;3. sudo systemctl start httpd&#10;..."
-                      spellCheck={false}
-                    />
+                  <p className="text-[12px] text-slate-600">1台のEC2サーバーにWebサーバーとDBをインストールする手順を作成してください。</p>
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-soft-card space-y-4">
+                    <div>
+                      <p className="text-[12px] font-semibold text-slate-800 mb-1">① Webサーバー（Apache）構築手順</p>
+                      <textarea
+                        value={webProcedure}
+                        onChange={(e) => setWebProcedure(e.target.value)}
+                        rows={6}
+                        className="w-full resize-y rounded-md border border-slate-300 bg-white px-2 py-1.5 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                        placeholder="例:&#10;1. sudo dnf install httpd -y&#10;2. sudo systemctl start httpd&#10;3. sudo systemctl enable httpd&#10;4. curl http://localhost で動作確認"
+                        spellCheck={false}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-semibold text-slate-800 mb-1">② データベース（MySQL）構築手順</p>
+                      <textarea
+                        value={dbProcedure}
+                        onChange={(e) => setDbProcedure(e.target.value)}
+                        rows={6}
+                        className="w-full resize-y rounded-md border border-slate-300 bg-white px-2 py-1.5 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                        placeholder="例:&#10;1. sudo dnf install mysql-server -y&#10;2. sudo systemctl start mysqld&#10;3. sudo systemctl enable mysqld&#10;4. sudo mysql_secure_installation で初期設定"
+                        spellCheck={false}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[12px] font-semibold text-slate-800 mb-1">DBサーバー構築手順を自分の言葉で書いてください</p>
-                    <textarea
-                      value={dbProcedure}
-                      onChange={(e) => setDbProcedure(e.target.value)}
-                      rows={8}
-                      className="w-full resize-y rounded-md border border-slate-300 bg-white px-2 py-1.5 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                      placeholder="例: 1. SSHでEC2に接続する&#10;2. sudo dnf install mysql-server -y&#10;3. sudo systemctl start mysqld&#10;..."
-                      spellCheck={false}
-                    />
+                  <div className="border-t border-slate-200 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => { void scoreProcedure() }}
+                      disabled={procedureScore.status === 'scoring' || !webProcedure.trim() || !dbProcedure.trim()}
+                      className="w-full rounded-lg bg-teal-600 px-3 py-2 text-[12px] font-medium text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {procedureScore.status === 'scoring' ? 'AIレビュー中...' : 'AIにレビューしてもらう'}
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => { void scoreProcedure() }}
-                    disabled={procedureScore.status === 'scoring' || !webProcedure.trim() || !dbProcedure.trim()}
-                    className="rounded-lg bg-teal-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {procedureScore.status === 'scoring' ? 'AIレビュー中...' : 'AIにレビューしてもらう'}
-                  </button>
                   <ScoreResult score={procedureScore} />
                 </>
               )}
