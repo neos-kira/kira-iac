@@ -12,6 +12,14 @@ import {
   getViStepKey,
   getShellQuestionKey,
 } from './InfraBasic4Data'
+import {
+  INFRA5_CLEARED_KEY,
+  INFRA5_PHASE1_CLEARED_KEY,
+  INFRA5_PHASE2_CLEARED_KEY,
+  INFRA5_PHASE3_CLEARED_KEY,
+  INFRA5_PHASE4_CLEARED_KEY,
+  INFRA5_PHASE5_CLEARED_KEY,
+} from './InfraBasic5Data'
 
 export const TRAINING_START_DATE_KEY = 'kira-training-start-date'
 
@@ -47,7 +55,7 @@ function addBusinessDays(startDateStr: string, businessDays: number): string {
   return `${y}-${m}-${day}`
 }
 
-export type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3' | 'infra-basic-4'
+export type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3' | 'infra-basic-4' | 'infra-basic-5'
 
 export type SubTaskDef = {
   label: string
@@ -119,6 +127,22 @@ export const TRAINING_TASKS: TrainingTaskDef[] = [
     subTasks: [
       { label: '4-1 vi操作演習', clearedKey: INFRA_BASIC_4_VI_ALL_CLEARED_KEY },
       { label: '4-2 シェルスクリプト演習', clearedKey: INFRA_BASIC_4_SHELL_ALL_CLEARED_KEY },
+    ],
+  },
+  {
+    id: 'infra-basic-5',
+    label: 'インフラ基礎課題5（サーバー構築）',
+    labelShort: '課題5',
+    path: '/training/infra-basic-5',
+    estimatedDays: 15,
+    clearedKey: INFRA5_CLEARED_KEY,
+    clearedKeys: [INFRA5_PHASE1_CLEARED_KEY, INFRA5_PHASE2_CLEARED_KEY, INFRA5_PHASE3_CLEARED_KEY, INFRA5_PHASE4_CLEARED_KEY, INFRA5_PHASE5_CLEARED_KEY],
+    subTasks: [
+      { label: '5-1 パラメーターシート作成', clearedKey: INFRA5_PHASE1_CLEARED_KEY },
+      { label: '5-2 手順書作成', clearedKey: INFRA5_PHASE2_CLEARED_KEY },
+      { label: '5-3 サーバー構築実践', clearedKey: INFRA5_PHASE3_CLEARED_KEY },
+      { label: '5-4 トラブルシューティング', clearedKey: INFRA5_PHASE4_CLEARED_KEY },
+      { label: '5-5 セキュリティチェック', clearedKey: INFRA5_PHASE5_CLEARED_KEY },
     ],
   },
 ]
@@ -409,6 +433,7 @@ const CHAPTER_LABELS: Record<number, string> = {
   2: 'Chapter 2 インフラ基礎課題2',
   3: 'Chapter 3 インフラ基礎課題3',
   4: 'Chapter 4 10日間プロジェクト（AL2023 構築）',
+  5: 'Chapter 5 サーバー構築',
 }
 
 /** 対象外プレースホルダー（j-terada は課題2〜4 が別カリキュラムのため） */
@@ -441,7 +466,7 @@ export function getChapterProgressList(username?: string): ChapterProgress[] {
     }
   })
 
-  while (result.length < 4) {
+  while (result.length < 5) {
     result.push(placeholderChapter(result.length + 1))
   }
 

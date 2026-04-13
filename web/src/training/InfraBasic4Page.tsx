@@ -381,6 +381,22 @@ export function InfraBasic4Page() {
             })}
           </div>
         </section>
+
+        {/* 課題4クリア → 課題5へ */}
+        {viAll && shellDoneCount === SHELL_QUESTIONS.length && (
+          <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-soft-card">
+            <p className="text-sm font-bold text-emerald-800">
+              🎉 課題4クリア！vi &amp; シェルスクリプト演習 全20問クリアしました。
+            </p>
+            <button
+              type="button"
+              onClick={() => { window.location.hash = '#/training/infra-basic-5' }}
+              className="mt-3 w-full rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-teal-700"
+            >
+              課題5：サーバー構築へ進む →
+            </button>
+          </section>
+        )}
       </div>
     </div>
   )

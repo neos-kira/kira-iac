@@ -18,6 +18,7 @@ import { InfraBasic3TopPage } from './training/InfraBasic3TopPage'
 import { InfraBasic31Page } from './training/InfraBasic31Page'
 import { InfraBasic32Page } from './training/InfraBasic32Page'
 import { InfraBasic4Page } from './training/InfraBasic4Page'
+import { InfraBasic5Page } from './training/InfraBasic5Page'
 import { InfraWbsPage } from './training/InfraWbsPage'
 import { IntroPage } from './training/IntroPage'
 import { AdminPage } from './admin/AdminPage'
@@ -37,6 +38,7 @@ const MENTOR_CONTEXT_MAP: Record<string, string> = {
   '/training/infra-basic-3-1': 'インフラ基礎課題3-1',
   '/training/infra-basic-3-2': 'インフラ基礎課題3-2',
   '/training/infra-basic-4': 'インフラ基礎課題4',
+  '/training/infra-basic-5': 'インフラ基礎課題5',
   '/training/infra-wbs': 'インフラWBS',
   '/training/linux-level1': 'Linuxコマンド課題',
   '/training/linux-level2': 'TCP/IP課題',
@@ -303,6 +305,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/training/infra-basic-3-1" element={<IntroGate><Task1Gate><Task2Gate><InfraBasic31Page /></Task2Gate></Task1Gate></IntroGate>} />
           <Route path="/training/infra-basic-3-2" element={<IntroGate><Task1Gate><Task2Gate><InfraBasic32Page /></Task2Gate></Task1Gate></IntroGate>} />
           <Route path="/training/infra-basic-4" element={<IntroGate><InfraBasic4Page /></IntroGate>} />
+          <Route path="/training/infra-basic-5" element={<IntroGate><InfraBasic5Page /></IntroGate>} />
           <Route path="/training/infra-wbs" element={<IntroGate><InfraWbsPage /></IntroGate>} />
           <Route path="/training/intro" element={<IntroPage />} />
           <Route path="/it-basics" element={<ITBasicsTopPage />} />
