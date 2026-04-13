@@ -135,29 +135,29 @@ export function InfraBasic31Page() {
 
           {/* 仮想化層構造図 */}
           <div style={{ marginBottom: 16 }}>
-            <svg viewBox="0 0 600 260" style={{ width: '100%', height: 'auto' }} role="img" aria-label="仮想化層構造図">
-              <text x="300" y="24" textAnchor="middle" fontSize="14" fontWeight="700" fill="#1e293b">仮想化層の構造</text>
+            <svg viewBox="0 0 360 300" style={{ width: '100%', height: 'auto' }} role="img" aria-label="仮想化層構造図">
+              <text x="180" y="24" textAnchor="middle" fontSize="14" fontWeight="700" fill="#1e293b">仮想化層の構造</text>
               {/* EC2インスタンス */}
-              <rect x="40" y="44" width="300" height="56" rx="10" fill="#f0fdfa" stroke="#0d9488" strokeWidth="2" />
-              <text x="190" y="68" textAnchor="middle" fontSize="13" fontWeight="700" fill="#0d9488">EC2インスタンス（VM）</text>
-              <text x="190" y="86" textAnchor="middle" fontSize="11" fill="#475569">アプリケーション・OS</text>
-              <text x="356" y="76" fontSize="12" fill="#0d9488" fontWeight="600">← あなたが操作するサーバー</text>
+              <rect x="20" y="44" width="320" height="64" rx="10" fill="#f0fdfa" stroke="#0d9488" strokeWidth="2" />
+              <text x="180" y="66" textAnchor="middle" fontSize="13" fontWeight="700" fill="#0d9488">EC2インスタンス（VM）</text>
+              <text x="180" y="84" textAnchor="middle" fontSize="11" fill="#475569">アプリケーション・OS</text>
+              <text x="180" y="100" textAnchor="middle" fontSize="10" fill="#94a3b8">あなたが操作するサーバー</text>
               {/* 矢印 */}
-              <line x1="190" y1="100" x2="190" y2="116" stroke="#94a3b8" strokeWidth="2" />
-              <polygon points="184,114 190,124 196,114" fill="#94a3b8" />
+              <line x1="180" y1="108" x2="180" y2="124" stroke="#94a3b8" strokeWidth="2" />
+              <polygon points="174,122 180,132 186,122" fill="#94a3b8" />
               {/* ハイパーバイザー */}
-              <rect x="40" y="128" width="300" height="56" rx="10" fill="#eff6ff" stroke="#3b82f6" strokeWidth="2" />
-              <text x="190" y="152" textAnchor="middle" fontSize="13" fontWeight="700" fill="#3b82f6">ハイパーバイザー（ESXi）</text>
-              <text x="190" y="170" textAnchor="middle" fontSize="11" fill="#475569">仮想化レイヤー</text>
-              <text x="356" y="160" fontSize="12" fill="#3b82f6" fontWeight="600">← 仮想化を担当するソフト</text>
+              <rect x="20" y="136" width="320" height="64" rx="10" fill="#eff6ff" stroke="#3b82f6" strokeWidth="2" />
+              <text x="180" y="158" textAnchor="middle" fontSize="13" fontWeight="700" fill="#3b82f6">ハイパーバイザー（ESXi）</text>
+              <text x="180" y="176" textAnchor="middle" fontSize="11" fill="#475569">仮想化レイヤー</text>
+              <text x="180" y="192" textAnchor="middle" fontSize="10" fill="#94a3b8">仮想化を担当するソフト</text>
               {/* 矢印 */}
-              <line x1="190" y1="184" x2="190" y2="200" stroke="#94a3b8" strokeWidth="2" />
-              <polygon points="184,198 190,208 196,198" fill="#94a3b8" />
+              <line x1="180" y1="200" x2="180" y2="216" stroke="#94a3b8" strokeWidth="2" />
+              <polygon points="174,214 180,224 186,214" fill="#94a3b8" />
               {/* 物理サーバー */}
-              <rect x="40" y="212" width="300" height="56" rx="10" fill="#f9fafb" stroke="#9ca3af" strokeWidth="2" />
-              <text x="190" y="236" textAnchor="middle" fontSize="13" fontWeight="700" fill="#6b7280">物理サーバー</text>
-              <text x="190" y="254" textAnchor="middle" fontSize="11" fill="#475569">CPU・メモリ・ディスク・NIC</text>
-              <text x="356" y="244" fontSize="12" fill="#6b7280" fontWeight="600">← AWSが管理するハードウェア</text>
+              <rect x="20" y="228" width="320" height="64" rx="10" fill="#f9fafb" stroke="#9ca3af" strokeWidth="2" />
+              <text x="180" y="250" textAnchor="middle" fontSize="13" fontWeight="700" fill="#6b7280">物理サーバー</text>
+              <text x="180" y="268" textAnchor="middle" fontSize="11" fill="#475569">CPU・メモリ・ディスク・NIC</text>
+              <text x="180" y="284" textAnchor="middle" fontSize="10" fill="#94a3b8">AWSが管理するハードウェア</text>
             </svg>
           </div>
 
