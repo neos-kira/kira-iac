@@ -11,8 +11,8 @@ type Props = {
 export function OpenInNewTabButton({
   url,
   disabled = false,
-  label = '別タブで開く',
-  openedLabel = '別タブで開きました',
+  label = '開く',
+  openedLabel = '開きました',
   className = '',
 }: Props) {
   const [justOpened, setJustOpened] = useState(false)

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { setIntroConfirmed, setIntroConfirmedForUser, clearIntroForCurrentUser } from './introGate'
 import { getCurrentDisplayName } from '../auth'
 import { Confetti } from '../components/Confetti'
-import { NeOSLogo } from '../components/NeOSLogo'
 import { INTRO_RISK_QUESTIONS } from './introRiskData'
 import type { MCQuestion, EssayQuestion } from './introRiskData'
 import { setTrainingStartDateFromTask1Start, getTrainingStartDate } from './trainingWbsData'
@@ -17,7 +16,7 @@ const CARD_ACCENTS = [
   { bg: 'bg-sky-100', border: 'border-sky-200', icon: 'bg-sky-500' },
   { bg: 'bg-violet-100', border: 'border-violet-200', icon: 'bg-violet-500' },
   { bg: 'bg-amber-100', border: 'border-amber-200', icon: 'bg-amber-500' },
-  { bg: 'bg-indigo-100', border: 'border-indigo-200', icon: 'bg-indigo-500' },
+  { bg: 'bg-teal-100', border: 'border-teal-200', icon: 'bg-teal-500' },
 ] as const
 
 const STANDARDS: Array<{
@@ -113,7 +112,7 @@ function StepProgress({ current }: { current: number }) {
             <div
               title={label}
               className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold
-                ${done ? 'bg-emerald-500 text-white' : active ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-500'}`}
+                ${done ? 'bg-emerald-500 text-white' : active ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-500'}`}
             >
               {done ? '✓' : stepNum}
             </div>
@@ -196,8 +195,11 @@ export function IntroPage() {
 
       // introStep に応じてステップを復元（1〜5 すべて対応）
       const savedStep = snap.introStep
-      if (typeof savedStep === 'number' && savedStep >= 1 && savedStep <= 5) {
-        setStep(savedStep)
+      const isReallyComplete = savedStep === 5 && snap.introConfirmed === true
+      const resolvedStep = (savedStep === 5 && !isReallyComplete) ? 1 : savedStep
+
+      if (typeof resolvedStep === 'number' && resolvedStep >= 1 && resolvedStep <= 5) {
+        setStep(resolvedStep)
         // steps 2-4: sectionQIdx を回答済み数から復元
         if (savedStep >= 2 && savedStep <= 4) {
           const secName = STEP_SECTION[savedStep] ?? ''
@@ -234,13 +236,18 @@ export function IntroPage() {
     console.log('[中断保存] username:', uname)
     console.log('[中断保存] serverSnapshot:', serverSnapshot)
     if (uname && uname !== 'admin' && isProgressApiAvailable()) {
-      const base = serverSnapshot ?? EMPTY_SNAPSHOT
-      const payload = {
-        ...base,
+      const payload: TraineeProgressSnapshot = {
+        ...EMPTY_SNAPSHOT,
+        ...(serverSnapshot ?? {}),
         introStep: step,
+        introConfirmed: step >= 5,
         introRiskAnswers: riskAnswers,
         updatedAt: new Date().toISOString(),
       }
+      const token = window.localStorage.getItem('kira-session-token') || document.cookie
+      console.log('[中断保存] session token exists:', !!window.localStorage.getItem('kira-session-token'))
+      console.log('[中断保存] cookie:', document.cookie.slice(0, 200))
+      console.log('[中断保存] token raw:', token?.slice(0, 30))
       const ok = await postProgress(uname, payload)
       console.log('[中断保存] postProgress結果:', ok)
       if (!ok) {
@@ -413,10 +420,7 @@ export function IntroPage() {
 
   // ── レイアウトヘルパー ────────────────────────────────────────────────────
   const topBar = (
-    <div className="flex items-center justify-between mb-6">
-      <button type="button" onClick={() => { void handleSuspend() }} className="cursor-pointer hover:opacity-80">
-        <NeOSLogo height={32} />
-      </button>
+    <div className="flex items-center justify-end mb-6">
       {step >= 1 && step <= 4 ? (
         <div className="flex flex-col items-end gap-1">
           <button
@@ -425,7 +429,7 @@ export function IntroPage() {
             disabled={isSaving}
             className="rounded-lg px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSaving ? '保存中...' : '中断して保存 →'}
+            {isSaving ? '保存中...' : '中断して保存'}
           </button>
           {saveError && (
             <p className="text-xs text-red-600">{saveError}</p>
@@ -487,7 +491,7 @@ export function IntroPage() {
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="rounded-lg bg-indigo-600 px-8 py-3.5 text-base font-semibold text-white hover:bg-indigo-700"
+              className="rounded-lg bg-teal-600 px-8 py-3.5 text-base font-semibold text-white hover:bg-teal-700"
             >
               研修を始める
             </button>
@@ -509,10 +513,32 @@ export function IntroPage() {
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
+            className="rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700"
           >
             トップページへ →
           </button>
+          {username === 'kira-test' && (
+            <div>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (isProgressApiAvailable()) {
+                    const base = serverSnapshot ?? EMPTY_SNAPSHOT
+                    await postProgress(username, {
+                      ...base,
+                      introStep: 1,
+                      introConfirmed: false,
+                      introRiskAnswers: {},
+                    })
+                  }
+                  window.location.reload()
+                }}
+                className="mt-4 text-xs text-rose-500 underline"
+              >
+                🔄 進捗リセット（開発用）
+              </button>
+            </div>
+          )}
         </div>
       </>
     )
@@ -576,7 +602,7 @@ export function IntroPage() {
             type="button"
             onClick={handleStep1Complete}
             disabled={isScoring}
-            className="w-full rounded-lg bg-indigo-600 py-3.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-lg bg-teal-600 py-3.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isScoring ? '保存中...' : '確認しました・次へ →'}
           </button>
@@ -610,9 +636,9 @@ export function IntroPage() {
             {q.choices.map((choice, ci) => {
               const isSelected = mcSelected.includes(ci)
               const isCorrectChoice = q.correctIndices.includes(ci)
-              const showCorrect = mcResult !== null && isCorrectChoice
+              const showCorrect = mcResult === true && isCorrectChoice
               const showWrong = mcResult === false && isSelected && !isCorrectChoice
-              const showMissed = mcResult === false && !isSelected && isCorrectChoice
+              const showMissed = false
               return (
                 <li key={ci}>
                   <label
@@ -665,7 +691,7 @@ export function IntroPage() {
               type="button"
               disabled={mcSelected.length === 0}
               onClick={handleCheckMC}
-              className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               確認する
             </button>
@@ -693,7 +719,7 @@ export function IntroPage() {
                   type="button"
                   disabled={isScoring}
                   onClick={handleNext}
-                  className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                  className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
                 >
                   {nextBtnLabel}
                 </button>
@@ -734,22 +760,28 @@ export function IntroPage() {
           </pre>
         )}
         <textarea
-          className="w-full rounded-xl border border-slate-300 bg-slate-50 p-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none disabled:opacity-60"
+          className="w-full rounded-xl border border-slate-300 bg-slate-50 p-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 resize-none disabled:opacity-60"
           rows={6}
           placeholder="回答を入力してください..."
           value={currentInput}
           disabled={isScoring || currentResult !== null}
           onChange={(e) => setCurrentInput(e.target.value)}
         />
-        {!currentResult && (
+        {!currentResult && !isScoring && (
           <button
             type="button"
-            disabled={!currentInput.trim() || isScoring}
+            disabled={!currentInput.trim()}
             onClick={handleScore}
-            className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isScoring ? '採点中...' : '採点する'}
+            採点する
           </button>
+        )}
+        {isScoring && (
+          <div className="flex flex-col items-center py-4">
+            <div className="h-5 w-5 animate-spin rounded-full border-[3px] border-slate-200 border-t-teal-600" />
+            <p className="mt-2 text-sm text-slate-500">AIが採点しています...</p>
+          </div>
         )}
       </div>
 
@@ -770,7 +802,7 @@ export function IntroPage() {
                 type="button"
                 disabled={isScoring}
                 onClick={handleNext}
-                className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
               >
                 {nextBtnLabel}
               </button>

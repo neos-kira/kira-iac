@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react'
-import { OpenInNewTabButton } from '../components/OpenInNewTabButton'
-import { NeOSLogo } from '../components/NeOSLogo'
 import { getTaskProgressList, getTrainingStartDate, clearTask1Cache } from './trainingWbsData'
 import { getCurrentDisplayName } from '../auth'
 import { fetchMyProgress } from '../progressApi'
@@ -11,16 +9,51 @@ function getTrainingUrl(path: string) {
   return `${base}#${path}`
 }
 
+const TASKS = [
+  {
+    category: '課題1-1 · 使用ツール',
+    title: 'インフラ基礎演習1',
+    description: 'TeraTerm / sakuraエディタ / WinMerge / WinSCP を使った接続・ファイル作成・差分・転送の演習です。',
+    path: '/training/infra-basic-1',
+  },
+  {
+    category: '課題1-2 · LINUXコマンド',
+    title: 'Linuxコマンド30問',
+    description: 'Linuxコマンドの基礎〜実務でよく使う操作を30問で確認します。満点クリアで次のレベルに進めます。',
+    path: '/training/linux-level1',
+  },
+]
+
+function getStatusBadge(snap: TraineeProgressSnapshot | null, index: number): { label: string; color: string; bg: string } | null {
+  if (!snap) return null
+  if (index === 0) {
+    if (snap.infra1Cleared) return { label: '完了', color: '#047857', bg: '#d1fae5' }
+    if (snap.infra1Checkboxes?.some(Boolean)) return { label: '実施中', color: '#92400e', bg: '#fef3c7' }
+    return { label: '未着手', color: '#64748b', bg: '#f1f5f9' }
+  }
+  if (index === 1) {
+    if (snap.l1Cleared) return { label: '完了', color: '#047857', bg: '#d1fae5' }
+    const hasProgress = (snap.l1CurrentPart ?? 0) > 0 || (snap.l1CurrentQuestion ?? 0) > 0 || (snap.l1WrongIds?.length ?? 0) > 0
+    if (hasProgress) {
+      const partNum = (snap.l1CurrentPart ?? 0) + 1
+      const qNum = (snap.l1CurrentQuestion ?? 0) + 1
+      return { label: `実施中: 第${partNum}部 ${qNum}/10問`, color: '#92400e', bg: '#fef3c7' }
+    }
+    return { label: '未着手', color: '#64748b', bg: '#f1f5f9' }
+  }
+  return null
+}
+
 export function InfraBasicTopPage() {
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const taskProgress = getTaskProgressList().find((t) => t.id === 'infra-basic-1')
+  const subTasks = taskProgress?.subTasks ?? []
 
   useEffect(() => {
     document.title = 'インフラ基礎課題1'
   }, [])
 
   useEffect(() => {
-    // バッジ表示用にサーバーデータを取得・復元する
     const load = async () => {
       const username = getCurrentDisplayName()
       if (!username || username.toLowerCase() === 'admin') return
@@ -33,97 +66,102 @@ export function InfraBasicTopPage() {
     load()
   }, [])
 
+  const totalCount = TASKS.length
+  const completedCount = subTasks.filter((s) => s.status === 'cleared').length
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-2xl space-y-6">
-        <div className="flex items-center justify-between">
-          <button type="button" onClick={() => { window.location.hash = '#/' }} className="cursor-pointer hover:opacity-80">
-            <NeOSLogo height={32} />
-          </button>
+
+        <div>
+          <h1 className="text-lg font-bold text-slate-800">インフラ基礎課題1</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            クライアントツールを用いた演習と、Linuxコマンド30問の2つで構成されています。
+          </p>
+          {taskProgress && (
+            <p className="mt-1 text-[11px] text-slate-500">
+              目安 {taskProgress.estimatedDays} 日目まで · 期限 {taskProgress.deadline}
+              {taskProgress.isDelayed && (
+                <span className="ml-2 text-rose-400">遅延</span>
+              )}
+            </p>
+          )}
+          {getTrainingStartDate() && (
+            <p className="mt-1 text-[10px] text-slate-500">
+              「インフラ研修を開始しますか？」を再表示したい場合:{' '}
+              <button
+                type="button"
+                onClick={() => { clearTask1Cache(); window.location.reload() }}
+                className="underline hover:text-slate-400"
+              >
+                課題1のキャッシュを削除
+              </button>
+            </p>
+          )}
         </div>
 
-        <p className="text-sm text-slate-600">
-          クライアントツールを用いた演習と、Linuxコマンド30問の2つで構成されています。
-        </p>
-        {taskProgress && (
-          <p className="text-[11px] text-slate-600">
-            目安 {taskProgress.estimatedDays} 日目まで · 期限 {taskProgress.deadline}
-            {taskProgress.isDelayed && (
-              <span className="ml-2 text-rose-400">遅延</span>
-            )}
-          </p>
-        )}
-        {getTrainingStartDate() && (
-          <p className="text-[10px] text-slate-600">
-            「インフラ研修を開始しますか？」を再表示したい場合:{' '}
-            <button
-              type="button"
-              onClick={() => {
-                clearTask1Cache()
-                window.location.reload()
-              }}
-              className="underline hover:text-slate-400"
-            >
-              課題1のキャッシュを削除
-            </button>
-          </p>
-        )}
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          {/* 課題1-1 カード */}
-          <div className="relative flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            {serverSnapshot !== null && (() => {
-              if (serverSnapshot.infra1Cleared) {
-                return <span className="absolute right-3 top-3 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">完了</span>
-              }
-              if (serverSnapshot.infra1Checkboxes?.some(Boolean)) {
-                return <span className="absolute right-3 top-3 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">実施中</span>
-              }
-              return <span className="absolute right-3 top-3 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">未着手</span>
-            })()}
-            <div>
-              <p className="text-[11px] text-slate-500">課題1-1 · 使用ツール</p>
-              <h2 className="mt-1 text-sm font-semibold text-slate-800">インフラ基礎演習1</h2>
-              <p className="mt-1 text-[11px] text-slate-600">
-                TeraTerm / sakuraエディタ / WinMerge / WinSCP を使った接続・ファイル作成・差分・転送の演習です。
-              </p>
-            </div>
-            <div className="mt-3 flex justify-end">
-              <OpenInNewTabButton
-                url={getTrainingUrl('/training/infra-basic-1')}
-                className="btn-wiggle bg-indigo-600 text-white hover:bg-indigo-700"
-              />
-            </div>
+        {/* 進捗サマリー */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: '#0d9488' }}>
+            {completedCount} / {totalCount} 完了
+          </span>
+          <div style={{ flex: 1, height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden', maxWidth: '120px' }}>
+            <div style={{ width: `${(completedCount / totalCount) * 100}%`, height: '100%', background: '#0d9488', borderRadius: '3px', transition: 'width 0.3s ease' }} />
           </div>
+        </div>
 
-          {/* 課題1-2 カード */}
-          <div className="relative flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            {serverSnapshot !== null && (() => {
-              if (serverSnapshot.l1Cleared) {
-                return <span className="absolute right-3 top-3 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">完了</span>
-              }
-              const hasL1Progress = (serverSnapshot.l1CurrentPart ?? 0) > 0 || (serverSnapshot.l1CurrentQuestion ?? 0) > 0 || (serverSnapshot.l1WrongIds?.length ?? 0) > 0
-              if (hasL1Progress) {
-                const partNum = (serverSnapshot.l1CurrentPart ?? 0) + 1
-                const qNum = (serverSnapshot.l1CurrentQuestion ?? 0) + 1
-                return <span className="absolute right-3 top-3 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">実施中: 第{partNum}部 {qNum}/10問</span>
-              }
-              return <span className="absolute right-3 top-3 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">未着手</span>
-            })()}
-            <div>
-              <p className="text-[11px] text-slate-500">課題1-2 · LINUXコマンド</p>
-              <h2 className="mt-1 text-sm font-semibold text-slate-800">Linuxコマンド30問</h2>
-              <p className="mt-1 text-[11px] text-slate-600">
-                Linuxコマンドの基礎〜実務でよく使う操作を30問で確認します。満点クリアで次のレベルに進めます。
-              </p>
-            </div>
-            <div className="mt-3 flex justify-end">
-              <OpenInNewTabButton
-                url={getTrainingUrl('/training/linux-level1')}
-                className="btn-wiggle bg-indigo-600 text-white hover:bg-indigo-700"
-              />
-            </div>
-          </div>
+        {/* リスト型課題カード */}
+        <div style={{ display: 'flex', flexDirection: 'column', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', background: 'white' }}>
+          {TASKS.map((task, index) => {
+            const sub = subTasks[index]
+            const isCompleted = sub?.status === 'cleared'
+            const badge = getStatusBadge(serverSnapshot, index)
+
+            return (
+              <div
+                key={task.path}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '20px 24px',
+                  borderBottom: index < TASKS.length - 1 ? '1px solid #f3f4f6' : 'none',
+                  background: isCompleted ? '#f0fdf9' : 'white',
+                }}
+              >
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: isCompleted ? '#0d9488' : '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: '16px', fontSize: '14px', color: isCompleted ? 'white' : '#9ca3af', fontWeight: 600 }}>
+                  {isCompleted ? '✓' : index + 1}
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '2px' }}>
+                    {task.category}
+                  </div>
+                  <div style={{ fontSize: '15px', fontWeight: 600, color: '#111827', marginBottom: '2px' }}>
+                    {task.title}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#9ca3af' }}>
+                    {task.description}
+                  </div>
+                  {badge && (
+                    <span style={{ display: 'inline-block', marginTop: '4px', fontSize: '10px', fontWeight: 500, color: badge.color, background: badge.bg, borderRadius: '9999px', padding: '2px 8px' }}>
+                      {badge.label}
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0, marginLeft: '16px' }}>
+                  <button
+                    type="button"
+                    onClick={() => { window.location.href = getTrainingUrl(task.path) }}
+                    style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', cursor: 'pointer', fontWeight: 500 }}
+                  >
+                    開く
+                  </button>
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>

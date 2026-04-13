@@ -10,6 +10,28 @@ const AccountsTableName = process.env.ACCOUNTS_TABLE_NAME
 const SessionsTableName = process.env.SESSIONS_TABLE_NAME || ''
 const AdminPassword = process.env.ADMIN_PASSWORD || ''
 
+/** Bedrock InvokeModel をリトライ付きで実行（ServiceUnavailableException 対策） */
+async function invokeModelWithRetry(command, maxRetries = 5) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await bedrockClient.send(command)
+    } catch (err) {
+      // リトライ対象外エラーは即座にthrow
+      if (err.name === 'ValidationException' || err.name === 'AccessDeniedException') {
+        throw err
+      }
+      const retryable = err.name === 'ServiceUnavailableException' || err.name === 'ThrottlingException' || err.name === 'ModelNotReadyException' || err.$metadata?.httpStatusCode === 503 || err.$metadata?.httpStatusCode === 429
+      if (retryable && attempt < maxRetries) {
+        const delay = 500 * Math.pow(2, attempt)
+        console.log(`[Bedrock] Retry ${attempt + 1}/${maxRetries} after ${delay}ms: ${err.name}`)
+        await new Promise((r) => setTimeout(r, delay))
+        continue
+      }
+      throw err
+    }
+  }
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Session-Token, Cache-Control',
@@ -153,31 +175,25 @@ async function handler(event) {
         return json({ error: 'question, scoringCriteria, answer are required' }, 400)
       }
 
-      const prompt = `あなたはITインフラ研修の採点者です。
-以下の採点基準に基づいて回答を採点してください。
-
-採点基準: ${scoringCriteria}
-
-受講生の回答: ${answer}
-
-以下のJSON形式のみで返答してください。前後に余計な文字を含めないこと。
-{
-  "pass": true または false,
-  "feedback": "合格の場合は良かった点、不合格の場合は具体的な改善点を100字以内で"
-}`
+      const prompt = `採点者として以下を採点せよ。JSON形式のみで返答。余計な文字禁止。
+問題: ${question}
+基準: ${scoringCriteria}
+回答: ${answer}
+注意: 文脈上明らかな要素は含まれているとみなす。表現が異なっても意味が同じなら正解。公平に採点。
+形式: {"pass":true/false,"feedback":"50字以内"}`
 
       try {
         const command = new InvokeModelCommand({
-          modelId: 'anthropic.claude-sonnet-4-5-20250929-v1:0',
+          modelId: 'jp.anthropic.claude-sonnet-4-6',
           contentType: 'application/json',
           accept: 'application/json',
           body: JSON.stringify({
             anthropic_version: 'bedrock-2023-05-31',
-            max_tokens: 1000,
+            max_tokens: 200,
             messages: [{ role: 'user', content: prompt }],
           }),
         })
-        const response = await bedrockClient.send(command)
+        const response = await invokeModelWithRetry(command)
         const result = JSON.parse(Buffer.from(response.body).toString())
         const text = (result.content?.[0]?.text ?? '').trim()
         // JSONブロックを抽出（greedy: 最初の { から最後の } まで）
@@ -189,8 +205,116 @@ async function handler(event) {
         const parsed = JSON.parse(match[0])
         return json({ pass: !!parsed.pass, feedback: String(parsed.feedback ?? '') })
       } catch (err) {
-        console.error('[ai/score] Bedrock error:', err)
-        return json({ error: 'AI scoring failed', detail: String(err) }, 502)
+        console.error('[ai/score] Bedrock error:', err.name, err.message)
+        const retryable = err.name === 'ServiceUnavailableException' || err.name === 'ThrottlingException' || err.name === 'ModelNotReadyException' || err.$metadata?.httpStatusCode === 503 || err.$metadata?.httpStatusCode === 429
+        if (retryable) {
+          return json({ error: 'AIサービスが混雑しています。しばらく待ってから再試行してください。' }, 503)
+        }
+        return json({ error: '採点処理でエラーが発生しました', detail: String(err.message || err) }, 500)
+      }
+    }
+
+    // AIチャット（メンター）プロキシ（AWS Bedrock Claude）
+    if (method === 'POST' && (path === '/ai/chat' || path === '/ai/chat/')) {
+      const session = await verifySession(event)
+      if (!session) return json({ error: 'unauthorized' }, 401)
+
+      let body
+      try { body = JSON.parse(event.body || '{}') } catch { body = {} }
+      const { message, history, context, image } = body
+      const bakumatsuBlocked = body.bakumatsuBlocked === true
+      if ((!message || typeof message !== 'string') && !image) {
+        return json({ error: 'message is required' }, 400)
+      }
+
+      // 幕末3回制限: Bedrockを呼ばず即返答
+      if (bakumatsuBlocked) {
+        return json({ reply: '幕末トークは本日ここまでです。研修に戻りましょう！続きはログアウト後にどうぞ。' })
+      }
+
+      const systemPrompt = `あなたはNIC（Neos IT College）のAI講師です。
+
+【返答スタイル・最重要】
+- 返答は必ず5行以内に収めること
+- コードブロック・箇条書き・表は使わない
+- マークダウン記法は使わない
+- チャット形式で端的に答える
+- 詳細が必要なら「もっと詳しく聞きますか？」と一言添えるだけ
+
+【最優先：幕末・新選組への対応】
+以下キーワードを含む質問には他ルールより優先して熱量を持って回答する。返答スタイルルールはこの場合のみ適用しない：
+幕末、新選組、坂本龍馬、西郷隆盛、大久保利通、吉田松陰、高杉晋作、土方歳三、近藤勇、沖田総司、斎藤一、永倉新八、山南敬助、芹沢鴨、原田左之助、藤堂平助、井上源三郎、島田魁、武田観柳斎、松原忠司、池田屋、桜田門外、大政奉還、明治維新、黒船、薩長、会津、戊辰戦争、五稜郭、禁門の変、鳥羽伏見、捨助、滝本捨助
+
+特別扱い人物（名言引用＋現代に例える）：
+近藤勇、土方歳三、沖田総司、永倉新八、斎藤一、山南敬助、芹沢鴨、原田左之助、藤堂平助、井上源三郎、島田魁、武田観柳斎、松原忠司、西郷隆盛、大久保利通、吉田松陰、高杉晋作
+捨助は三谷幸喜脚本の架空人物と明記して語ること。
+すべての幕末回答末尾：「…ところで、研修の方は進んでいますか？」
+
+【通常ルール】
+研修内容の質問には5行以内で端的に回答。
+システム操作（保存・中断等）：「その操作は画面上のボタンから行ってください。」
+幕末・研修以外の雑談：「研修に関すること以外はお答えできません。わからないことがあれば聞いてください。」
+
+【研修問題への回答禁止ルール】
+研修生が現在取り組んでいる問題の答えを直接教えてはいけない。
+「〇〇するには？」「〇〇のコマンドは？」という質問に対しては答えを直接提示せず、以下の形式でヒントのみ提供する：
+- 「どのコマンドを使うか」のカテゴリだけ教える
+- 「man コマンド名」や「--help」で調べる方法を案内する
+- 「どこで詰まっていますか？」と確認する
+答えを直接教えることは研修生の学習を妨げるため絶対に禁止する。
+
+現在の課題コンテキスト: ${context ?? '不明'}`
+
+      // history を直近10メッセージ（往復5回分）に制限し、user/assistant のみ通す
+      const safeHistory = Array.isArray(history)
+        ? history
+            .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+            .slice(-10)
+            .map((m) => ({ role: m.role, content: m.content }))
+        : []
+
+      // 末尾が今回の user message と重複する場合は除外（フロントの履歴に既に追加されているケース対策）
+      while (
+        safeHistory.length > 0 &&
+        safeHistory[safeHistory.length - 1].role === 'user' &&
+        safeHistory[safeHistory.length - 1].content === message
+      ) {
+        safeHistory.pop()
+      }
+
+      // 画像がある場合はマルチモーダルコンテンツブロックに変換
+      const userContent = image && image.base64 && image.type
+        ? [
+            { type: 'image', source: { type: 'base64', media_type: image.type, data: image.base64 } },
+            { type: 'text', text: message || '画像を確認してください' },
+          ]
+        : message
+
+      const messages = [...safeHistory, { role: 'user', content: userContent }]
+
+      try {
+        const command = new InvokeModelCommand({
+          modelId: 'jp.anthropic.claude-sonnet-4-6',
+          contentType: 'application/json',
+          accept: 'application/json',
+          body: JSON.stringify({
+            anthropic_version: 'bedrock-2023-05-31',
+            max_tokens: 2048,
+            system: systemPrompt,
+            messages,
+          }),
+        })
+        const response = await invokeModelWithRetry(command)
+        const result = JSON.parse(Buffer.from(response.body).toString())
+        const reply = (result.content?.[0]?.text ?? '').trim()
+        return json({ reply })
+      } catch (err) {
+        console.error('[ai/chat] Final error after retries:', err.name, err.message)
+        const retryable = err.name === 'ServiceUnavailableException' || err.name === 'ThrottlingException' || err.name === 'ModelNotReadyException' || err.$metadata?.httpStatusCode === 503 || err.$metadata?.httpStatusCode === 429
+        if (retryable) {
+          return json({ error: 'AIサービスが混雑しています。しばらく待ってから再試行してください。', reply: 'AIが混雑しています。少し待ってから再試行してください。' }, 503)
+        }
+        return json({ reply: 'AIとの通信に失敗しました。もう一度送信してください。', error: true })
       }
     }
 

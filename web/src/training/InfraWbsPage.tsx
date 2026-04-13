@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { NeOSLogo } from '../components/NeOSLogo'
 import {
   getTaskProgressList,
   getTrainingStartDate,
@@ -159,11 +158,10 @@ export function InfraWbsPage() {
   return (
     <div className="min-h-screen bg-slate-50 p-6 text-slate-800">
       <div className="mx-auto max-w-2xl space-y-8">
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <button type="button" onClick={() => { window.location.hash = '#/' }} className="cursor-pointer hover:opacity-80">
-            <NeOSLogo height={32} />
-          </button>
-        </header>
+        <div>
+          <p className="text-xs text-slate-500">研修管理</p>
+          <h1 className="text-xl font-bold text-slate-800">研修WBS</h1>
+        </div>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-lg">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-600">全体進捗</h2>
@@ -362,7 +360,7 @@ export function InfraWbsPage() {
                     </div>
                     <OpenInNewTabButton
                       url={getTrainingUrl(task.path)}
-                      className="btn-wiggle shrink-0 rounded-xl bg-gradient-to-r bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+                      className="btn-wiggle shrink-0 rounded-xl bg-gradient-to-r bg-teal-600 px-4 py-2 text-xs font-medium text-white hover:bg-teal-700"
                     />
                   </div>
                   <ul className="mt-4 space-y-2 border-t border-slate-200 pt-4">

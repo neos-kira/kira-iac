@@ -7,16 +7,16 @@ export type QuizQuestion = {
 
 export const LINUX_LEVEL1_QUESTIONS: QuizQuestion[] = [
   // 第1部: 基本操作 (q01–q10)
-  { id: 'q01', prompt: 'ホームディレクトリの絶対パスを1コマンドで確認するには？', choices: ['echo $HOME'], correctIndex: 0 },
+  { id: 'q01', prompt: '現在いるディレクトリの絶対パスを確認するには？', choices: ['pwd'], correctIndex: 0 },
   { id: 'q02', prompt: '/var/log以下のファイルを更新日時順（新しい順）で表示するには？', choices: ['ls -lt /var/log'], correctIndex: 0 },
   { id: 'q03', prompt: '/tmp/workディレクトリを絶対パスで作成するには？', choices: ['mkdir /tmp/work'], correctIndex: 0 },
   { id: 'q04', prompt: 'access.logの最後100行をリアルタイムで追いかけるには？', choices: ['tail -f -n 100 access.log'], correctIndex: 0 },
   { id: 'q05', prompt: 'error.logからFATALを含む行だけ抽出するには？', choices: ['grep FATAL error.log'], correctIndex: 0 },
-  { id: 'q06', prompt: 'config.confのバックアップをconfig.conf.bakとして同じディレクトリに作るには？', choices: ['cp config.conf config.conf.bak'], correctIndex: 0 },
-  { id: 'q07', prompt: '現在ログイン中のユーザーと所属グループを確認するには？', choices: ['id'], correctIndex: 0 },
-  { id: 'q08', prompt: '/etc/hostsの内容をページをめくって確認するには？', choices: ['less /etc/hosts'], correctIndex: 0 },
+  { id: 'q06', prompt: 'ファイルに実行権限を付与するには？', choices: ['chmod +x ファイル名'], correctIndex: 0 },
+  { id: 'q07', prompt: 'ファイルの所有者をuserに変更するには？', choices: ['chown user ファイル名'], correctIndex: 0 },
+  { id: 'q08', prompt: 'ディスクの使用量を人が読みやすい形式で確認するには？', choices: ['df -h'], correctIndex: 0 },
   { id: 'q09', prompt: '/etc以下の.confファイルを全て検索するには？', choices: ['find /etc -name "*.conf"'], correctIndex: 0 },
-  { id: 'q10', prompt: 'コマンドの実行結果とエラーを両方out.logに書き出すには？', choices: ['コマンド > out.log 2>&1'], correctIndex: 0 },
+  { id: 'q10', prompt: '定期実行の設定を編集するには？', choices: ['crontab -e'], correctIndex: 0 },
 
   // 第2部: サーバ構築必須 (q11–q20)
   { id: 'q11', prompt: 'httpdをインストールするには？（Amazon Linux 2023）', choices: ['dnf install httpd -y'], correctIndex: 0 },
@@ -28,10 +28,10 @@ export const LINUX_LEVEL1_QUESTIONS: QuizQuestion[] = [
   { id: 'q17', prompt: 'firewalldでhttpを許可するには？', choices: ['firewall-cmd --add-service=http --permanent'], correctIndex: 0 },
   { id: 'q18', prompt: 'firewalldの設定を反映するには？', choices: ['firewall-cmd --reload'], correctIndex: 0 },
   { id: 'q19', prompt: 'システムのエラーログをリアルタイムで確認するには？', choices: ['journalctl -f'], correctIndex: 0 },
-  { id: 'q20', prompt: '現在のファイアウォールの許可サービス一覧を確認するには？', choices: ['firewall-cmd --list-services'], correctIndex: 0 },
+  { id: 'q20', prompt: '動いているプロセスの一覧をCPU使用率順に確認するには？', choices: ['ps aux --sort=-%cpu'], correctIndex: 0 },
 
   // 第3部: 実践問題 (q21–q30)
-  { id: 'q21', prompt: 'Webサーバを構築したがブラウザから繋がらない。ポートが開いているか確認するには？', choices: ['ss -tlnp | grep 80'], correctIndex: 0 },
+  { id: 'q21', prompt: 'WebサーバーがHTTPリクエストに応答するか確認するには？', choices: ['curl -I http://localhost'], correctIndex: 0 },
   { id: 'q22', prompt: 'httpdが起動しない。ログを確認するには？', choices: ['journalctl -u httpd'], correctIndex: 0 },
   { id: 'q23', prompt: '/etc/httpd/conf/httpd.confをviで開くには？', choices: ['vi /etc/httpd/conf/httpd.conf'], correctIndex: 0 },
   { id: 'q24', prompt: 'viで開いたファイルを保存して閉じるには？', choices: [':wq'], correctIndex: 0 },

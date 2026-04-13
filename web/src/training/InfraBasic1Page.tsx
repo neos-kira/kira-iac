@@ -10,7 +10,6 @@ import {
 } from './infraBasic1Data'
 import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
 import { getCurrentDisplayName } from '../auth'
-import { NeOSLogo } from '../components/NeOSLogo'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 
 const EMPTY_SNAPSHOT: TraineeProgressSnapshot = {
@@ -210,11 +209,12 @@ export function InfraBasic1Page() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-2xl space-y-6">
+        <div>
+          <p className="text-xs text-slate-500">課題1-1 · 使用ツール</p>
+          <h1 className="text-xl font-bold text-slate-800">インフラ基礎演習1</h1>
+        </div>
         {/* ヘッダー */}
-        <div className="flex items-center justify-between">
-          <button type="button" onClick={() => { void handleSuspend() }} className="cursor-pointer hover:opacity-80">
-            <NeOSLogo height={32} />
-          </button>
+        <div className="flex items-center justify-end">
           <div className="flex flex-col items-end gap-1">
             <button
               type="button"
@@ -222,7 +222,7 @@ export function InfraBasic1Page() {
               disabled={isSaving}
               className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSaving ? '保存中...' : '中断して保存 →'}
+              {isSaving ? '保存中...' : '中断して保存'}
             </button>
             {saveError && <p className="text-xs text-red-600">{saveError}</p>}
           </div>

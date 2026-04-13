@@ -1,7 +1,7 @@
-import { StrictMode, useEffect } from 'react'
+import { StrictMode, useEffect, useState, useRef, useCallback } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { DeskOpenProvider, useDeskOpen } from './deskOpenContext'
+import { DeskOpenProvider } from './deskOpenContext'
 import './index.css'
 import App from './App.tsx'
 import { LoginPage } from './LoginPage'
@@ -21,21 +21,222 @@ import { InfraBasic4Page } from './training/InfraBasic4Page'
 import { InfraWbsPage } from './training/InfraWbsPage'
 import { IntroPage } from './training/IntroPage'
 import { AdminPage } from './admin/AdminPage'
-import { MentorDesk } from './components/MentorDesk'
+import { MentorDesk, INITIAL_MESSAGE, type ChatMessage } from './components/MentorDesk'
+import { SharedHeader } from './components/SharedHeader'
+import { ITBasicsTopPage } from './training/itBasics/ITBasicsTopPage'
+import { ITBasicsStudyPage } from './training/itBasics/ITBasicsStudyPage'
+import { ITBasicsTestPage } from './training/itBasics/ITBasicsTestPage'
 
-function MentorDeskOrNull() {
-  const loc = useLocation()
-  const pathname = (loc.pathname || '').replace(/^\/+/, '') || '/'
-  if (pathname === 'login') return null
-  return <MentorDesk />
+const MENTOR_CONTEXT_MAP: Record<string, string> = {
+  '/training/intro': 'はじめに',
+  '/training/infra-basic-top': 'インフラ基礎課題1',
+  '/training/infra-basic-1': 'インフラ基礎課題1-1',
+  '/training/infra-basic-2-top': 'インフラ基礎課題2',
+  '/training/infra-basic-2-1': 'インフラ基礎課題2-1',
+  '/training/infra-basic-3-top': 'インフラ基礎課題3',
+  '/training/infra-basic-3-1': 'インフラ基礎課題3-1',
+  '/training/infra-basic-3-2': 'インフラ基礎課題3-2',
+  '/training/infra-basic-4': 'インフラ基礎課題4',
+  '/training/infra-wbs': 'インフラWBS',
+  '/training/linux-level1': 'Linuxコマンド課題',
+  '/training/linux-level2': 'TCP/IP課題',
 }
 
-/** DESK パネル表示時にメインコンテンツが重ならないよう右余白を確保（max-w-md = 28rem） */
-function RoutesWithDeskMargin({ children }: { children: React.ReactNode }) {
-  const ctx = useDeskOpen()
+/** サイドバー表示対象パス（ログイン・トップ以外のトレーニング/IT基礎ページ） */
+function isSidebarPage(path: string): boolean {
+  return path.startsWith('/training/') || path.startsWith('/it-basics')
+}
+
+/** AI講師チャット（トグル式・レスポンシブ対応） */
+// MentorDeskToggle は LayoutWrapper 内に統合されたため削除
+
+
+function handleGlobalLogout() {
+  try {
+    window.localStorage.removeItem('kira-session-token')
+    window.localStorage.removeItem('kira-user-logged-in')
+    window.localStorage.removeItem('kira-user-display-name')
+    document.cookie = 'kira-session-token=; path=/; max-age=0; samesite=lax'
+    document.cookie = 'kira-user-logged-in=; path=/; max-age=0; samesite=lax'
+  } catch { /* ignore */ }
+  window.location.hash = '#/login'
+  window.location.reload()
+}
+
+const NAV_HEIGHT = 64 // h-16 = 64px
+
+function LayoutWrapper({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+  const path = location.pathname
+  const isLogin = path === '/login'
+  const isTop = path === '/'
+  const showChat = isSidebarPage(path)
+  const ctx = MENTOR_CONTEXT_MAP[path] ?? ''
+
+  const [isMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(pointer: coarse)').matches : false
+  )
+  const [isWide, setIsWide] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 900 : true
+  )
+  const [isAiOpen, setIsAiOpen] = useState(true)
+  const [isBottomBarOpen, setIsBottomBarOpen] = useState(false)
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE])
+
+  // リサイズ: サイドパネル幅
+  const [panelWidth, setPanelWidth] = useState(() => {
+    const saved = typeof window !== 'undefined' ? window.localStorage.getItem('aiPanelWidth') : null
+    return saved ? Math.max(240, Math.min(600, Number(saved))) : 320
+  })
+  // リサイズ: ボトムパネル高さ
+  const [panelHeight, setPanelHeight] = useState(() => {
+    const saved = typeof window !== 'undefined' ? window.localStorage.getItem('aiPanelHeight') : null
+    return saved ? Math.max(200, Math.min(window.innerHeight * 0.8, Number(saved))) : window.innerHeight * 0.6
+  })
+  const isDragging = useRef(false)
+
+  const startDragX = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    isDragging.current = true
+    document.body.style.userSelect = 'none'
+    document.body.style.cursor = 'col-resize'
+    const onMove = (ev: MouseEvent) => {
+      if (!isDragging.current) return
+      const w = Math.max(240, Math.min(600, window.innerWidth - ev.clientX))
+      setPanelWidth(w)
+    }
+    const onUp = () => {
+      isDragging.current = false
+      document.body.style.userSelect = ''
+      document.body.style.cursor = ''
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+      setPanelWidth((w) => { window.localStorage.setItem('aiPanelWidth', String(w)); return w })
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }, [])
+
+  const startDragY = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    isDragging.current = true
+    document.body.style.userSelect = 'none'
+    document.body.style.cursor = 'row-resize'
+    const onMove = (ev: MouseEvent) => {
+      if (!isDragging.current) return
+      const maxH = window.innerHeight * 0.8
+      const h = Math.max(200, Math.min(maxH, window.innerHeight - ev.clientY - 48))
+      setPanelHeight(h)
+    }
+    const onUp = () => {
+      isDragging.current = false
+      document.body.style.userSelect = ''
+      document.body.style.cursor = ''
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+      setPanelHeight((h) => { window.localStorage.setItem('aiPanelHeight', String(h)); return h })
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }, [])
+
+  useEffect(() => {
+    if (isMobile) return
+    const h = () => setIsWide(window.innerWidth >= 900)
+    window.addEventListener('resize', h)
+    return () => window.removeEventListener('resize', h)
+  }, [isMobile])
+
+  if (isLogin) return <>{children}</>
+  if (isTop) return <>{children}</>
+
+  // モード判定
+  const showSidePanel = showChat && !isMobile && isWide
+  const showBottomBar = showChat && !isMobile && !isWide
+  const showMobile = showChat && isMobile
+
   return (
-    <div className={ctx?.deskOpen ? 'mr-[28rem] transition-[margin-right] duration-200' : ''}>
-      {children}
+    <div style={{ display: 'flex', minHeight: '100vh', flexDirection: 'column' }}>
+      <SharedHeader onLogout={handleGlobalLogout} />
+      <div style={{ display: 'flex', flex: 1, paddingBottom: showBottomBar ? 48 : 0 }}>
+        {/* メインコンテンツ */}
+        <div style={{ flex: '1 1 0', minWidth: 0, wordBreak: 'break-word' as const, position: 'relative' }}>
+          <div className="mx-auto max-w-5xl px-6">{children}</div>
+        </div>
+
+        {/* モード1: サイドパネル（pointer:fine & width>=900px） */}
+        {showSidePanel && isAiOpen && (
+          <div style={{ flex: `0 0 ${panelWidth}px`, flexShrink: 0, display: 'flex', flexDirection: 'row', background: 'white', height: `calc(100vh - ${NAV_HEIGHT}px)`, position: 'sticky', top: NAV_HEIGHT }}>
+            <div onMouseDown={startDragX} style={{ width: 4, cursor: 'col-resize', background: 'transparent', flexShrink: 0, transition: 'background 0.15s' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#0d9488' }} onMouseLeave={(e) => { if (!isDragging.current) (e.currentTarget as HTMLElement).style.background = 'transparent' }} />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e5e7eb', minWidth: 0 }}>
+              <MentorDesk context={ctx} sidebar embedded onClose={() => setIsAiOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
+            </div>
+          </div>
+        )}
+        {showSidePanel && !isAiOpen && (
+          <div style={{ position: 'absolute', top: 8, right: 16, zIndex: 50 }}>
+            <button type="button" onClick={() => setIsAiOpen(true)} style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 16 }}>🎓</span> AI講師
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* モード2: ボトムバー（pointer:fine & width<900px） */}
+      {showBottomBar && (
+        <>
+          {/* 展開パネル */}
+          {isBottomBarOpen && (
+            <div style={{ position: 'fixed', bottom: 48, left: 0, right: 0, height: panelHeight, display: 'flex', flexDirection: 'column', background: 'white', borderTop: '1px solid #e5e7eb', zIndex: 100, boxShadow: '0 -4px 16px rgba(0,0,0,0.08)' }}>
+              <div onMouseDown={startDragY} style={{ height: 4, cursor: 'row-resize', background: 'transparent', flexShrink: 0, transition: 'background 0.15s' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#0d9488' }} onMouseLeave={(e) => { if (!isDragging.current) (e.currentTarget as HTMLElement).style.background = 'transparent' }} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <MentorDesk context={ctx} sidebar embedded onClose={() => setIsBottomBarOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
+              </div>
+            </div>
+          )}
+          {/* 固定バー */}
+          <div
+            onClick={() => setIsBottomBarOpen((v) => !v)}
+            style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 48, background: 'white', borderTop: '1px solid #e5e7eb', zIndex: 101, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#0d9488' }}
+          >
+            <span style={{ fontSize: 18 }}>🎓</span> AI講師 <span style={{ fontSize: 12, color: '#9ca3af' }}>{isBottomBarOpen ? '▼' : '▲'}</span>
+          </div>
+        </>
+      )}
+
+      {/* モード3: モバイル 🎓ボタン */}
+      {showMobile && !isChatOpen && (
+        <button type="button" onClick={() => setIsChatOpen(true)} style={{ position: 'fixed', bottom: 24, right: 24, width: 52, height: 52, borderRadius: '50%', background: '#0d9488', color: 'white', border: 'none', cursor: 'pointer', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 201 }}>
+          🎓
+        </button>
+      )}
+
+      {/* モード3: モバイル ボトムシート */}
+      {showMobile && isChatOpen && (
+        <>
+          <style>{`
+            .mobile-chat-panel {
+              position: fixed;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              height: 60dvh;
+              max-height: 80dvh;
+              display: flex;
+              flex-direction: column;
+              background: white;
+              border-radius: 16px 16px 0 0;
+              z-index: 200;
+              box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
+            }
+          `}</style>
+          <div onClick={() => setIsChatOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 150 }} />
+          <div className="mobile-chat-panel">
+            <MentorDesk context={ctx} sidebar embedded onClose={() => setIsChatOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -60,6 +261,7 @@ function JTeradaRestrictGuard() {
 function LoginReloadGuard() {
   const loc = useLocation()
   useEffect(() => {
+    if (import.meta.env.DEV) return
     if (typeof window === 'undefined') return
     const hasCookieToken = document.cookie.includes('kira-session-token=')
     const hasToken = !!window.localStorage.getItem('kira-session-token') || hasCookieToken
@@ -86,10 +288,10 @@ createRoot(document.getElementById('root')!).render(
       <DeskOpenProvider>
         <LoginReloadGuard />
         <JTeradaRestrictGuard />
-        <RoutesWithDeskMargin>
+        <LayoutWrapper>
           <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={isLoggedIn() ? <App /> : <Navigate to="/login" replace />} />
+          <Route path="/" element={(import.meta.env.DEV || isLoggedIn()) ? <App /> : <Navigate to="/login" replace />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/training/linux-level1" element={<IntroGate><LinuxLevel1Page /></IntroGate>} />
           <Route path="/training/infra-basic-1" element={<IntroGate><InfraBasic1Page /></IntroGate>} />
@@ -103,9 +305,11 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/training/infra-basic-4" element={<IntroGate><InfraBasic4Page /></IntroGate>} />
           <Route path="/training/infra-wbs" element={<IntroGate><InfraWbsPage /></IntroGate>} />
           <Route path="/training/intro" element={<IntroPage />} />
+          <Route path="/it-basics" element={<ITBasicsTopPage />} />
+          <Route path="/it-basics/:categoryId/study" element={<ITBasicsStudyPage />} />
+          <Route path="/it-basics/:categoryId/test" element={<ITBasicsTestPage />} />
           </Routes>
-        </RoutesWithDeskMargin>
-        <MentorDeskOrNull />
+        </LayoutWrapper>
       </DeskOpenProvider>
     </HashRouter>
   </StrictMode>,

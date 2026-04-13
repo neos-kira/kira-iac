@@ -131,7 +131,7 @@ export function AdminPage() {
                             <div className="flex items-center gap-2">
                               <div className="h-2.5 w-20 overflow-hidden rounded-full bg-slate-200">
                                 <div
-                                  className="h-full rounded-full bg-indigo-500 transition-all"
+                                  className="h-full rounded-full bg-teal-500 transition-all"
                                   style={{ width: `${snap.wbsPercent}%` }}
                                 />
                               </div>

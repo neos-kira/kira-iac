@@ -1,498 +1,321 @@
-import { useRef, useState } from 'react'
-import { useDeskOpen } from '../deskOpenContext'
+import { useEffect, useRef, useState } from 'react'
+import { BASE_URL, buildAuthHeaders, forceLogout } from '../progressApi'
 
-type Grade = 'S' | 'A' | 'B' | 'C' | 'D'
+type ChatMessage = { role: 'user' | 'assistant'; content: string; image?: string }
 
-/** Web Speech API 用の型（ブラウザ組み込み型がない場合のフォールバック） */
-interface SpeechRecognitionInstance {
-  continuous: boolean
-  interimResults: boolean
-  lang: string
-  start(): void
-  stop(): void
-  onresult: ((event: SpeechRecognitionResultEvent) => void) | null
-  onerror: ((event: Event) => void) | null
-  onend: (() => void) | null
-}
-interface SpeechRecognitionResultEvent {
-  resultIndex: number
-  results: SpeechRecognitionResultList
-}
-interface SpeechRecognitionResultList {
-  length: number
-  [index: number]: SpeechRecognitionResult
-}
-interface SpeechRecognitionResult {
-  length: number
-  isFinal: boolean
-  [index: number]: { transcript: string }
+const INITIAL_MESSAGE: ChatMessage = {
+  role: 'assistant',
+  content: '研修内容についてわからないことがあれば聞いてください。',
 }
 
-const SpeechRecognitionAPI =
-  typeof window !== 'undefined'
-    ? (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionInstance; webkitSpeechRecognition?: new () => SpeechRecognitionInstance }).SpeechRecognition ??
-    (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionInstance }).webkitSpeechRecognition
+const MAX_TURNS = 20
+
+function renderMarkdown(raw: string): string {
+  let s = raw
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+  s = s.replace(/^### (.+)$/gm, '<h4 style="font-weight:700;font-size:13px;margin:4px 0">$1</h4>')
+  s = s.replace(/^## (.+)$/gm, '<h3 style="font-weight:700;font-size:14px;margin:4px 0">$1</h3>')
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  s = s.replace(/^---$/gm, '<hr style="border:0;border-top:1px solid #e2e8f0;margin:6px 0"/>')
+  s = s.replace(/^&gt; (.+)$/gm, '<blockquote style="border-left:3px solid #0d9488;padding-left:8px;margin:4px 0;color:#475569">$1</blockquote>')
+  s = s.replace(/`([^`]+)`/g, '<code style="background:#f1f5f9;padding:1px 4px;border-radius:3px;font-size:11px">$1</code>')
+  s = s.replace(/\n/g, '<br/>')
+  return s
+}
+
+export type { ChatMessage }
+export { INITIAL_MESSAGE }
+
+export function MentorDesk({ context, open: externalOpen, onClose: externalOnClose, sidebar = false, mobile = false, embedded = false, messages: externalMessages, setMessages: externalSetMessages }: { context?: string; open?: boolean; onClose?: () => void; sidebar?: boolean; mobile?: boolean; embedded?: boolean; messages?: ChatMessage[]; setMessages?: React.Dispatch<React.SetStateAction<ChatMessage[]>> }) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = sidebar ? true : (externalOpen ?? internalOpen)
+  const onClose = externalOnClose ?? (() => setInternalOpen(false))
+  const [internalMessages, internalSetMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE])
+  const messages = externalMessages ?? internalMessages
+  const setMessages = externalSetMessages ?? internalSetMessages
+  const [input, setInput] = useState('')
+  const [isSending, setIsSending] = useState(false)
+  const [bakumatsuCount, setBakumatsuCount] = useState<number>(0)
+  const BAKUMATSU_KEYWORDS = ['幕末','新選組','土方','近藤','沖田','西郷','松陰','高杉','捨助','池田屋','桜田門外','大政奉還','明治維新','黒船','薩長','会津','斎藤','永倉','山南','芹沢','原田','藤堂','五稜郭','戊辰']
+  const [pendingImage, setPendingImage] = useState<{ base64: string; type: string; dataUrl: string } | null>(null)
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+
+  const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
+
+  function handleImageFile(file: File) {
+    if (!ACCEPTED_TYPES.includes(file.type)) return
+    if (file.size > 5 * 1024 * 1024) return // 5MB limit
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      const base64 = dataUrl.split(',')[1]
+      const type = file.type
+      setPendingImage({ base64, type, dataUrl })
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function handlePaste(e: React.ClipboardEvent) {
+    const items = e.clipboardData?.items
+    if (!items) return
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile()
+        if (file) { handleImageFile(file); e.preventDefault(); break }
+      }
+    }
+  }
+
+  // 音声入力
+  const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef<{ stop: () => void } | null>(null)
+  const voiceBaseRef = useRef('')
+  const SpeechRecognitionAPI = typeof window !== 'undefined'
+    ? (window as unknown as { SpeechRecognition?: new () => unknown; webkitSpeechRecognition?: new () => unknown }).SpeechRecognition
+      ?? (window as unknown as { webkitSpeechRecognition?: new () => unknown }).webkitSpeechRecognition
     : undefined
 
-/** 各セクションの言語化ガイド（技術的思考ヒント） */
-const SECTION_HINTS: { label: string; key: string; hint: string }[] = [
-  {
-    label: '【対象】',
-    key: 'env',
-    hint:
-      '「誰が、どこで」を明確に。「自分のPCから、課題2のCentOSに対して」のように、物理的な位置関係を含めると伝わりやすくなります。',
-  },
-  {
-    label: '【事象】',
-    key: 'issue',
-    hint:
-      '「動かない」はNG。「どのコマンドを打った時に、どんなエラーが出たか」を正確に写してください。',
-  },
-  {
-    label: '【試したこと】',
-    key: 'inv',
-    hint:
-      '「〇〇を試しました」だけでなく、その時のログ（cat /var/log/messages 等）の一部を添えると、プロはすぐに原因を特定できます。',
-  },
-  {
-    label: '【仮説】',
-    key: 'hypo',
-    hint:
-      '勘でも構いません。「設定ファイルの記述ミスかもしれない」など、自分なりの予測を1行足すだけで、レビューの質が変わります。',
-  },
-]
-
-type MentorResult = {
-  grade: Grade
-  summary: string
-  rewritten: string
-  hints: string[]
-}
-
-function evaluateQuestion(raw: string): MentorResult {
-  const text = raw.trim()
-  if (!text) {
-    return {
-      grade: 'D',
-      summary: '内容がほとんど書かれていません。「対象 / 事象 / 確認したこと / 仮説」の4つを意識して書いてみましょう。',
-      rewritten:
-        '【対象】\n（どのサーバ / OS / アプリについての話か）\n\n【事象】\n（何が起きているか。エラー文や再現手順）\n\n【試したこと】\n（既に実施したコマンドやログ確認）\n\n【仮説】\n（何が原因だと考えているか）',
-      hints: ['まずは「いつ・どこで・何が起きているか」を 2〜3 行で書き出してみましょう。'],
-    }
-  }
-
-  // 依存的な質問は即 D 判定
-  const wantsAnswer =
-    /答えを教えて|正解を教えて|解答を教えて|教えてください|教えて下さい|tell me the answer|give me the answer/i.test(
-      text,
-    )
-  if (wantsAnswer) {
-    return {
-      grade: 'D',
-      summary:
-        '「答えを教えてください」という依存的な質問になっています。エンジニアの仕事はまず現状を整理し、自分なりの仮説を立てることです。',
-      rewritten:
-        '【対象】\n（例: ○○環境の ×× サーバ / インフラ基礎課題3-2 の Q1 など）\n\n【事象】\n（例: ～～というエラーが発生し、△△ができない）\n\n【試したこと】\n（例: ログの場所・確認した設定・実行したコマンドなど）\n\n【仮説】\n（例: □□ の設定ミス、ネットワーク経路の問題 などと考えている）',
-      hints: [
-        '「対象」「事象」「試したこと」「仮説」の4つを日本語で書き出してから、再度相談してください。',
-        'まずは自分なりの仮説を 1 行でも書く習慣をつけると、現場での成長が早くなります。',
-      ],
-    }
-  }
-
-  // ラベル付き（対象：…）または一文で5W1Hの内容が含まれるか
-  const hasTarget =
-    /対象[:：]/.test(text) || /(環境|接続|サーバ|SSH|CentOS|課題\d|PCから|どこで)/.test(text)
-  const hasEvent =
-    /(事象|症状)[:：]/.test(text) || /(ping|疎通|timeout|タイムアウト|エラー|できない|失敗|実行した)/.test(text)
-  const hasTried =
-    /(試したこと|確認|実施したこと)[:：]/.test(text) ||
-    /(確認|試した|停止|通る|firewalld|LAN|他端末)/.test(text)
-  const hasHypo =
-    /(仮説|原因予想|推測)[:：]/.test(text) ||
-    /(疑い|考え|ミス|ルーティング|設定|原因|教えて|どのログ)/.test(text)
-  const flags = [hasTarget, hasEvent, hasTried, hasHypo]
-  const count = flags.filter(Boolean).length
-
-  let grade: Grade
-  if (count === 4) grade = 'S'
-  else if (count === 3) grade = 'A'
-  else if (count === 2) grade = 'B'
-  else if (count === 1) grade = 'C'
-  else grade = 'D'
-
-  let summary: string
-  switch (grade) {
-    case 'S':
-      summary = '対象・事象・試したこと・仮説が揃っており、そのまま現場でも通用する質問レベルです。'
-      break
-    case 'A':
-      summary = 'ほぼ必要な情報は揃っていますが、一部の観点（対象 or 仮説など）が薄いため、もう一歩整理するとさらに良くなります。'
-      break
-    case 'B':
-      summary = '断片的な情報はありますが、「誰が・どこで・何をして・どうなったか」が読み手に伝わりにくい状態です。4要素を意識して追記しましょう。'
-      break
-    case 'C':
-      summary = '状況は伝わり始めていますが、現状の説明と試したこと・仮説が分かれておらず、原因切り分けの材料が不足しています。'
-      break
-    default:
-      summary = '情報が足りず、回答者が状況をイメージしづらい状態です。4つの観点を順番に埋めてみましょう。'
-      break
-  }
-
-  const rewritten =
-    '【対象】\n' +
-    (hasTarget ? '（既に「対象:」として書かれている内容をここに集約）' : 'どのサーバ / OS / アプリ /課題かを 1 行で書きます。') +
-    '\n\n【事象】\n' +
-    (hasEvent ? '発生している事象やエラー内容を、時系列で 2〜3 行にまとめます。' : 'いつ・どの操作をした時に・何が起きたかを整理します。') +
-    '\n\n【試したこと】\n' +
-    (hasTried ? 'ログ確認や再起動、実行したコマンドなど、既に試した対応を列挙します。' : 'どのログを見たか、どのコマンドを実行したかを具体的に書きます。') +
-    '\n\n【仮説】\n' +
-    (hasHypo ? '考えている原因候補を 1〜2 個に絞って記載します。' : '「○○の設定が誤っている」「△△のネットワーク経路が怪しい」など、原因の仮説を書きます。')
-
-  const hints: string[] = []
-  if (!hasTarget) hints.push('「対象: ○○サーバ / 課題3-2 Q1 など」の行を足すと、レビュー側が前提を誤解しにくくなります。')
-  if (!hasEvent) hints.push('「事象: ××の操作で △△ エラーが発生」のように、具体的な動作とエラーを 1 行でまとめましょう。')
-  if (!hasTried) hints.push('「試したこと: ログの場所 / 実行コマンド / 再起動の有無」などを書き出すと、二度手間の回答を防げます。')
-  if (!hasHypo) hints.push('「仮説: ～が原因と考えている」の 1 行を足すだけで、先輩からのコメントの質が一段上がります。')
-
-  return { grade, summary, rewritten, hints }
-}
-
-export function MentorDesk() {
-  const deskCtx = useDeskOpen()
-  const [open, setOpen] = useState(false)
-  const [input, setInput] = useState('')
-  const [result, setResult] = useState<MentorResult | null>(null)
-  const [isEvaluating, setIsEvaluating] = useState(false)
-  const [isListening, setIsListening] = useState(false)
-  const [interimTranscript, setInterimTranscript] = useState('')
-  const [voiceUnsupported, setVoiceUnsupported] = useState(false)
-  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
-
-  const startVoiceInput = () => {
-    if (!SpeechRecognitionAPI) {
-      setVoiceUnsupported(true)
-      setTimeout(() => setVoiceUnsupported(false), 3000)
+  function toggleVoice() {
+    if (!SpeechRecognitionAPI) return
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop()
+      recognitionRef.current = null
+      setIsListening(false)
       return
     }
-    if (isListening) return
-    try {
-      const recognition = new SpeechRecognitionAPI()
-      recognition.continuous = true
-      recognition.interimResults = true
-      recognition.lang = 'ja-JP'
-      recognition.onresult = (event: SpeechRecognitionResultEvent) => {
-        let finalText = ''
-        let interim = ''
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const res = event.results[i]
-          if (res.isFinal) {
-            finalText += res[0].transcript
-          } else {
-            interim += res[0].transcript
-          }
-        }
-        if (finalText) {
-          setInput((prev) => prev + finalText)
-        }
-        setInterimTranscript(interim)
-      }
-      recognition.onerror = () => {
-        recognition.stop()
-        setIsListening(false)
-        recognitionRef.current = null
-      }
-      recognition.onend = () => {
-        setIsListening(false)
-        recognitionRef.current = null
-      }
-      recognition.start()
-      recognitionRef.current = recognition
-      setIsListening(true)
-    } catch {
-      setIsListening(false)
-      recognitionRef.current = null
+    voiceBaseRef.current = input
+    const recognition = new SpeechRecognitionAPI() as {
+      start: () => void; stop: () => void; lang: string; continuous: boolean; interimResults: boolean
+      onresult: ((e: { results: { length: number; [i: number]: { isFinal?: boolean; length: number; [j: number]: { transcript?: string } } } }) => void) | null
+      onend: (() => void) | null; onerror: ((e?: unknown) => void) | null
     }
+    recognition.lang = 'ja-JP'
+    recognition.continuous = true
+    recognition.interimResults = true
+    recognition.onresult = (e) => {
+      let finalText = ''
+      let interimText = ''
+      for (let i = 0; i < e.results.length; i++) {
+        const r = e.results[i]
+        const transcript = r[0]?.transcript ?? ''
+        if (r.isFinal) {
+          finalText += transcript
+        } else {
+          interimText += transcript
+        }
+      }
+      voiceBaseRef.current = voiceBaseRef.current.replace(/\n$/, '') + finalText
+      setInput(voiceBaseRef.current + interimText)
+    }
+    recognition.onend = () => { setIsListening(false); recognitionRef.current = null }
+    recognition.onerror = () => { setIsListening(false); recognitionRef.current = null }
+    recognition.start()
+    recognitionRef.current = recognition
+    setIsListening(true)
   }
 
-  const stopVoiceInput = () => {
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop()
-      } catch {
-        // ignore
-      }
-      recognitionRef.current = null
-    }
-    setIsListening(false)
-    setInterimTranscript('')
-  }
 
-  const handleAnalyze = () => {
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [messages, open, isSending])
+
+  async function handleSend() {
     const text = input.trim()
-    if (!text) return
-    setIsEvaluating(true)
+    if (!text && !pendingImage) return
+    if (isSending) return
+    const userMsg: ChatMessage = { role: 'user', content: text || '(画像を送信)', image: pendingImage?.dataUrl }
+    const next = [...messages, userMsg].slice(-MAX_TURNS * 2)
+    setMessages(next)
+    const imagePayload = pendingImage ? { base64: pendingImage.base64, type: pendingImage.type } : undefined
+    setInput('')
+    setPendingImage(null)
+    setIsSending(true)
+    const isBakumatsu = BAKUMATSU_KEYWORDS.some((k) => text.includes(k))
+
+    if (isBakumatsu && bakumatsuCount >= 3) {
+      setMessages((prev) => [...prev, { role: 'assistant' as const, content: '幕末トークは本日ここまでです。研修に戻りましょう！続きはログアウト後にどうぞ。' }].slice(-MAX_TURNS * 2))
+      setIsSending(false)
+      return
+    }
+
+    if (isBakumatsu) {
+      setBakumatsuCount((prev) => prev + 1)
+    }
+
     try {
-      const r = evaluateQuestion(text)
-      setResult(r)
+      const history = next.filter((m) => m !== INITIAL_MESSAGE).slice(-MAX_TURNS * 2)
+      console.log('[MentorDesk] BASE_URL:', BASE_URL)
+      const url = `${BASE_URL}/ai/chat`
+      console.log('[MentorDesk] POST', url)
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
+        credentials: 'omit',
+        body: JSON.stringify({ message: text || '画像を確認してください', history, context: context ?? '', image: imagePayload }),
+      })
+      console.log('[MentorDesk] response:', res.status, res.ok)
+      if (!res.ok) {
+        if (res.status === 401) {
+          forceLogout()
+          return
+        }
+        const errMsg = res.status === 503
+          ? 'AIが混雑しています。少し待ってから再試行してください。'
+          : 'AIとの通信に失敗しました。もう一度送信してください。'
+        setMessages((prev) => [...prev, { role: 'assistant' as const, content: errMsg }].slice(-MAX_TURNS * 2))
+        return
+      }
+      const data = (await res.json()) as { reply?: string; error?: boolean }
+      const reply = (data.reply ?? '').trim() || '（応答が取得できませんでした）'
+      setMessages((prev) => [...prev, { role: 'assistant' as const, content: reply }].slice(-MAX_TURNS * 2))
+    } catch (err) {
+      console.error('[MentorDesk] fetch failed:', err)
+      setMessages((prev) => [...prev, { role: 'assistant' as const, content: 'AIとの通信に失敗しました。もう一度送信してください。' }].slice(-MAX_TURNS * 2))
     } finally {
-      setIsEvaluating(false)
+      setIsSending(false)
     }
   }
 
-  const handleClose = () => {
-    setOpen(false)
-    setResult(null)
-    deskCtx?.setDeskOpen(false)
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault()
+      void handleSend()
+    }
   }
 
-  const handleOpen = () => {
-    setOpen(true)
-    deskCtx?.setDeskOpen(true)
-  }
+  // ── サイドバーモードで共通チャットUIを返すヘルパー ──
+  const chatHeader = (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, padding: 16, borderBottom: '1px solid #e5e7eb' }}>
+      <span style={{ fontWeight: 600, fontSize: 14 }}>🎓 AI講師</span>
+      <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 18, lineHeight: 1, padding: '0 0 0 8px' }} title="閉じる">✕</button>
+    </div>
+  )
 
-  return (
-    <>
-      {/* フローティングボタン（アイコンのみ・右下で邪魔にならない配置） */}
-      <button
-        type="button"
-        onClick={handleOpen}
-        className="fixed bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 shadow-lg hover:border-indigo-400 hover:bg-slate-50"
-        title="AIメンターに相談（質問添削）"
-        aria-label="AIメンターに相談（質問添削）"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-        >
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
-      </button>
+  // ── サイドバーモード（PCのみ） ──
+  if (sidebar) {
+    return (
+      <aside style={embedded ? { flex: 1, display: 'flex', flexDirection: 'column' as const, minHeight: 0 } : { position: 'fixed' as const, top: 64, right: 0, bottom: 0, width: 280, zIndex: 100 }} className={`flex flex-col ${embedded ? '' : 'border-l border-slate-200'} bg-white`}>
+        {chatHeader}
 
-      {/* 相談デスク（スライドインパネル） */}
-      {open && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          {/* 背景オーバーレイ */}
-          <div className="absolute inset-0 bg-black/40" onClick={handleClose} />
-
-          {/* パネル本体 */}
-          <div className="relative z-50 flex h-full w-full max-w-md flex-col border-l border-slate-200 bg-white p-4 text-[11px] text-slate-800 shadow-xl">
-            <header className="mb-3 flex items-center justify-between gap-2">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  MENTOR · QUESTION DESK
-                </p>
-                <p className="mt-1 text-xs font-semibold text-slate-800">AIメンター相談デスク（質問添削専用）</p>
-                <p className="mt-1 text-[10px] text-slate-600">
-                  ※ 正解やコマンドは一切お伝えしません。質問内容の整理と添削のみを行います。
-                </p>
+        <div ref={scrollRef} className="flex-1 min-h-0 space-y-3 overflow-y-auto p-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+          {messages.map((m, i) => (
+            <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-xs leading-relaxed ${m.role === 'user' ? 'bg-teal-500 text-white' : 'bg-slate-100 text-slate-800'}`}>
+                {m.image && <img src={m.image} alt="添付画像" className="max-h-20 rounded-lg mb-1" />}
+                {m.role === 'assistant' ? <span dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }} /> : m.content}
               </div>
-              <button
-                type="button"
-                onClick={handleClose}
-                className="rounded-full border border-slate-300 px-2 py-1 text-[10px] text-slate-600 hover:bg-slate-50"
-              >
-                閉じる
-              </button>
+            </div>
+          ))}
+          {isSending && (
+            <div className="flex justify-start">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '12px 16px', background: '#f3f4f6', borderRadius: '12px 12px 12px 4px', width: 'fit-content' }}>
+                {[0, 1, 2].map((i) => (<div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#0d9488', animation: 'typing-dot 1.2s infinite', animationDelay: `${i * 0.2}s` }} />))}
+                <style>{`@keyframes typing-dot { 0%,60%,100%{opacity:.3;transform:scale(.8)} 30%{opacity:1;transform:scale(1.2)} }`}</style>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {pendingImage && (
+          <div className="flex items-start gap-2 border-t border-slate-200 px-3 pt-2">
+            <div className="relative">
+              <img src={pendingImage.dataUrl} alt="添付プレビュー" className="max-h-16 rounded-lg border border-slate-200" />
+              <button type="button" onClick={() => setPendingImage(null)} className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-slate-600 text-[8px] text-white hover:bg-slate-800">✕</button>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-end gap-1.5 border-t border-slate-200 p-3" style={{ flexShrink: 0, paddingBottom: 'max(12px, env(safe-area-inset-bottom))', background: 'white' }} onPaste={handlePaste}>
+          <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageFile(f); e.target.value = '' }} />
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="rounded-xl px-2 py-2 text-xs bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors" aria-label="画像を添付" title="画像を添付">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+          </button>
+          <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste} onFocus={(e) => { setTimeout(() => { (e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'nearest' }) }, 300) }} rows={1} placeholder="メッセージを入力" className="flex-1 resize-none rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/40" style={{ maxHeight: 72 }} />
+          {SpeechRecognitionAPI && (
+            <button type="button" onClick={toggleVoice} className={`rounded-xl px-2 py-2 text-xs transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`} aria-label={isListening ? '音声入力を停止' : '音声入力'} title={isListening ? '音声入力を停止' : '音声入力'}>
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z" /></svg>
+            </button>
+          )}
+          <button type="button" onClick={() => void handleSend()} disabled={isSending || !input.trim()} className="rounded-xl bg-teal-500 px-3 py-2 text-xs font-medium text-white hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed">送信</button>
+        </div>
+      </aside>
+    )
+  }
+
+  // ── モバイルモード（md未満のみ表示） ──
+  if (mobile) {
+    return (
+      <>
+        {/* フローティングボタン（md未満のみ表示） */}
+        {!open && (
+          <button
+            type="button"
+            onClick={() => setInternalOpen(true)}
+            className="md:hidden fixed bottom-6 right-6 z-[9999] flex items-center justify-center w-14 h-14 rounded-full bg-teal-500 text-white shadow-2xl hover:bg-teal-600 transition-all"
+            aria-label="AI講師に聞く"
+          >
+            <span className="text-2xl">🎓</span>
+          </button>
+        )}
+
+        {/* オーバーレイ */}
+        {open && <div className="md:hidden fixed inset-0 z-[9998] bg-black/30" onClick={onClose} />}
+
+        {/* チャットパネル（画面75%高さ） */}
+        {open && (
+          <div className="md:hidden fixed bottom-0 left-0 right-0 z-[9999] flex flex-col bg-white rounded-t-2xl shadow-xl" style={{ height: '75vh' }}>
+            <header className="flex items-center justify-between bg-teal-50 border-b border-teal-100 px-4 py-3 rounded-t-2xl">
+              <p className="text-sm font-semibold text-slate-800">🎓 AI講師</p>
+              <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg leading-none">✕</button>
             </header>
-
-            <div className="flex-1 space-y-3 overflow-y-auto">
-              <div className="space-y-2">
-                {/* チャットで送るイメージの例文（5W1H 一文） */}
-                <details className="rounded-xl border border-slate-200 bg-slate-50 p-3" open>
-                  <summary className="cursor-pointer text-[10px] font-semibold text-slate-700">
-                    チャットで送るイメージ（例文）
-                  </summary>
-                  <p className="mt-2 text-[10px] text-slate-600">
-                    一文で5W1H（誰が・どこで・何が・なぜ・どうしたか）が伝わる形で送ると、先輩やメンターが状況を把握しやすくなります。
-                  </p>
-                  <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-slate-200 bg-white p-2.5 text-[10px] leading-relaxed text-slate-700">
-                    {`課題2のCentOSにSSH接続中、ping 8.8.8.8 がタイムアウトで疎通できない。同一LAN他端末では通る・firewalld停止済みなので、DGかルーティングの設定ミスではないかと考えています。この見立てで合っていますか？確認すべきログはどれがよいでしょうか。`}
-                  </pre>
-                </details>
-
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-[10px] font-semibold text-slate-700">
-                    質問内容（質問したい内容をそのまま貼ってもOKです）
-                  </p>
-                  <span className="text-[9px] text-slate-500">タップで開始／停止・音声→文字</span>
-                </div>
-                <div className="relative">
-                  <textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    rows={6}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 pr-20 text-[11px] text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
-                    placeholder="上の例文のように、一文で5W1Hが伝わる形で自分の状況を入力してください。"
-                  />
-                  <div className="absolute bottom-2 right-2 flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (isListening) {
-                          stopVoiceInput()
-                        } else {
-                          startVoiceInput()
-                        }
-                      }}
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors ${isListening
-                          ? 'animate-pulse border-rose-500 bg-rose-600 text-white'
-                          : 'border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
-                      title="タップで音声入力を開始／停止"
-                    >
-                      <span className="sr-only">音声入力</span>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden
-                      >
-                        <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3Z" />
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                        <line x1="12" x2="12" y1="19" y2="22" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleAnalyze}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
-                      title="質問を送信して添削する"
-                      aria-label="質問を送信して添削する"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden
-                      >
-                        <path d="M22 2L11 13" />
-                        <path d="M22 2L15 22L11 13L2 9L22 2Z" />
-                      </svg>
-                    </button>
+            <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
+              {messages.map((m, i) => (
+                <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-xs leading-relaxed ${m.role === 'user' ? 'bg-teal-500 text-white' : 'bg-slate-100 text-slate-800'}`}>
+                    {m.image && <img src={m.image} alt="添付画像" className="max-h-20 rounded-lg mb-1" />}
+                    {m.role === 'assistant' ? <span dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }} /> : m.content}
                   </div>
                 </div>
-                {isListening && (
-                  <p className="flex items-center gap-1.5 text-[10px] text-amber-600">
-                    <span className="animate-pulse">🎤</span>
-                    <span>聞き取り中:</span>
-                    <span className="text-slate-700">
-                      {interimTranscript || '（話すとここに表示されます）'}
-                    </span>
-                  </p>
-                )}
-                {/* 文章を組み立てるためのチェックリスト（各項目に ? ツールチップ） */}
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <p className="mb-2 text-[10px] font-semibold text-slate-700">
-                    文章を組み立てるためのチェックリスト
-                  </p>
-                  <ul className="space-y-2">
-                    {SECTION_HINTS.map(({ label, key, hint }) => (
-                      <li key={key} className="group relative flex items-start gap-2">
-                        <span className="text-[11px] font-medium text-slate-700">{label}</span>
-                        <span
-                          className="flex h-4 w-4 shrink-0 cursor-help items-center justify-center rounded-full border border-slate-300 bg-white text-[10px] text-slate-500 hover:bg-slate-100"
-                          title={hint}
-                        >
-                          ?
-                        </span>
-                        <div className="absolute left-6 top-6 z-10 max-w-[280px] rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-[10px] leading-relaxed text-slate-700 shadow-xl opacity-0 transition-opacity duration-150 group-hover:opacity-100 pointer-events-none">
-                          {hint}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-[10px] text-slate-600">
-                    ※ 「答えを教えてください」だけの内容は D 判定となり、まず状況整理を促します。
-                  </p>
-                  <div className="flex items-center gap-2">
-                    {isListening && (
-                      <span className="text-[10px] font-medium text-rose-600">音声認識中...</span>
-                    )}
-                    {voiceUnsupported && (
-                      <span className="text-[10px] text-amber-600">お使いのブラウザでは音声入力に未対応です</span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleAnalyze}
-                      className="rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-3 py-1.5 text-[11px] font-semibold text-white shadow-soft-card hover:from-brand-400 hover:to-brand-600"
-                    >
-                      {isEvaluating ? '評価中…' : '質問を添削する'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {result && (
-                <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-semibold text-slate-700">評価結果（S〜D）</p>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${result.grade === 'S' || result.grade === 'A'
-                          ? 'border border-emerald-400 bg-emerald-50 text-emerald-700'
-                          : result.grade === 'B'
-                            ? 'border border-amber-400 bg-amber-50 text-amber-700'
-                            : 'border border-rose-400 bg-rose-50 text-rose-700'
-                        }`}
-                    >
-                      評価: {result.grade}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-700">{result.summary}</p>
-
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-semibold text-slate-700">プロ仕様の質問文フォーマット（たたき台）</p>
-                    <pre className="max-h-40 overflow-auto rounded-lg border border-slate-200 bg-white p-2 text-[11px] text-slate-800">
-                      {result.rewritten}
-                    </pre>
-                  </div>
-
-                  {result.hints.length > 0 && (
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-semibold text-slate-700">調査の方向性（抽象的ヒント）</p>
-                      <ul className="list-disc space-y-1 pl-5 text-[11px] text-slate-700">
-                        {result.hints.map((h, idx) => (
-                          <li key={idx}>{h}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  <p className="text-[10px] text-slate-600">
-                    ※ ここでは「どの OS ログを見るべきか」「どの解説セクションを読み直すべきか」といった方向性のみを案内し、課題の正解や具体的な
-                    コマンドは一切提示しません。
-                  </p>
+              ))}
+              {isSending && (
+                <div className="flex justify-start">
+                  <div className="rounded-2xl bg-slate-100 px-3 py-2 text-xs text-slate-500">入力中...</div>
                 </div>
               )}
             </div>
+            {pendingImage && (
+              <div className="flex items-start gap-2 border-t border-slate-200 px-3 pt-2">
+                <div className="relative">
+                  <img src={pendingImage.dataUrl} alt="添付プレビュー" className="max-h-16 rounded-lg border border-slate-200" />
+                  <button type="button" onClick={() => setPendingImage(null)} className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-slate-600 text-[8px] text-white hover:bg-slate-800">✕</button>
+                </div>
+              </div>
+            )}
+            <div className="flex items-end gap-1.5 border-t border-slate-200 p-3" style={{ flexShrink: 0, paddingBottom: 'max(12px, env(safe-area-inset-bottom))', background: 'white' }} onPaste={handlePaste}>
+              <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageFile(f); e.target.value = '' }} />
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="rounded-xl px-2 py-2 text-xs bg-slate-100 text-slate-500 hover:bg-slate-200" aria-label="画像を添付">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+              </button>
+              <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste} onFocus={(e) => { setTimeout(() => { (e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'nearest' }) }, 300) }} rows={1} placeholder="メッセージを入力" className="flex-1 resize-none rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/40" style={{ maxHeight: 72 }} />
+              {SpeechRecognitionAPI && (
+                <button type="button" onClick={toggleVoice} className={`rounded-xl px-2 py-2 text-xs transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`} aria-label={isListening ? '音声入力を停止' : '音声入力'}>
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z" /></svg>
+                </button>
+              )}
+              <button type="button" onClick={() => void handleSend()} disabled={isSending || !input.trim()} className="rounded-xl bg-teal-500 px-3 py-2 text-xs font-medium text-white hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed">送信</button>
+            </div>
           </div>
-        </div>
-      )}
-    </>
-  )
-}
+        )}
+      </>
+    )
+  }
 
+  // フォールバック（sidebar/mobile以外は何も描画しない）
+  return null
+}

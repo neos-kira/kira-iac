@@ -67,8 +67,15 @@ resource "aws_iam_role_policy" "progress_api_bedrock" {
     Version = "2012-10-17"
     Statement = [{
       Effect   = "Allow"
-      Action   = ["bedrock:InvokeModel"]
-      Resource = ["arn:aws:bedrock:ap-northeast-1::foundation-model/anthropic.claude-*"]
+      Action   = [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream",
+      ]
+      Resource = [
+        "arn:aws:bedrock:ap-northeast-1::foundation-model/*",
+        "arn:aws:bedrock:ap-northeast-1:*:inference-profile/*",
+        "arn:aws:bedrock:*::foundation-model/*",
+      ]
     }]
   })
 }

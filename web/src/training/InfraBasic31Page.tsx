@@ -83,6 +83,31 @@ export function InfraBasic31Page() {
             </pre>
           </div>
 
+          {/* ボトルネック特定ゲージ図 */}
+          <div style={{ marginBottom: 16 }}>
+            <svg viewBox="0 0 600 200" style={{ width: '100%', height: 'auto' }} role="img" aria-label="ボトルネック特定ゲージ図">
+              <text x="300" y="24" textAnchor="middle" fontSize="14" fontWeight="700" fill="#1e293b">ボトルネック特定ゲージ</text>
+              {/* CPU 80% */}
+              <text x="20" y="62" fontSize="12" fontWeight="600" fill="#1e293b">CPU</text>
+              <rect x="70" y="48" width="260" height="20" rx="10" fill="#e2e8f0" />
+              <rect x="70" y="48" width="208" height="20" rx="10" fill="#ef4444" />
+              <text x="175" y="62" textAnchor="middle" fontSize="11" fontWeight="600" fill="#fff">80%</text>
+              <text x="340" y="62" fontSize="11" fill="#ef4444" fontWeight="600">高負荷 → アプリ側の問題</text>
+              {/* メモリ 60% */}
+              <text x="20" y="108" fontSize="12" fontWeight="600" fill="#1e293b">メモリ</text>
+              <rect x="70" y="94" width="260" height="20" rx="10" fill="#e2e8f0" />
+              <rect x="70" y="94" width="156" height="20" rx="10" fill="#f59e0b" />
+              <text x="148" y="108" textAnchor="middle" fontSize="11" fontWeight="600" fill="#fff">60%</text>
+              <text x="340" y="108" fontSize="11" fill="#f59e0b" fontWeight="600">注意 → スワップ監視</text>
+              {/* ディスク 30% */}
+              <text x="20" y="154" fontSize="12" fontWeight="600" fill="#1e293b">ディスク</text>
+              <rect x="70" y="140" width="260" height="20" rx="10" fill="#e2e8f0" />
+              <rect x="70" y="140" width="78" height="20" rx="10" fill="#10b981" />
+              <text x="109" y="154" textAnchor="middle" fontSize="11" fontWeight="600" fill="#fff">30%</text>
+              <text x="340" y="154" fontSize="11" fill="#10b981" fontWeight="600">正常</text>
+            </svg>
+          </div>
+
           <div className="rounded-xl border border-amber-200 bg-amber-50" style={{ padding: 20 }}>
             <p style={{ fontSize: 14, fontWeight: 600, color: '#92400e', marginBottom: 6 }}>覚えること</p>
             <p style={{ fontSize: 14, lineHeight: 1.8, color: '#78350f' }}>
@@ -106,6 +131,34 @@ export function InfraBasic31Page() {
               EC2はESXiと同じ<strong>ベアメタル型ハイパーバイザー</strong>の上で動いている。
               つまり、物理サーバーの上にハイパーバイザーが直接載り、その上でEC2インスタンスが動作する構造。
             </p>
+          </div>
+
+          {/* 仮想化層構造図 */}
+          <div style={{ marginBottom: 16 }}>
+            <svg viewBox="0 0 600 260" style={{ width: '100%', height: 'auto' }} role="img" aria-label="仮想化層構造図">
+              <text x="300" y="24" textAnchor="middle" fontSize="14" fontWeight="700" fill="#1e293b">仮想化層の構造</text>
+              {/* EC2インスタンス */}
+              <rect x="40" y="44" width="300" height="56" rx="10" fill="#f0fdfa" stroke="#0d9488" strokeWidth="2" />
+              <text x="190" y="68" textAnchor="middle" fontSize="13" fontWeight="700" fill="#0d9488">EC2インスタンス（VM）</text>
+              <text x="190" y="86" textAnchor="middle" fontSize="11" fill="#475569">アプリケーション・OS</text>
+              <text x="356" y="76" fontSize="12" fill="#0d9488" fontWeight="600">← あなたが操作するサーバー</text>
+              {/* 矢印 */}
+              <line x1="190" y1="100" x2="190" y2="116" stroke="#94a3b8" strokeWidth="2" />
+              <polygon points="184,114 190,124 196,114" fill="#94a3b8" />
+              {/* ハイパーバイザー */}
+              <rect x="40" y="128" width="300" height="56" rx="10" fill="#eff6ff" stroke="#3b82f6" strokeWidth="2" />
+              <text x="190" y="152" textAnchor="middle" fontSize="13" fontWeight="700" fill="#3b82f6">ハイパーバイザー（ESXi）</text>
+              <text x="190" y="170" textAnchor="middle" fontSize="11" fill="#475569">仮想化レイヤー</text>
+              <text x="356" y="160" fontSize="12" fill="#3b82f6" fontWeight="600">← 仮想化を担当するソフト</text>
+              {/* 矢印 */}
+              <line x1="190" y1="184" x2="190" y2="200" stroke="#94a3b8" strokeWidth="2" />
+              <polygon points="184,198 190,208 196,198" fill="#94a3b8" />
+              {/* 物理サーバー */}
+              <rect x="40" y="212" width="300" height="56" rx="10" fill="#f9fafb" stroke="#9ca3af" strokeWidth="2" />
+              <text x="190" y="236" textAnchor="middle" fontSize="13" fontWeight="700" fill="#6b7280">物理サーバー</text>
+              <text x="190" y="254" textAnchor="middle" fontSize="11" fill="#475569">CPU・メモリ・ディスク・NIC</text>
+              <text x="356" y="244" fontSize="12" fill="#6b7280" fontWeight="600">← AWSが管理するハードウェア</text>
+            </svg>
           </div>
 
           <div className="space-y-4">
@@ -157,6 +210,33 @@ export function InfraBasic31Page() {
                 困ったときにGoogle検索で解決策が見つかりやすい。これは実務上、非常に大きな利点。
               </p>
             </div>
+          </div>
+
+          {/* クラウドシェア横棒グラフ */}
+          <div style={{ marginBottom: 4 }}>
+            <svg viewBox="0 0 600 180" style={{ width: '100%', height: 'auto' }} role="img" aria-label="国内クラウド市場シェア">
+              <text x="300" y="24" textAnchor="middle" fontSize="14" fontWeight="700" fill="#1e293b">国内クラウド市場シェア（目安）</text>
+              {/* AWS 50% */}
+              <text x="20" y="62" fontSize="12" fontWeight="600" fill="#1e293b">AWS</text>
+              <rect x="70" y="48" width="400" height="22" rx="6" fill="#e2e8f0" />
+              <rect x="70" y="48" width="200" height="22" rx="6" fill="#f59e0b" />
+              <text x="170" y="63" textAnchor="middle" fontSize="11" fontWeight="600" fill="#fff">50%</text>
+              {/* Azure 25% */}
+              <text x="20" y="100" fontSize="12" fontWeight="600" fill="#1e293b">Azure</text>
+              <rect x="70" y="86" width="400" height="22" rx="6" fill="#e2e8f0" />
+              <rect x="70" y="86" width="100" height="22" rx="6" fill="#3b82f6" />
+              <text x="120" y="101" textAnchor="middle" fontSize="11" fontWeight="600" fill="#fff">25%</text>
+              {/* GCP 12% */}
+              <text x="20" y="138" fontSize="12" fontWeight="600" fill="#1e293b">GCP</text>
+              <rect x="70" y="124" width="400" height="22" rx="6" fill="#e2e8f0" />
+              <rect x="70" y="124" width="48" height="22" rx="6" fill="#10b981" />
+              <text x="94" y="139" textAnchor="middle" fontSize="11" fontWeight="600" fill="#fff">12%</text>
+              {/* その他 13% */}
+              <text x="20" y="176" fontSize="12" fontWeight="600" fill="#1e293b">その他</text>
+              <rect x="70" y="162" width="400" height="22" rx="6" fill="#e2e8f0" />
+              <rect x="70" y="162" width="52" height="22" rx="6" fill="#9ca3af" />
+              <text x="96" y="177" textAnchor="middle" fontSize="11" fontWeight="600" fill="#fff">13%</text>
+            </svg>
           </div>
 
           {/* 責任共有モデルを現場で使う場面 */}

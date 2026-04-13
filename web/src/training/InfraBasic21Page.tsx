@@ -1,5 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
-import { NeOSLogo } from '../components/NeOSLogo'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { getProgressKey } from './trainingWbsData'
 import {
   INFRA_BASIC_21_DEFAULT_STATE,
@@ -12,38 +11,12 @@ import {
   type KnowledgeQuestionConfig,
 } from './infraBasic21Data'
 
-function copyToClipboard(text: string): Promise<boolean> {
-  const doFallback = (): boolean => {
-    const ta = document.createElement('textarea')
-    ta.value = text
-    ta.setAttribute('readonly', '')
-    ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;'
-    document.body.appendChild(ta)
-    ta.focus()
-    ta.select()
-    ta.setSelectionRange(0, text.length)
-    let ok = false
-    try {
-      ok = document.execCommand('copy')
-    } finally {
-      document.body.removeChild(ta)
-    }
-    return ok
-  }
-  if (typeof navigator?.clipboard?.writeText === 'function') {
-    return navigator.clipboard
-      .writeText(text)
-      .then(() => true)
-      .catch(() => doFallback())
-  }
-  return Promise.resolve(doFallback())
-}
-
 export function InfraBasic21Page() {
   const storageKey = getProgressKey(INFRA_BASIC_21_STORAGE_KEY)
   const [state, setState] = useState<InfraBasic21StoredState>(() => loadInfraBasic21State(storageKey))
-  const [copiedReport, setCopiedReport] = useState(false)
-  const [hintOpen, setHintOpen] = useState<Record<string, boolean>>({})
+  const formRef = useRef<HTMLDivElement>(null)
+  const markDirty = () => { formRef.current?.setAttribute('data-form-dirty', 'true') }
+  const clearDirty = () => { formRef.current?.setAttribute('data-form-dirty', 'false') }
   const [pingCheck, setPingCheck] = useState<{ checked: boolean; pass: boolean; message: string }>({
     checked: false,
     pass: false,
@@ -53,6 +26,12 @@ export function InfraBasic21Page() {
   useEffect(() => {
     document.title = 'インフラ基礎課題2-1 ネットワーク実践編'
   }, [])
+
+  useEffect(() => {
+    const handler = () => { saveInfraBasic21State(state, storageKey); clearDirty() }
+    window.addEventListener('nic:save-and-leave', handler)
+    return () => window.removeEventListener('nic:save-and-leave', handler)
+  })
 
   const updateState = useCallback((updater: (prev: InfraBasic21StoredState) => InfraBasic21StoredState) => {
     setState((prev) => {
@@ -64,6 +43,7 @@ export function InfraBasic21Page() {
 
   const handlePracticalChange = useCallback(
     (field: keyof InfraBasic21StoredState['practical'], value: string | boolean) => {
+      markDirty()
       updateState((prev) => ({
         ...prev,
         practical: {
@@ -81,6 +61,7 @@ export function InfraBasic21Page() {
 
   const handleKnowledgeChange = useCallback(
     (id: KnowledgeQuestionId, value: string) => {
+      markDirty()
       updateState((prev) => ({
         ...prev,
         knowledgeAnswers: {
@@ -115,70 +96,10 @@ export function InfraBasic21Page() {
 
   const handleReset = useCallback(() => {
     updateState(() => INFRA_BASIC_21_DEFAULT_STATE)
-    setCopiedReport(false)
   }, [updateState])
-
-  const handleCopyReport = useCallback(() => {
-    const lines: string[] = []
-    const { practical, knowledgeAnswers } = state
-
-    lines.push('【インフラ基礎課題2-1 ネットワーク実践編 提出内容】')
-    lines.push('')
-    lines.push('■ 1. ネットワーク実機調査')
-    lines.push('▼ Q1. 自端末の調査')
-    lines.push(`IPアドレス: ${practical.q1Ip}`)
-    lines.push(`サブネットマスク: ${practical.q1Mask}`)
-    lines.push(`デフォルトゲートウェイ: ${practical.q1Dg}`)
-    lines.push(`MACアドレス: ${practical.q1Mac}`)
-    lines.push('')
-    lines.push('▼ Q2. LAN内機器の調査')
-    lines.push(practical.q2Devices || '(未入力)')
-    lines.push('')
-    lines.push('▼ Q3. 疎通確認 (Ping)')
-    lines.push(practical.q3PingResult || '(未入力)')
-    lines.push('')
-    lines.push('▼ Q4. 経路確認 (tracert / traceroute 等)')
-    lines.push(practical.q4TraceResult || '(未入力)')
-    lines.push('')
-    lines.push('▼ Q5. 境界線となる機器のIPアドレス')
-    lines.push(practical.q5BoundaryIp || '(未入力)')
-    lines.push('')
-    lines.push('▼ Q6-7. サーバ接続確認')
-    lines.push(`43.207.53.141 へのPing疎通: ${practical.q6PingServerOk ? '実施済み' : '未チェック'}`)
-    lines.push(`43.207.53.141 へのSSH接続: ${practical.q7SshServerOk ? '実施済み' : '未チェック'}`)
-    lines.push('')
-    lines.push('▼ Q8. 接続先サーバのIP情報')
-    lines.push(`IPアドレス: ${practical.q8ServerIp}`)
-    lines.push(`サブネットマスク: ${practical.q8ServerMask}`)
-    lines.push(`デフォルトゲートウェイ: ${practical.q8ServerDg}`)
-    lines.push('')
-    lines.push('▼ Q9. 論理積によるネットワークアドレス計算')
-    lines.push(`ネットワークアドレス: ${practical.q9NetworkAddress}`)
-    lines.push('計算過程:')
-    lines.push(practical.q9Working || '(未入力)')
-
-    lines.push('')
-    lines.push('■ 2. 知識確認小テスト（記述式）')
-    for (const q of KNOWLEDGE_QUESTIONS_21) {
-      lines.push(`▼ ${q.title}`)
-      lines.push(knowledgeAnswers[q.id] || '(未入力)')
-      lines.push('')
-    }
-
-    const payload = lines.join('\n')
-    copyToClipboard(payload).then((ok) => {
-      if (ok) {
-        setCopiedReport(true)
-        window.setTimeout(() => setCopiedReport(false), 2500)
-      }
-    })
-  }, [state])
 
   const kResult = state.knowledgeResult
 
-  const toggleHint = (id: string) => {
-    setHintOpen((prev) => ({ ...prev, [id]: !prev[id] }))
-  }
 
   const handlePingCheck = () => {
     const { pass, message } = evaluatePingLog(state.practical.q3PingResult)
@@ -282,256 +203,178 @@ export function InfraBasic21Page() {
 
   function evaluatePingLog(raw: string): { pass: boolean; message: string } {
     const text = (raw ?? '').trim()
-    const lower = text.toLowerCase()
-
     if (!text) {
-      return {
-        pass: false,
-        message: '実行コマンドを含めたログ全体を貼り付けてください。',
-      }
+      return { pass: false, message: 'ログを貼り付けてください。' }
     }
-
-    // 1. コマンドの妥当性: ping xxx が含まれているか
-    const hasPingCommand = /(^|\n)\s*ping\s+\S+/i.test(text)
-    if (!hasPingCommand) {
-      return {
-        pass: false,
-        message: '実行コマンドを含めたログ全体を貼り付けてください。',
-      }
-    }
-
-    // 2. 明らかな失敗パターン
-    const failurePatterns = [
-      'request timed out',
-      '100% packet loss',
-      '100% loss',
-      'destination host unreachable',
-      'could not find host',
-      'unknown host',
-      'general failure',
-    ]
-    if (failurePatterns.some((p) => lower.includes(p))) {
-      return {
-        pass: false,
-        message: '宛先への疎通が確認できません。正常に応答があったログを提出してください。',
-      }
-    }
-
-    // 3. 成功判定: Windows と Linux/Mac の代表的な成功文言
-    const windowsSuccess = /損失[^0-9]*0[^0-9]*\(\s*0%\s*の損失\)/.test(text) || /loss = 0%\b/i.test(text)
-    const unixSuccess = /0% packet loss/.test(lower)
-    const hasSuccess = windowsSuccess || unixSuccess
-    if (!hasSuccess) {
-      return {
-        pass: false,
-        message: '宛先への疎通が確認できません。正常に応答があったログを提出してください。',
-      }
-    }
-
-    // 4. エビデンスの真正性: ping 固有の応答行があるか（バイト数・時間・TTL 等）
-    const evidencePatterns = [
-      /bytes=\d+.*time[=<]?\d+/i, // Windows: bytes=32 time<1ms TTL=64
-      /ttl=\d+/i,
-      /\bicmp_seq=\d+.*time=\d+\.?\d* ?ms/i, // Linux: icmp_seq=1 ttl=...
-    ]
-    const hasEvidence = evidencePatterns.some((re) => re.test(text))
-    if (!hasEvidence) {
-      return {
-        pass: false,
-        message: 'これはpingコマンドの実行結果ではありません。コマンドプロンプトの結果をそのままコピーしてください。',
-      }
-    }
-
-    return {
-      pass: true,
-      message: '◎ 正常な疎通ログを確認しました。宛先への到達が証明されています。',
-    }
+    return { pass: true, message: '◎ ログを確認しました。' }
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
+    <div ref={formRef} className="min-h-screen bg-slate-50 text-slate-800 p-6" data-form-scope="task" data-form-dirty="false">
       <div className="mx-auto max-w-3xl space-y-6">
         {/* ヘッダー */}
-        <div className="flex items-center justify-between">
-          <button type="button" onClick={() => { window.location.hash = '#/' }} className="cursor-pointer hover:opacity-80">
-            <NeOSLogo height={32} />
+        <div className="flex items-center justify-end">
+          <button
+            type="button"
+            onClick={() => { saveInfraBasic21State(state, storageKey); clearDirty(); window.location.hash = '#/' }}
+            className="rounded-lg border border-teal-500 px-4 py-2 text-xs font-medium text-teal-600 hover:bg-teal-50"
+          >
+            保存して中断
           </button>
+        </div>
+
+        <div>
+          <p className="text-xs text-slate-500">課題2-1 · ネットワーク実践</p>
+          <h1 className="text-xl font-bold text-slate-800">ネットワーク実機調査</h1>
         </div>
 
         {/* 説明 */}
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
-          <p className="text-sm text-slate-600">
-            実際の端末・サーバ・ネットワーク機器を調査しながら、
-            <span className="font-semibold text-slate-800">IP情報・疎通結果・経路・概念の理解</span>
-            を記録する課題です。入力内容はブラウザに保存されるため、ページを閉じても途中から再開できます。
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <p className="text-sm text-slate-600 flex-1">
+              実際の端末・サーバ・ネットワーク機器を調査しながら、
+              <span className="font-semibold text-slate-800">IP情報・疎通結果・経路・概念の理解</span>
+              を記録する課題です。入力内容はブラウザに保存されるため、ページを閉じても途中から再開できます。
+            </p>
+            <svg className="shrink-0" width="120" height="120" viewBox="0 0 120 120" fill="none" aria-hidden>
+              {/* ノートPC */}
+              <rect x="8" y="30" width="50" height="35" rx="3" stroke="#0d9488" strokeWidth="2.5" fill="#ccfbf1"/>
+              <rect x="14" y="36" width="38" height="22" rx="1" fill="#0d9488" opacity=".15"/>
+              <path d="M14 42h38M14 48h28M14 54h18" stroke="#0d9488" strokeWidth="1.5" strokeLinecap="round" opacity=".5"/>
+              <path d="M4 65h60" stroke="#0d9488" strokeWidth="2.5" strokeLinecap="round"/>
+              {/* サーバー */}
+              <rect x="76" y="24" width="36" height="50" rx="3" stroke="#0d9488" strokeWidth="2.5" fill="#ccfbf1"/>
+              <rect x="82" y="30" width="24" height="8" rx="1" fill="#0d9488" opacity=".2"/>
+              <circle cx="100" cy="34" r="2" fill="#0d9488"/>
+              <rect x="82" y="42" width="24" height="8" rx="1" fill="#0d9488" opacity=".2"/>
+              <circle cx="100" cy="46" r="2" fill="#10b981"/>
+              <rect x="82" y="54" width="24" height="8" rx="1" fill="#0d9488" opacity=".2"/>
+              <circle cx="100" cy="58" r="2" fill="#0d9488" opacity=".4"/>
+              {/* 接続線 */}
+              <path d="M58 50h18" stroke="#0d9488" strokeWidth="2" strokeDasharray="4 3"/>
+              <circle cx="67" cy="50" r="2" fill="#0d9488"/>
+            </svg>
+          </div>
         </section>
 
         {/* 1. ネットワーク実機調査 */}
-        <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-slate-800">1. ネットワーク実機調査</h2>
+        <section className="space-y-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
+          <div className="flex items-center justify-between gap-2 border-l-4 border-teal-500 bg-teal-50 p-4 rounded-r-lg">
+            <h2 className="text-lg font-bold text-teal-800">1. ネットワーク実機調査</h2>
             <p className="text-[11px] text-slate-600">実際にコマンドを打った結果をここに整理します。</p>
           </div>
 
-          {/* Q1 */}
-          <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
-            <p className="text-xs font-semibold text-slate-200">Q1. 自端末の調査</p>
-            <p className="text-[11px] text-slate-600">
-              自分が操作している端末の IP アドレスやサブネットマスクなどの基本情報を調べて記録します。
+          {/* Q1: 自端末の基本情報（旧Q1+Q2統合） */}
+          <div className="relative space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+            <div className="absolute top-3 right-3">
+              <svg className="shrink-0" width="64" height="64" viewBox="0 0 80 80" fill="none" aria-hidden overflow="hidden">
+                <rect x="10" y="16" width="60" height="40" rx="4" stroke="#0d9488" strokeWidth="2.5" fill="#ccfbf1"/>
+                <rect x="16" y="22" width="48" height="28" rx="2" fill="white" stroke="#0d9488" strokeWidth="1"/>
+                <text x="19" y="34" fill="#0d9488" fontSize="6" fontFamily="monospace" fontWeight="bold">IP: 192.168.x.x</text>
+                <text x="19" y="42" fill="#94a3b8" fontSize="5" fontFamily="monospace">Mask: 255.255.x.0</text>
+                <text x="19" y="48" fill="#94a3b8" fontSize="5" fontFamily="monospace">GW: 192.168.x.1</text>
+                <path d="M6 56h68" stroke="#0d9488" strokeWidth="2.5" strokeLinecap="round"/>
+                <rect x="26" y="58" width="28" height="3" rx="1" fill="#0d9488" opacity=".3"/>
+              </svg>
+            </div>
+            <p className="text-xs font-semibold text-teal-600">Q1. 自端末の基本情報</p>
+            <p className="text-[11px] text-slate-600 pr-16">
+              自分のPCのIPアドレス・サブネットマスク・デフォルトゲートウェイ・MACアドレスを調べて記録します。
             </p>
-            <button
-              type="button"
-              onClick={() => toggleHint('q1')}
-              className="mt-1 rounded-lg border border-slate-300 px-2 py-1 text-[10px] font-medium text-slate-600 hover:border-slate-500 hover:text-slate-800"
-            >
-              💡ヒントを表示
-            </button>
-            {hintOpen.q1 && (
-              <p className="text-[10px] text-slate-600">
-                Windows なら「ipconfig /all」、Linux なら「ip addr」「ip route」などのコマンドを使うと詳細な情報を確認できます。
-              </p>
-            )}
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               <label className="text-[11px] text-slate-600">
                 IPアドレス
-                <input
-                  type="text"
-                  value={state.practical.q1Ip}
-                  onChange={(e) => handlePracticalChange('q1Ip', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-                  placeholder="IPアドレス"
-                />
+                <input type="text" value={state.practical.q1Ip} onChange={(e) => handlePracticalChange('q1Ip', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50" placeholder="IPアドレス" />
               </label>
               <label className="text-[11px] text-slate-600">
                 サブネットマスク
-                <input
-                  type="text"
-                  value={state.practical.q1Mask}
-                  onChange={(e) => handlePracticalChange('q1Mask', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-                  placeholder="サブネットマスク"
-                />
+                <input type="text" value={state.practical.q1Mask} onChange={(e) => handlePracticalChange('q1Mask', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50" placeholder="サブネットマスク" />
               </label>
               <label className="text-[11px] text-slate-600">
                 デフォルトゲートウェイ
-                <input
-                  type="text"
-                  value={state.practical.q1Dg}
-                  onChange={(e) => handlePracticalChange('q1Dg', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-                  placeholder="デフォルトゲートウェイ"
-                />
+                <input type="text" value={state.practical.q1Dg} onChange={(e) => handlePracticalChange('q1Dg', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50" placeholder="デフォルトゲートウェイ" />
               </label>
               <label className="text-[11px] text-slate-600">
                 MACアドレス
-                <input
-                  type="text"
-                  value={state.practical.q1Mac}
-                  onChange={(e) => handlePracticalChange('q1Mac', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-                  placeholder="MACアドレス"
-                />
+                <input type="text" value={state.practical.q1Mac} onChange={(e) => handlePracticalChange('q1Mac', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50" placeholder="MACアドレス" />
               </label>
             </div>
           </div>
 
-          {/* Q2 */}
-          <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
-            <p className="text-xs font-semibold text-slate-200">Q2. LAN内機器の調査</p>
-            <p className="text-[11px] text-slate-600">
-              ルーター、スイッチ、NAS など LAN 内で確認できた機器について、IPアドレスとMACアドレスを整理します。
-            </p>
-            <button
-              type="button"
-              onClick={() => toggleHint('q2')}
-              className="mt-1 rounded-lg border border-slate-300 px-2 py-1 text-[10px] font-medium text-slate-600 hover:border-slate-500 hover:text-slate-800"
-            >
-              💡ヒントを表示
-            </button>
-            {hintOpen.q2 && (
-              <p className="text-[10px] text-slate-600">
-                ルーターの管理画面やスイッチの ARP テーブルなどを参考に、IP と MAC の対応関係をメモしてみましょう。
-              </p>
-            )}
-            <textarea
-              value={state.practical.q2Devices}
-              onChange={(e) => handlePracticalChange('q2Devices', e.target.value)}
-              className="mt-1 h-28 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-              placeholder="LAN 内の機器と IP / MAC を列挙してください。"
-            />
-          </div>
-
-          {/* Q3-4 */}
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
-              <p className="text-xs font-semibold text-slate-200">Q3. 疎通確認（Ping）</p>
-              <p className="text-[11px] text-slate-600">疎通確認の結果をそのまま貼り付けてください。</p>
-              <button
-                type="button"
-                onClick={() => toggleHint('q3')}
-                className="rounded-lg border border-slate-300 px-2 py-1 text-[10px] font-medium text-slate-600 hover:border-slate-500 hover:text-slate-800"
-              >
-                💡ヒントを表示
-              </button>
-              {hintOpen.q3 && (
-                <p className="text-[10px] text-slate-600">
-                  Windows なら「ping 送信先IP」、Linux なら「ping -c 4 送信先IP」などで結果を取得し、その出力を貼り付けてください。
-                </p>
-              )}
+          {/* Q2: 疎通確認 Ping（旧Q3） */}
+          <div className="relative space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+            <div className="absolute top-3 right-3">
+              <svg className="shrink-0" width="64" height="64" viewBox="0 0 70 70" fill="none" aria-hidden>
+                <rect x="4" y="20" width="20" height="30" rx="3" stroke="#10b981" strokeWidth="2.5" fill="#d1fae5"/>
+                <rect x="46" y="20" width="20" height="30" rx="3" stroke="#10b981" strokeWidth="2.5" fill="#d1fae5"/>
+                <path d="M24 30h22" stroke="#10b981" strokeWidth="2" markerEnd="url(#arrowG)"/>
+                <path d="M46 40H24" stroke="#10b981" strokeWidth="2" strokeDasharray="4 3" markerEnd="url(#arrowG2)"/>
+                <circle cx="35" cy="30" r="2" fill="#10b981"/>
+                <circle cx="35" cy="40" r="2" fill="#10b981" opacity=".5"/>
+                <text x="26" y="56" fill="#10b981" fontSize="7" fontWeight="bold">PING</text>
+                <defs><marker id="arrowG" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L6 3L0 6Z" fill="#10b981"/></marker><marker id="arrowG2" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L6 3L0 6Z" fill="#10b981" opacity=".5"/></marker></defs>
+              </svg>
+            </div>
+            <p className="text-xs font-semibold text-teal-600">Q2. 疎通確認（Ping）</p>
+              <p className="text-[11px] text-slate-600 pr-16">pingコマンドの実行結果をそのまま貼り付けてください。pingが失敗した場合（ファイアウォール等）も、その結果をそのまま記録してください。</p>
               <textarea
                 value={state.practical.q3PingResult}
                 onChange={(e) => handlePracticalChange('q3PingResult', e.target.value)}
-                className="mt-1 h-28 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-                placeholder="例：ping 8.8.8.8 を実行した結果（ログ全体）をここに貼り付け"
+                className="mt-1 h-28 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
+                placeholder="例: ping 8.8.8.8 の結果をそのまま貼り付け（成功・失敗どちらでも可）"
               />
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={handlePingCheck}
-                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:border-indigo-500 hover:text-slate-800"
+                  className="rounded-lg border border-teal-500 bg-white px-3 py-1.5 text-xs font-medium text-teal-600 hover:bg-teal-50"
                 >
                   Pingログを判定する
                 </button>
                 {pingCheck.checked && (
                   <span
                     className={`rounded-full px-2 py-0.5 text-[10px] ${pingCheck.pass
-                      ? 'border border-emerald-500/70 bg-emerald-600/20 text-emerald-200'
-                      : 'border border-amber-500/70 bg-amber-950/40 text-amber-100'
+                      ? 'border border-emerald-300 bg-emerald-50 text-emerald-700'
+                      : 'border border-amber-300 bg-amber-50 text-amber-700'
                       }`}
                   >
                     {pingCheck.message}
                   </span>
                 )}
               </div>
+          </div>
+
+          {/* Q3: 経路確認（旧Q4） */}
+          <div className="relative space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+            <div className="absolute top-3 right-3">
+              <svg className="shrink-0" width="64" height="64" viewBox="0 0 70 70" fill="none" aria-hidden>
+                <circle cx="10" cy="35" r="7" stroke="#10b981" strokeWidth="2.5" fill="#d1fae5"/>
+                <circle cx="30" cy="20" r="5" stroke="#10b981" strokeWidth="2" fill="#d1fae5"/>
+                <circle cx="45" cy="40" r="5" stroke="#10b981" strokeWidth="2" fill="#d1fae5"/>
+                <circle cx="60" cy="25" r="7" stroke="#10b981" strokeWidth="2.5" fill="#d1fae5"/>
+                <path d="M17 32l8-8M35 22l6 14M50 38l5-10" stroke="#10b981" strokeWidth="2" strokeDasharray="4 3" strokeLinecap="round"/>
+                <text x="6" y="58" fill="#10b981" fontSize="6" fontWeight="bold">HOP1</text>
+                <text x="26" y="58" fill="#10b981" fontSize="6">HOP2</text>
+                <text x="46" y="58" fill="#10b981" fontSize="6">HOP3</text>
+              </svg>
             </div>
-            <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
-              <p className="text-xs font-semibold text-slate-200">Q4. 経路確認（tracert / traceroute 等）</p>
-              <p className="text-[11px] text-slate-600">経路確認の結果を貼り付けてください。</p>
-              <button
-                type="button"
-                onClick={() => toggleHint('q4')}
-                className="rounded-lg border border-slate-300 px-2 py-1 text-[10px] font-medium text-slate-600 hover:border-slate-500 hover:text-slate-800"
-              >
-                💡ヒントを表示
-              </button>
-              {hintOpen.q4 && (
-                <p className="text-[10px] text-slate-600">
-                  Windows なら「tracert 送信先IP」、Linux なら「traceroute 送信先IP」などでホップごとの経路を確認できます。
-                </p>
-              )}
+            <p className="text-xs font-semibold text-teal-600">Q3. 経路確認（tracert / traceroute）</p>
+            <p className="text-[11px] text-slate-600 pr-16">経路確認コマンドの結果を貼り付けてください。OS によってコマンドが異なります。</p>
+              <div className="rounded bg-slate-50 p-2 text-xs text-slate-700">
+                <p><strong>Linux / Mac:</strong> <code className="bg-slate-200 px-1 rounded text-[11px]">traceroute 8.8.8.8</code></p>
+                <p><strong>Windows:</strong> <code className="bg-slate-200 px-1 rounded text-[11px]">tracert 8.8.8.8</code></p>
+              </div>
               <textarea
                 value={state.practical.q4TraceResult}
                 onChange={(e) => handlePracticalChange('q4TraceResult', e.target.value)}
-                className="mt-1 h-28 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                className="mt-1 h-28 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
                 placeholder="経路確認コマンドの結果を貼り付けてください。"
               />
-            </div>
           </div>
 
-          {/* Q5 */}
+          {/* Q4 */}
           <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
-            <p className="text-xs font-semibold text-slate-200">Q5. WAN と LAN の境界線となる機器のIP</p>
+            <p className="text-xs font-semibold text-teal-600">Q4. WAN と LAN の境界線となる機器のIP</p>
             <p className="text-[11px] text-slate-600">
               自宅やオフィスのネットワークで、「ここから先がインターネット側」となる境界機器のIPアドレスを記入します。
             </p>
@@ -539,24 +382,27 @@ export function InfraBasic21Page() {
               type="text"
               value={state.practical.q5BoundaryIp}
               onChange={(e) => handlePracticalChange('q5BoundaryIp', e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
               placeholder="境界となる機器のIPアドレス"
             />
           </div>
 
-          {/* Q6-7 */}
+          {/* Q5-6 */}
           <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
-            <p className="text-xs font-semibold text-slate-200">Q6-7. サーバ 43.207.53.141 への疎通・SSH接続</p>
+            <div className="rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700">
+              ⚠️ この課題は研修用サーバ（43.207.53.141）が起動している時間帯のみ実施できます。平日9:40〜19:00が目安です。
+            </div>
+            <p className="text-xs font-semibold text-teal-600">Q5-6. サーバ 43.207.53.141 への疎通・SSH接続</p>
             <p className="text-[11px] text-slate-600">
               研修用サーバ 43.207.53.141 に対して、Ping および SSH 接続を試み、実施できたらチェックを入れてください。
             </p>
-            <div className="mt-2 space-y-2 text-xs text-slate-200">
+            <div className="mt-2 space-y-2 text-xs text-slate-700">
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={state.practical.q6PingServerOk}
                   onChange={(e) => handlePracticalChange('q6PingServerOk', e.target.checked)}
-                  className="h-4 w-4 accent-indigo-600"
+                  className="h-4 w-4 accent-teal-600"
                 />
                 <span>43.207.53.141 への Ping 疎通を確認した</span>
               </label>
@@ -565,31 +411,19 @@ export function InfraBasic21Page() {
                   type="checkbox"
                   checked={state.practical.q7SshServerOk}
                   onChange={(e) => handlePracticalChange('q7SshServerOk', e.target.checked)}
-                  className="h-4 w-4 accent-indigo-600"
+                  className="h-4 w-4 accent-teal-600"
                 />
                 <span>43.207.53.141 への SSH 接続（neos-training 等）を確認した</span>
               </label>
             </div>
           </div>
 
-          {/* Q8 */}
+          {/* Q7 */}
           <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
-            <p className="text-xs font-semibold text-slate-200">Q8. 接続先サーバのIP情報</p>
+            <p className="text-xs font-semibold text-teal-600">Q7. 接続先サーバのIP情報</p>
             <p className="text-[11px] text-slate-600">
               SSH 接続したサーバ上で「ip addr」「ip route」などを実行し、サーバ側のIPアドレスやデフォルトゲートウェイを確認します。
             </p>
-            <button
-              type="button"
-              onClick={() => toggleHint('q8')}
-              className="mt-1 rounded-lg border border-slate-300 px-2 py-1 text-[10px] font-medium text-slate-600 hover:border-slate-500 hover:text-slate-800"
-            >
-              💡ヒントを表示
-            </button>
-            {hintOpen.q8 && (
-              <p className="text-[10px] text-slate-600">
-                Linux サーバでは「ip addr」「ip route」「ip -4 addr show」などで IP とルーティングを確認できます。
-              </p>
-            )}
             <div className="mt-2 grid gap-2 sm:grid-cols-3">
               <label className="text-[11px] text-slate-600">
                 IPアドレス
@@ -597,7 +431,7 @@ export function InfraBasic21Page() {
                   type="text"
                   value={state.practical.q8ServerIp}
                   onChange={(e) => handlePracticalChange('q8ServerIp', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
                   placeholder="IPアドレス"
                 />
               </label>
@@ -607,7 +441,7 @@ export function InfraBasic21Page() {
                   type="text"
                   value={state.practical.q8ServerMask}
                   onChange={(e) => handlePracticalChange('q8ServerMask', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
                   placeholder="サブネットマスク"
                 />
               </label>
@@ -617,33 +451,31 @@ export function InfraBasic21Page() {
                   type="text"
                   value={state.practical.q8ServerDg}
                   onChange={(e) => handlePracticalChange('q8ServerDg', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
                   placeholder="デフォルトゲートウェイ"
                 />
               </label>
             </div>
           </div>
 
-          {/* Q9 */}
+          {/* Q8 */}
           <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
-            <p className="text-xs font-semibold text-slate-200">
-              Q9. 論理積（AND 演算）によるネットワークアドレス計算（192.168.250.50 / 24）
+            <div className="flex items-start justify-between">
+            <p className="text-xs font-semibold text-teal-600">
+              Q8. 論理積（AND 演算）によるネットワークアドレス計算（192.168.250.50 / 24）
             </p>
+            <svg className="shrink-0" width="80" height="80" viewBox="0 0 80 80" fill="none" aria-hidden>
+              <rect x="8" y="8" width="64" height="64" rx="6" stroke="#3b82f6" strokeWidth="2.5" fill="#eff6ff"/>
+              <text x="14" y="28" fill="#3b82f6" fontSize="8" fontFamily="monospace" fontWeight="bold">11000000</text>
+              <text x="14" y="40" fill="#3b82f6" fontSize="8" fontFamily="monospace" fontWeight="bold">11111111</text>
+              <path d="M14 44h52" stroke="#3b82f6" strokeWidth="1.5"/>
+              <text x="14" y="56" fill="#1d4ed8" fontSize="8" fontFamily="monospace" fontWeight="bold">11000000</text>
+              <text x="54" y="20" fill="#3b82f6" fontSize="10" fontWeight="bold">AND</text>
+            </svg>
+            </div>
             <p className="text-[11px] text-slate-600">
               192.168.250.50/24 とサブネットマスク 255.255.255.0 の論理積からネットワークアドレスを求め、その計算過程を記載してください。
             </p>
-            <button
-              type="button"
-              onClick={() => toggleHint('q9')}
-              className="mt-1 rounded-lg border border-slate-300 px-2 py-1 text-[10px] font-medium text-slate-600 hover:border-slate-500 hover:text-slate-800"
-            >
-              💡ヒントを表示
-            </button>
-            {hintOpen.q9 && (
-              <p className="text-[10px] text-slate-600">
-                各オクテットを 2 進数に変換し、IP アドレスとサブネットマスクを AND 演算した結果を 10 進数に戻す流れで整理すると分かりやすくなります。
-              </p>
-            )}
             <div className="mt-2 grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
               <label className="text-[11px] text-slate-600">
                 ネットワークアドレス
@@ -651,7 +483,7 @@ export function InfraBasic21Page() {
                   type="text"
                   value={state.practical.q9NetworkAddress}
                   onChange={(e) => handlePracticalChange('q9NetworkAddress', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
                   placeholder="ネットワークアドレス"
                 />
               </label>
@@ -660,7 +492,7 @@ export function InfraBasic21Page() {
                 <textarea
                   value={state.practical.q9Working}
                   onChange={(e) => handlePracticalChange('q9Working', e.target.value)}
-                  className="mt-1 h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                  className="mt-1 h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
                   placeholder="2進数変換や AND 演算の途中式などを記載してください。"
                 />
               </label>
@@ -669,10 +501,26 @@ export function InfraBasic21Page() {
         </section>
 
         {/* 2. 知識確認小テスト */}
-        <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-slate-800">2. 知識確認小テスト（記述式）</h2>
-            <p className="text-[11px] text-slate-600">キーワードを意識しながら、自分の言葉で説明してください。</p>
+        <section className="space-y-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
+          <div className="flex items-center justify-between gap-2 border-l-4 border-teal-500 bg-teal-50 p-4 rounded-r-lg">
+            <div>
+              <h2 className="text-lg font-bold text-teal-800">2. 知識確認小テスト（記述式）</h2>
+              <p className="mt-1 text-[11px] text-slate-600">キーワードを意識しながら、自分の言葉で説明してください。</p>
+            </div>
+            <svg className="shrink-0" width="80" height="80" viewBox="0 0 80 80" fill="none" aria-hidden>
+              {/* ノート */}
+              <rect x="12" y="6" width="46" height="58" rx="4" stroke="#f59e0b" strokeWidth="2.5" fill="#fffbeb"/>
+              <path d="M22 20h26M22 28h20M22 36h24M22 44h16" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" opacity=".6"/>
+              {/* 丸 */}
+              <circle cx="58" cy="22" r="8" stroke="#10b981" strokeWidth="2.5" fill="#d1fae5"/>
+              <path d="M54 22l3 3 5-6" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              {/* バツ */}
+              <circle cx="58" cy="42" r="8" stroke="#ef4444" strokeWidth="2.5" fill="#fef2f2"/>
+              <path d="M54 38l8 8M62 38l-8 8" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/>
+              {/* 鉛筆 */}
+              <path d="M64 56l-8 12-2 4 4-2 8-12z" fill="#f59e0b" stroke="#f59e0b" strokeWidth="1.5"/>
+              <path d="M64 56l2-2 4 4-2 2z" fill="#d97706"/>
+            </svg>
           </div>
 
           <div className="space-y-4">
@@ -687,19 +535,19 @@ export function InfraBasic21Page() {
                   key={q.id}
                   className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-soft-card"
                 >
-                  <p className="text-xs font-semibold text-slate-200">{q.title}</p>
+                  <p className="text-xs font-semibold text-teal-600">{q.title}</p>
                   <textarea
                     value={answer}
                     onChange={(e) => handleKnowledgeChange(q.id, e.target.value)}
-                    className="mt-1 h-28 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                    className="mt-1 h-28 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
                     placeholder="ここに自分の言葉で説明を書いてください。"
                   />
 
                   {hasChecked && (
                     <div
                       className={`mt-1 rounded-lg border px-3 py-2 text-[11px] ${isPass
-                        ? 'border-emerald-500/60 bg-emerald-600/20 text-emerald-100'
-                        : 'border-amber-500/60 bg-amber-950/40 text-amber-100'
+                        ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                        : 'border-amber-300 bg-amber-50 text-amber-800'
                         }`}
                     >
                       <p className="font-medium">
@@ -713,7 +561,7 @@ export function InfraBasic21Page() {
 
                   {hasChecked && (
                     <details className="mt-2 rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-[11px] text-slate-600">
-                      <summary className="cursor-pointer text-slate-200">
+                      <summary className="cursor-pointer text-teal-600">
                         プロの視点での解説（模範解答）
                       </summary>
                       <p className="mt-1 whitespace-pre-line">{q.modelAnswer}</p>
@@ -728,7 +576,7 @@ export function InfraBasic21Page() {
             <button
               type="button"
               onClick={handleKnowledgeCheck}
-              className="rounded-xl bg-gradient-to-r bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
+              className="rounded-xl bg-gradient-to-r bg-teal-600 px-4 py-2 text-xs font-semibold text-white hover:bg-teal-700"
             >
               小テストを採点する
             </button>
@@ -742,27 +590,16 @@ export function InfraBasic21Page() {
           </div>
         </section>
 
-        {/* 提出用テキスト生成 */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold text-slate-200">研修担当へ報告用テキストを生成</p>
-              <p className="mt-1 text-[11px] text-slate-600">
-                これまで入力した内容を一つのテキストにまとめてコピーします。Slackやメールに貼り付けて報告してください。
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleCopyReport}
-              className="rounded-xl bg-gradient-to-r bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
-            >
-              研修担当へ報告用テキストを生成
-            </button>
-          </div>
-          {copiedReport && (
-            <p className="mt-2 text-[11px] text-emerald-300">クリップボードにコピーしました。研修担当へ共有してください。</p>
-          )}
-        </section>
+        {/* 下部: 保存して中断 */}
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => { saveInfraBasic21State(state, storageKey); clearDirty(); window.location.hash = '#/' }}
+            className="rounded-lg border border-teal-500 px-6 py-2.5 text-sm font-medium text-teal-600 hover:bg-teal-50"
+          >
+            保存して中断
+          </button>
+        </div>
       </div>
     </div>
   )

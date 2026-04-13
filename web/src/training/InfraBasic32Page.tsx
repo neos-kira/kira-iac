@@ -11,7 +11,6 @@ import type { MouseEvent } from 'react'
 import { getCurrentDisplayName } from '../auth'
 import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
-import { NeOSLogo } from '../components/NeOSLogo'
 
 const EMPTY_SNAPSHOT: TraineeProgressSnapshot = {
   introConfirmed: false, introAt: null, wbsPercent: 0,
@@ -414,10 +413,12 @@ export function InfraBasic32Page() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-3xl space-y-6">
+        <div>
+          <p className="text-xs text-slate-500">課題3-2 · 理解度チェック</p>
+          <h1 className="text-xl font-bold text-slate-800">OS・仮想化・クラウド 記述式チェック</h1>
+        </div>
         <div className="flex items-center justify-between">
-          <button type="button" onClick={() => { void handleSuspend() }} className="cursor-pointer hover:opacity-80">
-            <NeOSLogo height={32} />
-          </button>
+
           <div className="flex flex-col items-end gap-1">
             <button
               type="button"
@@ -425,7 +426,7 @@ export function InfraBasic32Page() {
               disabled={isSaving}
               className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSaving ? '保存中...' : '中断して保存 →'}
+              {isSaving ? '保存中...' : '中断して保存'}
             </button>
             {saveError && <p className="text-xs text-red-600">{saveError}</p>}
           </div>
@@ -447,7 +448,7 @@ export function InfraBasic32Page() {
               value={state.answers.q1}
               onChange={(e) => updateAnswer('q1', e.target.value)}
               rows={3}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2 text-[11px] text-slate-800 outline-none ring-1 ring-slate-300 placeholder:text-slate-500 focus:border-indigo-500 focus:ring-indigo-500/40"
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2 text-[11px] text-slate-800 outline-none ring-1 ring-slate-300 placeholder:text-slate-500 focus:border-teal-500 focus:ring-teal-500/40"
               placeholder="OS の役割を、自分の言葉と技術的な根拠を交えて 30 文字以上で記述してください。"
             />
             {state.results.q1.feedback && (
@@ -469,7 +470,7 @@ export function InfraBasic32Page() {
               value={state.answers.q2}
               onChange={(e) => updateAnswer('q2', e.target.value)}
               rows={3}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2 text-[11px] text-slate-800 outline-none ring-1 ring-slate-300 placeholder:text-slate-500 focus:border-indigo-500 focus:ring-indigo-500/40"
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2 text-[11px] text-slate-800 outline-none ring-1 ring-slate-300 placeholder:text-slate-500 focus:border-teal-500 focus:ring-teal-500/40"
               placeholder="CPU / メモリのボトルネック判断に使う指標と、その指標から何が分かるかを 30 文字以上で記述してください。"
             />
             {state.results.q2.feedback && (
@@ -491,7 +492,7 @@ export function InfraBasic32Page() {
               value={state.answers.q3}
               onChange={(e) => updateAnswer('q3', e.target.value)}
               rows={3}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2 text-[11px] text-slate-800 outline-none ring-1 ring-slate-300 placeholder:text-slate-500 focus:border-indigo-500 focus:ring-indigo-500/40"
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2 text-[11px] text-slate-800 outline-none ring-1 ring-slate-300 placeholder:text-slate-500 focus:border-teal-500 focus:ring-teal-500/40"
               placeholder="ベアメタル型とホスト型のレイヤ構成の違いが性能にどう影響するかを、30 文字以上で説明してください。"
             />
             {state.results.q3.feedback && (
@@ -511,7 +512,7 @@ export function InfraBasic32Page() {
               value={state.answers.q4}
               onChange={(e) => updateAnswer('q4', e.target.value)}
               rows={2}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2 text-[11px] text-slate-800 outline-none ring-1 ring-slate-300 placeholder:text-slate-500 focus:border-indigo-500 focus:ring-indigo-500/40"
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2 text-[11px] text-slate-800 outline-none ring-1 ring-slate-300 placeholder:text-slate-500 focus:border-teal-500 focus:ring-teal-500/40"
               placeholder="VMware ESXi が属するハイパーバイザーの種類と特徴を、正しい用語を用いて 30 文字以上で記述してください。"
             />
             {state.results.q4.feedback && (
@@ -533,7 +534,7 @@ export function InfraBasic32Page() {
               value={state.answers.q5}
               onChange={(e) => updateAnswer('q5', e.target.value)}
               rows={3}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2 text-[11px] text-slate-800 outline-none ring-1 ring-slate-300 placeholder:text-slate-500 focus:border-indigo-500 focus:ring-indigo-500/40"
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2 text-[11px] text-slate-800 outline-none ring-1 ring-slate-300 placeholder:text-slate-500 focus:border-teal-500 focus:ring-teal-500/40"
               placeholder="メモリオーバーコミットの仕組みとメリット・リスクを、技術的な根拠を含めて 30 文字以上で記述してください。"
             />
             {state.results.q5.feedback && (
@@ -555,7 +556,7 @@ export function InfraBasic32Page() {
               value={state.answers.q6}
               onChange={(e) => updateAnswer('q6', e.target.value)}
               rows={3}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2 text-[11px] text-slate-800 outline-none ring-1 ring-slate-300 placeholder:text-slate-500 focus:border-indigo-500 focus:ring-indigo-500/40"
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2 text-[11px] text-slate-800 outline-none ring-1 ring-slate-300 placeholder:text-slate-500 focus:border-teal-500 focus:ring-teal-500/40"
               placeholder="IaaS における責任共有モデルを踏まえ、ミドルウェアのパッチ適用を誰が担うべきかを 30 文字以上で記述してください。"
             />
             {state.results.q6.feedback && (
@@ -578,7 +579,7 @@ export function InfraBasic32Page() {
               value={state.answers.q8}
               onChange={(e) => updateAnswer('q8', e.target.value)}
               rows={4}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2 text-[11px] text-slate-800 outline-none ring-1 ring-slate-300 placeholder:text-slate-500 focus:border-indigo-500 focus:ring-indigo-500/40"
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2 text-[11px] text-slate-800 outline-none ring-1 ring-slate-300 placeholder:text-slate-500 focus:border-teal-500 focus:ring-teal-500/40"
               placeholder="AWS / Azure / GCP の強みと適したプロジェクトを、具体的なクラウドサービス名も交えて 30 文字以上で記述してください。"
             />
             {state.results.q8.feedback && (
@@ -600,7 +601,7 @@ export function InfraBasic32Page() {
               value={state.answers.q7}
               onChange={(e) => updateAnswer('q7', e.target.value)}
               rows={5}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2 text-[11px] text-slate-800 outline-none ring-1 ring-slate-300 placeholder:text-slate-500 focus:border-indigo-500 focus:ring-indigo-500/40"
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2 text-[11px] text-slate-800 outline-none ring-1 ring-slate-300 placeholder:text-slate-500 focus:border-teal-500 focus:ring-teal-500/40"
               placeholder={`実際に実行した OS バージョン確認コマンドと、その結果ログをそのまま貼り付けてください。`}
             />
             {state.results.q7.feedback && (
@@ -616,7 +617,7 @@ export function InfraBasic32Page() {
             <button
               type="button"
               onClick={handleEvaluate}
-              className="rounded-xl bg-gradient-to-r bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-soft-card hover:bg-indigo-700"
+              className="rounded-xl bg-gradient-to-r bg-teal-600 px-4 py-2 text-xs font-semibold text-white shadow-soft-card hover:bg-teal-700"
             >
               採点する
             </button>

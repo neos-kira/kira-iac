@@ -75,6 +75,8 @@ export type TraineeProgressSnapshot = {
   infra1Cleared?: boolean
   /** 課題1-2（Linux30問）クリア済み */
   l1Cleared?: boolean
+  /** Linux30問: 回答済みコマンドテキスト（queueIdx → コマンド文字列） */
+  l1AnsweredCommands?: Record<string, string>
   /** 導入課題: 現在のステップ（1-5） */
   introStep?: number
   /** 導入課題: 問題IDと回答のマップ */

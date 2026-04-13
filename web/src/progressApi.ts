@@ -4,12 +4,25 @@
 import type { TraineeProgressSnapshot } from './traineeProgressStorage'
 
 const DEFAULT_API_URL = 'https://wfhfqq0tjh.execute-api.ap-northeast-1.amazonaws.com'
-const BASE_URL = (typeof import.meta.env !== 'undefined' && import.meta.env.VITE_PROGRESS_API_URL
+export const BASE_URL = (typeof import.meta.env !== 'undefined' && import.meta.env.VITE_PROGRESS_API_URL
   ? (import.meta.env.VITE_PROGRESS_API_URL as string)
   : DEFAULT_API_URL
 ).replace(/\/$/, '')
 
 const SESSION_TOKEN_KEY = 'kira-session-token'
+
+export function forceLogout(): void {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.removeItem('kira-session-token')
+    window.localStorage.removeItem('kira-user-logged-in')
+    window.localStorage.removeItem('kira-user-display-name')
+    document.cookie = 'kira-session-token=; path=/; max-age=0; samesite=lax'
+    document.cookie = 'kira-user-logged-in=; path=/; max-age=0; samesite=lax'
+    const base = (window.location.origin + window.location.pathname).replace(/\/$/, '')
+    window.location.href = base + '#/login'
+  } catch { /* ignore */ }
+}
 
 function getCookieValue(name: string): string | null {
   if (typeof document === 'undefined') return null
@@ -19,6 +32,7 @@ function getCookieValue(name: string): string | null {
 }
 
 function getSessionToken(): string | null {
+  console.log('[getSessionToken] localStorage value:', typeof window !== 'undefined' ? window.localStorage.getItem('kira-session-token') : 'N/A')
   if (typeof window === 'undefined') return null
   try {
     const v = window.localStorage.getItem(SESSION_TOKEN_KEY)
@@ -31,7 +45,7 @@ function getSessionToken(): string | null {
   }
 }
 
-function buildAuthHeaders(base: HeadersInit = {}): HeadersInit {
+export function buildAuthHeaders(base: HeadersInit = {}): HeadersInit {
   const noCache = { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
   const token = getSessionToken()
   if (!token) return { ...base, ...noCache }
@@ -45,6 +59,26 @@ function buildAuthHeaders(base: HeadersInit = {}): HeadersInit {
 
 export function isProgressApiAvailable(): boolean {
   return BASE_URL.length > 0
+}
+
+/** セッショントークンからユーザー名を取得し、localStorageに復元する */
+export async function fetchMe(): Promise<string | null> {
+  if (!BASE_URL) return null
+  try {
+    const res = await fetch(`${BASE_URL}/auth/me`, {
+      headers: buildAuthHeaders(),
+      credentials: 'omit',
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as { username?: string }
+    const username = data.username ?? ''
+    if (username) {
+      window.localStorage.setItem('kira-user-display-name', username)
+    }
+    return username || null
+  } catch {
+    return null
+  }
 }
 
 /** 進捗をサーバーに保存（受講生ログイン中に定期的に呼ぶ） */
@@ -65,6 +99,10 @@ export async function postProgress(traineeId: string, snapshot: TraineeProgressS
     if (!res.ok) {
       const errText = await res.text().catch(() => '')
       console.log('[Sync] postProgress エラー詳細:', errText)
+      if (res.status === 401) {
+        forceLogout()
+        return false
+      }
       const fallback = await fetch(`${BASE_URL}/progress`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -108,7 +146,11 @@ export async function fetchProgressFromApi(): Promise<TraineeProgressFromApi[]> 
       const data = (await res.json()) as { trainees?: TraineeProgressFromApi[] }
       return Array.isArray(data.trainees) ? data.trainees : []
     }
-    if (res.status === 401) console.log('[Sync] fetchProgressFromApi 401: 認証なしで再試行')
+    if (res.status === 401) {
+      console.log('[Sync] fetchProgressFromApi 401: forceLogout')
+      forceLogout()
+      return []
+    }
     const fallback = await fetch(`${BASE_URL}/progress?t=${Date.now()}`, { method: 'GET', credentials: 'omit' })
     if (!fallback.ok) return []
     const data2 = (await fallback.json()) as { trainees?: TraineeProgressFromApi[] }
@@ -145,6 +187,13 @@ export async function scoreAnswer(params: {
     body: JSON.stringify(params),
   })
   if (!res.ok) {
+    if (res.status === 401) {
+      forceLogout()
+      throw new Error('unauthorized')
+    }
+    if (res.status === 503) {
+      throw new Error('AIが混雑しています。少し待ってから再試行してください。')
+    }
     const text = await res.text().catch(() => '')
     throw new Error(`score API error ${res.status}: ${text}`)
   }

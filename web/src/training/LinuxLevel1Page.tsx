@@ -7,7 +7,6 @@ import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 import { postProgress, isProgressApiAvailable } from '../progressApi'
 import { getCurrentDisplayName } from '../auth'
 import { fetchMyProgress } from '../progressApi'
-import { NeOSLogo } from '../components/NeOSLogo'
 
 const PART_SIZE = 10
 const PASS_SCORE = 8
@@ -149,6 +148,7 @@ export function LinuxLevel1Page() {
   const [firstAttemptCorrect, setFirstAttemptCorrect] = useState<Record<string, boolean>>(initRestored.firstAttemptCorrect)
   const [inputValue, setInputValue] = useState('')
   const [lastResult, setLastResult] = useState<'correct' | 'wrong' | null>(null)
+  const [answeredCommands, setAnsweredCommands] = useState<Record<number, string>>({})
   const [phase, setPhase] = useState<'quiz' | 'part_result' | 'all_clear'>('quiz')
   const [partScore, setPartScore] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -207,6 +207,15 @@ export function LinuxLevel1Page() {
       setPhase('quiz')
       setPartScore(0)
 
+      // 回答済みコマンドを復元
+      if (snap.l1AnsweredCommands) {
+        const restored: Record<number, string> = {}
+        Object.entries(snap.l1AnsweredCommands).forEach(([k, v]) => {
+          restored[Number(k)] = v
+        })
+        setAnsweredCommands(restored)
+      }
+
       saveL1State(storageKey, newPartsCleared, serverPart, serverCurrentQuestion, serverWrongIds)
       setIsLoading(false)
     }
@@ -215,8 +224,8 @@ export function LinuxLevel1Page() {
 
   // フォーカス
   useEffect(() => {
-    if (lastResult === null && inputRef.current) inputRef.current.focus()
-  }, [lastResult, queueIdx])
+    if (lastResult === null && !(queueIdx in answeredCommands) && inputRef.current) inputRef.current.focus()
+  }, [lastResult, queueIdx, answeredCommands])
 
   // フィードバック中は Enter → 次へ
   useEffect(() => {
@@ -234,8 +243,9 @@ export function LinuxLevel1Page() {
 
   function handleExecute() {
     if (!current || lastResult !== null) return
-    const trimmed = inputValue.trim()
-    const correctAnswer = (current.choices[current.correctIndex] ?? '').trim()
+    const normalize = (s: string) => s.trim().replace(/\u3000/g, ' ').replace(/\s+/g, ' ')
+    const trimmed = normalize(inputValue)
+    const correctAnswer = normalize(current.choices[current.correctIndex] ?? '')
     const correct = trimmed === correctAnswer
     const isFirstAttempt = !(current.id in firstAttemptCorrect)
 
@@ -248,6 +258,15 @@ export function LinuxLevel1Page() {
     }
 
     setLastResult(correct ? 'correct' : 'wrong')
+    setAnsweredCommands((prev) => ({ ...prev, [queueIdx]: trimmed }))
+  }
+
+  function handlePrevQuestion() {
+    if (queueIdx > 0) {
+      setLastResult(null)
+      setInputValue('')
+      setQueueIdx((i) => i - 1)
+    }
   }
 
   async function goNext() {
@@ -280,6 +299,7 @@ export function LinuxLevel1Page() {
             l1CurrentPart: activePart,
             l1CurrentQuestion: PART_SIZE,
             l1WrongIds: [],
+            l1AnsweredCommands: {},
             updatedAt: new Date().toISOString(),
           })
         }
@@ -303,6 +323,7 @@ export function LinuxLevel1Page() {
     setLastResult(null)
     setPhase('quiz')
     setPartScore(0)
+    setAnsweredCommands({})
   }
 
   /** 中断ボタン: DynamoDB保存 → ok なら遷移、失敗なら表示 */
@@ -325,11 +346,14 @@ export function LinuxLevel1Page() {
         introConfirmed: false, introAt: null, wbsPercent: 0, chapterProgress: [],
         currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
       }
+      const cmdMap: Record<string, string> = {}
+      Object.entries(answeredCommands).forEach(([k, v]) => { cmdMap[String(k)] = v })
       const ok = await postProgress(username, {
         ...base,
         l1CurrentPart: activePart,
         l1CurrentQuestion: currentQuestion,
         l1WrongIds: wrongIds,
+        l1AnsweredCommands: cmdMap,
         updatedAt: new Date().toISOString(),
       })
       if (!ok) {
@@ -445,12 +469,9 @@ export function LinuxLevel1Page() {
     : `${PART_LABELS[activePart]} ${firstAttemptCount + 1}/${PART_SIZE}問`
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
-      <div className="mx-auto max-w-xl">
-        <div className="flex items-center justify-between mb-4">
-          <button type="button" onClick={() => { void handleInterrupt() }} className="cursor-pointer hover:opacity-80">
-            <NeOSLogo height={32} />
-          </button>
+    <div style={{ minHeight: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }} className="bg-slate-50 text-slate-800 p-6">
+      <div className="mx-auto max-w-xl w-full">
+        <div className="flex items-center justify-end mb-4">
           <div className="flex flex-col items-end gap-1">
             <button
               type="button"
@@ -458,13 +479,33 @@ export function LinuxLevel1Page() {
               disabled={isSaving}
               className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSaving ? '保存中...' : '中断して保存 →'}
+              {isSaving ? '保存中...' : '中断して保存'}
             </button>
             {saveError && <p className="text-xs text-red-600">{saveError}</p>}
           </div>
         </div>
       </div>
-      <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-md">
+      {/* 進捗バー + ナビゲーション */}
+      <div className="mx-auto max-w-xl w-full" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', padding: '0 4px' }}>
+        <button
+          type="button"
+          onClick={handlePrevQuestion}
+          disabled={queueIdx === 0}
+          style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '6px 14px', fontSize: '13px', color: queueIdx === 0 ? '#d1d5db' : '#374151', cursor: queueIdx === 0 ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+        >
+          ← 前の問題
+        </button>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '12px', color: '#6b7280', whiteSpace: 'nowrap' }}>
+            {progressLabel}
+          </span>
+          <div style={{ flex: 1, height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{ width: `${((queueIdx + 1) / queue.length) * 100}%`, height: '100%', background: '#0d9488', borderRadius: '3px', transition: 'width 0.3s ease' }} />
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-xl w-full" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '40px', minHeight: 'calc(100vh - 200px)' }}>
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
           TRAINING · LINUX · LEVEL 1
         </p>
@@ -472,15 +513,21 @@ export function LinuxLevel1Page() {
           インフラ研修1 — Linuxコマンド30問
         </h1>
         <div className="mt-1 flex items-center gap-2">
-          <p className="text-xs text-slate-500">{progressLabel}</p>
           {showRetryBadge && (
-            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+            <span style={{ fontSize: '11px', fontWeight: 600, color: '#0d9488', background: '#ccfbf1', borderRadius: '4px', padding: '2px 8px', marginLeft: '8px' }}>
               再出題
             </span>
           )}
         </div>
 
-        <p className="mt-4 text-sm font-medium text-slate-800">{current?.prompt}</p>
+        <p style={{ fontSize: '20px', fontWeight: 600, color: '#111827', marginBottom: '32px', lineHeight: '1.7', marginTop: '16px' }}>{current?.prompt}</p>
+
+        {/* 回答済みバナー */}
+        {queueIdx in answeredCommands && !showFeedback && (
+          <div style={{ background: '#f0fdf9', border: '1px solid #d1fae5', borderRadius: '8px', padding: '8px 14px', marginBottom: '12px', fontSize: '13px', color: '#0d9488' }}>
+            ✓ 回答済みです（変更できません）
+          </div>
+        )}
 
         <form className="mt-4" onSubmit={(e) => e.preventDefault()}>
           <label
@@ -494,26 +541,32 @@ export function LinuxLevel1Page() {
               ref={inputRef}
               id="cmd-input"
               type="text"
-              value={inputValue}
-              onChange={(e) => !showFeedback && setInputValue(e.target.value)}
+              value={queueIdx in answeredCommands && !showFeedback ? (answeredCommands[queueIdx] ?? '') : inputValue}
+              onChange={(e) => !showFeedback && !(queueIdx in answeredCommands) && setInputValue(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key !== 'Enter') return
                 e.preventDefault()
                 e.stopPropagation()
                 if (showFeedback) goNext()
-                else if (inputValue.trim() !== '') handleExecute()
+                else if (!(queueIdx in answeredCommands) && inputValue.trim() !== '') handleExecute()
               }}
-              disabled={showFeedback}
-              className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 disabled:opacity-70"
+              disabled={showFeedback || queueIdx in answeredCommands}
+              className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50 disabled:opacity-70"
               autoComplete="off"
               spellCheck={false}
             />
-            {!showFeedback ? (
+            {queueIdx in answeredCommands && !showFeedback ? (
+              <div />
+            ) : !showFeedback ? (
               <button
                 type="button"
                 onClick={handleExecute}
                 disabled={inputValue.trim() === ''}
-                className="shrink-0 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                style={inputValue.trim() === ''
+                  ? { background: '#e5e7eb', color: '#9ca3af', cursor: 'not-allowed', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500, pointerEvents: 'none' as const }
+                  : { background: '#0d9488', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500 }
+                }
+                className="shrink-0"
               >
                 実行
               </button>
@@ -521,7 +574,8 @@ export function LinuxLevel1Page() {
               <button
                 type="button"
                 onClick={goNext}
-                className="shrink-0 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700"
+                style={{ background: '#0d9488', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500 }}
+                className="shrink-0"
               >
                 {queueIdx < queue.length - 1 ? '次へ' : '採点する'}
               </button>

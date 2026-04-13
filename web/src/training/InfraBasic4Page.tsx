@@ -3,7 +3,6 @@ import { getCurrentUsername } from '../auth'
 import { VI_STEPS, SHELL_QUESTIONS, type InfraBasic4Rag } from './InfraBasic4Data'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
-import { NeOSLogo } from '../components/NeOSLogo'
 
 const EMPTY_SNAPSHOT: TraineeProgressSnapshot = {
   introConfirmed: false, introAt: null, wbsPercent: 0,
@@ -36,7 +35,7 @@ function InlineTerminal({
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="min-h-[80px] w-full resize-y rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 font-mono text-[12px] text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="min-h-[80px] w-full resize-y rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 font-mono text-[12px] text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
           placeholder="$ vi viNeOS\n$ ls\n$ cat viNeOS"
           spellCheck={false}
         />
@@ -169,10 +168,12 @@ export function InfraBasic4Page() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-2xl space-y-6">
+        <div>
+          <p className="text-xs text-slate-500">課題4 · 実践演習</p>
+          <h1 className="text-xl font-bold text-slate-800">vi & シェルスクリプト演習</h1>
+        </div>
         <header className="flex items-center justify-between">
-          <button type="button" onClick={() => { void handleSuspend() }} className="cursor-pointer hover:opacity-80">
-            <NeOSLogo height={32} />
-          </button>
+
           <div className="flex flex-col items-end gap-1">
             <button
               type="button"
@@ -180,7 +181,7 @@ export function InfraBasic4Page() {
               disabled={isSaving}
               className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSaving ? '保存中...' : '中断して保存 →'}
+              {isSaving ? '保存中...' : '中断して保存'}
             </button>
             {saveError && <p className="text-xs text-red-600">{saveError}</p>}
           </div>
@@ -281,7 +282,7 @@ export function InfraBasic4Page() {
                   viNeOS: e.target.value,
                 }))
               }
-              className="mt-2 min-h-[80px] w-full resize-y rounded-md border border-slate-300 bg-slate-50 px-2 py-1.5 font-mono text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-2 min-h-[80px] w-full resize-y rounded-md border border-slate-300 bg-slate-50 px-2 py-1.5 font-mono text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
               placeholder="ここに viNeOS の内容が表示されます。"
             />
           </div>

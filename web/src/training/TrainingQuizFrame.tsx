@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import type { QuizQuestion } from './linuxLevel1Data'
-import { NeOSLogo } from '../components/NeOSLogo'
 
 type Props = {
   title: string
@@ -73,7 +72,6 @@ export function TrainingQuizFrame({
   onInterrupt,
 }: Props) {
   const total = questions.length
-  // serverInitialIndex が提供された場合はそちらを優先（localStorageは参照しない）
   const initial = typeof serverInitialIndex === 'number' && serverInitialIndex > 0 && serverInitialIndex < total
     ? { currentIndex: serverInitialIndex, answers: [] as number[] }
     : loadProgress(storageKey, total)
@@ -88,6 +86,11 @@ export function TrainingQuizFrame({
   const isFinished = answeredCount === total
   const correctCount = answers.filter((a, i) => a === questions[i].correctIndex).length
   const isPass = isFinished && correctCount === totalRequired
+
+  // 現在の問題が回答済みかどうか
+  const isCurrentAnswered = currentIndex < answers.length
+  // 回答済み問題の選択肢インデックス
+  const answeredChoice = isCurrentAnswered ? answers[currentIndex] : null
 
   useEffect(() => {
     if (isFinished && storageKey) clearProgress(storageKey)
@@ -126,6 +129,20 @@ export function TrainingQuizFrame({
     }
     setIsSuspending(false)
     window.location.hash = '#/'
+  }
+
+  function handlePrev() {
+    if (currentIndex > 0) {
+      setCurrentIndex((i) => i - 1)
+      setSelectedIndex(null)
+    }
+  }
+
+  function handleNext() {
+    if (isCurrentAnswered && currentIndex < total - 1) {
+      setCurrentIndex((i) => i + 1)
+      setSelectedIndex(null)
+    }
   }
 
   if (isFinished) {
@@ -171,12 +188,9 @@ export function TrainingQuizFrame({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
-      <div className="mx-auto max-w-xl">
-        <div className="flex items-center justify-between mb-4">
-          <button type="button" onClick={() => { void interrupt() }} className="cursor-pointer hover:opacity-80">
-            <NeOSLogo height={32} />
-          </button>
+    <div style={{ minHeight: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }} className="bg-slate-50 text-slate-800 p-6">
+      <div className="mx-auto max-w-xl w-full">
+        <div className="flex items-center justify-end mb-4">
           <div className="flex flex-col items-end gap-1">
             <button
               type="button"
@@ -184,51 +198,96 @@ export function TrainingQuizFrame({
               disabled={isSuspending}
               className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSuspending ? '保存中...' : '中断して保存 →'}
+              {isSuspending ? '保存中...' : '中断して保存'}
             </button>
             {suspendError && <p className="text-xs text-red-600">{suspendError}</p>}
           </div>
         </div>
       </div>
-      <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+
+      {/* 進捗バー + 前後ナビ */}
+      <div className="mx-auto max-w-xl w-full" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', padding: '0 4px' }}>
+        <button
+          type="button"
+          onClick={handlePrev}
+          disabled={currentIndex === 0}
+          style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', color: currentIndex === 0 ? '#d1d5db' : '#374151', cursor: currentIndex === 0 ? 'not-allowed' : 'pointer' }}
+        >
+          ← 前の問題
+        </button>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '12px', color: '#6b7280', whiteSpace: 'nowrap' }}>
+            {currentIndex + 1} / {total}問
+          </span>
+          <div style={{ flex: 1, height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{ width: `${((currentIndex + 1) / total) * 100}%`, height: '100%', background: '#0d9488', borderRadius: '3px', transition: 'width 0.3s ease' }} />
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handleNext}
+          disabled={!isCurrentAnswered || currentIndex >= total - 1}
+          style={{ background: isCurrentAnswered && currentIndex < total - 1 ? '#0d9488' : '#e5e7eb', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', color: isCurrentAnswered && currentIndex < total - 1 ? 'white' : '#9ca3af', cursor: isCurrentAnswered && currentIndex < total - 1 ? 'pointer' : 'not-allowed' }}
+        >
+          次の問題 →
+        </button>
+      </div>
+
+      <div className="mx-auto max-w-xl w-full" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '40px', minHeight: 'calc(100vh - 200px)' }}>
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{subtitle}</p>
         <h1 className="mt-2 text-xl font-semibold text-slate-800">{title}</h1>
-        <p className="mt-1 text-xs text-slate-400">
-          問題 {currentIndex + 1} / {total}（正誤は出さず、全問終了後に得点を表示します）
-        </p>
+        <span style={{ fontSize: '12px', color: '#0d9488', background: '#f0fdf9', border: '1px solid #d1fae5', borderRadius: '6px', padding: '6px 10px', marginTop: '8px', marginBottom: '16px', display: 'inline-block' }}>
+          正誤は出さず、全問終了後に得点を表示します
+        </span>
 
-        <p className="mt-4 text-sm font-medium text-slate-800">{current.prompt}</p>
-        <div className="mt-3 grid gap-2">
-          {current.choices.map((c, idx) => (
-            <label
-              key={c}
-              className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm ${selectedIndex === idx
-                ? 'border-indigo-500/60 bg-indigo-50'
-                : 'border-slate-200 bg-slate-50 hover:border-slate-300'
-                }`}
+        {/* 回答済みバナー */}
+        {isCurrentAnswered && (
+          <div style={{ background: '#f0fdf9', border: '1px solid #d1fae5', borderRadius: '8px', padding: '10px 16px', marginBottom: '16px', fontSize: '13px', color: '#0d9488' }}>
+            ✓ この問題は回答済みです（回答内容の変更はできません）
+          </div>
+        )}
+
+        <p style={{ fontSize: '20px', fontWeight: 600, color: '#111827', marginBottom: '32px', lineHeight: '1.7' }}>{current.prompt}</p>
+        <div className="grid gap-2">
+          {current.choices.map((c, idx) => {
+            const isSelected = isCurrentAnswered ? answeredChoice === idx : selectedIndex === idx
+            return (
+              <label
+                key={c}
+                className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-sm ${isSelected
+                  ? 'border-teal-500/60 bg-teal-50'
+                  : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                  } ${isCurrentAnswered ? 'cursor-default' : 'cursor-pointer'}`}
+              >
+                <input
+                  type="radio"
+                  name={current.id}
+                  className="h-4 w-4 accent-teal-600"
+                  checked={isSelected}
+                  onChange={() => { if (!isCurrentAnswered) setSelectedIndex(idx) }}
+                  disabled={isCurrentAnswered}
+                />
+                <span className="text-slate-800">{c}</span>
+              </label>
+            )
+          })}
+        </div>
+
+        {!isCurrentAnswered && (
+          <div className="mt-6 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={submit}
+              disabled={selectedIndex == null}
+              style={selectedIndex == null
+                ? { background: '#e5e7eb', color: '#9ca3af', cursor: 'not-allowed', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: 500, pointerEvents: 'none' as const }
+                : { background: '#0d9488', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: 500 }
+              }
             >
-              <input
-                type="radio"
-                name={current.id}
-                className="h-4 w-4 accent-indigo-500"
-                checked={selectedIndex === idx}
-                onChange={() => setSelectedIndex(idx)}
-              />
-              <span className="text-slate-800">{c}</span>
-            </label>
-          ))}
-        </div>
-
-        <div className="mt-6 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={submit}
-            disabled={selectedIndex == null}
-            className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-40"
-          >
-            {currentIndex < total - 1 ? '次へ' : '終了して得点を見る'}
-          </button>
-        </div>
+              {currentIndex < total - 1 ? '次へ' : '終了して得点を見る'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
