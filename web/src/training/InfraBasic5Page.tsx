@@ -106,16 +106,6 @@ export function InfraBasic5Page() {
     [serverSnapshot],
   )
 
-  const toggleCheck = useCallback(
-    async (index: number) => {
-      const next = [...checkboxes]
-      next[index] = !next[index]
-      setCheckboxes(next)
-      await syncToServer(next, sectionDone, reviewAnswers)
-    },
-    [checkboxes, sectionDone, reviewAnswers, syncToServer],
-  )
-
   const toggleSectionDone = useCallback(
     async (sectionId: string) => {
       const next = { ...sectionDone, [sectionId]: !sectionDone[sectionId] }
@@ -151,17 +141,21 @@ export function InfraBasic5Page() {
       if (!answer) return
       setReviewStates((prev) => ({ ...prev, [task.id]: { status: 'scoring' } }))
       try {
-        const result = await scoreAnswerV2({
-          question: task.objective,
-          scoringCriteria: task.reviewCriteria ?? task.objective,
-          answer,
-        })
+        // 通常タスク: 実行結果をAIが検証（verifyCommand + successCriteria）
+        // 理解度確認タスク: 手順書テキストをAIが採点（reviewCriteria）
+        const question = task.isReview
+          ? task.objective
+          : `以下の確認コマンドの実行結果を検証してください。\n確認コマンド: ${task.verifyCommand ?? ''}\n`
+        const criteria = task.isReview
+          ? (task.reviewCriteria ?? task.objective)
+          : (task.successCriteria ?? task.objective)
+
+        const result = await scoreAnswerV2({ question, scoringCriteria: criteria, answer })
         setReviewStates((prev) => ({
           ...prev,
           [task.id]: { status: 'done', rating: result.rating, comment: result.comment, advice: result.advice },
         }))
         if (result.rating === 'pass') {
-          // 合格時: チェックボックスをオンにしてセクションを完了にする
           const nextCb = [...checkboxes]
           nextCb[task.index] = true
           setCheckboxes(nextCb)
@@ -253,7 +247,6 @@ export function InfraBasic5Page() {
             onToggleOpen={() =>
               setOpenSections((prev) => ({ ...prev, [section.id]: !prev[section.id] }))
             }
-            onToggleCheck={toggleCheck}
             onToggleSectionDone={() => { void toggleSectionDone(section.id) }}
             onReviewAnswerChange={(taskId, value) => {
               const next = { ...reviewAnswers, [taskId]: value }
@@ -298,7 +291,6 @@ function SectionBlock({
   reviewStates,
   isOpen,
   onToggleOpen,
-  onToggleCheck,
   onToggleSectionDone,
   onReviewAnswerChange,
   onReviewScore,
@@ -310,7 +302,6 @@ function SectionBlock({
   reviewStates: Record<string, ReviewState>
   isOpen: boolean
   onToggleOpen: () => void
-  onToggleCheck: (index: number) => Promise<void>
   onToggleSectionDone: () => void
   onReviewAnswerChange: (taskId: string, value: string) => void
   onReviewScore: (task: Infra5Task) => void
@@ -371,7 +362,6 @@ function SectionBlock({
               checked={checkboxes[task.index] ?? false}
               reviewAnswer={reviewAnswers[task.id] ?? ''}
               reviewState={reviewStates[task.id] ?? { status: 'idle' }}
-              onToggle={() => { void onToggleCheck(task.index) }}
               onReviewAnswerChange={(v) => onReviewAnswerChange(task.id, v)}
               onReviewScore={() => onReviewScore(task)}
             />
@@ -391,7 +381,6 @@ function TaskRow({
   checked,
   reviewAnswer,
   reviewState,
-  onToggle,
   onReviewAnswerChange,
   onReviewScore,
 }: {
@@ -399,63 +388,93 @@ function TaskRow({
   checked: boolean
   reviewAnswer: string
   reviewState: ReviewState
-  onToggle: () => void
   onReviewAnswerChange: (v: string) => void
   onReviewScore: () => void
 }) {
   const [showHint, setShowHint] = useState(false)
 
+  // ── 完了済み ──
+  if (checked) {
+    return (
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 flex items-center gap-2">
+        <span className="text-emerald-600 text-sm">✓</span>
+        <span className="text-xs font-medium text-emerald-800">
+          <span className="text-[11px] text-emerald-500 mr-1">{task.number}</span>
+          {task.title}
+        </span>
+      </div>
+    )
+  }
+
+  // ── 未完了 ──
   return (
-    <div className={`rounded-xl border p-3 transition-colors ${checked ? 'border-slate-200 bg-slate-50' : 'border-slate-200 bg-white'}`}>
+    <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
       {/* タスクヘッダー */}
-      <div className="flex items-start gap-2">
-        <input
-          type="checkbox"
-          id={`task-${task.id}`}
-          checked={checked}
-          onChange={onToggle}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-indigo-600"
-        />
-        <div className="flex-1 min-w-0">
-          <label
-            htmlFor={`task-${task.id}`}
-            className={`cursor-pointer text-sm font-medium leading-snug ${checked ? 'text-slate-400 line-through' : task.isReview ? 'text-indigo-700' : 'text-slate-800'}`}
-          >
-            <span className="text-[11px] text-slate-400 mr-1">{task.number}</span>
-            {task.title}
-          </label>
-          {!checked && (
-            <p className="mt-1 text-xs text-slate-500">{task.objective}</p>
-          )}
-        </div>
+      <div>
+        <p className="text-sm font-medium text-slate-800 leading-snug">
+          <span className="text-[11px] text-slate-400 mr-1">{task.number}</span>
+          {task.isReview ? <span className="text-indigo-700">{task.title}</span> : task.title}
+        </p>
+        <p className="mt-1 text-xs text-slate-500">{task.objective}</p>
       </div>
 
-      {/* ヒント */}
-      {!checked && task.hint && (
-        <div className="mt-2 ml-6">
+      {/* ヒント（調べ方・考え方のみ） */}
+      {task.hint && (
+        <div>
           <button
             type="button"
             onClick={() => setShowHint((v) => !v)}
             className="text-[11px] text-indigo-500 hover:text-indigo-700 underline"
           >
-            {showHint ? 'ヒントを隠す' : 'ヒントを見る'}
+            {showHint ? 'ヒントを隠す' : 'ヒントを見る（考え方）'}
           </button>
           {showHint && (
-            <p className="mt-1 rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-700 font-mono whitespace-pre-wrap">
+            <p className="mt-1 rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-700">
               {task.hint}
             </p>
           )}
         </div>
       )}
 
-      {/* 理解度確認: テキストエリア + AI採点 */}
-      {task.isReview && !checked && (
-        <div className="mt-3 ml-6 space-y-2">
+      {/* 通常タスク: 確認コマンド + 実行結果貼り付け + AI検証 */}
+      {!task.isReview && task.verifyCommand && (
+        <div className="space-y-2 pt-1 border-t border-slate-100">
+          <p className="text-[11px] font-medium text-slate-600">
+            以下のコマンドを実行し、結果を貼り付けてください：
+          </p>
+          <code className="block rounded-lg bg-slate-900 px-3 py-2 text-xs text-emerald-400 font-mono select-all whitespace-pre-wrap">
+            $ {task.verifyCommand}
+          </code>
+          <textarea
+            value={reviewAnswer}
+            onChange={(e) => onReviewAnswerChange(e.target.value)}
+            placeholder="実行結果をここに貼り付けてください..."
+            rows={4}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none font-mono"
+          />
+          <button
+            type="button"
+            onClick={onReviewScore}
+            disabled={!reviewAnswer.trim() || reviewState.status === 'scoring'}
+            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {reviewState.status === 'scoring' ? 'AI確認中...' : 'AIに確認してもらう'}
+          </button>
+          <VerifyResult state={reviewState} isReview={false} />
+        </div>
+      )}
+
+      {/* 理解度確認タスク: 手順書テキスト + AI採点 */}
+      {task.isReview && (
+        <div className="space-y-2 pt-1 border-t border-slate-100">
+          <p className="text-[11px] font-medium text-slate-600">
+            実施した手順と内容を記述してください（目的・手順・確認結果の3点を含めること）：
+          </p>
           <textarea
             value={reviewAnswer}
             onChange={(e) => onReviewAnswerChange(e.target.value)}
             placeholder="実施した手順と内容を記述してください..."
-            rows={4}
+            rows={5}
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
           />
           <button
@@ -466,23 +485,35 @@ function TaskRow({
           >
             {reviewState.status === 'scoring' ? 'AI採点中...' : 'AIに採点してもらう'}
           </button>
-          {/* 採点結果 */}
-          {reviewState.status === 'done' && reviewState.rating && (
-            <div className={`rounded-xl border p-3 ${RATING_STYLES[reviewState.rating].bg}`}>
-              <p className="text-xs font-semibold">
-                {RATING_STYLES[reviewState.rating].icon} {RATING_STYLES[reviewState.rating].label}
-              </p>
-              {reviewState.comment && <p className="mt-1 text-xs text-slate-700">{reviewState.comment}</p>}
-              {reviewState.advice && <p className="mt-1 text-xs text-slate-500">{reviewState.advice}</p>}
-              {reviewState.rating === 'pass' && (
-                <p className="mt-1 text-xs text-emerald-700 font-medium">チェックボックスが自動でオンになりました ✓</p>
-              )}
-            </div>
-          )}
-          {reviewState.status === 'error' && (
-            <p className="text-xs text-red-600">{reviewState.error ?? 'エラーが発生しました'}</p>
-          )}
+          <VerifyResult state={reviewState} isReview={true} />
         </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────
+// 検証・採点結果表示
+// ─────────────────────────────────────
+
+function VerifyResult({ state, isReview }: { state: ReviewState; isReview: boolean }) {
+  if (state.status === 'idle') return null
+  if (state.status === 'error') {
+    return <p className="text-xs text-red-600">{state.error ?? 'エラーが発生しました。再試行してください。'}</p>
+  }
+  if (state.status !== 'done' || !state.rating) return null
+
+  return (
+    <div className={`rounded-xl border p-3 ${RATING_STYLES[state.rating].bg}`}>
+      <p className="text-xs font-semibold">
+        {RATING_STYLES[state.rating].icon} {RATING_STYLES[state.rating].label}
+      </p>
+      {state.comment && <p className="mt-1 text-xs text-slate-700">{state.comment}</p>}
+      {state.advice && <p className="mt-1 text-xs text-slate-500">{state.advice}</p>}
+      {state.rating === 'pass' && (
+        <p className="mt-1 text-xs text-emerald-700 font-medium">
+          {isReview ? '✓ 合格です！完了になりました。' : '✓ 正しく完了しています！完了になりました。'}
+        </p>
       )}
     </div>
   )
