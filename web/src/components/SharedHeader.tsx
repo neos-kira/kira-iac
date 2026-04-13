@@ -20,6 +20,7 @@ type Props = {
 export function SharedHeader({ delayed, progressPct, completedCount, totalCount, onWbs, onLogout, isAdmin, onAdminMenu, onAccountPanel }: Props) {
   const [showMenu, setShowMenu] = useState(false)
   const [showModal, setShowModal] = useState(false)
+  const [showWBSHelp, setShowWBSHelp] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const [resolvedName, setResolvedName] = useState(() => {
@@ -65,16 +66,47 @@ export function SharedHeader({ delayed, progressPct, completedCount, totalCount,
       </div>
 
       <div className="flex items-center gap-3">
-        {delayed !== undefined && onWbs && (
-          <button
-            type="button"
-            onClick={onWbs}
-            className={`hidden sm:inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium text-white shrink-0 ${delayed ? 'bg-rose-500' : 'bg-emerald-500'}`}
-            title={delayed ? '研修進捗に遅延があります' : '研修開始から現在までの期間に対して、進捗が予定通りです'}
-            style={{ cursor: 'help' }}
-          >
-            {delayed ? '遅延あり' : '遅延なし'}
-          </button>
+        {delayed !== undefined && (
+          <div className="hidden sm:flex items-center gap-2 relative">
+            <span
+              className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium text-white shrink-0 ${delayed ? 'bg-rose-500' : 'bg-emerald-500'}`}
+            >
+              {delayed ? '遅延あり' : '遅延なし'}
+            </span>
+            {onWbs && (
+              <button
+                type="button"
+                onClick={onWbs}
+                className="text-[11px] font-medium text-teal-600 hover:text-teal-700 hover:underline shrink-0"
+              >
+                WBS（進捗管理表）→
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowWBSHelp((v) => !v)}
+              className="flex items-center justify-center w-4 h-4 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 text-[10px] font-bold shrink-0"
+              title="WBSとは？"
+            >
+              ?
+            </button>
+            {showWBSHelp && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowWBSHelp(false)} />
+                <div className="absolute top-full right-0 mt-2 z-50 w-72 rounded-xl border border-slate-200 bg-slate-800 text-white p-3 shadow-lg text-[12px] leading-relaxed">
+                  <p className="font-semibold text-emerald-400 mb-1">WBS（Work Breakdown Structure）とは？</p>
+                  <p className="text-slate-200">プロジェクトの作業を細かく分解して進捗を管理する表です。各課題の完了状況や遅延がひと目でわかります。</p>
+                  <button
+                    type="button"
+                    onClick={() => setShowWBSHelp(false)}
+                    className="mt-2 text-[11px] text-emerald-400 hover:text-emerald-300"
+                  >
+                    閉じる
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         )}
         {progressPct !== undefined && progressPct !== null && (
           <div className="hidden sm:flex items-center gap-2">
