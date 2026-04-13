@@ -959,6 +959,58 @@ function App() {
           ) : (
           <>
           <div className="w-full max-w-2xl space-y-6">
+            {/* 進捗リセットボタン（開発用・kira-testのみ） */}
+            {isKiraTestUser() && (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!window.confirm('すべての進捗データをリセットしますか？\n（この操作は元に戻せません）')) return
+                    const username = getCurrentDisplayName()
+                    if (!username || !isProgressApiAvailable()) {
+                      alert('リセットできませんでした。')
+                      return
+                    }
+                    try {
+                      await postProgress(username, {
+                        introConfirmed: false,
+                        introAt: null,
+                        introStep: 0,
+                        introRiskAnswers: {},
+                        wbsPercent: 0,
+                        chapterProgress: [],
+                        currentDay: 0,
+                        delayedIds: [],
+                        updatedAt: new Date().toISOString(),
+                        pins: [],
+                        infra1Checkboxes: [],
+                        infra1Cleared: false,
+                        l1CurrentPart: 0,
+                        l1CurrentQuestion: 0,
+                        l1Cleared: false,
+                        l2CurrentQuestion: 0,
+                        l2Cleared: false,
+                        infra32Answers: {},
+                        infra32Cleared: false,
+                        infra4ViDoneSteps: [],
+                        infra4ShellDoneQuestions: [],
+                        infra5PhaseDone: [],
+                        infra5BuildDone: [],
+                        infra5TroubleDone: [],
+                        infra5SecDone: [],
+                      })
+                      alert('進捗をリセットしました。ページをリロードします。')
+                      window.location.reload()
+                    } catch {
+                      alert('リセットに失敗しました。')
+                    }
+                  }}
+                  className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-100"
+                >
+                  進捗リセット（開発用）
+                </button>
+              </div>
+            )}
             {/* つづきから / はじめに案内バナー: serverSnapshot確定後に一度だけ表示を決定 */}
             {(() => {
               // ── ローディング: snap未取得時はスケルトンのみ表示 ──

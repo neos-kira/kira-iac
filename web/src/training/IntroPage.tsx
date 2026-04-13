@@ -537,28 +537,6 @@ export function IntroPage() {
           >
             トップページへ →
           </button>
-          {username === 'kira-test' && (
-            <div>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (isProgressApiAvailable()) {
-                    const base = serverSnapshot ?? EMPTY_SNAPSHOT
-                    await postProgress(username, {
-                      ...base,
-                      introStep: 1,
-                      introConfirmed: false,
-                      introRiskAnswers: {},
-                    })
-                  }
-                  window.location.reload()
-                }}
-                className="mt-4 text-xs text-rose-500 underline"
-              >
-                🔄 進捗リセット（開発用）
-              </button>
-            </div>
-          )}
         </div>
       </>
     )
