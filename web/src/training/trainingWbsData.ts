@@ -42,7 +42,7 @@ const JAPANESE_HOLIDAYS = new Set([
 ])
 
 /** 開始日から N 営業日後の日付（YYYY-MM-DD） */
-function addBusinessDays(startDateStr: string, businessDays: number): string {
+export function addBusinessDays(startDateStr: string, businessDays: number): string {
   const d = new Date(startDateStr + 'T12:00:00')
   let count = 0
   while (count < businessDays) {
