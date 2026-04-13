@@ -24,7 +24,7 @@ export function IntroGate({ children }: Props) {
       }
       const snap = await fetchMyProgress(username)
       if (cancelled) return
-      const completed = !!snap && Number(snap.introStep ?? 0) >= 5 && snap.introConfirmed === true
+      const completed = !!snap && Number(snap.introStep ?? 0) >= 6 && snap.introConfirmed === true
       setStatus(completed ? 'allowed' : 'blocked')
     }
     void check()
@@ -33,7 +33,7 @@ export function IntroGate({ children }: Props) {
 
   useEffect(() => {
     if (status === 'blocked') {
-      navigate('/welcome', { replace: true })
+      navigate('/training/intro', { replace: true })
     }
   }, [status, navigate])
 

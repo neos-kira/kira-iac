@@ -78,12 +78,12 @@ const STANDARDS: Array<{
 // ── Step 2-4 ──────────────────────────────────────────────────────────────────
 
 const STEP_SECTION: Record<number, string> = {
-  2: 'AI利用時の機密保持',
-  3: '物理セキュリティ',
-  4: 'リスク共有と報告',
+  3: 'AI利用時の機密保持',
+  4: '物理セキュリティ',
+  5: 'リスク共有と報告',
 }
 
-const STEP_LABELS = ['行動基準確認', 'AI機密保持', '物理セキュリティ', 'リスク報告', '完了']
+const STEP_LABELS = ['オリエンテーション', '行動基準確認', 'AI機密保持', '物理セキュリティ', 'リスク報告', '完了']
 
 type ScoringResult = { pass: boolean; feedback: string }
 
@@ -182,8 +182,8 @@ export function IntroPage() {
       }
       setServerSnapshot(snap)
 
-      // DynamoDBが唯一の正: introStep===5 かつ introConfirmed のみ完了
-      if (snap.introStep === 5 && snap.introConfirmed) {
+      // DynamoDBが唯一の正: introStep===6 かつ introConfirmed のみ完了
+      if (snap.introStep === 6 && snap.introConfirmed) {
         setIntroConfirmedForUser(username)
       } else {
         // introStep<5 の場合はlocalStorageをクリアして再開させる
@@ -193,15 +193,15 @@ export function IntroPage() {
       const savedAnswers = snap.introRiskAnswers ?? {}
       if (Object.keys(savedAnswers).length > 0) setRiskAnswers(savedAnswers)
 
-      // introStep に応じてステップを復元（1〜5 すべて対応）
+      // introStep に応じてステップを復元（1〜6 すべて対応）
       const savedStep = snap.introStep
-      const isReallyComplete = savedStep === 5 && snap.introConfirmed === true
-      const resolvedStep = (savedStep === 5 && !isReallyComplete) ? 1 : savedStep
+      const isReallyComplete = savedStep === 6 && snap.introConfirmed === true
+      const resolvedStep = (savedStep === 6 && !isReallyComplete) ? 1 : savedStep
 
-      if (typeof resolvedStep === 'number' && resolvedStep >= 1 && resolvedStep <= 5) {
+      if (typeof resolvedStep === 'number' && resolvedStep >= 1 && resolvedStep <= 6) {
         setStep(resolvedStep)
-        // steps 2-4: sectionQIdx を回答済み数から復元
-        if (savedStep >= 2 && savedStep <= 4) {
+        // steps 3-5: sectionQIdx を回答済み数から復元
+        if (savedStep >= 3 && savedStep <= 5) {
           const secName = STEP_SECTION[savedStep] ?? ''
           const sqs = INTRO_RISK_QUESTIONS.filter((q) => q.section === secName)
           const answeredIds = new Set(Object.keys(savedAnswers))
@@ -240,7 +240,7 @@ export function IntroPage() {
         ...EMPTY_SNAPSHOT,
         ...(serverSnapshot ?? {}),
         introStep: step,
-        introConfirmed: step >= 5,
+        introConfirmed: step >= 6,
         introRiskAnswers: riskAnswers,
         updatedAt: new Date().toISOString(),
       }
@@ -260,8 +260,8 @@ export function IntroPage() {
     window.location.hash = '#/'
   }
 
-  // ── Step 1 完了 ───────────────────────────────────────────────────────────
-  const handleStep1Complete = async () => {
+  // ── Step 1（オリエンテーション）完了 ────────────────────────────────────
+  const handleOrientationComplete = async () => {
     if (isScoring) return
     setIsScoring(true)
     try {
@@ -271,11 +271,31 @@ export function IntroPage() {
         await postProgress(username, {
           ...base,
           introStep: 2,
-          introRiskAnswers: riskAnswers,
           updatedAt: new Date().toISOString(),
         })
       }
       setStep(2)
+    } finally {
+      setIsScoring(false)
+    }
+  }
+
+  // ── Step 2（行動基準確認）完了 ────────────────────────────────────────────
+  const handleStep2Complete = async () => {
+    if (isScoring) return
+    setIsScoring(true)
+    try {
+      const username = getCurrentDisplayName().trim().toLowerCase()
+      if (username && username !== 'admin' && isProgressApiAvailable()) {
+        const base = serverSnapshot ?? EMPTY_SNAPSHOT
+        await postProgress(username, {
+          ...base,
+          introStep: 3,
+          introRiskAnswers: riskAnswers,
+          updatedAt: new Date().toISOString(),
+        })
+      }
+      setStep(3)
     } finally {
       setIsScoring(false)
     }
@@ -372,7 +392,7 @@ export function IntroPage() {
 
     try {
       if (isLastInSection) {
-        if (nextStep === 5) {
+        if (nextStep === 6) {
           // 全ステップ完了
           setTrainingStartDateFromTask1Start()
           const trainingStartDate = getTrainingStartDate() || null
@@ -388,7 +408,7 @@ export function IntroPage() {
               ...base,
               introConfirmed: true,
               introAt,
-              introStep: 5,
+              introStep: 6,
               introRiskAnswers: riskAnswers,
               trainingStartDate,
               updatedAt: new Date().toISOString(),
@@ -421,7 +441,7 @@ export function IntroPage() {
   // ── レイアウトヘルパー ────────────────────────────────────────────────────
   const topBar = (
     <div className="flex items-center justify-end mb-6">
-      {step >= 1 && step <= 4 ? (
+      {step >= 1 && step <= 5 ? (
         <div className="flex flex-col items-end gap-1">
           <button
             type="button"
@@ -472,15 +492,15 @@ export function IntroPage() {
     )
   }
 
-  // ── Render: Step 5 完了画面（初回完了: コンフェッティ付き） ──────────────
-  if (step === 5 && freshCompletion) {
+  // ── Render: Step 6 完了画面（初回完了: コンフェッティ付き） ──────────────
+  if (step === 6 && freshCompletion) {
     return (
       <div className="min-h-screen bg-slate-100 text-slate-800 p-6">
         <Confetti />
         <div className="mx-auto max-w-2xl relative z-10">
           {topBar}
           {headerBlock}
-          <StepProgress current={5} />
+          <StepProgress current={6} />
           <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-10 text-center">
             <p className="text-5xl mb-2" aria-hidden>🎉</p>
             <p className="text-2xl font-bold text-slate-800 mb-2">「はじめに」完了！</p>
@@ -501,12 +521,12 @@ export function IntroPage() {
     )
   }
 
-  // ── Render: Step 5 確認済みバナー（再アクセス時） ────────────────────────
-  if (step === 5) {
+  // ── Render: Step 6 確認済みバナー（再アクセス時） ────────────────────────
+  if (step === 6) {
     return pageLayout(
       <>
         {headerBlock}
-        <StepProgress current={5} />
+        <StepProgress current={6} />
         <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-6 space-y-3">
           <p className="text-base font-semibold text-emerald-700">✓ 確認済みです。</p>
           <p className="text-sm text-slate-600">インフラ基礎課題へアクセスできます。</p>
@@ -544,12 +564,90 @@ export function IntroPage() {
     )
   }
 
-  // ── Render: Step 1 行動基準確認 ──────────────────────────────────────────
+  // ── Render: Step 1 オリエンテーション ────────────────────────────────────
   if (step === 1) {
+    const SKILLS = [
+      { icon: '🖥️', title: 'Linuxサーバーの構築', desc: 'WebサーバーとDBサーバーをゼロから構築できるようになります' },
+      { icon: '🔧', title: 'トラブルシューティング', desc: 'ログを読んで障害の原因を自分で特定・復旧できるようになります' },
+      { icon: '🛡️', title: 'セキュリティの基礎', desc: '安全なサーバー設定とポート管理ができるようになります' },
+    ]
+    const STEPS = [
+      { num: 1, label: 'はじめに・行動基準' },
+      { num: 2, label: '課題1 Linuxコマンド・ツール' },
+      { num: 3, label: '課題2〜3 ネットワーク・クラウド' },
+      { num: 4, label: '課題4 vi・シェルスクリプト' },
+      { num: 5, label: '課題5 サーバー構築・障害対応' },
+    ]
     return pageLayout(
       <>
         {headerBlock}
         <StepProgress current={1} />
+
+        <section className="rounded-xl bg-white border border-slate-200 shadow-sm p-6 mb-4">
+          <h1 className="text-2xl font-bold text-slate-800">NIC へようこそ。</h1>
+          <p className="mt-4 text-[15px] leading-relaxed text-slate-600">
+            未経験からでも、手を動かしながら学べるカリキュラムを用意しました。
+            この研修が終わる頃には、Linuxサーバーを1人で構築できる自信がついているはずです。
+          </p>
+          <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
+            わからないことはAI講師にいつでも質問できます。自分のペースで進めていきましょう。
+          </p>
+        </section>
+
+        <section className="mb-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">この研修で身につくこと</p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {SKILLS.map((s) => (
+              <div key={s.title} className="rounded-xl bg-white border border-slate-200 shadow-sm p-4">
+                <p className="text-2xl">{s.icon}</p>
+                <p className="mt-2 text-[13px] font-semibold text-slate-800">{s.title}</p>
+                <p className="mt-1 text-[12px] leading-relaxed text-slate-500">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-xl bg-white border border-slate-200 shadow-sm p-6 mb-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-4">研修の全体像</p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            {STEPS.map((s, i) => (
+              <div key={s.num} className="flex items-start gap-3 sm:flex-col sm:items-center sm:text-center sm:flex-1">
+                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                  i === 0 ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-500'
+                }`}>
+                  {s.num}
+                </div>
+                <p className="text-[12px] text-slate-700">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-xl bg-white border border-slate-200 shadow-sm p-5 mb-6">
+          <p className="text-[13px] font-semibold text-slate-800">全課程の目安：約20〜30時間</p>
+          <p className="mt-1 text-[12px] text-slate-500">自分のペースで大丈夫です。</p>
+        </section>
+
+        <div>
+          <button
+            type="button"
+            onClick={handleOrientationComplete}
+            disabled={isScoring}
+            className="w-full rounded-lg bg-teal-600 py-3.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isScoring ? '保存中...' : '次へ →'}
+          </button>
+        </div>
+      </>
+    )
+  }
+
+  // ── Render: Step 2 行動基準確認 ──────────────────────────────────────────
+  if (step === 2) {
+    return pageLayout(
+      <>
+        {headerBlock}
+        <StepProgress current={2} />
 
         <div className="flex items-center gap-3 mb-2">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-base" aria-hidden>🖥️</span>
@@ -600,7 +698,7 @@ export function IntroPage() {
         <div className="mt-6">
           <button
             type="button"
-            onClick={handleStep1Complete}
+            onClick={handleStep2Complete}
             disabled={isScoring}
             className="w-full rounded-lg bg-teal-600 py-3.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -613,7 +711,7 @@ export function IntroPage() {
 
   // ── Render: Step 2-4 問題 ─────────────────────────────────────────────────
   const isLastInSection = sectionQIdx + 1 >= sectionQuestions.length
-  const isLastStep = step === 4
+  const isLastStep = step === 5
   const nextBtnLabel = isScoring ? '保存中...' : isLastInSection && isLastStep ? '完了' : isLastInSection ? '次のセクションへ →' : '次へ →'
 
   // 選択式問題
