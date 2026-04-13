@@ -9,13 +9,38 @@ import { safeSetItem, safeSessionRemoveItem, setCookieValue } from './utils/stor
 
 const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
 
+// デバッグ用：コンポーネントのマウント回数を追跡
+let mountCount = 0
+
+// グローバル変数で入力値を保持（コンポーネント再マウント対策）
+const globalInputValues = {
+  username: '',
+  password: '',
+}
+
 export function LoginPage() {
+  // マウント追跡
+  const instanceId = useRef(++mountCount)
+  console.log(`[LoginPage] render, instance=${instanceId.current}, globalUsername="${globalInputValues.username}"`)
+
   // DOM ref で入力値を管理（React state に依存しない）
   const usernameRef = useRef<HTMLInputElement>(null)
   const passwordRef = useRef<HTMLInputElement>(null)
   const resetUsernameRef = useRef<HTMLInputElement>(null)
   const resetNewPasswordRef = useRef<HTMLInputElement>(null)
   const resetConfirmPasswordRef = useRef<HTMLInputElement>(null)
+
+  // マウント時にグローバル変数から値を復元
+  useEffect(() => {
+    if (usernameRef.current && globalInputValues.username) {
+      usernameRef.current.value = globalInputValues.username
+      console.log(`[LoginPage] Restored username from global: "${globalInputValues.username}"`)
+    }
+    if (passwordRef.current && globalInputValues.password) {
+      passwordRef.current.value = globalInputValues.password
+      console.log(`[LoginPage] Restored password from global: ${globalInputValues.password.length} chars`)
+    }
+  }, [])
 
   const [loginError, setLoginError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -35,16 +60,22 @@ export function LoginPage() {
   const [hasResetFields, setHasResetFields] = useState(false)
 
   useEffect(() => {
+    console.log(`[LoginPage] useEffect mount, instance=${instanceId.current}`)
     document.title = 'NICプラットフォーム'
+    return () => {
+      console.log(`[LoginPage] useEffect cleanup (unmount), instance=${instanceId.current}`)
+    }
   }, [])
 
-  // 入力変更時にdisabled判定用のstateを更新
+  // 入力変更時にdisabled判定用のstateを更新 + グローバル変数にも保存
   const handleUsernameChange = () => {
     const val = usernameRef.current?.value || ''
+    globalInputValues.username = val
     setHasUsername(val.trim().length > 0)
   }
   const handlePasswordChange = () => {
     const val = passwordRef.current?.value || ''
+    globalInputValues.password = val
     setHasPassword(val.length > 0)
   }
   const handleResetFieldsChange = () => {
@@ -55,9 +86,17 @@ export function LoginPage() {
   }
 
   async function handleLogin() {
-    // DOM から直接値を取得
-    const name = (usernameRef.current?.value || '').trim()
-    const pass = passwordRef.current?.value || ''
+    // DOM から直接値を取得、なければグローバル変数からフォールバック
+    const refUsername = usernameRef.current?.value || ''
+    const refPassword = passwordRef.current?.value || ''
+    const name = (refUsername || globalInputValues.username).trim()
+    const pass = refPassword || globalInputValues.password
+
+    console.log(`[LoginPage] handleLogin called, instance=${instanceId.current}`)
+    console.log(`[LoginPage] refUsername="${refUsername}", globalUsername="${globalInputValues.username}", final="${name}"`)
+    console.log(`[LoginPage] refPassword=${refPassword.length}chars, globalPassword=${globalInputValues.password.length}chars, final=${pass.length}chars`)
+    console.log(`[LoginPage] usernameRef.current exists:`, !!usernameRef.current)
+    console.log(`[LoginPage] passwordRef.current exists:`, !!passwordRef.current)
 
     setLoginError('')
     setIsLoggingIn(true)
@@ -111,6 +150,9 @@ export function LoginPage() {
       }
 
       didNavigate = true
+      // ログイン成功時にグローバル変数をクリア
+      globalInputValues.username = ''
+      globalInputValues.password = ''
       const base =
         (window.location.origin + window.location.pathname + (window.location.search || '')).replace(/\/$/, '') ||
         window.location.origin

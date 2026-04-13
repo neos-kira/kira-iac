@@ -74,6 +74,8 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const showChat = isSidebarPage(path)
   const ctx = MENTOR_CONTEXT_MAP[path] ?? ''
 
+  console.log(`[LayoutWrapper] render, path=${path}, isLogin=${isLogin}`)
+
   const [isMobile] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(pointer: coarse)').matches : false
   )
