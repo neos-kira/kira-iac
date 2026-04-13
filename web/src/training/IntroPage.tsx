@@ -566,76 +566,92 @@ export function IntroPage() {
 
   // ── Render: Step 1 オリエンテーション ────────────────────────────────────
   if (step === 1) {
-    const SKILLS = [
-      { icon: '🖥️', title: 'Linuxサーバーの構築', desc: 'WebサーバーとDBサーバーをゼロから構築できるようになります' },
-      { icon: '🔧', title: 'トラブルシューティング', desc: 'ログを読んで障害の原因を自分で特定・復旧できるようになります' },
-      { icon: '🛡️', title: 'セキュリティの基礎', desc: '安全なサーバー設定とポート管理ができるようになります' },
-    ]
-    const STEPS = [
-      { num: 1, label: 'はじめに・行動基準' },
-      { num: 2, label: '課題1 Linuxコマンド・ツール' },
-      { num: 3, label: '課題2〜3 ネットワーク・クラウド' },
-      { num: 4, label: '課題4 vi・シェルスクリプト' },
-      { num: 5, label: '課題5 サーバー構築・障害対応' },
-    ]
+    const SKILL_TAGS = ['サーバー構築', '障害対応', 'セキュリティ']
+    const FLOW_STEPS = [1, 2, 3, 4, 5]
     return pageLayout(
       <>
         {headerBlock}
         <StepProgress current={1} />
 
-        <section className="rounded-xl bg-white border border-slate-200 shadow-sm p-6 mb-4">
-          <h1 className="text-2xl font-bold text-slate-800">NIC へようこそ。</h1>
-          <p className="mt-4 text-[15px] leading-relaxed text-slate-600">
-            未経験からでも、手を動かしながら学べるカリキュラムを用意しました。
-            この研修が終わる頃には、Linuxサーバーを1人で構築できる自信がついているはずです。
-          </p>
-          <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
-            わからないことはAI講師にいつでも質問できます。自分のペースで進めていきましょう。
+        {/* ヒーローセクション */}
+        <section
+          className="rounded-xl p-6 mb-4"
+          style={{ background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)' }}
+        >
+          <h1 className="text-2xl font-bold text-white leading-tight">
+            この研修が終わる頃には、<br />Linuxサーバーを構築できる
+          </h1>
+          <p className="mt-3 text-[15px] text-white/90">
+            自分のペースで進められます
           </p>
         </section>
 
-        <section className="mb-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">この研修で身につくこと</p>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {SKILLS.map((s) => (
-              <div key={s.title} className="rounded-xl bg-white border border-slate-200 shadow-sm p-4">
-                <p className="text-2xl">{s.icon}</p>
-                <p className="mt-2 text-[13px] font-semibold text-slate-800">{s.title}</p>
-                <p className="mt-1 text-[12px] leading-relaxed text-slate-500">{s.desc}</p>
-              </div>
+        {/* AI講師セクション */}
+        <section className="rounded-xl bg-slate-100 p-5 mb-4 flex items-start gap-4">
+          <div
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full"
+            style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' }}
+          >
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l.893 3.572A1.125 1.125 0 0119.615 20h-2.866a1.125 1.125 0 01-1.078-1.128L15.5 15.3m4.3 0l-.893 3.572A1.125 1.125 0 0117.829 20H6.171a1.125 1.125 0 01-1.078-1.128L5 15.3" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-[15px] font-semibold text-slate-800">AI講師がサポートします</p>
+            <p className="mt-1 text-[13px] text-slate-600 leading-relaxed">
+              困ったときはいつでも聞いてください。同じことを何度聞いても大丈夫です。
+            </p>
+          </div>
+        </section>
+
+        {/* 身につくスキル */}
+        <section className="rounded-xl bg-white border border-slate-200 shadow-sm p-5 mb-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">身につくスキル</p>
+          <div className="flex flex-wrap gap-2">
+            {SKILL_TAGS.map((tag, i) => (
+              <span
+                key={tag}
+                className={`px-3 py-1.5 rounded-lg text-[13px] font-medium ${
+                  i === 0 ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                {tag}
+              </span>
             ))}
           </div>
         </section>
 
-        <section className="rounded-xl bg-white border border-slate-200 shadow-sm p-6 mb-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-4">研修の全体像</p>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            {STEPS.map((s, i) => (
-              <div key={s.num} className="flex items-start gap-3 sm:flex-col sm:items-center sm:text-center sm:flex-1">
-                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                  i === 0 ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-500'
-                }`}>
-                  {s.num}
-                </div>
-                <p className="text-[12px] text-slate-700">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
+        {/* 全体の流れ */}
         <section className="rounded-xl bg-white border border-slate-200 shadow-sm p-5 mb-6">
-          <p className="text-[13px] font-semibold text-slate-800">全課程の目安：約20〜30時間</p>
-          <p className="mt-1 text-[12px] text-slate-500">自分のペースで大丈夫です。</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-4">全体の流れ</p>
+          <div className="flex items-center justify-between">
+            {FLOW_STEPS.map((num, i) => (
+              <div key={num} className="flex items-center">
+                <div
+                  className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${
+                    num === 1 ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-500'
+                  }`}
+                >
+                  {num}
+                </div>
+                {i < FLOW_STEPS.length - 1 && (
+                  <div className="w-6 sm:w-10 h-0.5 bg-slate-200 mx-1" />
+                )}
+              </div>
+            ))}
+          </div>
         </section>
 
+        {/* はじめるボタン */}
         <div>
           <button
             type="button"
             onClick={handleOrientationComplete}
             disabled={isScoring}
-            className="w-full rounded-lg bg-teal-600 py-3.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-lg py-3.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: '#0d9488' }}
           >
-            {isScoring ? '保存中...' : '次へ →'}
+            {isScoring ? '保存中...' : 'はじめる →'}
           </button>
         </div>
       </>
