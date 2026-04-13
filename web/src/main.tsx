@@ -180,11 +180,40 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
           </div>
         )}
         {showSidePanel && !isAiOpen && (
-          <div style={{ position: 'absolute', top: 8, right: 16, zIndex: 50 }}>
-            <button type="button" onClick={() => setIsAiOpen(true)} style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 16 }}>🎓</span> AI講師
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsAiOpen(true)}
+            title="AI講師に質問する"
+            style={{
+              position: 'fixed',
+              bottom: 24,
+              right: 24,
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)',
+              color: 'white',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: 24,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(13,148,136,0.4)',
+              zIndex: 201,
+              transition: 'transform 0.15s, box-shadow 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.1)'
+              e.currentTarget.style.boxShadow = '0 6px 18px rgba(13,148,136,0.55)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.4)'
+            }}
+          >
+            🎓
+          </button>
         )}
       </div>
 
