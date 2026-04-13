@@ -48,13 +48,10 @@ export function LoginPage() {
         return
       }
 
-      // admin は特別扱い（DB 登録なし）
-      if (normalized !== 'admin') {
-        const ok = await checkAccount(normalized, password)
-        if (!ok) {
-          setLoginError('ユーザー名かパスワードが間違っています。')
-          return
-        }
+      const ok = await checkAccount(normalized, password)
+      if (!ok) {
+        setLoginError('ユーザー名かパスワードが間違っています。')
+        return
       }
 
       if (typeof window !== 'undefined') {

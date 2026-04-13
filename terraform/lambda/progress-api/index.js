@@ -456,8 +456,8 @@ fail（再挑戦してください）:
         return json({ error: 'username and password required' }, 400)
       }
       let ok = false
-      if (username === 'admin') {
-        ok = AdminPassword && password === AdminPassword
+      if (username === 'admin' && AdminPassword) {
+        ok = password === AdminPassword
       } else {
         const res = await client.send(
           new GetItemCommand({
@@ -537,10 +537,6 @@ fail（再挑戦してください）:
       const password = typeof body.password === 'string' ? body.password : ''
       if (!username || !password) {
         return json({ ok: false, reason: 'empty' }, 400)
-      }
-      // admin はコード内特別扱いとし、DB には登録しない
-      if (username === 'admin') {
-        return json({ ok: true })
       }
       const res = await client.send(
         new GetItemCommand({
