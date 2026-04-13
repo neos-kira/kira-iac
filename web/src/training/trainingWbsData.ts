@@ -81,7 +81,7 @@ export type TrainingTaskDef = {
 export const TRAINING_TASKS: TrainingTaskDef[] = [
   {
     id: 'infra-basic-1',
-    label: 'インフラ基礎課題1',
+    label: 'Linux基本操作・コマンド',
     labelShort: '課題1',
     path: '/training/infra-basic-top',
     estimatedDays: 1,
@@ -94,7 +94,7 @@ export const TRAINING_TASKS: TrainingTaskDef[] = [
   },
   {
     id: 'infra-basic-2',
-    label: 'インフラ基礎課題2',
+    label: 'ネットワーク基礎',
     labelShort: '課題2',
     path: '/training/infra-basic-2-top',
     estimatedDays: 3,
@@ -106,7 +106,7 @@ export const TRAINING_TASKS: TrainingTaskDef[] = [
   },
   {
     id: 'infra-basic-3',
-    label: 'インフラ基礎課題3',
+    label: 'ファイル操作・viエディタ',
     labelShort: '課題3',
     path: '/training/infra-basic-3-top',
     estimatedDays: 5,
@@ -118,7 +118,7 @@ export const TRAINING_TASKS: TrainingTaskDef[] = [
   },
   {
     id: 'infra-basic-4',
-    label: 'インフラ基礎課題4（vi & シェルスクリプト演習）',
+    label: 'シェルスクリプト',
     labelShort: '課題4',
     path: '/training/infra-basic-4',
     estimatedDays: 10,
@@ -131,7 +131,7 @@ export const TRAINING_TASKS: TrainingTaskDef[] = [
   },
   {
     id: 'infra-basic-5',
-    label: 'インフラ基礎課題5（サーバー構築）',
+    label: 'サーバー構築（Rocky Linux）',
     labelShort: '課題5',
     path: '/training/infra-basic-5',
     estimatedDays: 15,

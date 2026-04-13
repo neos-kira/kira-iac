@@ -1411,7 +1411,7 @@ function App() {
           )}
 
           {/* 研修カリキュラム */}
-          <section className="mt-6 w-full max-w-2xl rounded-2xl bg-white p-5 shadow-sm">
+          <section className="mt-6 w-full max-w-2xl space-y-3">
             <p className="text-sm font-bold text-slate-800">研修カリキュラム</p>
             {(() => {
               const snap = serverSnapshot
@@ -1428,47 +1428,102 @@ function App() {
               const infra5Ok = infra5PhaseDone >= 5
               const infra5Active = infra5PhaseDone > 0
 
-              const kiso: { name: string; status: 'done' | 'active' | 'todo'; action: () => void; newTab?: boolean }[] = [
-                { name: 'はじめに', status: introOk ? 'done' : (Number(snap?.introStep ?? 0) >= 1 ? 'active' : 'todo'), action: () => { window.location.hash = '#/training/intro' } },
-                { name: 'インフラ基礎課題1', status: infra1Ok ? 'done' : ((snap?.infra1Checkboxes ?? []).some(Boolean) || (snap?.l1CurrentPart ?? 0) > 0 ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
-                { name: 'インフラ基礎課題2', status: infra2Ok ? 'done' : ((snap?.l2CurrentQuestion ?? 0) > 0 ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
-                { name: 'インフラ基礎課題3', status: infra3Ok ? 'done' : (Object.keys(snap?.infra32Answers ?? {}).length > 0 ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
-                { name: 'インフラ基礎課題4', status: infra4Ok ? 'done' : (infra4Active ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
-                { name: 'インフラ基礎課題5', status: infra5Ok ? 'done' : (infra5Active ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-5'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
+              type TaskItem = { name: string; sub: string; status: 'done' | 'active' | 'todo'; action: () => void }
+              const linuxTasks: TaskItem[] = [
+                { name: 'はじめに', sub: '行動基準・セキュリティ基礎', status: introOk ? 'done' : (Number(snap?.introStep ?? 0) >= 1 ? 'active' : 'todo'), action: () => { window.location.hash = '#/training/intro' } },
+                { name: 'Linux基本操作・コマンド', sub: 'ツール操作・Linuxコマンド30問', status: infra1Ok ? 'done' : ((snap?.infra1Checkboxes ?? []).some(Boolean) || (snap?.l1CurrentPart ?? 0) > 0 ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
+                { name: 'ネットワーク基礎', sub: 'ネットワーク実践・TCP/IP10問', status: infra2Ok ? 'done' : ((snap?.l2CurrentQuestion ?? 0) > 0 ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
+                { name: 'ファイル操作・viエディタ', sub: 'OS/仮想化/クラウド解説・記述チェック', status: infra3Ok ? 'done' : (Object.keys(snap?.infra32Answers ?? {}).length > 0 ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
+                { name: 'シェルスクリプト', sub: 'vi演習・シェルスクリプト演習', status: infra4Ok ? 'done' : (infra4Active ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) } },
+                { name: 'サーバー構築（Rocky Linux）', sub: 'OS設定・ディスク・httpd・AIDE・PostgreSQL', status: infra5Ok ? 'done' : (infra5Active ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-5'), '_blank'); else setShowIntroRequiredPopup(true) } },
               ]
+              const linuxDone = linuxTasks.filter((t) => t.status === 'done').length
+              const linuxPct = Math.round((linuxDone / linuxTasks.length) * 100)
 
-              const renderItem = (item: typeof kiso[0], extraStyle?: React.CSSProperties, badge?: React.ReactNode) => (
-                <li key={item.name} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3" style={extraStyle}>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-sm font-medium text-slate-800">{item.name}</span>
-                    {badge}
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                      item.status === 'done' ? 'bg-emerald-100 text-emerald-700'
-                      : item.status === 'active' ? 'bg-teal-100 text-teal-700'
-                      : 'bg-slate-200 text-slate-500'
+              const renderTask = (item: TaskItem) => (
+                <li key={item.name} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5 gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                      item.status === 'done' ? 'bg-emerald-500 text-white' : item.status === 'active' ? 'bg-teal-500 text-white' : 'bg-slate-200 text-slate-400'
                     }`}>
-                      {item.status === 'done' ? '完了' : item.status === 'active' ? '進行中' : '未着手'}
+                      {item.status === 'done' ? '✓' : item.status === 'active' ? '▶' : '—'}
                     </span>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-medium text-slate-800 leading-tight">{item.name}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5 truncate">{item.sub}</p>
+                    </div>
                   </div>
-                  <button type="button" onClick={item.action} className="shrink-0 rounded-lg bg-teal-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-teal-700">
-                    {item.newTab ? '開く' : '開く'}
+                  <button type="button" onClick={item.action} className="flex-shrink-0 rounded-lg bg-teal-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-teal-700">
+                    開く
                   </button>
                 </li>
               )
 
+              type Course = { id: string; icon: string; name: string; isAvailable: boolean; tasks: TaskItem[]; pct: number }
+              const courses: Course[] = [
+                { id: 'linux', icon: '🐧', name: 'Linuxサーバー基礎', isAvailable: true, tasks: linuxTasks, pct: linuxPct },
+                { id: 'aws',   icon: '☁️', name: 'AWSクラウド基礎',   isAvailable: false, tasks: [], pct: 0 },
+                { id: 'win',   icon: '🪟', name: 'Windowsサーバー基礎', isAvailable: false, tasks: [], pct: 0 },
+              ]
+
               return (
                 <>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', letterSpacing: '0.08em', textTransform: 'uppercase' as const, padding: '0 0 8px 4px', marginTop: 8 }}>基礎課題</div>
-                  <ul className="space-y-3">{kiso.map((item) => renderItem(item))}</ul>
+                  {courses.map((course) => (
+                    <div key={course.id} className={`rounded-2xl border bg-white shadow-sm overflow-hidden ${course.isAvailable ? 'border-slate-200' : 'border-slate-100 opacity-60'}`}>
+                      {/* コースヘッダー */}
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-xl">{course.icon}</span>
+                          <div>
+                            <p className="text-[13px] font-bold text-slate-800">{course.name}</p>
+                            {course.isAvailable ? (
+                              <p className="text-[10px] text-slate-400">{course.tasks.filter((t) => t.status === 'done').length} / {course.tasks.length} 完了</p>
+                            ) : (
+                              <p className="text-[10px] text-slate-400">準備中</p>
+                            )}
+                          </div>
+                        </div>
+                        {course.isAvailable && (
+                          <div className="flex items-center gap-2">
+                            <div className="w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                              <div className="h-full rounded-full bg-teal-500 transition-all" style={{ width: `${course.pct}%` }} />
+                            </div>
+                            <span className="text-[11px] font-semibold text-slate-600 tabular-nums w-8 text-right">{course.pct}%</span>
+                          </div>
+                        )}
+                      </div>
+                      {/* タスク一覧 */}
+                      {course.isAvailable ? (
+                        <ul className="divide-y divide-slate-50 px-3 py-2 space-y-1">
+                          {course.tasks.map(renderTask)}
+                        </ul>
+                      ) : (
+                        <div className="px-4 py-4 text-[12px] text-slate-400 text-center">今後追加予定</div>
+                      )}
+                    </div>
+                  ))}
 
-                  <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', letterSpacing: '0.08em', textTransform: 'uppercase' as const, padding: '0 0 8px 4px', marginTop: 20, borderTop: '1px solid #f3f4f6', paddingTop: 20 }}>IT業界の歩き方</div>
-                  <ul className="space-y-3">
-                    {renderItem(
-                      { name: 'IT業界の歩き方', status: 'todo', action: () => { window.location.hash = '#/it-basics' } },
-                      { borderLeft: '3px solid #0d9488', background: '#f0fdf9' },
-                      <span style={{ fontSize: 10, fontWeight: 600, color: '#0d9488', background: '#ccfbf1', borderRadius: 4, padding: '2px 6px', marginLeft: 8 }}>座学</span>
-                    )}
-                  </ul>
+                  {/* IT業界の歩き方 */}
+                  <div className="rounded-2xl border border-teal-100 bg-white shadow-sm overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-teal-50">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-xl">📚</span>
+                        <div>
+                          <p className="text-[13px] font-bold text-slate-800">IT業界の歩き方</p>
+                          <p className="text-[10px] text-teal-600 font-medium">座学</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="px-3 py-2">
+                      <li className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5 gap-2 list-none">
+                        <div className="flex items-center gap-2.5">
+                          <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] bg-slate-200 text-slate-400 font-bold">—</span>
+                          <p className="text-[13px] font-medium text-slate-800">IT業界の基礎知識</p>
+                        </div>
+                        <button type="button" onClick={() => { window.location.hash = '#/it-basics' }} className="flex-shrink-0 rounded-lg bg-teal-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-teal-700">開く</button>
+                      </li>
+                    </div>
+                  </div>
                 </>
               )
             })()}
