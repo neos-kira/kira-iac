@@ -170,6 +170,12 @@ export async function fetchProgressFromApi(): Promise<TraineeProgressFromApi[]> 
 
 export type ScoreResult = { pass: boolean; feedback: string }
 
+export type ScoreResultV2 = {
+  rating: 'pass' | 'partial' | 'fail'
+  comment: string
+  advice: string
+}
+
 /**
  * Lambdaプロキシ経由でClaude APIによる採点を行う。
  * API キーはLambdaの環境変数（ANTHROPIC_API_KEY）に設定すること。
@@ -198,6 +204,41 @@ export async function scoreAnswer(params: {
     throw new Error(`score API error ${res.status}: ${text}`)
   }
   return (await res.json()) as ScoreResult
+}
+
+/**
+ * 3段階採点（rating: pass/partial/fail）。
+ * Lambda側は後方互換で pass/feedback も返すが、こちらでは rating/comment/advice を使う。
+ */
+export async function scoreAnswerV2(params: {
+  question: string
+  scoringCriteria: string
+  answer: string
+}): Promise<ScoreResultV2> {
+  if (!BASE_URL) throw new Error('API not configured')
+  const res = await fetch(`${BASE_URL}/ai/score`, {
+    method: 'POST',
+    headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'omit',
+    body: JSON.stringify(params),
+  })
+  if (!res.ok) {
+    if (res.status === 401) {
+      forceLogout()
+      throw new Error('unauthorized')
+    }
+    if (res.status === 503) {
+      throw new Error('AIが混雑しています。少し待ってから再試行してください。')
+    }
+    const text = await res.text().catch(() => '')
+    throw new Error(`score API error ${res.status}: ${text}`)
+  }
+  const data = await res.json()
+  return {
+    rating: data.rating ?? (data.pass ? 'pass' : 'fail'),
+    comment: data.comment ?? data.feedback ?? '',
+    advice: data.advice ?? '',
+  }
 }
 
 /** 指定受講生の進捗をサーバーから取得（受講生画面用）。なければ null。 */

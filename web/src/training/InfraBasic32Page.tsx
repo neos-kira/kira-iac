@@ -8,7 +8,8 @@ import {
 } from './infraBasic3Data'
 import type { InfraBasic32Answers } from './infraBasic3Data'
 import { getCurrentDisplayName } from '../auth'
-import { fetchMyProgress, postProgress, isProgressApiAvailable, scoreAnswer } from '../progressApi'
+import { fetchMyProgress, postProgress, isProgressApiAvailable, scoreAnswerV2 } from '../progressApi'
+import type { ScoreResultV2 } from '../progressApi'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 
 const EMPTY_SNAPSHOT: TraineeProgressSnapshot = {
@@ -92,32 +93,58 @@ const QUESTIONS: QuestionDef[] = [
   },
 ]
 
+type Rating = ScoreResultV2['rating']
+
 type ScoringStatus = 'idle' | 'scoring' | 'done' | 'error'
 
 type QuestionState = {
   status: ScoringStatus
-  score: number | null
-  feedback: string
+  rating: Rating | null
+  comment: string
+  advice: string
   error: string
 }
 
 const DEFAULT_Q_STATE: QuestionState = {
   status: 'idle',
-  score: null,
-  feedback: '',
+  rating: null,
+  comment: '',
+  advice: '',
   error: '',
 }
 
-function deriveScore(pass: boolean, answerLength: number): number {
-  if (pass) return 85
-  if (answerLength >= 20) return 50
-  return 25
-}
-
-function scoreColor(score: number) {
-  if (score <= 40) return { bg: '#fef2f2', text: '#991b1b' }
-  if (score <= 70) return { bg: '#fffbeb', text: '#92400e' }
-  return { bg: '#f0fdf4', text: '#166534' }
+const RATING_CONFIG: Record<Rating, {
+  bg: string
+  borderLeft: string
+  label: string
+  emoji: string
+  textColor: string
+  adviceColor: string
+}> = {
+  pass: {
+    bg: '#f0fdf4',
+    borderLeft: '#16a34a',
+    label: '理解できています',
+    emoji: '\u2705',
+    textColor: '#166534',
+    adviceColor: '#4ade80',
+  },
+  partial: {
+    bg: '#fffbeb',
+    borderLeft: '#d97706',
+    label: 'もう少しです',
+    emoji: '\ud83d\udd36',
+    textColor: '#92400e',
+    adviceColor: '#b45309',
+  },
+  fail: {
+    bg: '#fef2f2',
+    borderLeft: '#dc2626',
+    label: '再挑戦してください',
+    emoji: '\u274c',
+    textColor: '#991b1b',
+    adviceColor: '#b91c1c',
+  },
 }
 
 export function InfraBasic32Page() {
@@ -201,24 +228,28 @@ export function InfraBasic32Page() {
       }))
 
       try {
-        const result = await scoreAnswer({
+        const result = await scoreAnswerV2({
           question: q.question,
           scoringCriteria: q.scoringCriteria,
           answer,
         })
-        const score = deriveScore(result.pass, answer.length)
         setQStates((prev) => ({
           ...prev,
-          [q.id]: { status: 'done', score, feedback: result.feedback, error: '' },
+          [q.id]: {
+            status: 'done',
+            rating: result.rating,
+            comment: result.comment,
+            advice: result.advice,
+            error: '',
+          },
         }))
 
-        // 結果をstateにも反映（DynamoDB同期用）
         setState((prev) => {
           const next = {
             ...prev,
             results: {
               ...prev.results,
-              [q.id]: { checked: true, pass: result.pass, feedback: result.feedback },
+              [q.id]: { checked: true, pass: result.rating === 'pass', feedback: result.comment },
             },
           }
           saveInfraBasic32State(next, stateKey)
@@ -239,12 +270,10 @@ export function InfraBasic32Page() {
   )
 
   const handleScoreAll = async () => {
-    // 未入力でない問題のみ採点
     const targets = QUESTIONS.filter((q) => state.answers[q.id].trim())
     await Promise.allSettled(targets.map((q) => scoreOne(q)))
     await syncToDynamo(state.answers)
 
-    // クリア判定
     const allPass = QUESTIONS.every((q) => {
       const r = state.results[q.id]
       return r?.checked && r?.pass
@@ -299,7 +328,7 @@ export function InfraBasic32Page() {
     }
   }
 
-  const scoredCount = QUESTIONS.filter((q) => qStates[q.id].status === 'done').length
+  const passCount = QUESTIONS.filter((q) => qStates[q.id].status === 'done' && qStates[q.id].rating === 'pass').length
 
   if (isLoading) {
     return (
@@ -336,7 +365,7 @@ export function InfraBasic32Page() {
         {/* 問題カード */}
         {QUESTIONS.map((q, idx) => {
           const qs = qStates[q.id]
-          const colors = qs.score !== null ? scoreColor(qs.score) : null
+          const config = qs.rating ? RATING_CONFIG[qs.rating] : null
 
           return (
             <div
@@ -377,21 +406,30 @@ export function InfraBasic32Page() {
               )}
 
               {/* 採点結果 */}
-              {qs.status === 'done' && colors && qs.score !== null && (
-                <div className="rounded-xl p-4 space-y-2" style={{ backgroundColor: colors.bg }}>
-                  <p style={{ color: colors.text, fontSize: '24px', fontWeight: 'bold' }}>
-                    {qs.score}%
+              {qs.status === 'done' && config && (
+                <div
+                  className="rounded-xl p-4 space-y-2"
+                  style={{
+                    backgroundColor: config.bg,
+                    borderLeft: `4px solid ${config.borderLeft}`,
+                  }}
+                >
+                  <p style={{ fontSize: '16px', fontWeight: 'bold', color: config.textColor }}>
+                    {config.emoji} {config.label}
                   </p>
-                  <p className="text-sm" style={{ color: colors.text }}>
-                    {qs.feedback}
+                  <p style={{ fontSize: '14px', color: config.textColor }}>
+                    {qs.comment}
+                  </p>
+                  <p style={{ fontSize: '13px', color: config.adviceColor, fontStyle: 'italic' }}>
+                    {qs.advice}
                   </p>
                 </div>
               )}
 
               {/* エラー */}
               {qs.status === 'error' && (
-                <div className="rounded-xl bg-red-50 p-4">
-                  <p className="text-sm text-red-700">{qs.error}</p>
+                <div className="rounded-xl p-4" style={{ backgroundColor: '#f9fafb' }}>
+                  <p style={{ fontSize: '14px', color: '#6b7280' }}>{qs.error}</p>
                 </div>
               )}
             </div>
@@ -415,7 +453,7 @@ export function InfraBasic32Page() {
             入力内容をすべてリセット
           </button>
           <p className="text-center text-sm text-slate-500">
-            {scoredCount} / {QUESTIONS.length} 問採点済み
+            {passCount} / {QUESTIONS.length} 問 \u2705 合格
           </p>
         </div>
       </div>

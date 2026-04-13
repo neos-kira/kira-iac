@@ -175,12 +175,33 @@ async function handler(event) {
         return json({ error: 'question, scoringCriteria, answer are required' }, 400)
       }
 
-      const prompt = `採点者として以下を採点せよ。JSON形式のみで返答。余計な文字禁止。
-問題: ${question}
+      const systemPrompt = `あなたはITインフラ研修の講師です。受講生の記述式回答を採点してください。
+
+【採点基準】
+pass（理解できています）:
+- 問われている概念を正しく理解し、自分の言葉で説明できている
+- キーワードの羅列ではなく、因果関係や理由が含まれている
+
+partial（もう少しです）:
+- 方向性は合っているが説明が不十分、または一部が間違っている
+- キーワードは含まれているが説明になっていない
+
+fail（再挑戦してください）:
+- 意味不明な文字列・記号の羅列
+- 設問と全く無関係な回答
+- 未回答・空欄に近い内容
+
+【出力形式】
+必ず以下のJSON形式のみで返すこと。前置き・後置き・マークダウン不要：
+{
+  "rating": "pass" | "partial" | "fail",
+  "comment": "良かった点または問題点を1〜2文で具体的に",
+  "advice": "次のステップまたは改善点を1文で"
+}`
+
+      const userPrompt = `問題: ${question}
 基準: ${scoringCriteria}
-回答: ${answer}
-注意: 文脈上明らかな要素は含まれているとみなす。表現が異なっても意味が同じなら正解。公平に採点。
-形式: {"pass":true/false,"feedback":"50字以内"}`
+回答: ${answer}`
 
       try {
         const command = new InvokeModelCommand({
@@ -189,8 +210,9 @@ async function handler(event) {
           accept: 'application/json',
           body: JSON.stringify({
             anthropic_version: 'bedrock-2023-05-31',
-            max_tokens: 200,
-            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 300,
+            system: systemPrompt,
+            messages: [{ role: 'user', content: userPrompt }],
           }),
         })
         const response = await invokeModelWithRetry(command)
@@ -203,7 +225,11 @@ async function handler(event) {
           return json({ error: 'Invalid AI response', raw: text }, 502)
         }
         const parsed = JSON.parse(match[0])
-        return json({ pass: !!parsed.pass, feedback: String(parsed.feedback ?? '') })
+        const rating = ['pass', 'partial', 'fail'].includes(parsed.rating) ? parsed.rating : 'fail'
+        const comment = String(parsed.comment ?? '')
+        const advice = String(parsed.advice ?? '')
+        // 後方互換: pass/feedback も返す（IntroPage等で使用）
+        return json({ rating, comment, advice, pass: rating === 'pass', feedback: comment })
       } catch (err) {
         console.error('[ai/score] Bedrock error:', err.name, err.message)
         const retryable = err.name === 'ServiceUnavailableException' || err.name === 'ThrottlingException' || err.name === 'ModelNotReadyException' || err.$metadata?.httpStatusCode === 503 || err.$metadata?.httpStatusCode === 429
