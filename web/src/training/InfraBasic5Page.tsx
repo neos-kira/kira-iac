@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { getCurrentUsername } from '../auth'
 import {
   SERVER_PARAMS,
@@ -8,6 +8,17 @@ import {
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 import { fetchMyProgress, postProgress, isProgressApiAvailable, scoreAnswerV2 } from '../progressApi'
 import { getProgressKey } from './trainingWbsData'
+import * as XLSX from 'xlsx'
+import { Download, Upload, FileSpreadsheet, Trash2 } from 'lucide-react'
+
+/** 手順書Excelの1行分のデータ */
+type ProcedureRow = {
+  stepNo: number | string
+  category: string
+  task: string
+  command: string
+  note: string
+}
 
 const EMPTY_SNAPSHOT: TraineeProgressSnapshot = {
   introConfirmed: false, introAt: null, wbsPercent: 0,
@@ -43,10 +54,12 @@ export function InfraBasic5Page() {
   const [paramValues, setParamValues] = useState<Record<string, string>>({})
   const [paramScore, setParamScore] = useState<ScoreState>({ status: 'idle' })
 
-  // 5-2: 手順書
-  const [webProcedure, setWebProcedure] = useState('')
-  const [dbProcedure, setDbProcedure] = useState('')
+  // 5-2: 手順書（Excelアップロード方式）
+  const [procedureRows, setProcedureRows] = useState<ProcedureRow[]>([])
+  const [procedureFileName, setProcedureFileName] = useState<string | null>(null)
+  const [procedureParseError, setProcedureParseError] = useState<string | null>(null)
   const [procedureScore, setProcedureScore] = useState<ScoreState>({ status: 'idle' })
+  const procedureFileRef = useRef<HTMLInputElement>(null)
 
   // 5-3: サーバー構築実践
   const [buildAnswers, setBuildAnswers] = useState<Record<number, string>>({})
@@ -165,22 +178,92 @@ export function InfraBasic5Page() {
     }
   }, [paramValues, markPhaseDone])
 
+  // --- 5-2: Excelファイル処理 ---
+  const handleProcedureFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setProcedureParseError(null)
+    setProcedureScore({ status: 'idle' })
+
+    const reader = new FileReader()
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer)
+        const workbook = XLSX.read(data, { type: 'array' })
+        const sheetName = workbook.SheetNames[0]
+        const sheet = workbook.Sheets[sheetName]
+        // header: 1 で配列の配列として取得
+        const json = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 })
+
+        // ヘッダー行をスキップして解析
+        const rows: ProcedureRow[] = []
+        for (let i = 1; i < json.length; i++) {
+          const row = json[i]
+          if (!Array.isArray(row) || row.length < 4) continue
+          const stepNo = row[0]
+          const category = String(row[1] ?? '').trim()
+          const task = String(row[2] ?? '').trim()
+          const command = String(row[3] ?? '').trim()
+          const note = String(row[4] ?? '').trim()
+          // 空行はスキップ
+          if (!stepNo && !category && !task && !command) continue
+          const parsedStepNo = typeof stepNo === 'number' ? stepNo : typeof stepNo === 'string' ? stepNo : ''
+          rows.push({ stepNo: parsedStepNo, category, task, command, note })
+        }
+
+        if (rows.length === 0) {
+          setProcedureParseError('手順が見つかりませんでした。テンプレートの形式に従って入力してください。')
+          return
+        }
+
+        setProcedureRows(rows)
+        setProcedureFileName(file.name)
+      } catch (err) {
+        setProcedureParseError('Excelファイルの読み込みに失敗しました: ' + (err instanceof Error ? err.message : '不明なエラー'))
+      }
+    }
+    reader.readAsArrayBuffer(file)
+    // ファイル選択をリセット（同じファイルを再選択可能にする）
+    e.target.value = ''
+  }, [])
+
+  const clearProcedureFile = useCallback(() => {
+    setProcedureRows([])
+    setProcedureFileName(null)
+    setProcedureParseError(null)
+    setProcedureScore({ status: 'idle' })
+  }, [])
+
   // --- 5-2: 手順書採点 ---
   const scoreProcedure = useCallback(async () => {
-    if (!webProcedure.trim() || !dbProcedure.trim()) return
+    if (procedureRows.length === 0) return
     setProcedureScore({ status: 'scoring' })
+
+    // Excelデータをテキスト形式に変換
+    const webRows = procedureRows.filter(r => r.category.includes('Web') || r.category.includes('Apache'))
+    const dbRows = procedureRows.filter(r => r.category.includes('データベース') || r.category.includes('MySQL') || r.category.includes('DB'))
+    const otherRows = procedureRows.filter(r => !webRows.includes(r) && !dbRows.includes(r))
+
+    const formatRows = (rows: ProcedureRow[]) =>
+      rows.map(r => `${r.stepNo}. ${r.task}\n   コマンド: ${r.command}${r.note ? `\n   備考: ${r.note}` : ''}`).join('\n')
+
+    const webText = formatRows(webRows)
+    const dbText = formatRows(dbRows)
+    const otherText = formatRows(otherRows)
+    const allText = `【Webサーバー構築】\n${webText || '(なし)'}\n\n【データベース構築】\n${dbText || '(なし)'}\n\n【その他・動作確認】\n${otherText || '(なし)'}`
+
     try {
       const result = await scoreAnswerV2({
-        question: '1台のEC2サーバーにWebサーバー（Apache）とデータベース（MySQL）をインストールする手順をレビューしてください。\n\n【① Webサーバー構築手順】\n' + webProcedure + '\n\n【② データベース構築手順】\n' + dbProcedure,
-        scoringCriteria: '手順として成立していること。パッケージのインストール、起動、自動起動設定、確認の流れが含まれていること。Apache（httpd）とMySQL（mysql-server）の構築手順が書かれていること。順序が論理的で、同一サーバー上で実行可能な手順であること。',
-        answer: '【① Webサーバー】\n' + webProcedure + '\n\n【② データベース】\n' + dbProcedure,
+        question: '1台のEC2サーバーにWebサーバー（Apache）とデータベース（MySQL）をインストールする手順書をレビューしてください。\n\n' + allText,
+        scoringCriteria: '手順として成立していること。パッケージのインストール、起動、自動起動設定、確認の流れが含まれていること。Apache（httpd）とMySQL（mysql-server）の構築手順が書かれていること。順序が論理的で、同一サーバー上で実行可能な手順であること。各手順にコマンドが記載されていること。',
+        answer: allText,
       })
       setProcedureScore({ status: 'done', rating: result.rating, comment: result.comment, advice: result.advice })
       if (result.rating === 'pass') markPhaseDone(2)
     } catch {
       setProcedureScore({ status: 'error', error: 'AIが混雑しています。少し待ってから再試行してください。' })
     }
-  }, [webProcedure, dbProcedure, markPhaseDone])
+  }, [procedureRows, markPhaseDone])
 
   // --- 5-3: サーバー構築実践 ---
   const scoreBuild = useCallback(async (q: number) => {
@@ -458,7 +541,7 @@ export function InfraBasic5Page() {
           )}
         </section>
 
-        {/* ===== 5-2: 手順書作成 ===== */}
+        {/* ===== 5-2: 手順書作成（Excelアップロード方式） ===== */}
         <section className="space-y-2">
           <PhaseHeader phase={2} label="5-2 手順書作成" />
           {openPhase === 2 && (
@@ -469,35 +552,113 @@ export function InfraBasic5Page() {
                 </div>
               ) : (
                 <>
-                  <p className="text-[12px] text-slate-600">1台のEC2サーバーにWebサーバーとDBをインストールする手順を作成してください。</p>
+                  <p className="text-[12px] text-slate-600">
+                    Excelテンプレートをダウンロードし、手順書を作成してアップロードしてください。
+                  </p>
 
                   {/* 手順書カード */}
-                  <div className="rounded-2xl border border-gray-200 bg-white p-6 mb-6">
+                  <div className="rounded-2xl border border-gray-200 bg-white p-6">
 
-                    {/* Webサーバー手順グループ */}
+                    {/* Step 1: テンプレートダウンロード */}
                     <div className="rounded-xl bg-gray-50 p-4 px-5 mb-4">
-                      <p className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">① Webサーバー（Apache）構築手順</p>
-                      <textarea
-                        value={webProcedure}
-                        onChange={(e) => setWebProcedure(e.target.value)}
-                        rows={6}
-                        className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                        placeholder="例:&#10;1. sudo dnf install httpd -y&#10;2. sudo systemctl start httpd&#10;3. sudo systemctl enable httpd&#10;4. curl http://localhost で動作確認"
-                        spellCheck={false}
-                      />
+                      <p className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">
+                        ① テンプレートをダウンロード
+                      </p>
+                      <p className="text-[11px] text-slate-600 mb-3">
+                        まず手順書のテンプレートをダウンロードし、必要な情報を入力してください。
+                      </p>
+                      <a
+                        href="/server_setup_template.xlsx"
+                        download="server_setup_template.xlsx"
+                        className="inline-flex items-center gap-2 rounded-lg bg-slate-700 px-4 py-2 text-[12px] font-medium text-white hover:bg-slate-800"
+                      >
+                        <Download className="h-4 w-4" />
+                        テンプレートをダウンロード
+                      </a>
                     </div>
 
-                    {/* DB手順グループ */}
+                    {/* Step 2: ファイルアップロード */}
                     <div className="rounded-xl bg-gray-50 p-4 px-5">
-                      <p className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">② データベース（MySQL）構築手順</p>
-                      <textarea
-                        value={dbProcedure}
-                        onChange={(e) => setDbProcedure(e.target.value)}
-                        rows={6}
-                        className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                        placeholder="例:&#10;1. sudo dnf install mysql-server -y&#10;2. sudo systemctl start mysqld&#10;3. sudo systemctl enable mysqld&#10;4. sudo mysql_secure_installation で初期設定"
-                        spellCheck={false}
+                      <p className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">
+                        ② 作成した手順書をアップロード
+                      </p>
+
+                      <input
+                        ref={procedureFileRef}
+                        type="file"
+                        accept=".xlsx,.xls"
+                        onChange={handleProcedureFileUpload}
+                        className="hidden"
                       />
+
+                      {!procedureFileName ? (
+                        <button
+                          type="button"
+                          onClick={() => procedureFileRef.current?.click()}
+                          className="flex items-center justify-center gap-2 w-full rounded-lg border-2 border-dashed border-slate-300 bg-white px-4 py-6 text-[12px] text-slate-600 hover:border-teal-400 hover:bg-teal-50 transition-colors"
+                        >
+                          <Upload className="h-5 w-5" />
+                          Excelファイルを選択またはドラッグ&ドロップ
+                        </button>
+                      ) : (
+                        <div className="space-y-3">
+                          {/* アップロード済みファイル表示 */}
+                          <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
+                              <span className="text-[12px] font-medium text-slate-800">{procedureFileName}</span>
+                              <span className="text-[11px] text-slate-500">({procedureRows.length}件の手順)</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={clearProcedureFile}
+                              className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-red-600"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              削除
+                            </button>
+                          </div>
+
+                          {/* プレビューテーブル */}
+                          <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
+                            <div className="max-h-48 overflow-y-auto">
+                              <table className="w-full text-[11px]">
+                                <thead className="bg-slate-100 sticky top-0">
+                                  <tr>
+                                    <th className="px-2 py-1.5 text-left font-medium text-slate-700 w-12">No</th>
+                                    <th className="px-2 py-1.5 text-left font-medium text-slate-700 w-28">カテゴリ</th>
+                                    <th className="px-2 py-1.5 text-left font-medium text-slate-700">作業内容</th>
+                                    <th className="px-2 py-1.5 text-left font-medium text-slate-700">コマンド</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {procedureRows.map((row, idx) => (
+                                    <tr key={idx} className="border-t border-slate-100">
+                                      <td className="px-2 py-1.5 text-slate-600">{row.stepNo}</td>
+                                      <td className="px-2 py-1.5 text-slate-600">{row.category}</td>
+                                      <td className="px-2 py-1.5 text-slate-800">{row.task}</td>
+                                      <td className="px-2 py-1.5 text-slate-600 font-mono text-[10px]">{row.command}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+
+                          {/* 別ファイルを選択 */}
+                          <button
+                            type="button"
+                            onClick={() => procedureFileRef.current?.click()}
+                            className="text-[11px] text-teal-600 hover:text-teal-700 underline"
+                          >
+                            別のファイルを選択
+                          </button>
+                        </div>
+                      )}
+
+                      {procedureParseError && (
+                        <p className="mt-2 text-[11px] text-red-600">{procedureParseError}</p>
+                      )}
                     </div>
                   </div>
 
@@ -506,7 +667,7 @@ export function InfraBasic5Page() {
                     <button
                       type="button"
                       onClick={() => { void scoreProcedure() }}
-                      disabled={procedureScore.status === 'scoring' || !webProcedure.trim() || !dbProcedure.trim()}
+                      disabled={procedureScore.status === 'scoring' || procedureRows.length === 0}
                       className="w-full rounded-lg bg-teal-600 px-4 py-2.5 text-[12px] font-medium text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {procedureScore.status === 'scoring' ? 'AIレビュー中...' : 'AIにレビューしてもらう'}
