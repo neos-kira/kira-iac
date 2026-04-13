@@ -7,6 +7,7 @@ import { flushSync } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { OpenInNewTabButton } from './components/OpenInNewTabButton'
 import { NeOSLogo } from './components/NeOSLogo'
+import { SharedHeader } from './components/SharedHeader'
 import type { CommandResolution } from './commandRouter'
 import { resolveCommand } from './commandRouter'
 import { L1_CLEARED_KEY } from './training/linuxLevel1Data'
@@ -15,7 +16,6 @@ import { INFRA_BASIC_1_CLEARED_KEY, INFRA_BASIC_1_PARAMS } from './training/infr
 import { INFRA_BASIC_3_2_CLEARED_KEY } from './training/infraBasic3Data'
 import {
   getProgressKey,
-  getTaskProgressList,
   getDelayedTaskIds,
   isTask1Cleared,
 } from './training/trainingWbsData'
@@ -109,7 +109,7 @@ function loadPinnedTrainingTasks(): PinnableId[] {
     if (!Array.isArray(parsed)) return []
     return parsed.filter(
       (v: unknown): v is PinnableId =>
-        v === 'intro' || v === 'infra-basic-1' || v === 'infra-basic-2' || v === 'infra-basic-3',
+        v === 'intro' || v === 'infra-basic-1' || v === 'infra-basic-2' || v === 'infra-basic-3' || v === 'infra-basic-4',
     )
   } catch {
     return []
@@ -169,7 +169,7 @@ function JTeradaRestrictedView() {
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block rounded-xl bg-indigo-50 px-4 py-3 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+                  className="block rounded-xl bg-teal-50 px-4 py-3 text-sm font-medium text-teal-700 hover:bg-teal-100"
                 >
                   {label}
                 </a>
@@ -190,11 +190,12 @@ function App() {
 
   const [input, setInput] = useState('')
   const [resolution, setResolution] = useState<CommandResolution | null>(null)
-  const [isThinking, setIsThinking] = useState(false)
+  const [_isThinking, setIsThinking] = useState(false)
   const [trainingStatus, setTrainingStatus] = useState<TrainingStatus>(() => readTrainingStatus())
   /** 初期値 null = 未ロード。サーバー取得完了まで PUT をブロックするため。 */
   const [pinnedTraining, setPinnedTraining] = useState<PinnableId[] | null>(null)
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
+  const [isSnapLoaded, setIsSnapLoaded] = useState(false)
   /** サーバー初回 GET が完了し pinnedTraining に反映されるまで true にしない。それまでは保存処理をブロック。 */
   const isDataReady = useRef(false)
   const [showIntroRequiredPopup, setShowIntroRequiredPopup] = useState(false)
@@ -396,6 +397,7 @@ function App() {
       const exists = list.includes(id)
       const next = exists ? list.filter((p) => p !== id) : [...list, id]
       if (name && name !== 'admin') guardedSavePins(name, next)
+      try { window.localStorage.setItem(TRAINING_PIN_KEY, JSON.stringify(next)) } catch { /* ignore */ }
       return next
     })
   }, [guardedSavePins])
@@ -488,16 +490,14 @@ function App() {
       const snap = await fetchMyProgress(name)
       if (cancelled) return
       if (snap) {
-        // 旧完了ユーザーリセット: introStep < 5 なら introConfirmed を無効化する。
-        // 新しい選択式・記述式問題を追加したため、Step5到達済みのみ完了とみなす。
         if (snap.introConfirmed && Number(snap.introStep ?? 0) < 5) {
           clearIntroForCurrentUser()
         }
-        // isDataReady を true にする前に localStorage へ復元する。
-        // これをしないと、別端末ログイン時に save インターバルが空の localStorage を
-        // サーバーに上書き送信してしまう（introConfirmed: false 等で二重破壊になる）。
         restoreProgressToLocalStorage(name, snap)
         setServerSnapshot(snap)
+      } else {
+        setServerSnapshot(null)
+        // serverSnapshot は null のままにして、スケルトン解除は別フラグで管理する
       }
       const serverPins = filterPinnableIds(snap?.pins ?? [])
       const localPins = loadPinnedTrainingTasks()
@@ -514,6 +514,7 @@ function App() {
         setPinnedTraining([])
         console.log('[Sync] サーバーから取得完了')
       }
+      setIsSnapLoaded(true)
       isDataReady.current = true
     }
     void load()
@@ -695,7 +696,7 @@ function App() {
     && Number(serverSnapshot.introStep ?? 0) === 5
     && serverSnapshot.introConfirmed === true
     && !!serverSnapshot.trainingStartDate
-  const delayed = trainingStarted && (serverSnapshot?.delayedIds?.length ?? getDelayedTaskIds().length) > 0
+  const delayed = trainingStarted && getDelayedTaskIds().length > 0
   // DynamoDB取得完了まで null を返す（チラつき防止）。取得後はサブタスクのクリア数から計算。
   const progressPct = pinnedTraining === null || !serverSnapshot
     ? null
@@ -710,113 +711,22 @@ function App() {
           ch[2]?.cleared ? 1 : 0,                                    // 3-x
           ch[3]?.cleared ? 1 : 0,                                    // 4-x
         ].reduce((a, b) => a + b, 0)
-        return Math.round(subCleared / 8 * 100)
+        return { pct: Math.round(subCleared / 8 * 100), completed: subCleared, total: 8 }
       })()
-  const taskList = getTaskProgressList()
-  // 課題1〜4を順に見て、クリアされていない最初の課題だけ「実施中」バッジに使う（複数表示しない）
-  const firstInProgressTask = taskList.find((t) => !t.cleared && t.subTasks.some((s) => s.status !== 'not_started')) ?? null
-
   return (
     <div className="min-h-screen bg-white text-slate-800">
-      <div className="mx-auto flex min-h-screen max-w-4xl flex-col px-5 pt-4 pb-8">
-        <header className="relative z-[9999] flex items-center justify-between gap-4 bg-white px-4 py-3">
-          <div className="flex items-center">
-            <NeOSLogo height={100} />
-          </div>
-
-          <div className="flex items-center gap-3 flex-wrap justify-end">
-            {!isAdminView && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (isIntroCompleted) window.location.hash = '#/training/infra-wbs'
-                    else setShowIntroRequiredPopup(true)
-                  }}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium text-white shrink-0 ${delayed ? 'bg-rose-500' : 'bg-emerald-500'}`}
-                  title="クリックでWBS"
-                >
-                  {delayed ? '遅延あり' : '遅延なし'}
-                </button>
-                <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 shrink-0">
-                  全体進捗:{progressPct !== null ? `${progressPct}%` : '--'}
-                </span>
-                {/* はじめに途中（Step2〜4）の場合はヘッダーにバッジ表示 */}
-                {(() => {
-                  const step = Number(serverSnapshot?.introStep ?? 0)
-                  if (isIntroCompleted) return null
-                  if (step < 1 || step > 4) return null
-                  return (
-                    <button
-                      type="button"
-                      onClick={() => { window.location.hash = '#/training/intro' }}
-                      className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 shrink-0 hover:bg-amber-200"
-                    >
-                      はじめに Step {step}/5
-                    </button>
-                  )
-                })()}
-                {firstInProgressTask !== null && (() => {
-                  const task = firstInProgressTask
-                  const hasL1Progress =
-                    (serverSnapshot?.l1CurrentPart ?? 0) > 0 ||
-                    (serverSnapshot?.l1CurrentQuestion ?? 0) > 0 ||
-                    (serverSnapshot?.l1WrongIds?.length ?? 0) > 0
-                  const isL1InProgress = task.id === 'infra-basic-1' && hasL1Progress
-                  const badgeLabel = isL1InProgress
-                    ? `実施中: 課題1 第${(serverSnapshot!.l1CurrentPart!) + 1}部 ${(serverSnapshot!.l1CurrentQuestion ?? 0) + 1}/10問`
-                    : `実施中: ${task.labelShort}`
-                  const badgeUrl = (() => {
-                    if (task.id === 'infra-basic-1') {
-                      return hasL1Progress ? getTrainingUrl('/training/linux-level1') : getTrainingUrl(task.path)
-                    }
-                    return getTrainingUrl(task.path)
-                  })()
-                  return (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (isIntroCompleted) window.open(badgeUrl, '_blank')
-                        else setShowIntroRequiredPopup(true)
-                      }}
-                      title={badgeLabel}
-                      className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 shrink-0 hover:bg-amber-200"
-                    >
-                      {badgeLabel}
-                    </button>
-                  )
-                })()}
-              </>
-            )}
-            <span className="text-sm text-slate-700">{getDisplayName()}</span>
-            {isAdminView && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => (window.location.hash = '#/admin')}
-                  className="rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
-                >
-                  講師メニュー
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAccountPanel(true)}
-                  className="rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
-                >
-                  受講生アカウント管理
-                </button>
-              </>
-            )}
-            <button
-              type="button"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleLogout(); }}
-              className="relative z-[10000] min-w-[88px] cursor-pointer rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-              aria-label="ログアウト"
-            >
-              ログアウト
-            </button>
-          </div>
-        </header>
+      <div className="mx-auto flex min-h-screen flex-col">
+        <SharedHeader
+          delayed={delayed}
+          progressPct={progressPct?.pct ?? null}
+          completedCount={progressPct?.completed}
+          totalCount={progressPct?.total}
+          onWbs={() => { if (isIntroCompleted) window.location.hash = '#/training/infra-wbs'; else setShowIntroRequiredPopup(true) }}
+          onLogout={handleLogout}
+          isAdmin={isAdminView}
+          onAdminMenu={() => (window.location.hash = '#/admin')}
+          onAccountPanel={() => setShowAccountPanel(true)}
+        />
 
         {/* はじめに未完了時ポップアップ */}
         {showIntroRequiredPopup && (
@@ -830,7 +740,7 @@ function App() {
                 <button
                   type="button"
                   onClick={goToIntroAndClosePopup}
-                  className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
+                  className="flex-1 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700"
                 >
                   はじめに
                 </button>
@@ -846,7 +756,7 @@ function App() {
           </div>
         )}
 
-        <main className="mt-4 flex flex-1 flex-col items-center justify-start">
+        <main className="mt-4 flex flex-1 flex-col items-center justify-start mx-auto max-w-5xl px-6 w-full">
           {isAdminView ? (
             <div className="w-full max-w-2xl space-y-4">
               <h1 className="text-lg font-semibold text-slate-800">講師用メニュー</h1>
@@ -855,7 +765,7 @@ function App() {
                 <button
                   type="button"
                   onClick={() => navigate('/admin')}
-                  className="flex w-full flex-col items-start rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/50"
+                  className="flex w-full flex-col items-start rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-teal-200 hover:bg-teal-50/50"
                 >
                   <span className="text-base font-semibold text-slate-800">受講生の進捗</span>
                   <span className="mt-1 text-xs text-slate-600">WBSに基づく進捗一覧を表示</span>
@@ -898,19 +808,19 @@ function App() {
                         value={newAccountName}
                         onChange={(e) => setNewAccountName(e.target.value)}
                         placeholder="新しいユーザー名（例: kira-test）"
-                        className="w-40 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="w-40 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
                       />
                       <input
                         type="password"
                         value={newAccountPassword}
                         onChange={(e) => setNewAccountPassword(e.target.value)}
                         placeholder="パスワード"
-                        className="w-32 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="w-32 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
                       />
                       <button
                         type="submit"
                         disabled={!newAccountName.trim() || !newAccountPassword}
-                        className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         アカウント作成
                       </button>
@@ -1011,26 +921,26 @@ function App() {
                                     placeholder={`接続先IP（例: ${INFRA_BASIC_1_PARAMS.host}）`}
                                     value={ec2EditHost[a.username] ?? snap?.ec2Host ?? ''}
                                     onChange={(e) => setEc2EditHost((prev) => ({ ...prev, [a.username]: e.target.value }))}
-                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-800 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none"
+                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-800 placeholder:text-slate-400 focus:border-teal-400 focus:outline-none"
                                   />
                                   <input
                                     type="text"
                                     placeholder={`ユーザー名（例: ${INFRA_BASIC_1_PARAMS.userKensyu}）`}
                                     value={ec2EditUsername[a.username] ?? snap?.ec2Username ?? ''}
                                     onChange={(e) => setEc2EditUsername((prev) => ({ ...prev, [a.username]: e.target.value }))}
-                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-800 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none"
+                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-800 placeholder:text-slate-400 focus:border-teal-400 focus:outline-none"
                                   />
                                   <input
                                     type="text"
                                     placeholder={`パスワード（例: ${INFRA_BASIC_1_PARAMS.password}）`}
                                     value={ec2EditPassword[a.username] ?? snap?.ec2Password ?? ''}
                                     onChange={(e) => setEc2EditPassword((prev) => ({ ...prev, [a.username]: e.target.value }))}
-                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-800 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none"
+                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-800 placeholder:text-slate-400 focus:border-teal-400 focus:outline-none"
                                   />
                                   <button
                                     type="button"
                                     onClick={() => void saveEc2ForUser(a.username)}
-                                    className="mt-1 rounded bg-indigo-600 px-2 py-1 text-[10px] font-medium text-white hover:bg-indigo-700"
+                                    className="mt-1 rounded bg-teal-600 px-2 py-1 text-[10px] font-medium text-white hover:bg-teal-700"
                                   >
                                     保存
                                   </button>
@@ -1051,8 +961,8 @@ function App() {
           <div className="w-full max-w-2xl space-y-6">
             {/* つづきから / はじめに案内バナー: serverSnapshot確定後に一度だけ表示を決定 */}
             {(() => {
-              // ── ローディング: serverSnapshot未取得時はスケルトンのみ表示 ──
-              if (!serverSnapshot) {
+              // ── ローディング: snap未取得時はスケルトンのみ表示 ──
+              if (!isSnapLoaded) {
                 return (
                   <div className="rounded-2xl border-2 border-slate-200 bg-slate-100 p-6 shadow-sm animate-pulse">
                     <div className="h-3 w-20 rounded bg-slate-200" />
@@ -1063,7 +973,7 @@ function App() {
                 )
               }
 
-              const snap = serverSnapshot
+              const snap = serverSnapshot ?? ({} as TraineeProgressSnapshot)
               const introStep = Number(snap.introStep ?? 0)
 
               // ── introStepが0: はじめに案内バナーのみ ──
@@ -1077,7 +987,7 @@ function App() {
                     <OpenInNewTabButton
                       url={getTrainingUrl('/training/intro')}
                       label="はじめに"
-                      className="mt-4 inline-flex rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
+                      className="mt-4 inline-flex rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700"
                     />
                   </div>
                 )
@@ -1092,11 +1002,10 @@ function App() {
                   4: 'はじめに · インシデント報告 Step4/5',
                 }
                 return (
-                  <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">{stepLabels[introStep]}</p>
-                    <button type="button" onClick={() => { window.location.hash = '#/training/intro' }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
+                    <button type="button" onClick={() => { window.location.hash = '#/training/intro' }} className="mt-4 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1111,14 +1020,13 @@ function App() {
                 const partLabels = ['基本操作', 'サーバー構築', '実践問題']
                 const partLabel = partLabels[l1Part] ?? '基本操作'
                 return (
-                  <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">課題1-2 · {partLabel} {l1Q + 1}/10問</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level1'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
+                    }} className="mt-4 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1127,14 +1035,13 @@ function App() {
               const infra1InProgress = (snap.infra1Checkboxes ?? []).some(Boolean) && !(snap.infra1Cleared ?? false)
               if (infra1InProgress) {
                 return (
-                  <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">課題1-1 · ツール演習（途中から再開）</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-1'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
+                    }} className="mt-4 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1143,14 +1050,13 @@ function App() {
               const l2Q = snap.l2CurrentQuestion ?? 0
               if (l2Q > 0) {
                 return (
-                  <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">課題2-2 · TCP/IP {l2Q + 1}/10問</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level2'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
+                    }} className="mt-4 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1159,14 +1065,13 @@ function App() {
               const infra32InProgress = Object.values(snap.infra32Answers ?? {}).some((v) => v && String(v).trim())
               if (infra32InProgress) {
                 return (
-                  <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">課題3-2 · 理解度チェック(途中から再開)</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
+                    }} className="mt-4 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1175,14 +1080,13 @@ function App() {
               const vi4Done = (snap.infra4ViDoneSteps ?? []).length
               if (vi4Done > 0 && vi4Done < VI_STEPS.length) {
                 return (
-                  <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">課題4-1 · vi演習(途中から再開)</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
+                    }} className="mt-4 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1191,14 +1095,13 @@ function App() {
               const shell4Done = (snap.infra4ShellDoneQuestions ?? []).length
               if (shell4Done > 0 && shell4Done < SHELL_QUESTIONS.length) {
                 return (
-                  <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500">CONTINUE</p>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">課題4-2 · シェルスクリプト(途中から再開)</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">つづきから →</button>
+                    }} className="mt-4 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1208,8 +1111,8 @@ function App() {
             })()}
             {/* j-terada 用：はじめにの下に課題1完了後の案内を表示。課題1クリア前はリンク無効 */}
             {isJTerada(getDisplayName()) && (
-              <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/90 p-6 shadow-sm">
-                <p className="text-base font-semibold text-indigo-900">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <p className="text-base font-semibold text-teal-900">
                   インフラ基礎課題1が完了したら、以下の課題を実施してください。
                 </p>
                 <ul className="mt-4 space-y-3">
@@ -1219,7 +1122,7 @@ function App() {
                         href="https://docs.google.com/presentation/d/1Xw--LXH056ekfvkneyzl-ZCFPKJon4vd/edit?usp=drivesdk&ouid=100622650885455094391&rtpof=true&sd=true"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-indigo-800 shadow-sm ring-1 ring-indigo-200 hover:bg-indigo-100 hover:ring-indigo-300"
+                        className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-teal-800 shadow-sm ring-1 ring-teal-200 hover:bg-teal-100 hover:ring-teal-300"
                       >
                         概要ppt
                       </a>
@@ -1235,7 +1138,7 @@ function App() {
                         href="https://docs.google.com/spreadsheets/d/127QyXSU1_nLAeRF5HPfsYcECDWjNZKZW/edit?usp=drivesdk&ouid=100622650885455094391&rtpof=true&sd=true"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-indigo-800 shadow-sm ring-1 ring-indigo-200 hover:bg-indigo-100 hover:ring-indigo-300"
+                        className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-teal-800 shadow-sm ring-1 ring-teal-200 hover:bg-teal-100 hover:ring-teal-300"
                       >
                         WBS
                       </a>
@@ -1248,73 +1151,12 @@ function App() {
                 </ul>
               </div>
             )}
-            <div className="rounded-2xl bg-white p-6 shadow-sm" aria-label="検索">
+            <div className="hidden">
               <div className="relative" ref={searchContainerRef}>
                 <form ref={searchFormRef} onSubmit={handleSubmit} className="space-y-3">
-                  <div className="flex items-stretch rounded-xl bg-slate-50 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-0">
-                    <input
-                      type="text"
-                      value={input}
-                      onChange={(event) => setInput(event.target.value)}
-                      onFocus={() => setShowSearchHistory(true)}
-                      onKeyDown={(e) => {
-                        const isEnter = e.key === 'Enter' || e.keyCode === 13
-                        if (isEnter) {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          const useHighlighted =
-                            historyNavigatedWithKeyboardRef.current &&
-                            showSearchHistory &&
-                            searchHistory.length > 0 &&
-                            searchHistoryHighlightIndex >= 0
-                          if (useHighlighted) {
-                            const item = searchHistory[searchHistoryHighlightIndex]
-                            setInput(item)
-                            setShowSearchHistory(false)
-                            void handleSubmit(e as unknown as React.FormEvent, item)
-                          } else {
-                            // フォームの requestSubmit で送信し、検索結果を確実に表示
-                            searchFormRef.current?.requestSubmit()
-                          }
-                        }
-                        if (!showSearchHistory || searchHistory.length === 0) return
-                        if (e.key === 'ArrowDown') {
-                          e.preventDefault()
-                          historyNavigatedWithKeyboardRef.current = true
-                          setSearchHistoryHighlightIndex((i) =>
-                            i < searchHistory.length - 1 ? i + 1 : 0
-                          )
-                        } else if (e.key === 'ArrowUp') {
-                          e.preventDefault()
-                          historyNavigatedWithKeyboardRef.current = true
-                          setSearchHistoryHighlightIndex((i) =>
-                            i <= 0 ? searchHistory.length - 1 : i - 1
-                          )
-                        }
-                      }}
-                      placeholder="「インフラ研修を表示」 「WBSを表示」"
-                      className="flex-1 min-w-0 py-3.5 pl-4 pr-3 text-sm text-slate-800 placeholder:text-slate-400 border-0 outline-none bg-transparent"
-                    />
-                    <button
-                      type="button"
-                      onClick={toggleVoiceInput}
-                      className="relative flex items-center justify-center px-2 py-1 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded transition-colors"
-                      aria-label={isListening ? '音声認識を停止' : '音声入力'}
-                      title={isListening ? '音声認識を停止' : '音声入力'}
-                    >
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
-                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z" />
-                      </svg>
-                      {isListening && <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" aria-hidden />}
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isThinking}
-                      className="rounded-r-xl bg-indigo-600 px-4 py-3 text-lg font-medium text-white hover:bg-indigo-700 active:scale-[0.98] active:opacity-90 disabled:opacity-70 disabled:cursor-wait transition-all shrink-0 leading-none"
-                      aria-label="実行"
-                    >
-                      {isThinking ? '…' : '↑'}
-                    </button>
+                  <div>
+                    <input type="text" value={input} onChange={(event) => setInput(event.target.value)} />
+                    <button type="button" onClick={toggleVoiceInput} disabled={_isThinking} />
                   </div>
                 </form>
                 {showSearchHistory && searchHistory.length > 0 && (
@@ -1323,7 +1165,7 @@ function App() {
                       <li
                         key={item}
                         className={`group flex items-center justify-between gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 ${
-                          index === searchHistoryHighlightIndex ? 'bg-indigo-50' : ''
+                          index === searchHistoryHighlightIndex ? 'bg-teal-50' : ''
                         }`}
                       >
                         <button
@@ -1391,9 +1233,8 @@ function App() {
           {(pinnedTraining ?? []).length > 0 && (
             <section className="mt-6 w-full max-w-2xl rounded-2xl bg-white p-4 text-[11px] text-slate-700 shadow-sm">
               <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-                PINNED · TRAINING
+                ピン留め
               </p>
-              <p className="mt-1 text-xs text-slate-600">よく使う課題にワンクリックでアクセスできます。</p>
               <ul className="mt-3 space-y-2 text-slate-700">
                 {(pinnedTraining ?? []).includes('intro') && (
                   <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
@@ -1407,16 +1248,16 @@ function App() {
                       <button
                         type="button"
                         onClick={() => handleTogglePin('intro')}
-                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-amber-600"
+                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-500"
                       >
-                        <span aria-hidden>📌</span>
+                        <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
                         ピン解除
                       </button>
                     </div>
                     <button
                       type="button"
                       onClick={() => { window.location.hash = '#/training/intro' }}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700"
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700"
                     >
                       開く
                     </button>
@@ -1439,9 +1280,9 @@ function App() {
                       <button
                         type="button"
                         onClick={() => handleTogglePin('infra-basic-1')}
-                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-amber-600"
+                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-500"
                       >
-                        <span aria-hidden>📌</span>
+                        <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
                         ピン解除
                       </button>
                     </div>
@@ -1451,9 +1292,9 @@ function App() {
                         if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank')
                         else setShowIntroRequiredPopup(true)
                       }}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700"
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700"
                     >
-                      別タブで開く
+                      開く
                     </button>
                   </li>
                 )}
@@ -1474,9 +1315,9 @@ function App() {
                       <button
                         type="button"
                         onClick={() => handleTogglePin('infra-basic-2')}
-                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-amber-600"
+                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-500"
                       >
-                        <span aria-hidden>📌</span>
+                        <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
                         ピン解除
                       </button>
                       {!isKiraTest && !(trainingStatus.infraToolsCleared && trainingStatus.linuxL1Cleared) && (
@@ -1490,9 +1331,9 @@ function App() {
                         if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank')
                         else setShowIntroRequiredPopup(true)
                       }}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      別タブで開く
+                      開く
                     </button>
                   </li>
                 )}
@@ -1514,9 +1355,9 @@ function App() {
                       <button
                         type="button"
                         onClick={() => handleTogglePin('infra-basic-3')}
-                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-amber-600"
+                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-500"
                       >
-                        <span aria-hidden>📌</span>
+                        <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
                         ピン解除
                       </button>
                       {!isKiraTest && !trainingStatus.linuxL2Cleared && (
@@ -1530,9 +1371,9 @@ function App() {
                         if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
                         else setShowIntroRequiredPopup(true)
                       }}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      別タブで開く
+                      開く
                     </button>
                   </li>
                 )}
@@ -1540,6 +1381,64 @@ function App() {
             </section>
           )}
 
+          {/* 研修カリキュラム */}
+          <section className="mt-6 w-full max-w-2xl rounded-2xl bg-white p-5 shadow-sm">
+            <p className="text-sm font-bold text-slate-800">研修カリキュラム</p>
+            {(() => {
+              const snap = serverSnapshot
+              const introOk = isIntroCompleted
+              const infra1Ok = snap?.infra1Cleared === true && snap?.l1Cleared === true
+              const infra2Ok = (snap?.l2CurrentQuestion ?? 0) > 0 && introOk
+              const infra3Ok = Object.values(snap?.infra32Answers ?? {}).some((v) => v && String(v).trim())
+              const infra4ViDone = (snap?.infra4ViDoneSteps ?? []).length
+              const infra4ShellDone = (snap?.infra4ShellDoneQuestions ?? []).length
+              const infra4Ok = infra4ViDone >= VI_STEPS.length && infra4ShellDone >= SHELL_QUESTIONS.length
+              const infra4Active = infra4ViDone > 0 || infra4ShellDone > 0
+
+              const kiso: { name: string; status: 'done' | 'active' | 'todo'; action: () => void; newTab?: boolean }[] = [
+                { name: 'はじめに', status: introOk ? 'done' : (Number(snap?.introStep ?? 0) >= 1 ? 'active' : 'todo'), action: () => { window.location.hash = '#/training/intro' } },
+                { name: 'インフラ基礎課題1', status: infra1Ok ? 'done' : ((snap?.infra1Checkboxes ?? []).some(Boolean) || (snap?.l1CurrentPart ?? 0) > 0 ? 'active' : 'todo'), action: () => { if (introOk) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
+                { name: 'インフラ基礎課題2', status: infra2Ok ? 'done' : ((snap?.l2CurrentQuestion ?? 0) > 0 ? 'active' : 'todo'), action: () => { if (introOk) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
+                { name: 'インフラ基礎課題3', status: infra3Ok ? 'done' : (Object.keys(snap?.infra32Answers ?? {}).length > 0 ? 'active' : 'todo'), action: () => { if (introOk) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
+                { name: 'インフラ基礎課題4', status: infra4Ok ? 'done' : (infra4Active ? 'active' : 'todo'), action: () => { if (introOk) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
+              ]
+
+              const renderItem = (item: typeof kiso[0], extraStyle?: React.CSSProperties, badge?: React.ReactNode) => (
+                <li key={item.name} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3" style={extraStyle}>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="text-sm font-medium text-slate-800">{item.name}</span>
+                    {badge}
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                      item.status === 'done' ? 'bg-emerald-100 text-emerald-700'
+                      : item.status === 'active' ? 'bg-teal-100 text-teal-700'
+                      : 'bg-slate-200 text-slate-500'
+                    }`}>
+                      {item.status === 'done' ? '完了' : item.status === 'active' ? '進行中' : '未着手'}
+                    </span>
+                  </div>
+                  <button type="button" onClick={item.action} className="shrink-0 rounded-lg bg-teal-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-teal-700">
+                    {item.newTab ? '開く' : '開く'}
+                  </button>
+                </li>
+              )
+
+              return (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', letterSpacing: '0.08em', textTransform: 'uppercase' as const, padding: '0 0 8px 4px', marginTop: 8 }}>基礎課題</div>
+                  <ul className="space-y-3">{kiso.map((item) => renderItem(item))}</ul>
+
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', letterSpacing: '0.08em', textTransform: 'uppercase' as const, padding: '0 0 8px 4px', marginTop: 20, borderTop: '1px solid #f3f4f6', paddingTop: 20 }}>IT業界の歩き方</div>
+                  <ul className="space-y-3">
+                    {renderItem(
+                      { name: 'IT業界の歩き方', status: 'todo', action: () => { window.location.hash = '#/it-basics' } },
+                      { borderLeft: '3px solid #0d9488', background: '#f0fdf9' },
+                      <span style={{ fontSize: 10, fontWeight: 600, color: '#0d9488', background: '#ccfbf1', borderRadius: 4, padding: '2px 6px', marginLeft: 8 }}>座学</span>
+                    )}
+                  </ul>
+                </>
+              )
+            })()}
+          </section>
 
           </>
           )}
@@ -1582,14 +1481,14 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
               onClick={() => onTogglePin('intro')}
               className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-medium text-slate-600 hover:border-amber-500 hover:text-amber-700"
             >
-              <span aria-hidden>📌</span>
+              <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
               {(pinnedTraining ?? []).includes('intro') ? 'ピン解除' : 'ピン留め'}
             </button>
             {onOpenIntro && (
               <button
                 type="button"
                 onClick={onOpenIntro}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+                className="rounded-lg bg-teal-600 px-4 py-2 text-xs font-medium text-white hover:bg-teal-700"
               >
                 はじめにを開く
               </button>
@@ -1609,7 +1508,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
             <button
               type="button"
               onClick={onOpenWbs}
-              className="mt-3 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+              className="mt-3 rounded-lg bg-teal-600 px-4 py-2 text-xs font-medium text-white hover:bg-teal-700"
             >
               WBSを開く
             </button>
@@ -1673,18 +1572,18 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                 <button
                   type="button"
                   onClick={() => onTogglePin('infra-basic-1')}
-                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-amber-600"
+                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-500"
                 >
-                  <span aria-hidden>📌</span>
+                  <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
                   {(pinnedTraining ?? []).includes('infra-basic-1') ? 'ピン解除' : 'ピン留め'}
                 </button>
               </div>
               <button
                 type="button"
                 onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-top'))}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700"
+                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700"
               >
-                別タブで開く
+                開く
               </button>
             </li>
             <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
@@ -1705,9 +1604,9 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
               <button
                 type="button"
                 onClick={() => onTogglePin('infra-basic-2')}
-                className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-amber-600"
+                className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-500"
               >
-                <span aria-hidden>📌</span>
+                <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
                 {(pinnedTraining ?? []).includes('infra-basic-2') ? 'ピン解除' : 'ピン留め'}
               </button>
               {!isKiraTestUser() && !infra1Cleared && (
@@ -1718,9 +1617,9 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                 type="button"
                 disabled={!isKiraTestUser() && !infra1Cleared}
                 onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-2-top'))}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                別タブで開く
+                開く
               </button>
             </li>
             <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
@@ -1741,9 +1640,9 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                 <button
                   type="button"
                   onClick={() => onTogglePin('infra-basic-3')}
-                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-amber-600"
+                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-500"
                 >
-                  <span aria-hidden>📌</span>
+                  <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
                   {(pinnedTraining ?? []).includes('infra-basic-3') ? 'ピン解除' : 'ピン留め'}
                 </button>
                 {!isKiraTestUser() && !infra2Cleared && (
@@ -1754,9 +1653,9 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                 type="button"
                 disabled={!isKiraTestUser() && !infra2Cleared}
                 onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-3-top'))}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                別タブで開く
+                開く
               </button>
             </li>
             <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
@@ -1772,9 +1671,9 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                 <button
                   type="button"
                   onClick={() => onTogglePin('infra-basic-4')}
-                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-amber-600"
+                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-500"
                 >
-                  <span aria-hidden>📌</span>
+                  <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
                   {(pinnedTraining ?? []).includes('infra-basic-4') ? 'ピン解除' : 'ピン留め'}
                 </button>
                 {!isKiraTestUser() && !infra3Cleared && (
@@ -1785,12 +1684,27 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                 type="button"
                 disabled={!isKiraTestUser() && !infra3Cleared}
                 onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-4'))}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                別タブで開く
+                開く
               </button>
             </li>
           </ul>
+          <div className="mt-4 rounded-xl bg-slate-50 px-3 py-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm font-medium text-slate-800">IT業界の歩き方</span>
+                <p className="text-[11px] text-slate-500">ITエンジニアの基礎知識を6カテゴリで学ぶ</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { window.location.hash = '#/it-basics' }}
+                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700"
+              >
+                開く
+              </button>
+            </div>
+          </div>
         </div>
       )
     }
