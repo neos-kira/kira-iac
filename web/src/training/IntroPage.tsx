@@ -609,7 +609,7 @@ export function IntroPage() {
           <div>
             <p className="text-[15px] font-semibold text-slate-800">AI講師がサポートします</p>
             <p className="mt-1 text-[13px] text-slate-600 leading-relaxed">
-              困ったときはいつでも聞いてください。同じことを何度聞いても大丈夫です。
+              つまずいたら、遠慮なく聞いてください。
             </p>
           </div>
         </section>
