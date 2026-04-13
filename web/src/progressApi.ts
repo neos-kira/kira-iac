@@ -32,7 +32,6 @@ function getCookieValue(name: string): string | null {
 }
 
 function getSessionToken(): string | null {
-  console.log('[getSessionToken] localStorage value:', typeof window !== 'undefined' ? window.localStorage.getItem('kira-session-token') : 'N/A')
   if (typeof window === 'undefined') return null
   try {
     const v = window.localStorage.getItem(SESSION_TOKEN_KEY)
@@ -40,6 +39,7 @@ function getSessionToken(): string | null {
     const cookie = getCookieValue(SESSION_TOKEN_KEY)
     return cookie && cookie.trim() ? cookie : null
   } catch {
+    // シークレットモード等でlocalStorageがブロックされている場合はCookieのみ
     const cookie = getCookieValue(SESSION_TOKEN_KEY)
     return cookie && cookie.trim() ? cookie : null
   }

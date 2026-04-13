@@ -43,19 +43,23 @@ type TrainingStatus = {
 }
 
 function readTrainingStatus(): TrainingStatus {
-  if (typeof window === 'undefined') {
-    return {
-      infraToolsCleared: false,
-      linuxL1Cleared: false,
-      linuxL2Cleared: false,
-      infraOsCloudCleared: false,
-    }
+  const defaultStatus: TrainingStatus = {
+    infraToolsCleared: false,
+    linuxL1Cleared: false,
+    linuxL2Cleared: false,
+    infraOsCloudCleared: false,
   }
-  return {
-    infraToolsCleared: window.localStorage.getItem(getProgressKey(INFRA_BASIC_1_CLEARED_KEY)) === 'true',
-    linuxL1Cleared: window.localStorage.getItem(getProgressKey(L1_CLEARED_KEY)) === 'true',
-    linuxL2Cleared: window.localStorage.getItem(getProgressKey(L2_CLEARED_KEY)) === 'true',
-    infraOsCloudCleared: window.localStorage.getItem(getProgressKey(INFRA_BASIC_3_2_CLEARED_KEY)) === 'true',
+  if (typeof window === 'undefined') return defaultStatus
+  try {
+    return {
+      infraToolsCleared: window.localStorage.getItem(getProgressKey(INFRA_BASIC_1_CLEARED_KEY)) === 'true',
+      linuxL1Cleared: window.localStorage.getItem(getProgressKey(L1_CLEARED_KEY)) === 'true',
+      linuxL2Cleared: window.localStorage.getItem(getProgressKey(L2_CLEARED_KEY)) === 'true',
+      infraOsCloudCleared: window.localStorage.getItem(getProgressKey(INFRA_BASIC_3_2_CLEARED_KEY)) === 'true',
+    }
+  } catch {
+    // シークレットモード等でlocalStorageがブロックされている場合はデフォルト値を返す
+    return defaultStatus
   }
 }
 

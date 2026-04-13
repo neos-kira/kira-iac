@@ -26,7 +26,8 @@ export function SharedHeader({ delayed, progressPct, completedCount, totalCount,
     const cached = getCurrentDisplayName()
     if (cached) return cached
     // LoginPageで保存したキーから直接読む
-    return (typeof window !== 'undefined' ? window.localStorage.getItem('kira-user-display-name') : null) ?? ''
+    if (typeof window === 'undefined') return ''
+    try { return window.localStorage.getItem('kira-user-display-name') ?? '' } catch { return '' }
   })
   useEffect(() => {
     if (resolvedName) return

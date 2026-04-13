@@ -88,13 +88,19 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
   // リサイズ: サイドパネル幅
   const [panelWidth, setPanelWidth] = useState(() => {
-    const saved = typeof window !== 'undefined' ? window.localStorage.getItem('aiPanelWidth') : null
-    return saved ? Math.max(240, Math.min(600, Number(saved))) : 320
+    if (typeof window === 'undefined') return 320
+    try {
+      const saved = window.localStorage.getItem('aiPanelWidth')
+      return saved ? Math.max(240, Math.min(600, Number(saved))) : 320
+    } catch { return 320 }
   })
   // リサイズ: ボトムパネル高さ
   const [panelHeight, setPanelHeight] = useState(() => {
-    const saved = typeof window !== 'undefined' ? window.localStorage.getItem('aiPanelHeight') : null
-    return saved ? Math.max(200, Math.min(window.innerHeight * 0.8, Number(saved))) : window.innerHeight * 0.6
+    if (typeof window === 'undefined') return 400
+    try {
+      const saved = window.localStorage.getItem('aiPanelHeight')
+      return saved ? Math.max(200, Math.min(window.innerHeight * 0.8, Number(saved))) : window.innerHeight * 0.6
+    } catch { return window.innerHeight * 0.6 }
   })
   const isDragging = useRef(false)
 
@@ -114,7 +120,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
       document.body.style.cursor = ''
       document.removeEventListener('mousemove', onMove)
       document.removeEventListener('mouseup', onUp)
-      setPanelWidth((w) => { window.localStorage.setItem('aiPanelWidth', String(w)); return w })
+      setPanelWidth((w) => { try { window.localStorage.setItem('aiPanelWidth', String(w)) } catch { /* ignore */ } return w })
     }
     document.addEventListener('mousemove', onMove)
     document.addEventListener('mouseup', onUp)
@@ -137,7 +143,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
       document.body.style.cursor = ''
       document.removeEventListener('mousemove', onMove)
       document.removeEventListener('mouseup', onUp)
-      setPanelHeight((h) => { window.localStorage.setItem('aiPanelHeight', String(h)); return h })
+      setPanelHeight((h) => { try { window.localStorage.setItem('aiPanelHeight', String(h)) } catch { /* ignore */ } return h })
     }
     document.addEventListener('mousemove', onMove)
     document.addEventListener('mouseup', onUp)
@@ -273,20 +279,26 @@ function LoginReloadGuard() {
     const pathname = (loc.pathname || '').replace(/^\/+/, '') || '/'
     if (pathname === 'login' || pathname === '') return
 
-    const loggedIn = isLoggedIn()
-    if (loggedIn) {
-      window.sessionStorage.removeItem('kira-login-reload-tried')
-      return
-    }
+    try {
+      const loggedIn = isLoggedIn()
+      if (loggedIn) {
+        try { window.sessionStorage.removeItem('kira-login-reload-tried') } catch { /* ignore */ }
+        return
+      }
 
-    const hasCookieToken = document.cookie.includes('kira-session-token=')
-    const hasToken = !!window.localStorage.getItem('kira-session-token') || hasCookieToken
-    const tried = window.sessionStorage.getItem('kira-login-reload-tried') === '1'
+      const hasCookieToken = document.cookie.includes('kira-session-token=')
+      let hasToken = hasCookieToken
+      try { hasToken = !!window.localStorage.getItem('kira-session-token') || hasCookieToken } catch { /* ignore */ }
+      let tried = false
+      try { tried = window.sessionStorage.getItem('kira-login-reload-tried') === '1' } catch { /* ignore */ }
 
-    if (hasToken && !tried) {
-      console.log('LoginReloadGuard: token detected but auth not ready. Reloading once...')
-      window.sessionStorage.setItem('kira-login-reload-tried', '1')
-      window.location.reload()
+      if (hasToken && !tried) {
+        console.log('LoginReloadGuard: token detected but auth not ready. Reloading once...')
+        try { window.sessionStorage.setItem('kira-login-reload-tried', '1') } catch { /* ignore */ }
+        window.location.reload()
+      }
+    } catch {
+      // シークレットモード等でストレージアクセスが失敗した場合は何もしない
     }
   }, [loc.pathname])
   return null

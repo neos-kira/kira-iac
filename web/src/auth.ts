@@ -20,22 +20,35 @@ function setCookieValue(name: string, value: string, maxAgeSeconds = 86400): voi
 
 export function isLoggedIn(): boolean {
   if (typeof window === 'undefined') return false
-  const storageLoggedIn = window.localStorage.getItem(LOGIN_FLAG_KEY) === 'true'
-  const cookieLoggedIn = getCookieValue(LOGIN_COOKIE_KEY) === 'true'
-  return storageLoggedIn || cookieLoggedIn
+  try {
+    const storageLoggedIn = window.localStorage.getItem(LOGIN_FLAG_KEY) === 'true'
+    const cookieLoggedIn = getCookieValue(LOGIN_COOKIE_KEY) === 'true'
+    return storageLoggedIn || cookieLoggedIn
+  } catch {
+    // シークレットモード等でlocalStorageがブロックされている場合はCookieのみで判定
+    return getCookieValue(LOGIN_COOKIE_KEY) === 'true'
+  }
 }
 
 export function getCurrentDisplayName(): string {
   if (typeof window === 'undefined') return ''
-  const storageName = (window.localStorage.getItem(USER_DISPLAY_NAME_KEY) || '').trim()
-  if (storageName) return storageName
+  try {
+    const storageName = (window.localStorage.getItem(USER_DISPLAY_NAME_KEY) || '').trim()
+    if (storageName) return storageName
+  } catch {
+    // シークレットモード等でlocalStorageがブロックされている場合はCookieのみ
+  }
   const cookieName = (getCookieValue(USER_DISPLAY_NAME_KEY) || '').trim()
   return cookieName
 }
 
 export function setLoggedIn(): void {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(LOGIN_FLAG_KEY, 'true')
+  try {
+    window.localStorage.setItem(LOGIN_FLAG_KEY, 'true')
+  } catch {
+    // シークレットモードでlocalStorageがブロックされている場合は無視
+  }
   setCookieValue(LOGIN_COOKIE_KEY, 'true')
 }
 
