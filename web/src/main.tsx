@@ -265,16 +265,24 @@ function LoginReloadGuard() {
   useEffect(() => {
     if (import.meta.env.DEV) return
     if (typeof window === 'undefined') return
-    const hasCookieToken = document.cookie.includes('kira-session-token=')
-    const hasToken = !!window.localStorage.getItem('kira-session-token') || hasCookieToken
-    const loggedIn = isLoggedIn()
-    const tried = window.sessionStorage.getItem('kira-login-reload-tried') === '1'
+
+    // ログインページ・トップページでは何もしない（HashRouter対応）
+    const hash = window.location.hash || ''
+    if (hash === '' || hash === '#/' || hash === '#/login' || hash.startsWith('#/login?')) return
+
     const pathname = (loc.pathname || '').replace(/^\/+/, '') || '/'
+    if (pathname === 'login' || pathname === '') return
+
+    const loggedIn = isLoggedIn()
     if (loggedIn) {
       window.sessionStorage.removeItem('kira-login-reload-tried')
       return
     }
-    if (pathname === 'login' || pathname === '') return
+
+    const hasCookieToken = document.cookie.includes('kira-session-token=')
+    const hasToken = !!window.localStorage.getItem('kira-session-token') || hasCookieToken
+    const tried = window.sessionStorage.getItem('kira-login-reload-tried') === '1'
+
     if (hasToken && !tried) {
       console.log('LoginReloadGuard: token detected but auth not ready. Reloading once...')
       window.sessionStorage.setItem('kira-login-reload-tried', '1')
