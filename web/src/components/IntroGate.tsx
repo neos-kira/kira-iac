@@ -33,7 +33,7 @@ export function IntroGate({ children }: Props) {
 
   useEffect(() => {
     if (status === 'blocked') {
-      navigate('/training/intro', { replace: true })
+      navigate('/welcome', { replace: true })
     }
   }, [status, navigate])
 

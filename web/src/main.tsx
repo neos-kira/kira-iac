@@ -21,6 +21,7 @@ import { InfraBasic4Page } from './training/InfraBasic4Page'
 import { InfraBasic5Page } from './training/InfraBasic5Page'
 import { InfraWbsPage } from './training/InfraWbsPage'
 import { IntroPage } from './training/IntroPage'
+import { WelcomePage } from './training/WelcomePage'
 import { AdminPage } from './admin/AdminPage'
 import { MentorDesk, INITIAL_MESSAGE, type ChatMessage } from './components/MentorDesk'
 import { SharedHeader } from './components/SharedHeader'
@@ -29,6 +30,7 @@ import { ITBasicsStudyPage } from './training/itBasics/ITBasicsStudyPage'
 import { ITBasicsTestPage } from './training/itBasics/ITBasicsTestPage'
 
 const MENTOR_CONTEXT_MAP: Record<string, string> = {
+  '/welcome': '研修オリエンテーション',
   '/training/intro': 'はじめに',
   '/training/infra-basic-top': 'インフラ基礎課題1',
   '/training/infra-basic-1': 'インフラ基礎課題1-1',
@@ -46,7 +48,7 @@ const MENTOR_CONTEXT_MAP: Record<string, string> = {
 
 /** サイドバー表示対象パス（ログイン・トップ以外のトレーニング/IT基礎ページ） */
 function isSidebarPage(path: string): boolean {
-  return path.startsWith('/training/') || path.startsWith('/it-basics')
+  return path === '/welcome' || path.startsWith('/training/') || path.startsWith('/it-basics')
 }
 
 /** AI講師チャット（トグル式・レスポンシブ対応） */
@@ -307,6 +309,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/training/infra-basic-4" element={<IntroGate><InfraBasic4Page /></IntroGate>} />
           <Route path="/training/infra-basic-5" element={<IntroGate><InfraBasic5Page /></IntroGate>} />
           <Route path="/training/infra-wbs" element={<IntroGate><InfraWbsPage /></IntroGate>} />
+          <Route path="/welcome" element={<WelcomePage />} />
           <Route path="/training/intro" element={<IntroPage />} />
           <Route path="/it-basics" element={<ITBasicsTopPage />} />
           <Route path="/it-basics/:categoryId/study" element={<ITBasicsStudyPage />} />
