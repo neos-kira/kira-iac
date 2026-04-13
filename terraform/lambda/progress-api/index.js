@@ -32,6 +32,38 @@ async function invokeModelWithRetry(command, maxRetries = 5) {
   }
 }
 
+/** 日本時間（JST = UTC+9）で日付を取得 */
+const getJSTDate = () => {
+  const jst = new Date(Date.now() + 9 * 60 * 60 * 1000)
+  return jst.toISOString().split('T')[0]
+}
+
+/** AI講師チャットのレートリミットチェック（1日50回/人、JSTの0時リセット） */
+async function checkRateLimit(userId) {
+  const today = getJSTDate()
+  const rateLimitKey = `rate_${userId}_${today}`
+  try {
+    const rateData = await client.send(new GetItemCommand({
+      TableName: SessionsTableName,
+      Key: marshall({ sessionId: rateLimitKey }),
+    }))
+    const currentCount = rateData.Item ? (unmarshall(rateData.Item).count ?? 0) : 0
+    if (currentCount >= 50) return { limited: true, count: currentCount }
+    await client.send(new PutItemCommand({
+      TableName: SessionsTableName,
+      Item: marshall({
+        sessionId: rateLimitKey,
+        count: currentCount + 1,
+        ttl: Math.floor(Date.now() / 1000) + 86400 * 2,
+      }),
+    }))
+    return { limited: false, count: currentCount + 1 }
+  } catch (error) {
+    console.error('[rateLimit] check error:', error)
+    return { limited: false, count: 0 }
+  }
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Session-Token, Cache-Control',
@@ -258,6 +290,12 @@ fail（再挑戦してください）:
         return json({ reply: '幕末トークは本日ここまでです。研修に戻りましょう！続きはログアウト後にどうぞ。' })
       }
 
+      // レートリミットチェック（1日50回/人、JSTの午前0時リセット）
+      const rateLimit = await checkRateLimit(session.username)
+      if (rateLimit.limited) {
+        return json({ error: '本日のAI講師の利用上限（50回）に達しました。明日の午前0時にリセットされます。' }, 429)
+      }
+
       const systemPrompt = `あなたはNIC（Neos IT College）のAI講師です。
 
 【返答スタイル・最重要】
@@ -291,11 +329,11 @@ fail（再挑戦してください）:
 
 現在の課題コンテキスト: ${context ?? '不明'}`
 
-      // history を直近10メッセージ（往復5回分）に制限し、user/assistant のみ通す
+      // history を直近6メッセージ（往復3回分）に制限し、user/assistant のみ通す
       const safeHistory = Array.isArray(history)
         ? history
             .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
-            .slice(-10)
+            .slice(-6)
             .map((m) => ({ role: m.role, content: m.content }))
         : []
 

@@ -165,6 +165,11 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
           forceLogout()
           return
         }
+        if (res.status === 429) {
+          const data = await res.json() as { error?: string }
+          setMessages((prev) => [...prev, { role: 'assistant' as const, content: data.error || '本日の利用上限に達しました。明日また利用できます。' }].slice(-MAX_TURNS * 2))
+          return
+        }
         const errMsg = res.status === 503
           ? 'AIが混雑しています。少し待ってから再試行してください。'
           : 'AIとの通信に失敗しました。もう一度送信してください。'
