@@ -1339,7 +1339,7 @@ function App() {
                     <button
                       type="button"
                       onClick={() => {
-                        if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank')
+                        if (isIntroCompleted || isKiraTest) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank')
                         else setShowIntroRequiredPopup(true)
                       }}
                       className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700"
@@ -1378,7 +1378,7 @@ function App() {
                       type="button"
                       disabled={!isKiraTest && !(trainingStatus.infraToolsCleared && trainingStatus.linuxL1Cleared)}
                       onClick={() => {
-                        if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank')
+                        if (isIntroCompleted || isKiraTest) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank')
                         else setShowIntroRequiredPopup(true)
                       }}
                       className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
@@ -1418,7 +1418,7 @@ function App() {
                       type="button"
                       disabled={!isKiraTest && !trainingStatus.linuxL2Cleared}
                       onClick={() => {
-                        if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
+                        if (isIntroCompleted || isKiraTest) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
                         else setShowIntroRequiredPopup(true)
                       }}
                       className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
