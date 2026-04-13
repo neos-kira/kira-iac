@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { NeOSLogo } from './components/NeOSLogo'
-import { setLoggedIn } from './auth'
+import { setLoggedIn, isLoggedIn } from './auth'
 import { addTrainee } from './traineeProgressStorage'
 import { isJTerada, J_TERADA_PASSWORD } from './specialUsers'
 import { checkAccount, isAccountApiAvailable, resetPassword } from './accountsApi'
@@ -9,77 +9,66 @@ import { safeSetItem, safeSessionRemoveItem, setCookieValue } from './utils/stor
 
 const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
 
-// グローバルrefで入力値を保持（コンポーネント再マウント対策）
-const globalInputState = {
-  username: '',
-  password: '',
-  resetUsername: '',
-  resetNewPassword: '',
-  resetConfirmPassword: '',
-}
-
 export function LoginPage() {
-  // 初期値としてglobalInputStateから復元
-  const [username, setUsernameState] = useState(globalInputState.username)
-  const [password, setPasswordState] = useState(globalInputState.password)
+  // DOM ref で入力値を管理（React state に依存しない）
+  const usernameRef = useRef<HTMLInputElement>(null)
+  const passwordRef = useRef<HTMLInputElement>(null)
+  const resetUsernameRef = useRef<HTMLInputElement>(null)
+  const resetNewPasswordRef = useRef<HTMLInputElement>(null)
+  const resetConfirmPasswordRef = useRef<HTMLInputElement>(null)
+
   const [loginError, setLoginError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoggingIn, setIsLoggingIn] = useState(false)
 
   // パスワードリセット用state
   const [mode, setMode] = useState<'login' | 'reset'>('login')
-  const [resetUsername, setResetUsernameState] = useState(globalInputState.resetUsername)
-  const [resetNewPassword, setResetNewPasswordState] = useState(globalInputState.resetNewPassword)
-  const [resetConfirmPassword, setResetConfirmPasswordState] = useState(globalInputState.resetConfirmPassword)
   const [showResetPassword, setShowResetPassword] = useState(false)
   const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false)
   const [resetError, setResetError] = useState('')
   const [resetSuccess, setResetSuccess] = useState('')
   const [isResetting, setIsResetting] = useState(false)
 
-  // 入力値変更時にグローバルステートも更新
-  const setUsername = useCallback((value: string) => {
-    globalInputState.username = value
-    setUsernameState(value)
-  }, [])
-  const setPassword = useCallback((value: string) => {
-    globalInputState.password = value
-    setPasswordState(value)
-  }, [])
-  const setResetUsername = useCallback((value: string) => {
-    globalInputState.resetUsername = value
-    setResetUsernameState(value)
-  }, [])
-  const setResetNewPassword = useCallback((value: string) => {
-    globalInputState.resetNewPassword = value
-    setResetNewPasswordState(value)
-  }, [])
-  const setResetConfirmPassword = useCallback((value: string) => {
-    globalInputState.resetConfirmPassword = value
-    setResetConfirmPasswordState(value)
-  }, [])
-
-  // ログイン成功時にグローバルステートをクリア
-  const clearGlobalInputState = useCallback(() => {
-    globalInputState.username = ''
-    globalInputState.password = ''
-    globalInputState.resetUsername = ''
-    globalInputState.resetNewPassword = ''
-    globalInputState.resetConfirmPassword = ''
-  }, [])
+  // ボタンdisabled判定用（入力の有無）
+  const [hasUsername, setHasUsername] = useState(false)
+  const [hasPassword, setHasPassword] = useState(false)
+  const [hasResetFields, setHasResetFields] = useState(false)
 
   useEffect(() => {
     document.title = 'NICプラットフォーム'
   }, [])
 
+  // 入力変更時にdisabled判定用のstateを更新
+  const handleUsernameChange = () => {
+    const val = usernameRef.current?.value || ''
+    setHasUsername(val.trim().length > 0)
+  }
+  const handlePasswordChange = () => {
+    const val = passwordRef.current?.value || ''
+    setHasPassword(val.length > 0)
+  }
+  const handleResetFieldsChange = () => {
+    const u = resetUsernameRef.current?.value || ''
+    const p = resetNewPasswordRef.current?.value || ''
+    const c = resetConfirmPasswordRef.current?.value || ''
+    setHasResetFields(u.trim().length > 0 && p.length > 0 && c.length > 0)
+  }
+
   async function handleLogin() {
+    // DOM から直接値を取得
+    const name = (usernameRef.current?.value || '').trim()
+    const pass = passwordRef.current?.value || ''
+
     setLoginError('')
     setIsLoggingIn(true)
     let didNavigate = false
-    const name = username.trim()
+
     try {
-      if (!name) return
-      if (isJTerada(name) && password !== J_TERADA_PASSWORD) {
+      if (!name) {
+        setLoginError('ユーザー名を入力してください。')
+        return
+      }
+      if (isJTerada(name) && pass !== J_TERADA_PASSWORD) {
         setLoginError('ユーザー名かパスワードが間違っています。')
         return
       }
@@ -90,7 +79,7 @@ export function LoginPage() {
         return
       }
 
-      const ok = await checkAccount(normalized, password)
+      const ok = await checkAccount(normalized, pass)
       if (!ok) {
         setLoginError('ユーザー名かパスワードが間違っています。')
         return
@@ -104,10 +93,23 @@ export function LoginPage() {
       if (normalized !== 'admin') {
         addTrainee(name)
       }
-      // グローバルステートをクリア
-      clearGlobalInputState()
       // iOS Safari 等での localStorage / Cookie 書き込み直後の遷移問題を避けるため、少し待機する
       await new Promise((resolve) => setTimeout(resolve, 100))
+
+      // ストレージ書き込み成功を確認
+      if (!isLoggedIn()) {
+        // Private mode等でストレージが使えない場合、ページリロードで再試行
+        const url = new URL(window.location.href)
+        if (url.searchParams.get('loginRetry')) {
+          setLoginError('ログイン処理に失敗しました。ブラウザを再起動するか、通常モードでお試しください。')
+          return
+        }
+        console.warn('[Login] ストレージ書き込み確認失敗、リロードで再試行')
+        url.searchParams.set('loginRetry', '1')
+        window.location.href = url.toString()
+        return
+      }
+
       didNavigate = true
       const base =
         (window.location.origin + window.location.pathname + (window.location.search || '')).replace(/\/$/, '') ||
@@ -119,20 +121,26 @@ export function LoginPage() {
   }
 
   async function handleReset() {
+    const name = (resetUsernameRef.current?.value || '').trim().toLowerCase()
+    const newPass = resetNewPasswordRef.current?.value || ''
+    const confirmPass = resetConfirmPasswordRef.current?.value || ''
+
     setResetError('')
     setResetSuccess('')
-    const name = resetUsername.trim().toLowerCase()
+
     if (!name) { setResetError('ユーザー名を入力してください。'); return }
-    if (!resetNewPassword) { setResetError('新しいパスワードを入力してください。'); return }
-    if (resetNewPassword !== resetConfirmPassword) { setResetError('パスワードが一致しません。'); return }
+    if (!newPass) { setResetError('新しいパスワードを入力してください。'); return }
+    if (newPass !== confirmPass) { setResetError('パスワードが一致しません。'); return }
+
     setIsResetting(true)
     try {
-      const ok = await resetPassword(name, resetNewPassword)
+      const ok = await resetPassword(name, newPass)
       if (ok) {
         setResetSuccess('パスワードをリセットしました。ログイン画面からサインインしてください。')
-        setResetUsername('')
-        setResetNewPassword('')
-        setResetConfirmPassword('')
+        if (resetUsernameRef.current) resetUsernameRef.current.value = ''
+        if (resetNewPasswordRef.current) resetNewPasswordRef.current.value = ''
+        if (resetConfirmPasswordRef.current) resetConfirmPasswordRef.current.value = ''
+        setHasResetFields(false)
       } else {
         setResetError('リセットに失敗しました。ユーザー名を確認してください。')
       }
@@ -141,12 +149,15 @@ export function LoginPage() {
     }
   }
 
-  const needsPassword = isJTerada(username.trim())
-  const canSubmit = !isLoggingIn && username.trim().length > 0 && (!needsPassword || password.length > 0)
+  const needsPassword = isJTerada((usernameRef.current?.value || '').trim())
+  const canSubmit = !isLoggingIn && hasUsername && (!needsPassword || hasPassword)
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleLogin()
+    if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+      e.preventDefault()
+      void handleLogin()
+    }
   }
-  const canReset = !isResetting && resetUsername.trim().length > 0 && resetNewPassword.length > 0 && resetConfirmPassword.length > 0
+  const canReset = !isResetting && hasResetFields
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
@@ -162,10 +173,10 @@ export function LoginPage() {
                 ユーザー名
               </label>
               <input
+                ref={usernameRef}
                 id="login-username"
                 type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={handleUsernameChange}
                 onKeyDown={handleKeyDown}
                 placeholder="ユーザー名を入力"
                 className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
@@ -183,10 +194,10 @@ export function LoginPage() {
               </label>
               <div className="relative">
                 <input
+                  ref={passwordRef}
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={handlePasswordChange}
                   onKeyDown={handleKeyDown}
                   placeholder="パスワードを入力"
                   className="w-full rounded-lg border border-slate-300 bg-white pr-10 pl-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
@@ -238,10 +249,10 @@ export function LoginPage() {
                 ユーザー名
               </label>
               <input
+                ref={resetUsernameRef}
                 id="reset-username"
                 type="text"
-                value={resetUsername}
-                onChange={(e) => setResetUsername(e.target.value)}
+                onChange={handleResetFieldsChange}
                 placeholder="ユーザー名を入力"
                 className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
                 autoComplete="username"
@@ -253,10 +264,10 @@ export function LoginPage() {
               </label>
               <div className="relative">
                 <input
+                  ref={resetNewPasswordRef}
                   id="reset-new-password"
                   type={showResetPassword ? 'text' : 'password'}
-                  value={resetNewPassword}
-                  onChange={(e) => setResetNewPassword(e.target.value)}
+                  onChange={handleResetFieldsChange}
                   placeholder="新しいパスワードを入力"
                   className="w-full rounded-lg border border-slate-300 bg-white pr-10 pl-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
                   autoComplete="new-password"
@@ -277,12 +288,15 @@ export function LoginPage() {
               </label>
               <div className="relative">
                 <input
+                  ref={resetConfirmPasswordRef}
                   id="reset-confirm-password"
                   type={showResetConfirmPassword ? 'text' : 'password'}
-                  value={resetConfirmPassword}
-                  onChange={(e) => setResetConfirmPassword(e.target.value)}
+                  onChange={handleResetFieldsChange}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && canReset) void handleReset()
+                    if (e.key === 'Enter' && canReset) {
+                      e.preventDefault()
+                      void handleReset()
+                    }
                   }}
                   placeholder="新しいパスワードを再入力"
                   className="w-full rounded-lg border border-slate-300 bg-white pr-10 pl-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
