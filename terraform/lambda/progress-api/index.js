@@ -207,12 +207,57 @@ async function handler(event) {
         return json({ error: 'question, scoringCriteria, answer are required' }, 400)
       }
 
-      const systemPrompt = `あなたはITインフラ研修の講師です。受講生の記述式回答を、問題ごとに提示される【採点基準】に従って採点してください。
+      // 5W1H問題かどうか判定（scoringCriteriaに"5W1H"が含まれる場合）
+      const is5W1H = scoringCriteria.includes('5W1H')
+
+      let systemPrompt, userPrompt, maxTokens
+
+      if (is5W1H) {
+        systemPrompt = `あなたはITインフラ研修の採点者です。受講生が断片情報を5W1H形式に整理できているか採点してください。
+
+【コピペ検出ルール】
+回答が断片情報の箇条書きをほぼそのままコピーしただけ（整理・ラベル付けなし）の場合は rating: "fail" とする。
+
+【出力形式】
+必ず以下のJSON形式のみで返すこと。前置き・後置き・マークダウン不要：
+{
+  "rating": "pass" | "partial" | "fail",
+  "comment": "良かった点または不足点を1〜2文で具体的に",
+  "advice": "改善点を1文で",
+  "details": {
+    "who": true または false,
+    "what": true または false,
+    "when": true または false,
+    "where": true または false,
+    "why": true または false,
+    "how": true または false
+  }
+}`
+
+        userPrompt = `問題と断片情報:
+${question}
+
+採点基準:
+${scoringCriteria}
+
+研修生の回答:
+${answer}
+
+各要素のチェック基準:
+- who: 担当者・関係者の名前や役割が明記されている
+- what: 何が起きたか（障害・エラー内容）が明記されている
+- when: 発生時刻・復旧時刻などの時間情報が明記されている
+- where: 場所・システム名・環境名が明記されている
+- why: 原因が明記されている
+- how: 対応手順・経緯が明記されている`
+
+        maxTokens = 400
+      } else {
+        systemPrompt = `あなたはITインフラ研修の講師です。受講生の記述式回答を、問題ごとに提示される【採点基準】に従って採点してください。
 
 【共通ルール】
 - 採点基準に pass/partial/fail の条件が明示されている場合は、その条件を最優先で適用する
 - 採点基準にない観点で減点しない
-- 断片情報をそのままコピーして貼り付けただけの回答（整理・ラベル付けをしていない）は fail とする
 
 【採点基準がない場合のデフォルト】
 pass: 問われている概念を正しく理解し、自分の言葉で説明できている
@@ -227,9 +272,12 @@ fail: 意味不明・設問と無関係・空欄に近い内容
   "advice": "次のステップまたは改善点を1文で"
 }`
 
-      const userPrompt = `問題: ${question}
+        userPrompt = `問題: ${question}
 基準: ${scoringCriteria}
 回答: ${answer}`
+
+        maxTokens = 300
+      }
 
       try {
         const command = new InvokeModelCommand({
@@ -238,7 +286,7 @@ fail: 意味不明・設問と無関係・空欄に近い内容
           accept: 'application/json',
           body: JSON.stringify({
             anthropic_version: 'bedrock-2023-05-31',
-            max_tokens: 300,
+            max_tokens: maxTokens,
             system: systemPrompt,
             messages: [{ role: 'user', content: userPrompt }],
           }),
@@ -256,8 +304,17 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         const rating = ['pass', 'partial', 'fail'].includes(parsed.rating) ? parsed.rating : 'fail'
         const comment = String(parsed.comment ?? '')
         const advice = String(parsed.advice ?? '')
+        // 5W1H採点の場合 details を含める
+        const details = is5W1H && parsed.details ? {
+          who:   !!parsed.details.who,
+          what:  !!parsed.details.what,
+          when:  !!parsed.details.when,
+          where: !!parsed.details.where,
+          why:   !!parsed.details.why,
+          how:   !!parsed.details.how,
+        } : undefined
         // 後方互換: pass/feedback も返す（IntroPage等で使用）
-        return json({ rating, comment, advice, pass: rating === 'pass', feedback: comment })
+        return json({ rating, comment, advice, pass: rating === 'pass', feedback: comment, ...(details ? { details } : {}) })
       } catch (err) {
         console.error('[ai/score] Bedrock error:', err.name, err.message)
         const retryable = err.name === 'ServiceUnavailableException' || err.name === 'ThrottlingException' || err.name === 'ModelNotReadyException' || err.$metadata?.httpStatusCode === 503 || err.$metadata?.httpStatusCode === 429

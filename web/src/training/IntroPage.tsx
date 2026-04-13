@@ -7,6 +7,7 @@ import { INTRO_RISK_QUESTIONS } from './introRiskData'
 import type { MCQuestion, EssayQuestion } from './introRiskData'
 import { setTrainingStartDateFromTask1Start, getTrainingStartDate } from './trainingWbsData'
 import { fetchMyProgress, postProgress, isProgressApiAvailable, scoreAnswer } from '../progressApi'
+import type { ScoreDetails } from '../progressApi'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 
 // ── Step 1: 行動基準 ───────────────────────────────────────────────────────────
@@ -85,7 +86,7 @@ const STEP_SECTION: Record<number, string> = {
 
 const STEP_LABELS = ['オリエンテーション', '行動基準確認', 'AI機密保持', '物理セキュリティ', 'リスク報告', '完了']
 
-type ScoringResult = { pass: boolean; feedback: string }
+type ScoringResult = { pass: boolean; feedback: string; details?: ScoreDetails }
 
 const EMPTY_SNAPSHOT: TraineeProgressSnapshot = {
   introConfirmed: false,
@@ -347,8 +348,11 @@ export function IntroPage() {
     setIsScoring(true)
     setCurrentResult(null)
     try {
+      const questionWithScenario = q.scenarioText
+        ? `${q.prompt}\n\n【断片情報】\n${q.scenarioText}`
+        : q.prompt
       const result = await scoreAnswer({
-        question: q.prompt,
+        question: questionWithScenario,
         scoringCriteria: q.scoringCriteria,
         answer: currentInput,
       })
@@ -893,15 +897,18 @@ export function IntroPage() {
       {/* 採点結果 */}
       {currentResult && (
         <div
-          className={`mt-4 rounded-xl border p-5 ${
+          className={`mt-4 rounded-xl border p-5 space-y-3 ${
             currentResult.pass ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'
           }`}
         >
           <p className={`text-base font-semibold ${currentResult.pass ? 'text-emerald-700' : 'text-red-700'}`}>
             {currentResult.pass ? '✓ 合格' : '✗ 不合格'}
           </p>
-          <p className="mt-2 text-sm text-slate-700 leading-relaxed">{currentResult.feedback}</p>
-          <div className="mt-4">
+          <p className="text-sm text-slate-700 leading-relaxed">{currentResult.feedback}</p>
+          {currentResult.details && (
+            <ScoreDetailsPanel details={currentResult.details} />
+          )}
+          <div>
             {currentResult.pass ? (
               <button
                 type="button"
@@ -924,5 +931,31 @@ export function IntroPage() {
         </div>
       )}
     </>
+  )
+}
+
+function ScoreDetailsPanel({ details }: { details: ScoreDetails }) {
+  const items: { key: keyof ScoreDetails; label: string }[] = [
+    { key: 'who',   label: 'Who（誰が）' },
+    { key: 'what',  label: 'What（何が）' },
+    { key: 'when',  label: 'When（いつ）' },
+    { key: 'where', label: 'Where（どこで）' },
+    { key: 'why',   label: 'Why（なぜ）' },
+    { key: 'how',   label: 'How（どのように）' },
+  ]
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-3">
+      <p className="text-xs font-semibold text-slate-600 mb-2">5W1H チェック結果</p>
+      <ul className="grid grid-cols-2 gap-1">
+        {items.map(({ key, label }) => (
+          <li key={key} className="flex items-center gap-1.5 text-xs">
+            <span className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-white text-[10px] font-bold ${details[key] ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+              {details[key] ? '✓' : '✗'}
+            </span>
+            <span className={details[key] ? 'text-slate-700' : 'text-slate-400'}>{label}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }

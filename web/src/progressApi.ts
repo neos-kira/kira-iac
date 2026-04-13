@@ -154,7 +154,8 @@ export async function fetchProgressFromApi(): Promise<TraineeProgressFromApi[]> 
   }
 }
 
-export type ScoreResult = { pass: boolean; feedback: string }
+export type ScoreDetails = { who: boolean; what: boolean; when: boolean; where: boolean; why: boolean; how: boolean }
+export type ScoreResult = { pass: boolean; feedback: string; details?: ScoreDetails }
 
 export type ScoreResultV2 = {
   rating: 'pass' | 'partial' | 'fail'
