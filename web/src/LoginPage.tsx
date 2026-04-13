@@ -12,91 +12,72 @@ const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
 // デバッグ用：コンポーネントのマウント回数を追跡
 let mountCount = 0
 
-// グローバル変数で入力値を保持（コンポーネント再マウント対策）
-const globalInputValues = {
-  username: '',
-  password: '',
-}
-
 export function LoginPage() {
   // マウント追跡
   const instanceId = useRef(++mountCount)
-  console.log(`[LoginPage] render, instance=${instanceId.current}, globalUsername="${globalInputValues.username}"`)
+  console.log(`[LoginPage] render, instance=${instanceId.current}`)
 
-  // DOM ref で入力値を管理（React state に依存しない）
-  const usernameRef = useRef<HTMLInputElement>(null)
-  const passwordRef = useRef<HTMLInputElement>(null)
-  const resetUsernameRef = useRef<HTMLInputElement>(null)
-  const resetNewPasswordRef = useRef<HTMLInputElement>(null)
-  const resetConfirmPasswordRef = useRef<HTMLInputElement>(null)
+  // refで入力値をバックアップ（再マウントされても値が消えない）
+  const usernameBackup = useRef('')
+  const passwordBackup = useRef('')
 
-  // マウント時にグローバル変数から値を復元
-  useEffect(() => {
-    if (usernameRef.current && globalInputValues.username) {
-      usernameRef.current.value = globalInputValues.username
-      console.log(`[LoginPage] Restored username from global: "${globalInputValues.username}"`)
-    }
-    if (passwordRef.current && globalInputValues.password) {
-      passwordRef.current.value = globalInputValues.password
-      console.log(`[LoginPage] Restored password from global: ${globalInputValues.password.length} chars`)
-    }
-  }, [])
-
+  // 表示用のstate（controlled component）
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [loginError, setLoginError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoggingIn, setIsLoggingIn] = useState(false)
 
-  // パスワードリセット用state
+  // パスワードリセット用
   const [mode, setMode] = useState<'login' | 'reset'>('login')
+  const [resetUsername, setResetUsername] = useState('')
+  const [resetNewPassword, setResetNewPassword] = useState('')
+  const [resetConfirmPassword, setResetConfirmPassword] = useState('')
   const [showResetPassword, setShowResetPassword] = useState(false)
   const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false)
   const [resetError, setResetError] = useState('')
   const [resetSuccess, setResetSuccess] = useState('')
   const [isResetting, setIsResetting] = useState(false)
 
-  // ボタンdisabled判定用（入力の有無）
-  const [hasUsername, setHasUsername] = useState(false)
-  const [hasPassword, setHasPassword] = useState(false)
-  const [hasResetFields, setHasResetFields] = useState(false)
-
+  // マウント時にバックアップから復元
   useEffect(() => {
-    console.log(`[LoginPage] useEffect mount, instance=${instanceId.current}`)
+    console.log(`[LoginPage] useEffect mount, instance=${instanceId.current}, backup="${usernameBackup.current}"`)
+    if (usernameBackup.current) {
+      setUsername(usernameBackup.current)
+      console.log(`[LoginPage] Restored username from backup: "${usernameBackup.current}"`)
+    }
+    if (passwordBackup.current) {
+      setPassword(passwordBackup.current)
+      console.log(`[LoginPage] Restored password from backup: ${passwordBackup.current.length} chars`)
+    }
     document.title = 'NICプラットフォーム'
     return () => {
       console.log(`[LoginPage] useEffect cleanup (unmount), instance=${instanceId.current}`)
     }
   }, [])
 
-  // 入力変更時にdisabled判定用のstateを更新 + グローバル変数にも保存
-  const handleUsernameChange = () => {
-    const val = usernameRef.current?.value || ''
-    globalInputValues.username = val
-    setHasUsername(val.trim().length > 0)
+  // 入力変更ハンドラー（state + ref バックアップ）
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    usernameBackup.current = value  // refにバックアップ
+    setUsername(value)               // 表示を更新
   }
-  const handlePasswordChange = () => {
-    const val = passwordRef.current?.value || ''
-    globalInputValues.password = val
-    setHasPassword(val.length > 0)
-  }
-  const handleResetFieldsChange = () => {
-    const u = resetUsernameRef.current?.value || ''
-    const p = resetNewPasswordRef.current?.value || ''
-    const c = resetConfirmPasswordRef.current?.value || ''
-    setHasResetFields(u.trim().length > 0 && p.length > 0 && c.length > 0)
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    passwordBackup.current = value  // refにバックアップ
+    setPassword(value)               // 表示を更新
   }
 
   async function handleLogin() {
-    // DOM から直接値を取得、なければグローバル変数からフォールバック
-    const refUsername = usernameRef.current?.value || ''
-    const refPassword = passwordRef.current?.value || ''
-    const name = (refUsername || globalInputValues.username).trim()
-    const pass = refPassword || globalInputValues.password
+    // refから値を取得（stateが消えていてもrefは残る）
+    const name = (usernameBackup.current || username).trim()
+    const pass = passwordBackup.current || password
 
     console.log(`[LoginPage] handleLogin called, instance=${instanceId.current}`)
-    console.log(`[LoginPage] refUsername="${refUsername}", globalUsername="${globalInputValues.username}", final="${name}"`)
-    console.log(`[LoginPage] refPassword=${refPassword.length}chars, globalPassword=${globalInputValues.password.length}chars, final=${pass.length}chars`)
-    console.log(`[LoginPage] usernameRef.current exists:`, !!usernameRef.current)
-    console.log(`[LoginPage] passwordRef.current exists:`, !!passwordRef.current)
+    console.log(`[LoginPage] state: username="${username}", password=${password.length}chars`)
+    console.log(`[LoginPage] backup: username="${usernameBackup.current}", password=${passwordBackup.current.length}chars`)
+    console.log(`[LoginPage] final: name="${name}", pass=${pass.length}chars`)
 
     setLoginError('')
     setIsLoggingIn(true)
@@ -121,10 +102,13 @@ export function LoginPage() {
       const ok = await checkAccount(normalized, pass)
       if (!ok) {
         setLoginError('ユーザー名かパスワードが間違っています。')
+        // エラー時はバックアップから復元
+        setUsername(usernameBackup.current)
+        setPassword(passwordBackup.current)
         return
       }
 
-      // 安全なストレージ操作（シークレットモード対応）
+      // 安全なストレージ操作
       safeSetItem(USER_DISPLAY_NAME_KEY, normalized)
       setCookieValue(USER_DISPLAY_NAME_KEY, normalized)
       setLoggedIn()
@@ -132,12 +116,10 @@ export function LoginPage() {
       if (normalized !== 'admin') {
         addTrainee(name)
       }
-      // iOS Safari 等での localStorage / Cookie 書き込み直後の遷移問題を避けるため、少し待機する
+
       await new Promise((resolve) => setTimeout(resolve, 100))
 
-      // ストレージ書き込み成功を確認
       if (!isLoggedIn()) {
-        // Private mode等でストレージが使えない場合、ページリロードで再試行
         const url = new URL(window.location.href)
         if (url.searchParams.get('loginRetry')) {
           setLoginError('ログイン処理に失敗しました。ブラウザを再起動するか、通常モードでお試しください。')
@@ -150,9 +132,9 @@ export function LoginPage() {
       }
 
       didNavigate = true
-      // ログイン成功時にグローバル変数をクリア
-      globalInputValues.username = ''
-      globalInputValues.password = ''
+      // ログイン成功時にバックアップをクリア
+      usernameBackup.current = ''
+      passwordBackup.current = ''
       const base =
         (window.location.origin + window.location.pathname + (window.location.search || '')).replace(/\/$/, '') ||
         window.location.origin
@@ -163,9 +145,9 @@ export function LoginPage() {
   }
 
   async function handleReset() {
-    const name = (resetUsernameRef.current?.value || '').trim().toLowerCase()
-    const newPass = resetNewPasswordRef.current?.value || ''
-    const confirmPass = resetConfirmPasswordRef.current?.value || ''
+    const name = resetUsername.trim().toLowerCase()
+    const newPass = resetNewPassword
+    const confirmPass = resetConfirmPassword
 
     setResetError('')
     setResetSuccess('')
@@ -179,10 +161,9 @@ export function LoginPage() {
       const ok = await resetPassword(name, newPass)
       if (ok) {
         setResetSuccess('パスワードをリセットしました。ログイン画面からサインインしてください。')
-        if (resetUsernameRef.current) resetUsernameRef.current.value = ''
-        if (resetNewPasswordRef.current) resetNewPasswordRef.current.value = ''
-        if (resetConfirmPasswordRef.current) resetConfirmPasswordRef.current.value = ''
-        setHasResetFields(false)
+        setResetUsername('')
+        setResetNewPassword('')
+        setResetConfirmPassword('')
       } else {
         setResetError('リセットに失敗しました。ユーザー名を確認してください。')
       }
@@ -191,15 +172,15 @@ export function LoginPage() {
     }
   }
 
-  const needsPassword = isJTerada((usernameRef.current?.value || '').trim())
-  const canSubmit = !isLoggingIn && hasUsername && (!needsPassword || hasPassword)
+  const needsPassword = isJTerada(username.trim())
+  const canSubmit = !isLoggingIn && username.trim().length > 0 && (!needsPassword || password.length > 0)
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
       e.preventDefault()
       void handleLogin()
     }
   }
-  const canReset = !isResetting && hasResetFields
+  const canReset = !isResetting && resetUsername.trim().length > 0 && resetNewPassword.length > 0 && resetConfirmPassword.length > 0
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
@@ -215,13 +196,14 @@ export function LoginPage() {
                 ユーザー名
               </label>
               <input
-                ref={usernameRef}
                 id="login-username"
                 type="text"
+                value={username}
                 onChange={handleUsernameChange}
                 onKeyDown={handleKeyDown}
                 placeholder="ユーザー名を入力"
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                disabled={isLoggingIn}
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-slate-100"
                 autoComplete="username"
                 autoCorrect="off"
                 autoCapitalize="off"
@@ -236,13 +218,14 @@ export function LoginPage() {
               </label>
               <div className="relative">
                 <input
-                  ref={passwordRef}
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
+                  value={password}
                   onChange={handlePasswordChange}
                   onKeyDown={handleKeyDown}
                   placeholder="パスワードを入力"
-                  className="w-full rounded-lg border border-slate-300 bg-white pr-10 pl-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  disabled={isLoggingIn}
+                  className="w-full rounded-lg border border-slate-300 bg-white pr-10 pl-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-slate-100"
                   autoComplete="current-password"
                   autoCorrect="off"
                   autoCapitalize="off"
@@ -291,10 +274,10 @@ export function LoginPage() {
                 ユーザー名
               </label>
               <input
-                ref={resetUsernameRef}
                 id="reset-username"
                 type="text"
-                onChange={handleResetFieldsChange}
+                value={resetUsername}
+                onChange={(e) => setResetUsername(e.target.value)}
                 placeholder="ユーザー名を入力"
                 className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
                 autoComplete="username"
@@ -306,10 +289,10 @@ export function LoginPage() {
               </label>
               <div className="relative">
                 <input
-                  ref={resetNewPasswordRef}
                   id="reset-new-password"
                   type={showResetPassword ? 'text' : 'password'}
-                  onChange={handleResetFieldsChange}
+                  value={resetNewPassword}
+                  onChange={(e) => setResetNewPassword(e.target.value)}
                   placeholder="新しいパスワードを入力"
                   className="w-full rounded-lg border border-slate-300 bg-white pr-10 pl-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
                   autoComplete="new-password"
@@ -330,10 +313,10 @@ export function LoginPage() {
               </label>
               <div className="relative">
                 <input
-                  ref={resetConfirmPasswordRef}
                   id="reset-confirm-password"
                   type={showResetConfirmPassword ? 'text' : 'password'}
-                  onChange={handleResetFieldsChange}
+                  value={resetConfirmPassword}
+                  onChange={(e) => setResetConfirmPassword(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && canReset) {
                       e.preventDefault()
