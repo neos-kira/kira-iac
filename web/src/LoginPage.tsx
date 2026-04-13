@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { NeOSLogo } from './components/NeOSLogo'
-import { setLoggedIn, isLoggedIn } from './auth'
+import { setLoggedIn } from './auth'
+import { useAuth } from './AuthContext'
 import { addTrainee } from './traineeProgressStorage'
 import { isJTerada, J_TERADA_PASSWORD } from './specialUsers'
 import { checkAccount, isAccountApiAvailable, resetPassword } from './accountsApi'
@@ -9,17 +11,13 @@ import { safeSetItem, safeSessionRemoveItem, setCookieValue } from './utils/stor
 
 const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
 
-// デバッグ用：コンポーネントのマウント回数を追跡
 let mountCount = 0
 
 export function LoginPage() {
-  // マウント追跡
   const instanceId = useRef(++mountCount)
+  const navigate = useNavigate()
+  const { refreshAuth } = useAuth()
   console.log(`[LoginPage] render, instance=${instanceId.current}`)
-
-  // refで入力値をバックアップ（再マウントされても値が消えない）
-  const usernameBackup = useRef('')
-  const passwordBackup = useRef('')
 
   // 表示用のstate（controlled component）
   const [username, setUsername] = useState('')
@@ -39,45 +37,28 @@ export function LoginPage() {
   const [resetSuccess, setResetSuccess] = useState('')
   const [isResetting, setIsResetting] = useState(false)
 
-  // マウント時にバックアップから復元
   useEffect(() => {
-    console.log(`[LoginPage] useEffect mount, instance=${instanceId.current}, backup="${usernameBackup.current}"`)
-    if (usernameBackup.current) {
-      setUsername(usernameBackup.current)
-      console.log(`[LoginPage] Restored username from backup: "${usernameBackup.current}"`)
-    }
-    if (passwordBackup.current) {
-      setPassword(passwordBackup.current)
-      console.log(`[LoginPage] Restored password from backup: ${passwordBackup.current.length} chars`)
-    }
+    console.log(`[LoginPage] useEffect mount, instance=${instanceId.current}`)
     document.title = 'NICプラットフォーム'
     return () => {
       console.log(`[LoginPage] useEffect cleanup (unmount), instance=${instanceId.current}`)
     }
   }, [])
 
-  // 入力変更ハンドラー（state + ref バックアップ）
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    usernameBackup.current = value  // refにバックアップ
-    setUsername(value)               // 表示を更新
+    setUsername(e.target.value)
   }
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    passwordBackup.current = value  // refにバックアップ
-    setPassword(value)               // 表示を更新
+    setPassword(e.target.value)
   }
 
   async function handleLogin() {
-    // refから値を取得（stateが消えていてもrefは残る）
-    const name = (usernameBackup.current || username).trim()
-    const pass = passwordBackup.current || password
+    const name = username.trim()
+    const pass = password
 
     console.log(`[LoginPage] handleLogin called, instance=${instanceId.current}`)
-    console.log(`[LoginPage] state: username="${username}", password=${password.length}chars`)
-    console.log(`[LoginPage] backup: username="${usernameBackup.current}", password=${passwordBackup.current.length}chars`)
-    console.log(`[LoginPage] final: name="${name}", pass=${pass.length}chars`)
+    console.log(`[LoginPage] username="${name}", password=${pass.length}chars`)
 
     setLoginError('')
     setIsLoggingIn(true)
@@ -102,13 +83,10 @@ export function LoginPage() {
       const ok = await checkAccount(normalized, pass)
       if (!ok) {
         setLoginError('ユーザー名かパスワードが間違っています。')
-        // エラー時はバックアップから復元
-        setUsername(usernameBackup.current)
-        setPassword(passwordBackup.current)
         return
       }
 
-      // 安全なストレージ操作
+      // ストレージに保存
       safeSetItem(USER_DISPLAY_NAME_KEY, normalized)
       setCookieValue(USER_DISPLAY_NAME_KEY, normalized)
       setLoggedIn()
@@ -117,28 +95,15 @@ export function LoginPage() {
         addTrainee(name)
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      // ストレージ書き込みを待機
+      await new Promise((resolve) => setTimeout(resolve, 50))
 
-      if (!isLoggedIn()) {
-        const url = new URL(window.location.href)
-        if (url.searchParams.get('loginRetry')) {
-          setLoginError('ログイン処理に失敗しました。ブラウザを再起動するか、通常モードでお試しください。')
-          return
-        }
-        console.warn('[Login] ストレージ書き込み確認失敗、リロードで再試行')
-        url.searchParams.set('loginRetry', '1')
-        window.location.href = url.toString()
-        return
-      }
+      // AuthContextを更新してReactの状態を同期
+      refreshAuth()
 
-      didNavigate = true
-      // ログイン成功時にバックアップをクリア
-      usernameBackup.current = ''
-      passwordBackup.current = ''
-      const base =
-        (window.location.origin + window.location.pathname + (window.location.search || '')).replace(/\/$/, '') ||
-        window.location.origin
-      window.location.href = base + '#/'
+      // React Routerで遷移（ページリロードなし）
+      console.log('[LoginPage] Navigating to dashboard...')
+      navigate('/', { replace: true })
     } finally {
       if (!didNavigate) setIsLoggingIn(false)
     }

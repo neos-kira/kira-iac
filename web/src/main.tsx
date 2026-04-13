@@ -2,6 +2,7 @@ import { StrictMode, useEffect, useState, useRef, useCallback } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { DeskOpenProvider } from './deskOpenContext'
+import { AuthProvider, useAuth } from './AuthContext'
 import './index.css'
 import App from './App.tsx'
 import { LoginPage } from './LoginPage'
@@ -294,36 +295,46 @@ function LoginReloadGuard() {
   return null
 }
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth()
+  if (import.meta.env.DEV || isAuthenticated) {
+    return <>{children}</>
+  }
+  return <Navigate to="/login" replace />
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <HashRouter>
-      <DeskOpenProvider>
-        <LoginReloadGuard />
-        <JTeradaRestrictGuard />
-        <LayoutWrapper>
-          <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={(import.meta.env.DEV || isLoggedIn()) ? <App /> : <Navigate to="/login" replace />} />
-          <Route path="/admin" element={<AdminPage />} />
-          <Route path="/training/linux-level1" element={<IntroGate><LinuxLevel1Page /></IntroGate>} />
-          <Route path="/training/infra-basic-1" element={<IntroGate><InfraBasic1Page /></IntroGate>} />
-          <Route path="/training/infra-basic-top" element={<IntroGate><InfraBasicTopPage /></IntroGate>} />
-          <Route path="/training/infra-basic-2-top" element={<IntroGate><Task1Gate><InfraBasic2TopPage /></Task1Gate></IntroGate>} />
-          <Route path="/training/infra-basic-2-1" element={<IntroGate><Task1Gate><InfraBasic21Page /></Task1Gate></IntroGate>} />
-          <Route path="/training/linux-level2" element={<IntroGate><Task1Gate><LinuxLevel2Page /></Task1Gate></IntroGate>} />
-          <Route path="/training/infra-basic-3-top" element={<IntroGate><Task1Gate><Task2Gate><InfraBasic3TopPage /></Task2Gate></Task1Gate></IntroGate>} />
-          <Route path="/training/infra-basic-3-1" element={<IntroGate><Task1Gate><Task2Gate><InfraBasic31Page /></Task2Gate></Task1Gate></IntroGate>} />
-          <Route path="/training/infra-basic-3-2" element={<IntroGate><Task1Gate><Task2Gate><InfraBasic32Page /></Task2Gate></Task1Gate></IntroGate>} />
-          <Route path="/training/infra-basic-4" element={<IntroGate><InfraBasic4Page /></IntroGate>} />
-          <Route path="/training/infra-basic-5" element={<IntroGate><InfraBasic5Page /></IntroGate>} />
-          <Route path="/training/infra-wbs" element={<IntroGate><InfraWbsPage /></IntroGate>} />
-          <Route path="/training/intro" element={<IntroPage />} />
-          <Route path="/it-basics" element={<ITBasicsTopPage />} />
-          <Route path="/it-basics/:categoryId/study" element={<ITBasicsStudyPage />} />
-          <Route path="/it-basics/:categoryId/test" element={<ITBasicsTestPage />} />
-          </Routes>
-        </LayoutWrapper>
-      </DeskOpenProvider>
+      <AuthProvider>
+        <DeskOpenProvider>
+          <LoginReloadGuard />
+          <JTeradaRestrictGuard />
+          <LayoutWrapper>
+            <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/" element={<ProtectedRoute><App /></ProtectedRoute>} />
+            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/training/linux-level1" element={<IntroGate><LinuxLevel1Page /></IntroGate>} />
+            <Route path="/training/infra-basic-1" element={<IntroGate><InfraBasic1Page /></IntroGate>} />
+            <Route path="/training/infra-basic-top" element={<IntroGate><InfraBasicTopPage /></IntroGate>} />
+            <Route path="/training/infra-basic-2-top" element={<IntroGate><Task1Gate><InfraBasic2TopPage /></Task1Gate></IntroGate>} />
+            <Route path="/training/infra-basic-2-1" element={<IntroGate><Task1Gate><InfraBasic21Page /></Task1Gate></IntroGate>} />
+            <Route path="/training/linux-level2" element={<IntroGate><Task1Gate><LinuxLevel2Page /></Task1Gate></IntroGate>} />
+            <Route path="/training/infra-basic-3-top" element={<IntroGate><Task1Gate><Task2Gate><InfraBasic3TopPage /></Task2Gate></Task1Gate></IntroGate>} />
+            <Route path="/training/infra-basic-3-1" element={<IntroGate><Task1Gate><Task2Gate><InfraBasic31Page /></Task2Gate></Task1Gate></IntroGate>} />
+            <Route path="/training/infra-basic-3-2" element={<IntroGate><Task1Gate><Task2Gate><InfraBasic32Page /></Task2Gate></Task1Gate></IntroGate>} />
+            <Route path="/training/infra-basic-4" element={<IntroGate><InfraBasic4Page /></IntroGate>} />
+            <Route path="/training/infra-basic-5" element={<IntroGate><InfraBasic5Page /></IntroGate>} />
+            <Route path="/training/infra-wbs" element={<IntroGate><InfraWbsPage /></IntroGate>} />
+            <Route path="/training/intro" element={<IntroPage />} />
+            <Route path="/it-basics" element={<ITBasicsTopPage />} />
+            <Route path="/it-basics/:categoryId/study" element={<ITBasicsStudyPage />} />
+            <Route path="/it-basics/:categoryId/test" element={<ITBasicsTestPage />} />
+            </Routes>
+          </LayoutWrapper>
+        </DeskOpenProvider>
+      </AuthProvider>
     </HashRouter>
   </StrictMode>,
 )
