@@ -35,6 +35,8 @@ export type Infra5Task = {
   /** true のとき理解度確認モード（手順書テキスト + AI採点） */
   isReview?: boolean
   reviewCriteria?: string
+  /** 理解度確認タスクで使用するExcelテンプレートのファイル名（/templates/ 配下） */
+  templateFile?: string
 }
 
 export type Infra5Section = {
@@ -135,10 +137,11 @@ export const INFRA5_SECTIONS: Infra5Section[] = [
       {
         id: 's1-11', sectionId: 's1', index: 10, number: '1-11',
         title: '【理解度確認】OS設定の手順書作成・提出',
-        objective: 'セクション1で実施したOS設定の手順書を作成し、内容を記述してください。「何のために」「何をしたか」「確認コマンドと結果」の3点を含めてください。',
+        objective: 'セクション1で実施したOS設定の手順書を作成し、Excelテンプレートに記入して提出してください。',
         isReview: true,
         hint: '手順書には目的・手順・確認の3点を必ず含めてください。コマンドを羅列するだけでなく、なぜその設定が必要かを説明してください。',
         reviewCriteria: 'OS設定（ユーザー作成、ホスト名、ネットワーク確認、SSH強化、firewalld/SELinux無効化）の各手順が網羅されていること。各設定の目的が説明されていること。確認コマンドと期待する結果が記載されていること。',
+        templateFile: 'os_setup_template.xlsx',
       },
     ],
   },
@@ -192,10 +195,11 @@ export const INFRA5_SECTIONS: Infra5Section[] = [
       {
         id: 's2-6', sectionId: 's2', index: 16, number: '2-6',
         title: '【理解度確認】ディスク追加の手順書作成・提出',
-        objective: 'セクション2で実施したディスク追加の手順書を作成してください。LVMの仕組み（PV→VG→LV の3層構造）の説明を含めてください。',
+        objective: 'セクション2で実施したディスク追加の手順書をExcelテンプレートに記入して提出してください。LVMの仕組み（PV→VG→LV の3層構造）の説明を含めてください。',
         isReview: true,
         hint: 'LVMを使うメリット（柔軟なサイズ変更など）も含めると良い手順書になります。',
         reviewCriteria: 'LVMの3層構造（PV→VG→LV）が正しく説明されていること。パーティション作成からマウントまでの手順が順序通り記載されていること。/etc/fstab による永続化設定が含まれていること。確認コマンド（pvs/vgs/lvs/df -h）が記載されていること。',
+        templateFile: 'disk_setup_template.xlsx',
       },
     ],
   },
@@ -257,10 +261,11 @@ export const INFRA5_SECTIONS: Infra5Section[] = [
       {
         id: 's3-7', sectionId: 's3', index: 23, number: '3-7',
         title: '【理解度確認】httpd設定の手順書作成・提出',
-        objective: 'セクション3で実施したhttpd設定の手順書を作成してください。Apacheの役割と設定ファイルの構成を含めてください。',
+        objective: 'セクション3で実施したhttpd設定の手順書をExcelテンプレートに記入して提出してください。Apacheの役割と設定ファイルの構成を含めてください。',
         isReview: true,
         hint: 'なぜWebサーバーが必要か、httpd.conf のどの設定がどの動作を制御するかを説明してください。',
         reviewCriteria: 'インストールから動作確認までの手順が記載されていること。httpd.conf の主要設定（DocumentRoot、ログ設定）が説明されていること。systemctl での起動・自動起動設定が記載されていること。確認方法（curl/ブラウザ）が含まれていること。',
+        templateFile: 'httpd_setup_template.xlsx',
       },
     ],
   },
@@ -314,10 +319,11 @@ export const INFRA5_SECTIONS: Infra5Section[] = [
       {
         id: 's4-6', sectionId: 's4', index: 29, number: '4-6',
         title: '【理解度確認】AIDE設定の手順書作成・提出',
-        objective: 'セクション4で実施したAIDE設定の手順書を作成してください。改ざん検知の仕組みと運用方法を含めてください。',
+        objective: 'セクション4で実施したAIDE設定の手順書をExcelテンプレートに記入して提出してください。改ざん検知の仕組みと運用方法を含めてください。',
         isReview: true,
         hint: 'AIDEがどのようにして改ざんを検知するか（ハッシュ値の比較）、なぜ定期実行が重要かを説明してください。',
         reviewCriteria: 'AIDEの役割（ファイル改ざん検知の仕組み）が説明されていること。インストールからcron設定までの手順が記載されていること。データベース初期化と更新の手順が含まれていること。改ざん検知の動作確認手順が記載されていること。',
+        templateFile: 'aide_setup_template.xlsx',
       },
     ],
   },
@@ -403,10 +409,11 @@ export const INFRA5_SECTIONS: Infra5Section[] = [
       {
         id: 's5-10', sectionId: 's5', index: 39, number: '5-10',
         title: '【理解度確認】PostgreSQL設定の手順書作成・提出',
-        objective: 'セクション5で実施したPostgreSQL設定の手順書を作成してください。RDBMSの基本概念と運用手順を含めてください。',
+        objective: 'セクション5で実施したPostgreSQL設定の手順書をExcelテンプレートに記入して提出してください。RDBMSの基本概念と運用手順を含めてください。',
         isReview: true,
         hint: 'PostgreSQLをインストールして使えるようにするまでの一連の流れを、「なぜその手順が必要か」を添えて説明してください。',
         reviewCriteria: 'インストールから基本操作（DB/ユーザー/テーブル作成・削除）までの手順が記載されていること。postgresql-setup --initdb の役割が説明されていること。ユーザー管理（SUPERUSER）が含まれていること。自動起動設定が記載されていること。',
+        templateFile: 'postgresql_setup_template.xlsx',
       },
     ],
   },

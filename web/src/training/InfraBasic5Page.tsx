@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import * as XLSX from 'xlsx'
 import { getProgressKey } from './trainingWbsData'
 import {
   INFRA5_CLEARED_KEY,
@@ -464,29 +465,15 @@ function TaskRow({
         </div>
       )}
 
-      {/* 理解度確認タスク: 手順書テキスト + AI採点 */}
+      {/* 理解度確認タスク: テンプレートDL → ファイルUL → AI採点 */}
       {task.isReview && (
-        <div className="space-y-2 pt-1 border-t border-slate-100">
-          <p className="text-[11px] font-medium text-slate-600">
-            実施した手順と内容を記述してください（目的・手順・確認結果の3点を含めること）：
-          </p>
-          <textarea
-            value={reviewAnswer}
-            onChange={(e) => onReviewAnswerChange(e.target.value)}
-            placeholder="実施した手順と内容を記述してください..."
-            rows={5}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
-          />
-          <button
-            type="button"
-            onClick={onReviewScore}
-            disabled={!reviewAnswer.trim() || reviewState.status === 'scoring'}
-            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {reviewState.status === 'scoring' ? 'AI採点中...' : 'AIに採点してもらう'}
-          </button>
-          <VerifyResult state={reviewState} isReview={true} />
-        </div>
+        <ReviewUploadSection
+          task={task}
+          reviewAnswer={reviewAnswer}
+          reviewState={reviewState}
+          onReviewAnswerChange={onReviewAnswerChange}
+          onReviewScore={onReviewScore}
+        />
       )}
     </div>
   )
@@ -515,6 +502,118 @@ function VerifyResult({ state, isReview }: { state: ReviewState; isReview: boole
           {isReview ? '✓ 合格です！完了になりました。' : '✓ 正しく完了しています！完了になりました。'}
         </p>
       )}
+    </div>
+  )
+}
+
+// ─── ReviewUploadSection ─────────────────────────────────────────────────────
+
+function ReviewUploadSection({
+  task,
+  reviewAnswer,
+  reviewState,
+  onReviewAnswerChange,
+  onReviewScore,
+}: {
+  task: Infra5Task
+  reviewAnswer: string
+  reviewState: ReviewState
+  onReviewAnswerChange: (v: string) => void
+  onReviewScore: () => void
+}) {
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null)
+  const [parseError, setParseError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setParseError(null)
+    setUploadedFileName(file.name)
+    try {
+      const buf = await file.arrayBuffer()
+      const wb = XLSX.read(buf, { type: 'array' })
+      const texts: string[] = []
+      wb.SheetNames.forEach((sheetName) => {
+        const sheet = wb.Sheets[sheetName]
+        const rows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: '' })
+        const lines = rows
+          .map((row) => (row as string[]).map((c) => String(c ?? '')).join('\t'))
+          .filter((l) => l.trim())
+        if (lines.length > 0) {
+          texts.push(`【シート: ${sheetName}】\n${lines.join('\n')}`)
+        }
+      })
+      const extracted = texts.join('\n\n')
+      onReviewAnswerChange(extracted || '（内容なし）')
+    } catch {
+      setParseError('Excelの読み取りに失敗しました。.xlsx/.xls 形式のファイルか確認してください。')
+      setUploadedFileName(null)
+    }
+  }
+
+  const templateUrl = task.templateFile ? `/templates/${task.templateFile}` : null
+
+  return (
+    <div className="space-y-3 pt-2 border-t border-slate-100">
+      {/* Step 1: ダウンロード */}
+      <div className="rounded-lg bg-slate-50 border border-slate-200 p-3">
+        <p className="text-[11px] font-semibold text-slate-600 mb-2">① テンプレートをダウンロード</p>
+        {templateUrl ? (
+          <a
+            href={templateUrl}
+            download
+            className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+          >
+            <span>📥</span> テンプレートをダウンロード（Excel）
+          </a>
+        ) : (
+          <p className="text-xs text-slate-400">テンプレートファイルが設定されていません</p>
+        )}
+      </div>
+
+      {/* Step 2: アップロード */}
+      <div className="rounded-lg bg-slate-50 border border-slate-200 p-3">
+        <p className="text-[11px] font-semibold text-slate-600 mb-2">② 記入したExcelをアップロード</p>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".xlsx,.xls"
+          className="hidden"
+          onChange={handleFileChange}
+          id={`file-upload-${task.id}`}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+        >
+          <span>📤</span>
+          {uploadedFileName ? uploadedFileName : 'ファイルを選択...'}
+        </button>
+        {parseError && <p className="mt-1 text-xs text-red-500">{parseError}</p>}
+        {uploadedFileName && !parseError && (
+          <p className="mt-1 text-[11px] text-emerald-600">✓ 読み込み完了: {uploadedFileName}</p>
+        )}
+      </div>
+
+      {/* Step 3: AI採点 */}
+      <div>
+        <p className="text-[11px] font-semibold text-slate-600 mb-2">③ AIに採点してもらう</p>
+        <button
+          type="button"
+          onClick={onReviewScore}
+          disabled={!reviewAnswer.trim() || reviewState.status === 'scoring'}
+          className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {reviewState.status === 'scoring' ? 'AI採点中...' : 'AIに採点してもらう'}
+        </button>
+        {!reviewAnswer.trim() && (
+          <p className="mt-1 text-[11px] text-slate-400">先にExcelファイルをアップロードしてください</p>
+        )}
+      </div>
+
+      <VerifyResult state={reviewState} isReview={true} />
     </div>
   )
 }
