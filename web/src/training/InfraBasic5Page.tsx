@@ -295,19 +295,16 @@ export function InfraBasic5Page() {
     window.location.hash = '#/'
   }
 
-  // フェーズヘッダー
+  // フェーズヘッダー（アンロック機能廃止 - 全フェーズ常時アクセス可能）
   const PhaseHeader = ({ phase, label, count }: { phase: number; label: string; count?: string }) => {
     const done = phaseDone[phase]
-    const unlocked = phase === 1 || phaseDone[phase - 1]
     const isOpen = openPhase === phase
-    const lockLabel = `5-${phase - 1}完了でアンロック`
     return (
       <button
         type="button"
-        onClick={() => unlocked && setOpenPhase(isOpen ? 0 : phase)}
-        disabled={!unlocked}
+        onClick={() => setOpenPhase(isOpen ? 0 : phase)}
         className={`w-full flex items-center justify-between px-4 py-3 text-left rounded-xl border ${
-          done ? 'border-emerald-200 bg-emerald-50' : unlocked ? 'border-slate-200 bg-white hover:bg-slate-50' : 'border-slate-200 bg-slate-100 opacity-60 cursor-not-allowed'
+          done ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-white hover:bg-slate-50'
         }`}
       >
         <div className="flex items-center gap-2">
@@ -317,14 +314,7 @@ export function InfraBasic5Page() {
             {count && <p className="text-[10px] text-slate-500">{count}</p>}
           </div>
         </div>
-        {unlocked && (
-          <span className="text-[11px] text-slate-400">{isOpen ? '▲' : '▼'}</span>
-        )}
-        {!unlocked && (
-          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 border border-amber-200">
-            {lockLabel}
-          </span>
-        )}
+        <span className="text-[11px] text-slate-400">{isOpen ? '▲' : '▼'}</span>
       </button>
     )
   }
@@ -386,7 +376,7 @@ export function InfraBasic5Page() {
         <section className="space-y-2">
           <PhaseHeader phase={1} label="5-1 パラメーターシート作成" />
           {openPhase === 1 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {phaseDone[1] ? (
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft-card">
                   <p className="text-[12px] text-emerald-700 font-semibold">✅ パラメーターシートのレビューが完了しました。</p>
@@ -394,58 +384,64 @@ export function InfraBasic5Page() {
               ) : (
                 <>
                   <p className="text-[12px] text-slate-600">構築するサーバーの情報を入力してください。この情報をもとに手順書を作成します。</p>
+
                   {/* サーバー情報カード */}
-                  <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-soft-card">
-                    <p className="text-[14px] font-medium text-slate-800 mb-4">サーバー情報</p>
+                  <div className="rounded-2xl border border-gray-200 bg-white p-6 mb-6">
 
-                    {/* サーバー基本情報 */}
-                    <p className="text-[12px] font-medium text-slate-700 mb-2">サーバー基本情報</p>
-                    {SERVER_PARAMS.filter((p) => p.group === 'server').map((p) => (
-                      <div key={p.id} className="mb-3">
-                        <label className="text-[11px] text-slate-600">{p.label}</label>
-                        <input
-                          type={p.type}
-                          value={paramValues[p.id] ?? ''}
-                          onChange={(e) => setParamValues((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                          placeholder={p.placeholder}
-                          className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                        />
-                      </div>
-                    ))}
+                    {/* サーバー基本情報グループ */}
+                    <div className="rounded-xl bg-gray-50 p-4 px-5 mb-4">
+                      <p className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">サーバー基本情報</p>
+                      {SERVER_PARAMS.filter((p) => p.group === 'server').map((p) => (
+                        <div key={p.id} className="mb-4 last:mb-0">
+                          <label className="text-[11px] text-slate-600">{p.label}</label>
+                          <input
+                            type={p.type}
+                            value={paramValues[p.id] ?? ''}
+                            onChange={(e) => setParamValues((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                            placeholder={p.placeholder}
+                            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                          />
+                        </div>
+                      ))}
+                    </div>
 
-                    {/* Webサーバー設定 */}
-                    <p className="text-[12px] font-medium text-slate-700 mb-2 mt-5">Webサーバー設定</p>
-                    {SERVER_PARAMS.filter((p) => p.group === 'web').map((p) => (
-                      <div key={p.id} className="mb-3">
-                        <label className="text-[11px] text-slate-600">{p.label}</label>
-                        <input
-                          type={p.type}
-                          value={paramValues[p.id] ?? ''}
-                          onChange={(e) => setParamValues((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                          placeholder={p.placeholder}
-                          className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                        />
-                      </div>
-                    ))}
+                    {/* Webサーバー設定グループ */}
+                    <div className="rounded-xl bg-gray-50 p-4 px-5 mb-4">
+                      <p className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">Webサーバー設定</p>
+                      {SERVER_PARAMS.filter((p) => p.group === 'web').map((p) => (
+                        <div key={p.id} className="mb-4 last:mb-0">
+                          <label className="text-[11px] text-slate-600">{p.label}</label>
+                          <input
+                            type={p.type}
+                            value={paramValues[p.id] ?? ''}
+                            onChange={(e) => setParamValues((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                            placeholder={p.placeholder}
+                            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                          />
+                        </div>
+                      ))}
+                    </div>
 
-                    {/* データベース設定 */}
-                    <p className="text-[12px] font-medium text-slate-700 mb-2 mt-5">データベース設定</p>
-                    {SERVER_PARAMS.filter((p) => p.group === 'db').map((p) => (
-                      <div key={p.id} className="mb-3">
-                        <label className="text-[11px] text-slate-600">{p.label}</label>
-                        <input
-                          type={p.type}
-                          value={paramValues[p.id] ?? ''}
-                          onChange={(e) => setParamValues((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                          placeholder={p.placeholder}
-                          className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                        />
-                      </div>
-                    ))}
+                    {/* データベース設定グループ */}
+                    <div className="rounded-xl bg-gray-50 p-4 px-5">
+                      <p className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">データベース設定</p>
+                      {SERVER_PARAMS.filter((p) => p.group === 'db').map((p) => (
+                        <div key={p.id} className="mb-4 last:mb-0">
+                          <label className="text-[11px] text-slate-600">{p.label}</label>
+                          <input
+                            type={p.type}
+                            value={paramValues[p.id] ?? ''}
+                            onChange={(e) => setParamValues((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                            placeholder={p.placeholder}
+                            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  {/* 区切り線とボタン */}
-                  <div className="border-t border-slate-200 pt-4">
+                  {/* AIレビューボタン（カード外） */}
+                  <div className="pt-0">
                     <button
                       type="button"
                       onClick={() => { void scoreParams() }}
@@ -465,43 +461,53 @@ export function InfraBasic5Page() {
         {/* ===== 5-2: 手順書作成 ===== */}
         <section className="space-y-2">
           <PhaseHeader phase={2} label="5-2 手順書作成" />
-          {openPhase === 2 && (phaseDone[1] || true) && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card space-y-4">
+          {openPhase === 2 && (
+            <div className="space-y-6">
               {phaseDone[2] ? (
-                <p className="text-[12px] text-emerald-700 font-semibold">✅ 手順書のレビューが完了しました。</p>
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft-card">
+                  <p className="text-[12px] text-emerald-700 font-semibold">✅ 手順書のレビューが完了しました。</p>
+                </div>
               ) : (
                 <>
                   <p className="text-[12px] text-slate-600">1台のEC2サーバーにWebサーバーとDBをインストールする手順を作成してください。</p>
-                  <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-soft-card space-y-4">
-                    <div>
-                      <p className="text-[12px] font-semibold text-slate-800 mb-1">① Webサーバー（Apache）構築手順</p>
+
+                  {/* 手順書カード */}
+                  <div className="rounded-2xl border border-gray-200 bg-white p-6 mb-6">
+
+                    {/* Webサーバー手順グループ */}
+                    <div className="rounded-xl bg-gray-50 p-4 px-5 mb-4">
+                      <p className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">① Webサーバー（Apache）構築手順</p>
                       <textarea
                         value={webProcedure}
                         onChange={(e) => setWebProcedure(e.target.value)}
                         rows={6}
-                        className="w-full resize-y rounded-md border border-slate-300 bg-white px-2 py-1.5 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                        className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
                         placeholder="例:&#10;1. sudo dnf install httpd -y&#10;2. sudo systemctl start httpd&#10;3. sudo systemctl enable httpd&#10;4. curl http://localhost で動作確認"
                         spellCheck={false}
                       />
                     </div>
-                    <div>
-                      <p className="text-[12px] font-semibold text-slate-800 mb-1">② データベース（MySQL）構築手順</p>
+
+                    {/* DB手順グループ */}
+                    <div className="rounded-xl bg-gray-50 p-4 px-5">
+                      <p className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">② データベース（MySQL）構築手順</p>
                       <textarea
                         value={dbProcedure}
                         onChange={(e) => setDbProcedure(e.target.value)}
                         rows={6}
-                        className="w-full resize-y rounded-md border border-slate-300 bg-white px-2 py-1.5 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                        className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
                         placeholder="例:&#10;1. sudo dnf install mysql-server -y&#10;2. sudo systemctl start mysqld&#10;3. sudo systemctl enable mysqld&#10;4. sudo mysql_secure_installation で初期設定"
                         spellCheck={false}
                       />
                     </div>
                   </div>
-                  <div className="border-t border-slate-200 pt-4">
+
+                  {/* AIレビューボタン（カード外） */}
+                  <div className="pt-0">
                     <button
                       type="button"
                       onClick={() => { void scoreProcedure() }}
                       disabled={procedureScore.status === 'scoring' || !webProcedure.trim() || !dbProcedure.trim()}
-                      className="w-full rounded-lg bg-teal-600 px-3 py-2 text-[12px] font-medium text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full rounded-lg bg-teal-600 px-4 py-2.5 text-[12px] font-medium text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {procedureScore.status === 'scoring' ? 'AIレビュー中...' : 'AIにレビューしてもらう'}
                     </button>
