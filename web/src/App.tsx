@@ -26,6 +26,7 @@ import { LOGIN_FLAG_KEY, getCurrentDisplayName } from './auth'
 import { restoreProgressToLocalStorage, type TraineeProgressSnapshot } from './traineeProgressStorage'
 import { isProgressApiAvailable, postProgress, fetchMyProgress, fetchProgressFromApi } from './progressApi'
 import { createAccount, fetchAccounts, isAccountApiAvailable, deleteAccount, type Account } from './accountsApi'
+import { safeGetItem, safeSetItem, safeRemoveItem, safeSessionRemoveItem, clearCookieValue } from './utils/storage'
 
 type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3' | 'infra-basic-4'
 type PinnableId = TrainingTaskId | 'intro'
@@ -43,23 +44,11 @@ type TrainingStatus = {
 }
 
 function readTrainingStatus(): TrainingStatus {
-  const defaultStatus: TrainingStatus = {
-    infraToolsCleared: false,
-    linuxL1Cleared: false,
-    linuxL2Cleared: false,
-    infraOsCloudCleared: false,
-  }
-  if (typeof window === 'undefined') return defaultStatus
-  try {
-    return {
-      infraToolsCleared: window.localStorage.getItem(getProgressKey(INFRA_BASIC_1_CLEARED_KEY)) === 'true',
-      linuxL1Cleared: window.localStorage.getItem(getProgressKey(L1_CLEARED_KEY)) === 'true',
-      linuxL2Cleared: window.localStorage.getItem(getProgressKey(L2_CLEARED_KEY)) === 'true',
-      infraOsCloudCleared: window.localStorage.getItem(getProgressKey(INFRA_BASIC_3_2_CLEARED_KEY)) === 'true',
-    }
-  } catch {
-    // シークレットモード等でlocalStorageがブロックされている場合はデフォルト値を返す
-    return defaultStatus
+  return {
+    infraToolsCleared: safeGetItem(getProgressKey(INFRA_BASIC_1_CLEARED_KEY)) === 'true',
+    linuxL1Cleared: safeGetItem(getProgressKey(L1_CLEARED_KEY)) === 'true',
+    linuxL2Cleared: safeGetItem(getProgressKey(L2_CLEARED_KEY)) === 'true',
+    infraOsCloudCleared: safeGetItem(getProgressKey(INFRA_BASIC_3_2_CLEARED_KEY)) === 'true',
   }
 }
 
@@ -70,10 +59,9 @@ const ADMIN_SESSION_KEY = 'kira-admin-logged-in'
 const ADMIN_DELETE_PASSWORD = 'admin'
 
 function loadSearchHistory(): string[] {
-  if (typeof window === 'undefined') return []
+  const raw = safeGetItem(SEARCH_HISTORY_KEY)
+  if (!raw) return []
   try {
-    const raw = window.localStorage.getItem(SEARCH_HISTORY_KEY)
-    if (!raw) return []
     const parsed = JSON.parse(raw)
     return Array.isArray(parsed) ? parsed.filter((v: unknown): v is string => typeof v === 'string') : []
   } catch {
@@ -82,12 +70,7 @@ function loadSearchHistory(): string[] {
 }
 
 function saveSearchHistory(history: string[]) {
-  if (typeof window === 'undefined') return
-  try {
-    window.localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history))
-  } catch {
-    // ignore
-  }
+  safeSetItem(SEARCH_HISTORY_KEY, JSON.stringify(history))
 }
 const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
 function getDisplayName(): string {
@@ -105,10 +88,9 @@ function isKiraTestUser(): boolean {
 }
 
 function loadPinnedTrainingTasks(): PinnableId[] {
-  if (typeof window === 'undefined') return []
+  const raw = safeGetItem(TRAINING_PIN_KEY)
+  if (!raw) return []
   try {
-    const raw = window.localStorage.getItem(TRAINING_PIN_KEY)
-    if (!raw) return []
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
     return parsed.filter(
@@ -128,19 +110,15 @@ function getTrainingUrl(path: string) {
 
 function handleLogout() {
   if (typeof window === 'undefined') return
-  try {
-    window.sessionStorage.removeItem(ADMIN_SESSION_KEY)
-    window.localStorage.removeItem(USER_DISPLAY_NAME_KEY)
-    window.localStorage.removeItem(LOGIN_FLAG_KEY)
-    window.localStorage.removeItem('kira-session-token')
-    document.cookie = 'kira-user-display-name=; path=/; max-age=0; samesite=lax'
-    document.cookie = 'kira-user-logged-in=; path=/; max-age=0; samesite=lax'
-    document.cookie = 'kira-session-token=; path=/; max-age=0; samesite=lax'
-    const base = (window.location.origin + window.location.pathname + (window.location.search || '')).replace(/\/$/, '') || window.location.origin
-    window.location.href = base + '#/login'
-  } catch {
-    window.location.href = (window.location.pathname || '/') + '#/login'
-  }
+  safeSessionRemoveItem(ADMIN_SESSION_KEY)
+  safeRemoveItem(USER_DISPLAY_NAME_KEY)
+  safeRemoveItem(LOGIN_FLAG_KEY)
+  safeRemoveItem('kira-session-token')
+  clearCookieValue('kira-user-display-name')
+  clearCookieValue('kira-user-logged-in')
+  clearCookieValue('kira-session-token')
+  const base = (window.location.origin + window.location.pathname + (window.location.search || '')).replace(/\/$/, '') || window.location.origin
+  window.location.href = base + '#/login'
 }
 
 /** j-terada が課題1クリア後に表示する限定ページ（指定2リンクのみ） */
@@ -401,7 +379,7 @@ function App() {
       const exists = list.includes(id)
       const next = exists ? list.filter((p) => p !== id) : [...list, id]
       if (name && name !== 'admin') guardedSavePins(name, next)
-      try { window.localStorage.setItem(TRAINING_PIN_KEY, JSON.stringify(next)) } catch { /* ignore */ }
+      safeSetItem(TRAINING_PIN_KEY, JSON.stringify(next))
       return next
     })
   }, [guardedSavePins])

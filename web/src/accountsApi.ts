@@ -1,4 +1,5 @@
 import { isProgressApiAvailable } from './progressApi'
+import { safeSetItem, safeRemoveItem, setCookieValue, clearCookieValue } from './utils/storage'
 
 const DEFAULT_API_URL = 'https://wfhfqq0tjh.execute-api.ap-northeast-1.amazonaws.com'
 const BASE_URL = (
@@ -9,29 +10,14 @@ const BASE_URL = (
 
 const SESSION_TOKEN_KEY = 'kira-session-token'
 
-function setCookieValue(name: string, value: string, maxAgeSeconds = 86400): void {
-  if (typeof document === 'undefined') return
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; samesite=lax`
-}
-
-function clearCookieValue(name: string): void {
-  if (typeof document === 'undefined') return
-  document.cookie = `${name}=; path=/; max-age=0; samesite=lax`
-}
-
 async function saveSessionToken(token: string | null) {
   if (typeof window === 'undefined') return
-  try {
-    if (token) {
-      window.localStorage.setItem(SESSION_TOKEN_KEY, token)
-      setCookieValue(SESSION_TOKEN_KEY, token)
-      console.log('Login Success: Token Saved')
-    } else {
-      window.localStorage.removeItem(SESSION_TOKEN_KEY)
-      clearCookieValue(SESSION_TOKEN_KEY)
-    }
-  } catch {
-    // ignore
+  if (token) {
+    safeSetItem(SESSION_TOKEN_KEY, token)
+    setCookieValue(SESSION_TOKEN_KEY, token)
+  } else {
+    safeRemoveItem(SESSION_TOKEN_KEY)
+    clearCookieValue(SESSION_TOKEN_KEY)
   }
   await Promise.resolve()
 }

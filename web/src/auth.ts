@@ -1,3 +1,5 @@
+import { safeGetItem, safeSetItem, getCookieValue, setCookieValue } from './utils/storage'
+
 /** ログイン済みかどうか（ログイン画面をスキップするか） */
 export const LOGIN_FLAG_KEY = 'kira-user-logged-in'
 
@@ -6,49 +8,36 @@ export const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
 
 const LOGIN_COOKIE_KEY = 'kira-user-logged-in'
 
-function getCookieValue(name: string): string | null {
-  if (typeof document === 'undefined') return null
-  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const match = document.cookie.match(new RegExp(`(?:^|; )${escaped}=([^;]*)`))
-  return match ? decodeURIComponent(match[1]) : null
-}
-
-function setCookieValue(name: string, value: string, maxAgeSeconds = 86400): void {
-  if (typeof document === 'undefined') return
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; samesite=lax`
-}
-
+/**
+ * ログイン済み判定（安全なストレージアクセス）
+ * シークレットモードでも安定して動作する
+ */
 export function isLoggedIn(): boolean {
   if (typeof window === 'undefined') return false
-  try {
-    const storageLoggedIn = window.localStorage.getItem(LOGIN_FLAG_KEY) === 'true'
-    const cookieLoggedIn = getCookieValue(LOGIN_COOKIE_KEY) === 'true'
-    return storageLoggedIn || cookieLoggedIn
-  } catch {
-    // シークレットモード等でlocalStorageがブロックされている場合はCookieのみで判定
-    return getCookieValue(LOGIN_COOKIE_KEY) === 'true'
-  }
+  const storageLoggedIn = safeGetItem(LOGIN_FLAG_KEY) === 'true'
+  const cookieLoggedIn = getCookieValue(LOGIN_COOKIE_KEY) === 'true'
+  return storageLoggedIn || cookieLoggedIn
 }
 
+/**
+ * 現在の表示名を取得（安全なストレージアクセス）
+ * シークレットモードでも安定して動作する
+ */
 export function getCurrentDisplayName(): string {
   if (typeof window === 'undefined') return ''
-  try {
-    const storageName = (window.localStorage.getItem(USER_DISPLAY_NAME_KEY) || '').trim()
-    if (storageName) return storageName
-  } catch {
-    // シークレットモード等でlocalStorageがブロックされている場合はCookieのみ
-  }
+  const storageName = (safeGetItem(USER_DISPLAY_NAME_KEY) || '').trim()
+  if (storageName) return storageName
   const cookieName = (getCookieValue(USER_DISPLAY_NAME_KEY) || '').trim()
   return cookieName
 }
 
+/**
+ * ログイン済み状態を設定（安全なストレージアクセス）
+ * シークレットモードでも安定して動作する
+ */
 export function setLoggedIn(): void {
   if (typeof window === 'undefined') return
-  try {
-    window.localStorage.setItem(LOGIN_FLAG_KEY, 'true')
-  } catch {
-    // シークレットモードでlocalStorageがブロックされている場合は無視
-  }
+  safeSetItem(LOGIN_FLAG_KEY, 'true')
   setCookieValue(LOGIN_COOKIE_KEY, 'true')
 }
 

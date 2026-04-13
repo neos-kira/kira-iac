@@ -2,6 +2,7 @@
  * 進捗をサーバー（API + DynamoDB）に送信・取得し、admin が任意の端末から進捗確認できるようにする。
  */
 import type { TraineeProgressSnapshot } from './traineeProgressStorage'
+import { safeGetItem, safeRemoveItem, safeSetItem, getCookieValue, clearCookieValue } from './utils/storage'
 
 const DEFAULT_API_URL = 'https://wfhfqq0tjh.execute-api.ap-northeast-1.amazonaws.com'
 export const BASE_URL = (typeof import.meta.env !== 'undefined' && import.meta.env.VITE_PROGRESS_API_URL
@@ -13,36 +14,21 @@ const SESSION_TOKEN_KEY = 'kira-session-token'
 
 export function forceLogout(): void {
   if (typeof window === 'undefined') return
-  try {
-    window.localStorage.removeItem('kira-session-token')
-    window.localStorage.removeItem('kira-user-logged-in')
-    window.localStorage.removeItem('kira-user-display-name')
-    document.cookie = 'kira-session-token=; path=/; max-age=0; samesite=lax'
-    document.cookie = 'kira-user-logged-in=; path=/; max-age=0; samesite=lax'
-    const base = (window.location.origin + window.location.pathname).replace(/\/$/, '')
-    window.location.href = base + '#/login'
-  } catch { /* ignore */ }
-}
-
-function getCookieValue(name: string): string | null {
-  if (typeof document === 'undefined') return null
-  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const match = document.cookie.match(new RegExp(`(?:^|; )${escaped}=([^;]*)`))
-  return match ? decodeURIComponent(match[1]) : null
+  safeRemoveItem('kira-session-token')
+  safeRemoveItem('kira-user-logged-in')
+  safeRemoveItem('kira-user-display-name')
+  clearCookieValue('kira-session-token')
+  clearCookieValue('kira-user-logged-in')
+  const base = (window.location.origin + window.location.pathname).replace(/\/$/, '')
+  window.location.href = base + '#/login'
 }
 
 function getSessionToken(): string | null {
   if (typeof window === 'undefined') return null
-  try {
-    const v = window.localStorage.getItem(SESSION_TOKEN_KEY)
-    if (v && v.trim()) return v
-    const cookie = getCookieValue(SESSION_TOKEN_KEY)
-    return cookie && cookie.trim() ? cookie : null
-  } catch {
-    // シークレットモード等でlocalStorageがブロックされている場合はCookieのみ
-    const cookie = getCookieValue(SESSION_TOKEN_KEY)
-    return cookie && cookie.trim() ? cookie : null
-  }
+  const v = safeGetItem(SESSION_TOKEN_KEY)
+  if (v && v.trim()) return v
+  const cookie = getCookieValue(SESSION_TOKEN_KEY)
+  return cookie && cookie.trim() ? cookie : null
 }
 
 export function buildAuthHeaders(base: HeadersInit = {}): HeadersInit {
@@ -73,7 +59,7 @@ export async function fetchMe(): Promise<string | null> {
     const data = (await res.json()) as { username?: string }
     const username = data.username ?? ''
     if (username) {
-      window.localStorage.setItem('kira-user-display-name', username)
+      safeSetItem('kira-user-display-name', username)
     }
     return username || null
   } catch {

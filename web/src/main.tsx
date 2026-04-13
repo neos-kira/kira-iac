@@ -6,6 +6,7 @@ import './index.css'
 import App from './App.tsx'
 import { LoginPage } from './LoginPage'
 import { getCurrentDisplayName, isLoggedIn } from './auth'
+import { safeGetItem, safeSetItem, safeRemoveItem, safeSessionGetItem, safeSessionSetItem, safeSessionRemoveItem, clearCookieValue } from './utils/storage'
 import { isJTerada } from './specialUsers'
 import { isTask1Cleared } from './training/trainingWbsData'
 import { LinuxLevel1Page } from './training/LinuxLevel1Page'
@@ -54,13 +55,11 @@ function isSidebarPage(path: string): boolean {
 
 
 function handleGlobalLogout() {
-  try {
-    window.localStorage.removeItem('kira-session-token')
-    window.localStorage.removeItem('kira-user-logged-in')
-    window.localStorage.removeItem('kira-user-display-name')
-    document.cookie = 'kira-session-token=; path=/; max-age=0; samesite=lax'
-    document.cookie = 'kira-user-logged-in=; path=/; max-age=0; samesite=lax'
-  } catch { /* ignore */ }
+  safeRemoveItem('kira-session-token')
+  safeRemoveItem('kira-user-logged-in')
+  safeRemoveItem('kira-user-display-name')
+  clearCookieValue('kira-session-token')
+  clearCookieValue('kira-user-logged-in')
   window.location.hash = '#/login'
   window.location.reload()
 }
@@ -86,21 +85,16 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE])
 
-  // リサイズ: サイドパネル幅
+  // リサイズ: サイドパネル幅（安全なストレージアクセス）
   const [panelWidth, setPanelWidth] = useState(() => {
-    if (typeof window === 'undefined') return 320
-    try {
-      const saved = window.localStorage.getItem('aiPanelWidth')
-      return saved ? Math.max(240, Math.min(600, Number(saved))) : 320
-    } catch { return 320 }
+    const saved = safeGetItem('aiPanelWidth')
+    return saved ? Math.max(240, Math.min(600, Number(saved))) : 320
   })
-  // リサイズ: ボトムパネル高さ
+  // リサイズ: ボトムパネル高さ（安全なストレージアクセス）
   const [panelHeight, setPanelHeight] = useState(() => {
     if (typeof window === 'undefined') return 400
-    try {
-      const saved = window.localStorage.getItem('aiPanelHeight')
-      return saved ? Math.max(200, Math.min(window.innerHeight * 0.8, Number(saved))) : window.innerHeight * 0.6
-    } catch { return window.innerHeight * 0.6 }
+    const saved = safeGetItem('aiPanelHeight')
+    return saved ? Math.max(200, Math.min(window.innerHeight * 0.8, Number(saved))) : window.innerHeight * 0.6
   })
   const isDragging = useRef(false)
 
@@ -120,7 +114,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
       document.body.style.cursor = ''
       document.removeEventListener('mousemove', onMove)
       document.removeEventListener('mouseup', onUp)
-      setPanelWidth((w) => { try { window.localStorage.setItem('aiPanelWidth', String(w)) } catch { /* ignore */ } return w })
+      setPanelWidth((w) => { safeSetItem('aiPanelWidth', String(w)); return w })
     }
     document.addEventListener('mousemove', onMove)
     document.addEventListener('mouseup', onUp)
@@ -143,7 +137,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
       document.body.style.cursor = ''
       document.removeEventListener('mousemove', onMove)
       document.removeEventListener('mouseup', onUp)
-      setPanelHeight((h) => { try { window.localStorage.setItem('aiPanelHeight', String(h)) } catch { /* ignore */ } return h })
+      setPanelHeight((h) => { safeSetItem('aiPanelHeight', String(h)); return h })
     }
     document.addEventListener('mousemove', onMove)
     document.addEventListener('mouseup', onUp)
@@ -279,26 +273,20 @@ function LoginReloadGuard() {
     const pathname = (loc.pathname || '').replace(/^\/+/, '') || '/'
     if (pathname === 'login' || pathname === '') return
 
-    try {
-      const loggedIn = isLoggedIn()
-      if (loggedIn) {
-        try { window.sessionStorage.removeItem('kira-login-reload-tried') } catch { /* ignore */ }
-        return
-      }
+    // 安全なストレージアクセスを使用
+    const loggedIn = isLoggedIn()
+    if (loggedIn) {
+      safeSessionRemoveItem('kira-login-reload-tried')
+      return
+    }
 
-      const hasCookieToken = document.cookie.includes('kira-session-token=')
-      let hasToken = hasCookieToken
-      try { hasToken = !!window.localStorage.getItem('kira-session-token') || hasCookieToken } catch { /* ignore */ }
-      let tried = false
-      try { tried = window.sessionStorage.getItem('kira-login-reload-tried') === '1' } catch { /* ignore */ }
+    const hasCookieToken = document.cookie.includes('kira-session-token=')
+    const hasToken = !!safeGetItem('kira-session-token') || hasCookieToken
+    const tried = safeSessionGetItem('kira-login-reload-tried') === '1'
 
-      if (hasToken && !tried) {
-        console.log('LoginReloadGuard: token detected but auth not ready. Reloading once...')
-        try { window.sessionStorage.setItem('kira-login-reload-tried', '1') } catch { /* ignore */ }
-        window.location.reload()
-      }
-    } catch {
-      // シークレットモード等でストレージアクセスが失敗した場合は何もしない
+    if (hasToken && !tried) {
+      safeSessionSetItem('kira-login-reload-tried', '1')
+      window.location.reload()
     }
   }, [loc.pathname])
   return null

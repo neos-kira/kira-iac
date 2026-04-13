@@ -1,30 +1,72 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { NeOSLogo } from './components/NeOSLogo'
 import { setLoggedIn } from './auth'
 import { addTrainee } from './traineeProgressStorage'
 import { isJTerada, J_TERADA_PASSWORD } from './specialUsers'
 import { checkAccount, isAccountApiAvailable, resetPassword } from './accountsApi'
 import { Eye, EyeOff } from 'lucide-react'
+import { safeSetItem, safeSessionRemoveItem, setCookieValue } from './utils/storage'
 
 const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
 
+// グローバルrefで入力値を保持（コンポーネント再マウント対策）
+const globalInputState = {
+  username: '',
+  password: '',
+  resetUsername: '',
+  resetNewPassword: '',
+  resetConfirmPassword: '',
+}
+
 export function LoginPage() {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  // 初期値としてglobalInputStateから復元
+  const [username, setUsernameState] = useState(globalInputState.username)
+  const [password, setPasswordState] = useState(globalInputState.password)
   const [loginError, setLoginError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoggingIn, setIsLoggingIn] = useState(false)
 
   // パスワードリセット用state
   const [mode, setMode] = useState<'login' | 'reset'>('login')
-  const [resetUsername, setResetUsername] = useState('')
-  const [resetNewPassword, setResetNewPassword] = useState('')
-  const [resetConfirmPassword, setResetConfirmPassword] = useState('')
+  const [resetUsername, setResetUsernameState] = useState(globalInputState.resetUsername)
+  const [resetNewPassword, setResetNewPasswordState] = useState(globalInputState.resetNewPassword)
+  const [resetConfirmPassword, setResetConfirmPasswordState] = useState(globalInputState.resetConfirmPassword)
   const [showResetPassword, setShowResetPassword] = useState(false)
   const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false)
   const [resetError, setResetError] = useState('')
   const [resetSuccess, setResetSuccess] = useState('')
   const [isResetting, setIsResetting] = useState(false)
+
+  // 入力値変更時にグローバルステートも更新
+  const setUsername = useCallback((value: string) => {
+    globalInputState.username = value
+    setUsernameState(value)
+  }, [])
+  const setPassword = useCallback((value: string) => {
+    globalInputState.password = value
+    setPasswordState(value)
+  }, [])
+  const setResetUsername = useCallback((value: string) => {
+    globalInputState.resetUsername = value
+    setResetUsernameState(value)
+  }, [])
+  const setResetNewPassword = useCallback((value: string) => {
+    globalInputState.resetNewPassword = value
+    setResetNewPasswordState(value)
+  }, [])
+  const setResetConfirmPassword = useCallback((value: string) => {
+    globalInputState.resetConfirmPassword = value
+    setResetConfirmPasswordState(value)
+  }, [])
+
+  // ログイン成功時にグローバルステートをクリア
+  const clearGlobalInputState = useCallback(() => {
+    globalInputState.username = ''
+    globalInputState.password = ''
+    globalInputState.resetUsername = ''
+    globalInputState.resetNewPassword = ''
+    globalInputState.resetConfirmPassword = ''
+  }, [])
 
   useEffect(() => {
     document.title = 'NICプラットフォーム'
@@ -54,33 +96,23 @@ export function LoginPage() {
         return
       }
 
-      if (typeof window !== 'undefined') {
-        try {
-          window.localStorage.setItem(USER_DISPLAY_NAME_KEY, normalized)
-          window.document.cookie = `kira-user-display-name=${encodeURIComponent(
-            normalized,
-          )}; path=/; max-age=86400; samesite=lax`
-          setLoggedIn()
-          window.sessionStorage.removeItem('kira-login-reload-tried')
-          if (normalized !== 'admin') {
-            addTrainee(name)
-          }
-          console.log('Login Success: State Updated')
-          // iOS Safari 等での localStorage / Cookie 書き込み直後の遷移問題を避けるため、少し待機する
-          await new Promise((resolve) => window.setTimeout(resolve, 100))
-          console.log('Redirecting to Dashboard...')
-          didNavigate = true
-          const base =
-            (window.location.origin + window.location.pathname + (window.location.search || '')).replace(/\/$/, '') ||
-            window.location.origin
-          window.location.href = base + '#/'
-          return
-        } catch {
-          // ignore
-        }
+      // 安全なストレージ操作（シークレットモード対応）
+      safeSetItem(USER_DISPLAY_NAME_KEY, normalized)
+      setCookieValue(USER_DISPLAY_NAME_KEY, normalized)
+      setLoggedIn()
+      safeSessionRemoveItem('kira-login-reload-tried')
+      if (normalized !== 'admin') {
+        addTrainee(name)
       }
-      // window が無い環境向けのフォールバック（通常ブラウザでは到達しない）
-      window.location.hash = '#/'
+      // グローバルステートをクリア
+      clearGlobalInputState()
+      // iOS Safari 等での localStorage / Cookie 書き込み直後の遷移問題を避けるため、少し待機する
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      didNavigate = true
+      const base =
+        (window.location.origin + window.location.pathname + (window.location.search || '')).replace(/\/$/, '') ||
+        window.location.origin
+      window.location.href = base + '#/'
     } finally {
       if (!didNavigate) setIsLoggingIn(false)
     }
