@@ -703,7 +703,7 @@ function App() {
           progressPct={progressPct?.pct ?? null}
           completedCount={progressPct?.completed}
           totalCount={progressPct?.total}
-          onWbs={() => { if (isIntroCompleted) window.location.hash = '#/training/infra-wbs'; else setShowIntroRequiredPopup(true) }}
+          onWbs={() => { window.location.hash = '#/training/infra-wbs' }}
           onLogout={handleLogout}
           isAdmin={isAdminView}
           onAdminMenu={() => (window.location.hash = '#/admin')}
@@ -1251,10 +1251,7 @@ function App() {
                       else setShowIntroRequiredPopup(true)
                     }}
                     onOpenIntro={() => { window.location.hash = '#/training/intro' }}
-                    onOpenWbs={() => {
-                      if (isIntroCompleted) window.location.hash = '#/training/infra-wbs'
-                      else setShowIntroRequiredPopup(true)
-                    }}
+                    onOpenWbs={() => { window.location.hash = '#/training/infra-wbs' }}
                   />
                 </div>
               </section>

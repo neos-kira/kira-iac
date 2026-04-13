@@ -355,7 +355,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/training/infra-basic-3-2" element={<IntroGate><Task1Gate><Task2Gate><InfraBasic32Page /></Task2Gate></Task1Gate></IntroGate>} />
             <Route path="/training/infra-basic-4" element={<IntroGate><InfraBasic4Page /></IntroGate>} />
             <Route path="/training/infra-basic-5" element={<IntroGate><InfraBasic5Page /></IntroGate>} />
-            <Route path="/training/infra-wbs" element={<IntroGate><InfraWbsPage /></IntroGate>} />
+            <Route path="/training/infra-wbs" element={<InfraWbsPage />} />
             <Route path="/training/intro" element={<IntroPage />} />
             <Route path="/it-basics" element={<ITBasicsTopPage />} />
             <Route path="/it-basics/:categoryId/study" element={<ITBasicsStudyPage />} />
