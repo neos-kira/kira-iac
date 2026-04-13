@@ -54,12 +54,12 @@ export function InfraBasic31Page() {
         {/* OS と計算資源 */}
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft-card" style={{ marginBottom: 48 }}>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 12 }}>1. OS と計算資源の最適化</h2>
-          <p style={{ fontSize: 15, lineHeight: 1.8, color: '#475569', marginBottom: 8 }}>
-            <strong style={{ color: '#1e293b' }}>この章を読んだ翌日できること：</strong>サーバーが重い・応答しないとき、最初に叩くコマンド3つで原因を切り分けられる。
+          <p style={{ fontSize: 15, lineHeight: 1.8, color: '#475569', marginBottom: 8, whiteSpace: 'pre-line' }}>
+            {'パソコンが重くなったとき、タスクマネージャーを開いて\n「何が重いのか」を確認したことはありませんか？\nサーバーも同じです。重くなったとき、何が原因かを特定するのが\nインフラエンジニアの最初の仕事です。\nLinuxサーバーでは、以下の3つのコマンドで原因を切り分けます。'}
           </p>
 
           <div className="rounded-xl border border-slate-200 bg-slate-50" style={{ padding: 24, marginBottom: 16 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>【現場でやること】サーバーが重いときの初動</p>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>【コマンドで確認する】サーバーが重いときの初動</p>
 
             <p style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>① CPU の状態を見る</p>
             <pre style={{ background: '#1e293b', color: '#e2e8f0', borderRadius: 8, padding: 16, fontSize: 13, lineHeight: 1.7, overflowX: 'auto', marginBottom: 12 }}>
@@ -120,8 +120,8 @@ export function InfraBasic31Page() {
         {/* 仮想化アーキテクチャ */}
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft-card" style={{ marginBottom: 48 }}>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 12 }}>2. 仮想化アーキテクチャ</h2>
-          <p style={{ fontSize: 15, lineHeight: 1.8, color: '#475569', marginBottom: 8 }}>
-            <strong style={{ color: '#1e293b' }}>この章を読んだ翌日できること：</strong>「サーバーが重い」と言われたとき、物理サーバーかVMかで対処を変えられる。
+          <p style={{ fontSize: 15, lineHeight: 1.8, color: '#475569', marginBottom: 8, whiteSpace: 'pre-line' }}>
+            {'マンションを想像してください。\n1棟の建物（物理サーバー）の中に、複数の部屋（仮想サーバー）があります。\n各部屋は独立していますが、建物の電気・水道（CPUやメモリ）は共有しています。\nこれが仮想化の基本的な考え方です。\nAWSのEC2は、この「マンションの1部屋」にあたります。'}
           </p>
 
           <div className="rounded-xl border border-teal-200 bg-teal-50" style={{ padding: 20, marginBottom: 16 }}>
@@ -163,7 +163,7 @@ export function InfraBasic31Page() {
 
           <div className="space-y-4">
             <div className="rounded-xl border border-slate-200 bg-slate-50" style={{ padding: 24 }}>
-              <p style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 8 }}>【現場で知っておくべきこと】</p>
+              <p style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 8 }}>【知っておくと役立つこと】</p>
               <div style={{ fontSize: 14, lineHeight: 1.8, color: '#475569' }}>
                 <p style={{ marginBottom: 12 }}>
                   <strong style={{ color: '#1e293b' }}>VMは物理リソースを他のVMと共有している。</strong><br />
@@ -189,8 +189,8 @@ export function InfraBasic31Page() {
         {/* クラウドコンピューティング */}
         <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-soft-card" style={{ marginBottom: 48 }}>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 12 }}>3. クラウドのサービスモデル</h2>
-          <p style={{ fontSize: 15, lineHeight: 1.8, color: '#475569', marginBottom: 8 }}>
-            <strong style={{ color: '#1e293b' }}>この章を読んだ翌日できること：</strong>「このサーバーのOSパッチは誰が当てるの？」と聞かれたとき、即答できる。
+          <p style={{ fontSize: 15, lineHeight: 1.8, color: '#475569', marginBottom: 8, whiteSpace: 'pre-line' }}>
+            {'レンタカーと自家用車の違いを考えてみてください。\n自家用車（物理サーバー）は全部自分で管理します。\nレンタカー（クラウド）は車の整備はお店がやってくれますが、\n運転は自分でします。\nクラウドも同じで「どこまでが自分の責任か」という\n境界線を理解することが重要です。'}
           </p>
 
           {/* この研修でAWSを使う理由 */}
@@ -241,7 +241,7 @@ export function InfraBasic31Page() {
 
           {/* 責任共有モデルを現場で使う場面 */}
           <div className="rounded-xl border border-amber-200 bg-amber-50" style={{ padding: 20, marginBottom: 4 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: '#92400e', marginBottom: 10 }}>【責任共有モデルを現場で使う場面】</p>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#92400e', marginBottom: 10 }}>【具体的にどういう意味か】</p>
             <p style={{ fontSize: 14, lineHeight: 1.8, color: '#78350f', marginBottom: 12 }}>
               「このサーバーのOSパッチは誰が当てるの？」
             </p>
