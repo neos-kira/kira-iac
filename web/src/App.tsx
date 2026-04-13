@@ -1387,6 +1387,7 @@ function App() {
             {(() => {
               const snap = serverSnapshot
               const introOk = isIntroCompleted
+              const canAccessAll = isKiraTestUser()
               const infra1Ok = snap?.infra1Cleared === true && snap?.l1Cleared === true
               const infra2Ok = (snap?.l2CurrentQuestion ?? 0) > 0 && introOk
               const infra3Ok = Object.values(snap?.infra32Answers ?? {}).some((v) => v && String(v).trim())
@@ -1400,11 +1401,11 @@ function App() {
 
               const kiso: { name: string; status: 'done' | 'active' | 'todo'; action: () => void; newTab?: boolean }[] = [
                 { name: 'はじめに', status: introOk ? 'done' : (Number(snap?.introStep ?? 0) >= 1 ? 'active' : 'todo'), action: () => { window.location.hash = '#/training/intro' } },
-                { name: 'インフラ基礎課題1', status: infra1Ok ? 'done' : ((snap?.infra1Checkboxes ?? []).some(Boolean) || (snap?.l1CurrentPart ?? 0) > 0 ? 'active' : 'todo'), action: () => { if (introOk) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
-                { name: 'インフラ基礎課題2', status: infra2Ok ? 'done' : ((snap?.l2CurrentQuestion ?? 0) > 0 ? 'active' : 'todo'), action: () => { if (introOk) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
-                { name: 'インフラ基礎課題3', status: infra3Ok ? 'done' : (Object.keys(snap?.infra32Answers ?? {}).length > 0 ? 'active' : 'todo'), action: () => { if (introOk) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
-                { name: 'インフラ基礎課題4', status: infra4Ok ? 'done' : (infra4Active ? 'active' : 'todo'), action: () => { if (introOk) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
-                { name: 'インフラ基礎課題5', status: infra5Ok ? 'done' : (infra5Active ? 'active' : 'todo'), action: () => { if (introOk) window.open(getTrainingUrl('/training/infra-basic-5'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
+                { name: 'インフラ基礎課題1', status: infra1Ok ? 'done' : ((snap?.infra1Checkboxes ?? []).some(Boolean) || (snap?.l1CurrentPart ?? 0) > 0 ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
+                { name: 'インフラ基礎課題2', status: infra2Ok ? 'done' : ((snap?.l2CurrentQuestion ?? 0) > 0 ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
+                { name: 'インフラ基礎課題3', status: infra3Ok ? 'done' : (Object.keys(snap?.infra32Answers ?? {}).length > 0 ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
+                { name: 'インフラ基礎課題4', status: infra4Ok ? 'done' : (infra4Active ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
+                { name: 'インフラ基礎課題5', status: infra5Ok ? 'done' : (infra5Active ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-5'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
               ]
 
               const renderItem = (item: typeof kiso[0], extraStyle?: React.CSSProperties, badge?: React.ReactNode) => (
