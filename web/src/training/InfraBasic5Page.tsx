@@ -1,24 +1,15 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
-import { getCurrentUsername } from '../auth'
-import {
-  SERVER_PARAMS,
-  BUILD_QUESTIONS, TROUBLE_QUESTIONS, SECURITY_QUESTIONS,
-  PHASE_CLEARED_KEYS,
-} from './InfraBasic5Data'
-import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
-import { fetchMyProgress, postProgress, isProgressApiAvailable, scoreAnswerV2 } from '../progressApi'
+import { useEffect, useState, useCallback } from 'react'
 import { getProgressKey } from './trainingWbsData'
-import * as XLSX from 'xlsx'
-import { Download, Upload, FileSpreadsheet, Trash2 } from 'lucide-react'
-
-/** 手順書Excelの1行分のデータ */
-type ProcedureRow = {
-  stepNo: number | string
-  category: string
-  task: string
-  command: string
-  note: string
-}
+import {
+  INFRA5_CLEARED_KEY,
+  INFRA5_SECTIONS,
+  PHASE_CLEARED_KEYS,
+  type Infra5Section,
+  type Infra5Task,
+} from './InfraBasic5Data'
+import { fetchMyProgress, postProgress, isProgressApiAvailable, scoreAnswerV2 } from '../progressApi'
+import { getCurrentDisplayName } from '../auth'
+import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 
 const EMPTY_SNAPSHOT: TraineeProgressSnapshot = {
   introConfirmed: false, introAt: null, wbsPercent: 0,
@@ -27,7 +18,7 @@ const EMPTY_SNAPSHOT: TraineeProgressSnapshot = {
 
 type Rating = 'pass' | 'partial' | 'fail'
 
-type ScoreState = {
+type ReviewState = {
   status: 'idle' | 'scoring' | 'done' | 'error'
   rating?: Rating
   comment?: string
@@ -35,403 +26,194 @@ type ScoreState = {
   error?: string
 }
 
-const RATING_STYLES: Record<Rating, { bg: string; icon: string; label: string }> = {
-  pass: { bg: 'bg-emerald-50 border-emerald-200', icon: '\u2705', label: '\u5408\u683c' },
-  partial: { bg: 'bg-amber-50 border-amber-200', icon: '\ud83d\udd36', label: '\u90e8\u5206\u7684\u306b\u6b63\u3057\u3044' },
-  fail: { bg: 'bg-rose-50 border-rose-200', icon: '\u274c', label: '\u4e0d\u5408\u683c' },
+const RATING_STYLES: Record<Rating, { bg: string; label: string; icon: string }> = {
+  pass: { bg: 'bg-emerald-50 border-emerald-200', label: '合格', icon: '✅' },
+  partial: { bg: 'bg-amber-50 border-amber-200', label: '部分的に正しい', icon: '🔶' },
+  fail: { bg: 'bg-rose-50 border-rose-200', label: '不合格', icon: '❌' },
 }
 
 export function InfraBasic5Page() {
-  const username = getCurrentUsername()
-  const [snapshot, setSnapshot] = useState<TraineeProgressSnapshot | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-
-  // フェーズ完了状態
-  const [phaseDone, setPhaseDone] = useState<Record<number, boolean>>({})
-
-  // 5-1: パラメーターシート
-  const [paramValues, setParamValues] = useState<Record<string, string>>({})
-  const [paramScore, setParamScore] = useState<ScoreState>({ status: 'idle' })
-
-  // 5-2: 手順書（Excelアップロード方式）
-  const [procedureRows, setProcedureRows] = useState<ProcedureRow[]>([])
-  const [procedureFileName, setProcedureFileName] = useState<string | null>(null)
-  const [procedureParseError, setProcedureParseError] = useState<string | null>(null)
-  const [procedureScore, setProcedureScore] = useState<ScoreState>({ status: 'idle' })
-  const procedureFileRef = useRef<HTMLInputElement>(null)
-
-  // 5-3: サーバー構築実践
-  const [buildAnswers, setBuildAnswers] = useState<Record<number, string>>({})
-  const [buildScores, setBuildScores] = useState<Record<number, ScoreState>>({})
-  const [buildDone, setBuildDone] = useState<Record<number, boolean>>({})
-
-  // 5-4: トラブルシューティング
-  const [troubleAnswers, setTroubleAnswers] = useState<Record<number, string>>({})
-  const [troubleScores, setTroubleScores] = useState<Record<number, ScoreState>>({})
-  const [troubleDone, setTroubleDone] = useState<Record<number, boolean>>({})
-
-  // 5-5: セキュリティチェック
-  const [secAnswers, setSecAnswers] = useState<Record<number, string>>({})
-  const [secScores, setSecScores] = useState<Record<number, ScoreState>>({})
-  const [secDone, setSecDone] = useState<Record<number, boolean>>({})
-
-  // アコーディオン開閉
-  const [openPhase, setOpenPhase] = useState<number>(1)
+  const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
+  const [checkboxes, setCheckboxes] = useState<boolean[]>(Array(40).fill(false))
+  const [sectionDone, setSectionDone] = useState<Record<string, boolean>>({})
+  const [reviewAnswers, setReviewAnswers] = useState<Record<string, string>>({})
+  const [reviewStates, setReviewStates] = useState<Record<string, ReviewState>>({})
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ s1: true })
 
   useEffect(() => {
     document.title = 'インフラ基礎課題5 - サーバー構築'
   }, [])
 
-  // DynamoDBから進捗をロード
   useEffect(() => {
-    if (!isProgressApiAvailable() || typeof window === 'undefined') return
-    const name = username.trim().toLowerCase()
-    if (!name || name === 'admin') return
-    let cancelled = false
     const load = async () => {
-      const snap = await fetchMyProgress(name)
-      if (cancelled) return
-      const resolved = snap ?? EMPTY_SNAPSHOT
-      setSnapshot(resolved)
-
-      // 完了フェーズを復元
-      const phases: Record<number, boolean> = {}
-      const donePhases = Array.isArray(resolved.infra5PhaseDone) ? resolved.infra5PhaseDone : []
-      for (let i = 1; i <= 5; i++) phases[i] = donePhases.includes(i)
-      setPhaseDone(phases)
-
-      // 5-3
-      const bd = Array.isArray(resolved.infra5BuildDone) ? resolved.infra5BuildDone : []
-      const bs: Record<number, boolean> = {}
-      BUILD_QUESTIONS.forEach((q) => { bs[q.q] = bd.includes(q.q) })
-      setBuildDone(bs)
-
-      // 5-4
-      const td = Array.isArray(resolved.infra5TroubleDone) ? resolved.infra5TroubleDone : []
-      const ts: Record<number, boolean> = {}
-      TROUBLE_QUESTIONS.forEach((q) => { ts[q.q] = td.includes(q.q) })
-      setTroubleDone(ts)
-
-      // 5-5
-      const sd = Array.isArray(resolved.infra5SecDone) ? resolved.infra5SecDone : []
-      const ss: Record<number, boolean> = {}
-      SECURITY_QUESTIONS.forEach((q) => { ss[q.q] = sd.includes(q.q) })
-      setSecDone(ss)
-
-      // 最初の未完了フェーズを開く
-      for (let i = 1; i <= 5; i++) {
-        if (!donePhases.includes(i)) { setOpenPhase(i); break }
+      const username = getCurrentDisplayName().trim().toLowerCase()
+      if (!username || username === 'admin') { setIsLoading(false); return }
+      const snap = await fetchMyProgress(username)
+      if (snap) {
+        setServerSnapshot(snap)
+        const boxes = Array.isArray(snap.infra5Checkboxes) ? snap.infra5Checkboxes : Array(40).fill(false)
+        // 配列長を40に正規化
+        const normalized = Array(40).fill(false)
+        boxes.forEach((v, i) => { if (i < 40) normalized[i] = !!v })
+        setCheckboxes(normalized)
+        setSectionDone(snap.infra5SectionDone ?? {})
+        setReviewAnswers(snap.infra5ReviewAnswers ?? {})
+        // 最初の未完了セクションを開く
+        const done = snap.infra5SectionDone ?? {}
+        let found = false
+        const open: Record<string, boolean> = {}
+        for (const sec of INFRA5_SECTIONS) {
+          if (!done[sec.id] && !found) { open[sec.id] = true; found = true }
+        }
+        if (!found) open[INFRA5_SECTIONS[0].id] = true
+        setOpenSections(open)
       }
+      setIsLoading(false)
     }
     void load()
-    return () => { cancelled = true }
-  }, [username])
-
-  const applyUpdate = useCallback(
-    async (updater: (prev: TraineeProgressSnapshot) => TraineeProgressSnapshot) => {
-      if (!isProgressApiAvailable() || typeof window === 'undefined') return
-      const name = username.trim().toLowerCase()
-      if (!name || name === 'admin' || !snapshot) return
-      const next = updater({ ...snapshot })
-      setSnapshot(next)
-      void postProgress(name, next)
-    },
-    [username, snapshot],
-  )
-
-  const markPhaseDone = useCallback(
-    (phase: number) => {
-      setPhaseDone((prev) => ({ ...prev, [phase]: true }))
-      // localStorage にクリアキーを書き込み（WBS進捗検出用）
-      const clearedKey = PHASE_CLEARED_KEYS[phase - 1]
-      if (clearedKey && typeof window !== 'undefined') {
-        window.localStorage.setItem(getProgressKey(clearedKey), 'true')
-      }
-      void applyUpdate((snap) => {
-        const current = Array.isArray(snap.infra5PhaseDone) ? snap.infra5PhaseDone : []
-        const set = new Set(current)
-        set.add(phase)
-        return { ...snap, infra5PhaseDone: Array.from(set).sort((a, b) => a - b) }
-      })
-    },
-    [applyUpdate],
-  )
-
-  // --- 5-1: パラメーターシート採点 ---
-  const scoreParams = useCallback(async () => {
-    const filled = SERVER_PARAMS.every((p) => (paramValues[p.id] ?? '').trim())
-    if (!filled) return
-
-    const summary = SERVER_PARAMS.map((p) => `${p.label}: ${paramValues[p.id]}`).join('\n')
-    setParamScore({ status: 'scoring' })
-    try {
-      const result = await scoreAnswerV2({
-        question: 'サーバー構築パラメーターシートをレビューしてください（1台にWebサーバーとDBを同居させる構成）。\n\n' + summary,
-        scoringCriteria: 'IPアドレスがプライベートIP範囲であること。ポート番号が適切であること（Web:80/443）。OSが指定されていること。DB名・ユーザー名が設定されていること。パスワードが空でないこと。全項目が埋まっていること。',
-        answer: summary,
-      })
-      setParamScore({ status: 'done', rating: result.rating, comment: result.comment, advice: result.advice })
-      if (result.rating === 'pass') markPhaseDone(1)
-    } catch {
-      setParamScore({ status: 'error', error: 'AIが混雑しています。少し待ってから再試行してください。' })
-    }
-  }, [paramValues, markPhaseDone])
-
-  // --- 5-2: Excelファイル処理 ---
-  const handleProcedureFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setProcedureParseError(null)
-    setProcedureScore({ status: 'idle' })
-
-    const reader = new FileReader()
-    reader.onload = (evt) => {
-      try {
-        const data = new Uint8Array(evt.target?.result as ArrayBuffer)
-        const workbook = XLSX.read(data, { type: 'array' })
-        const sheetName = workbook.SheetNames[0]
-        const sheet = workbook.Sheets[sheetName]
-        // header: 1 で配列の配列として取得
-        const json = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 })
-
-        // ヘッダー行をスキップして解析
-        const rows: ProcedureRow[] = []
-        for (let i = 1; i < json.length; i++) {
-          const row = json[i]
-          if (!Array.isArray(row) || row.length < 4) continue
-          const stepNo = row[0]
-          const category = String(row[1] ?? '').trim()
-          const task = String(row[2] ?? '').trim()
-          const command = String(row[3] ?? '').trim()
-          const note = String(row[4] ?? '').trim()
-          // 空行はスキップ
-          if (!stepNo && !category && !task && !command) continue
-          const parsedStepNo = typeof stepNo === 'number' ? stepNo : typeof stepNo === 'string' ? stepNo : ''
-          rows.push({ stepNo: parsedStepNo, category, task, command, note })
-        }
-
-        if (rows.length === 0) {
-          setProcedureParseError('手順が見つかりませんでした。テンプレートの形式に従って入力してください。')
-          return
-        }
-
-        setProcedureRows(rows)
-        setProcedureFileName(file.name)
-      } catch (err) {
-        setProcedureParseError('Excelファイルの読み込みに失敗しました: ' + (err instanceof Error ? err.message : '不明なエラー'))
-      }
-    }
-    reader.readAsArrayBuffer(file)
-    // ファイル選択をリセット（同じファイルを再選択可能にする）
-    e.target.value = ''
   }, [])
 
-  const clearProcedureFile = useCallback(() => {
-    setProcedureRows([])
-    setProcedureFileName(null)
-    setProcedureParseError(null)
-    setProcedureScore({ status: 'idle' })
-  }, [])
-
-  // --- 5-2: 手順書採点 ---
-  const scoreProcedure = useCallback(async () => {
-    if (procedureRows.length === 0) return
-    setProcedureScore({ status: 'scoring' })
-
-    // Excelデータをテキスト形式に変換
-    const webRows = procedureRows.filter(r => r.category.includes('Web') || r.category.includes('Apache'))
-    const dbRows = procedureRows.filter(r => r.category.includes('データベース') || r.category.includes('MySQL') || r.category.includes('DB'))
-    const otherRows = procedureRows.filter(r => !webRows.includes(r) && !dbRows.includes(r))
-
-    const formatRows = (rows: ProcedureRow[]) =>
-      rows.map(r => `${r.stepNo}. ${r.task}\n   コマンド: ${r.command}${r.note ? `\n   備考: ${r.note}` : ''}`).join('\n')
-
-    const webText = formatRows(webRows)
-    const dbText = formatRows(dbRows)
-    const otherText = formatRows(otherRows)
-    const allText = `【Webサーバー構築】\n${webText || '(なし)'}\n\n【データベース構築】\n${dbText || '(なし)'}\n\n【その他・動作確認】\n${otherText || '(なし)'}`
-
-    try {
-      const result = await scoreAnswerV2({
-        question: '1台のEC2サーバーにWebサーバー（Apache）とデータベース（MySQL）をインストールする手順書をレビューしてください。\n\n' + allText,
-        scoringCriteria: '手順として成立していること。パッケージのインストール、起動、自動起動設定、確認の流れが含まれていること。Apache（httpd）とMySQL（mysql-server）の構築手順が書かれていること。順序が論理的で、同一サーバー上で実行可能な手順であること。各手順にコマンドが記載されていること。',
-        answer: allText,
+  const syncToServer = useCallback(
+    async (
+      nextCheckboxes: boolean[],
+      nextSectionDone: Record<string, boolean>,
+      nextReviewAnswers: Record<string, string>,
+    ) => {
+      const username = getCurrentDisplayName().trim().toLowerCase()
+      if (!username || username === 'admin' || !isProgressApiAvailable()) return
+      const base = serverSnapshot ?? EMPTY_SNAPSHOT
+      const allDone = INFRA5_SECTIONS.every((s) => nextSectionDone[s.id])
+      await postProgress(username, {
+        ...base,
+        infra5Checkboxes: nextCheckboxes,
+        infra5SectionDone: nextSectionDone,
+        infra5ReviewAnswers: nextReviewAnswers,
+        updatedAt: new Date().toISOString(),
       })
-      setProcedureScore({ status: 'done', rating: result.rating, comment: result.comment, advice: result.advice })
-      if (result.rating === 'pass') markPhaseDone(2)
-    } catch {
-      setProcedureScore({ status: 'error', error: 'AIが混雑しています。少し待ってから再試行してください。' })
-    }
-  }, [procedureRows, markPhaseDone])
-
-  // --- 5-3: サーバー構築実践 ---
-  const scoreBuild = useCallback(async (q: number) => {
-    const answer = (buildAnswers[q] ?? '').trim()
-    if (!answer) return
-    const def = BUILD_QUESTIONS.find((d) => d.q === q)
-    if (!def) return
-    setBuildScores((prev) => ({ ...prev, [q]: { status: 'scoring' } }))
-    try {
-      const result = await scoreAnswerV2({
-        question: `サーバー構築実践 Q${q}: ${def.title}\n\n【やること】${def.task}\n【貼り付け指示】${def.verify}`,
-        scoringCriteria: def.expected,
-        answer,
+      // localStorage のクリアキーを更新（WBS進捗連動）
+      INFRA5_SECTIONS.forEach((sec, i) => {
+        const key = getProgressKey(PHASE_CLEARED_KEYS[i])
+        if (nextSectionDone[sec.id]) window.localStorage.setItem(key, 'true')
+        else window.localStorage.removeItem(key)
       })
-      setBuildScores((prev) => ({ ...prev, [q]: { status: 'done', rating: result.rating, comment: result.comment, advice: result.advice } }))
-      if (result.rating === 'pass') {
-        setBuildDone((prev) => ({ ...prev, [q]: true }))
-        void applyUpdate((snap) => {
-          const current = Array.isArray(snap.infra5BuildDone) ? snap.infra5BuildDone : []
-          const set = new Set(current); set.add(q)
-          return { ...snap, infra5BuildDone: Array.from(set).sort((a, b) => a - b) }
-        })
-      }
-    } catch {
-      setBuildScores((prev) => ({ ...prev, [q]: { status: 'error', error: 'AIが混雑しています。少し待ってから再試行してください。' } }))
-    }
-  }, [buildAnswers, applyUpdate])
+      const allKey = getProgressKey(INFRA5_CLEARED_KEY)
+      if (allDone) window.localStorage.setItem(allKey, 'true')
+      else window.localStorage.removeItem(allKey)
+    },
+    [serverSnapshot],
+  )
 
-  // 5-3 全問クリアで自動フェーズ完了
-  useEffect(() => {
-    const allDone = BUILD_QUESTIONS.every((q) => buildDone[q.q])
-    if (allDone && !phaseDone[3]) markPhaseDone(3)
-  }, [buildDone, phaseDone, markPhaseDone])
+  const toggleCheck = useCallback(
+    async (index: number) => {
+      const next = [...checkboxes]
+      next[index] = !next[index]
+      setCheckboxes(next)
+      await syncToServer(next, sectionDone, reviewAnswers)
+    },
+    [checkboxes, sectionDone, reviewAnswers, syncToServer],
+  )
 
-  // --- 5-4: トラブルシューティング ---
-  const scoreTrouble = useCallback(async (q: number) => {
-    const answer = (troubleAnswers[q] ?? '').trim()
-    if (!answer) return
-    const def = TROUBLE_QUESTIONS.find((d) => d.q === q)
-    if (!def) return
-    setTroubleScores((prev) => ({ ...prev, [q]: { status: 'scoring' } }))
-    try {
-      const result = await scoreAnswerV2({
-        question: `トラブルシューティング Q${q}: ${def.title}\n\n【状況】${def.scenario}\n\n【ログ】\n${def.log}\n\n【指示】${def.verify}`,
-        scoringCriteria: def.expected,
-        answer,
-      })
-      setTroubleScores((prev) => ({ ...prev, [q]: { status: 'done', rating: result.rating, comment: result.comment, advice: result.advice } }))
-      if (result.rating === 'pass') {
-        setTroubleDone((prev) => ({ ...prev, [q]: true }))
-        void applyUpdate((snap) => {
-          const current = Array.isArray(snap.infra5TroubleDone) ? snap.infra5TroubleDone : []
-          const set = new Set(current); set.add(q)
-          return { ...snap, infra5TroubleDone: Array.from(set).sort((a, b) => a - b) }
-        })
-      }
-    } catch {
-      setTroubleScores((prev) => ({ ...prev, [q]: { status: 'error', error: 'AIが混雑しています。少し待ってから再試行してください。' } }))
-    }
-  }, [troubleAnswers, applyUpdate])
+  const toggleSectionDone = useCallback(
+    async (sectionId: string) => {
+      const next = { ...sectionDone, [sectionId]: !sectionDone[sectionId] }
+      setSectionDone(next)
+      await syncToServer(checkboxes, next, reviewAnswers)
+    },
+    [checkboxes, sectionDone, reviewAnswers, syncToServer],
+  )
 
-  // 5-4 全問クリアで自動フェーズ完了
-  useEffect(() => {
-    const allDone = TROUBLE_QUESTIONS.every((q) => troubleDone[q.q])
-    if (allDone && !phaseDone[4]) markPhaseDone(4)
-  }, [troubleDone, phaseDone, markPhaseDone])
-
-  // --- 5-5: セキュリティチェック ---
-  const scoreSec = useCallback(async (q: number) => {
-    const answer = (secAnswers[q] ?? '').trim()
-    if (!answer) return
-    const def = SECURITY_QUESTIONS.find((d) => d.q === q)
-    if (!def) return
-    setSecScores((prev) => ({ ...prev, [q]: { status: 'scoring' } }))
-    try {
-      const result = await scoreAnswerV2({
-        question: `セキュリティチェック Q${q}: ${def.title}\n\n【やること】${def.task}\n【貼り付け指示】${def.verify}`,
-        scoringCriteria: def.expected,
-        answer,
-      })
-      setSecScores((prev) => ({ ...prev, [q]: { status: 'done', rating: result.rating, comment: result.comment, advice: result.advice } }))
-      if (result.rating === 'pass') {
-        setSecDone((prev) => ({ ...prev, [q]: true }))
-        void applyUpdate((snap) => {
-          const current = Array.isArray(snap.infra5SecDone) ? snap.infra5SecDone : []
-          const set = new Set(current); set.add(q)
-          return { ...snap, infra5SecDone: Array.from(set).sort((a, b) => a - b) }
-        })
-      }
-    } catch {
-      setSecScores((prev) => ({ ...prev, [q]: { status: 'error', error: 'AIが混雑しています。少し待ってから再試行してください。' } }))
-    }
-  }, [secAnswers, applyUpdate])
-
-  // 5-5 全問クリアで自動フェーズ完了
-  useEffect(() => {
-    const allDone = SECURITY_QUESTIONS.every((q) => secDone[q.q])
-    if (allDone && !phaseDone[5]) markPhaseDone(5)
-  }, [secDone, phaseDone, markPhaseDone])
-
-  // 中断して保存
   const handleSuspend = async () => {
     if (isSaving) return
     setIsSaving(true)
     setSaveError(null)
-    const name = username.trim().toLowerCase()
-    if (name && name !== 'admin' && isProgressApiAvailable() && snapshot) {
-      const ok = await postProgress(name, { ...snapshot, updatedAt: new Date().toISOString() })
+    const username = getCurrentDisplayName().trim().toLowerCase()
+    if (username && username !== 'admin' && isProgressApiAvailable()) {
+      const base = serverSnapshot ?? EMPTY_SNAPSHOT
+      const ok = await postProgress(username, {
+        ...base,
+        infra5Checkboxes: checkboxes,
+        infra5SectionDone: sectionDone,
+        infra5ReviewAnswers: reviewAnswers,
+        updatedAt: new Date().toISOString(),
+      })
       if (!ok) { setSaveError('保存に失敗しました'); setIsSaving(false); return }
     }
     setIsSaving(false)
     window.location.hash = '#/'
   }
 
-  // フェーズヘッダー（アンロック機能廃止 - 全フェーズ常時アクセス可能）
-  const PhaseHeader = ({ phase, label, count }: { phase: number; label: string; count?: string }) => {
-    const done = phaseDone[phase]
-    const isOpen = openPhase === phase
-    return (
-      <button
-        type="button"
-        onClick={() => setOpenPhase(isOpen ? 0 : phase)}
-        className={`w-full flex items-center justify-between px-4 py-3 text-left rounded-xl border ${
-          done ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-white hover:bg-slate-50'
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          {done && <span className="text-emerald-600 text-sm">✅</span>}
-          <div>
-            <p className="text-[12px] font-semibold text-slate-800">{label}</p>
-            {count && <p className="text-[10px] text-slate-500">{count}</p>}
-          </div>
-        </div>
-        <span className="text-[11px] text-slate-400">{isOpen ? '▲' : '▼'}</span>
-      </button>
-    )
-  }
-
-  // 採点結果表示
-  const ScoreResult = ({ score }: { score: ScoreState }) => (
-    <>
-      {score.status === 'done' && score.rating && (
-        <div className={`mt-2 rounded-lg border p-2.5 ${RATING_STYLES[score.rating].bg}`}>
-          <p className="text-[12px] font-semibold">
-            {RATING_STYLES[score.rating].icon} {RATING_STYLES[score.rating].label}
-          </p>
-          {score.comment && <p className="mt-1 text-[11px] text-slate-700">{score.comment}</p>}
-          {score.advice && <p className="mt-1 text-[11px] text-slate-500">{score.advice}</p>}
-        </div>
-      )}
-      {score.status === 'error' && (
-        <p className="mt-2 text-[11px] text-red-600">{score.error}</p>
-      )}
-    </>
+  const handleReviewScore = useCallback(
+    async (task: Infra5Task) => {
+      const answer = (reviewAnswers[task.id] ?? '').trim()
+      if (!answer) return
+      setReviewStates((prev) => ({ ...prev, [task.id]: { status: 'scoring' } }))
+      try {
+        const result = await scoreAnswerV2({
+          question: task.objective,
+          scoringCriteria: task.reviewCriteria ?? task.objective,
+          answer,
+        })
+        setReviewStates((prev) => ({
+          ...prev,
+          [task.id]: { status: 'done', rating: result.rating, comment: result.comment, advice: result.advice },
+        }))
+        if (result.rating === 'pass') {
+          // 合格時: チェックボックスをオンにしてセクションを完了にする
+          const nextCb = [...checkboxes]
+          nextCb[task.index] = true
+          setCheckboxes(nextCb)
+          const sec = INFRA5_SECTIONS.find((s) => s.id === task.sectionId)!
+          const allChecked = sec.tasks.every((t) => nextCb[t.index])
+          const nextDone = allChecked ? { ...sectionDone, [task.sectionId]: true } : sectionDone
+          if (allChecked) setSectionDone(nextDone)
+          await syncToServer(nextCb, nextDone, reviewAnswers)
+        }
+      } catch (e) {
+        setReviewStates((prev) => ({ ...prev, [task.id]: { status: 'error', error: String(e) } }))
+      }
+    },
+    [reviewAnswers, checkboxes, sectionDone, syncToServer],
   )
 
-  const buildDoneCount = BUILD_QUESTIONS.filter((q) => buildDone[q.q]).length
-  const troubleDoneCount = TROUBLE_QUESTIONS.filter((q) => troubleDone[q.q]).length
-  const secDoneCount = SECURITY_QUESTIONS.filter((q) => secDone[q.q]).length
+  const totalDone = checkboxes.filter(Boolean).length
+  const progressPct = Math.round((totalDone / 40) * 100)
+  const allSectionsDone = INFRA5_SECTIONS.every((s) => sectionDone[s.id])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-sm text-slate-500">読み込み中...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-2xl space-y-6">
+
+        {/* ヘッダー */}
         <div>
-          <p className="text-xs text-slate-500">課題5 · 実践演習</p>
-          <h1 className="text-xl font-bold text-slate-800">サーバー構築</h1>
+          <p className="text-xs text-slate-500">課題5 · サーバー構築</p>
+          <h1 className="text-xl font-bold text-slate-800">インフラ基礎課題5 - Rocky Linux サーバー構築</h1>
         </div>
-        <header className="flex items-center justify-between">
+
+        {/* 進捗バー + 中断ボタン */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-slate-500">進捗</span>
+              <span className="text-xs font-medium text-slate-700">{totalDone} / 40 ({progressPct}%)</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-slate-200">
+              <div
+                className="h-2 rounded-full bg-indigo-500 transition-all"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
           <div className="flex flex-col items-end gap-1">
             <button
               type="button"
@@ -443,380 +225,265 @@ export function InfraBasic5Page() {
             </button>
             {saveError && <p className="text-xs text-red-600">{saveError}</p>}
           </div>
-        </header>
+        </div>
 
-        {/* 説明カード */}
-        <section className="rounded-2xl border border-teal-200 bg-teal-50 p-4 shadow-soft-card">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-teal-700">EC2 サーバー構築演習</p>
-          <div className="mt-2 space-y-1 text-[12px] text-teal-900">
-            <p>この課題では実際にEC2サーバーを1台構築します。</p>
-            <p>Webサーバー（Apache/Nginx）とデータベース（MySQL/MariaDB）を1台に同居させる構成です。</p>
-            <p>パラメーターシートと手順書を自分で作り、その通りに構築・トラブル対応まで行います。</p>
-          </div>
+        {/* 概要 */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">概要</p>
+          <p className="mt-2 text-sm text-slate-700">
+            Rocky Linux 8 サーバーを実際に構築します。各セクションを順番に進め、すべてのタスクを完了してください。
+          </p>
+          <ul className="mt-2 space-y-1 text-xs text-slate-600 list-disc list-inside">
+            <li>各タスクを完了したらチェックを入れてください</li>
+            <li>【理解度確認】タスクは手順の内容を記述してAI採点を受けてください</li>
+            <li>セクションの全タスクが完了したら「セクション完了」を押してください</li>
+          </ul>
         </section>
 
-        {/* ===== 5-1: パラメーターシート ===== */}
-        <section className="space-y-2">
-          <PhaseHeader phase={1} label="5-1 パラメーターシート作成" />
-          {openPhase === 1 && (
-            <div className="space-y-6">
-              {phaseDone[1] ? (
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft-card">
-                  <p className="text-[12px] text-emerald-700 font-semibold">✅ パラメーターシートのレビューが完了しました。</p>
-                </div>
-              ) : (
-                <>
-                  <p className="text-[12px] text-slate-600">構築するサーバーの情報を入力してください。この情報をもとに手順書を作成します。</p>
+        {/* セクション一覧 */}
+        {INFRA5_SECTIONS.map((section, secIdx) => (
+          <SectionBlock
+            key={section.id}
+            section={section}
+            checkboxes={checkboxes}
+            sectionDone={sectionDone[section.id] ?? false}
+            reviewAnswers={reviewAnswers}
+            reviewStates={reviewStates}
+            isOpen={openSections[section.id] ?? false}
+            onToggleOpen={() =>
+              setOpenSections((prev) => ({ ...prev, [section.id]: !prev[section.id] }))
+            }
+            onToggleCheck={toggleCheck}
+            onToggleSectionDone={() => { void toggleSectionDone(section.id) }}
+            onReviewAnswerChange={(taskId, value) => {
+              const next = { ...reviewAnswers, [taskId]: value }
+              setReviewAnswers(next)
+            }}
+            onReviewScore={(task) => { void handleReviewScore(task) }}
+            sectionIndex={secIdx}
+          />
+        ))}
 
-                  {/* サーバー情報カード */}
-                  <div className="rounded-2xl border border-gray-200 bg-white p-6 mb-6">
+        {/* 全完了メッセージ */}
+        {allSectionsDone && (
+          <section className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 p-5 shadow-soft-card">
+            <p className="text-sm font-semibold text-emerald-800">🎉 すべてのセクションが完了しました！</p>
+            <p className="mt-2 text-sm text-slate-700">
+              Rocky Linux サーバー構築の全課題を完了しました。お疲れ様でした。
+            </p>
+            <button
+              type="button"
+              onClick={() => { window.location.hash = '#/' }}
+              className="mt-4 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
+            >
+              トップに戻る
+            </button>
+          </section>
+        )}
 
-                    {/* サーバー基本情報グループ */}
-                    <div className="rounded-xl bg-gray-50 p-4 px-5 mb-4">
-                      <p className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">サーバー基本情報</p>
-                      {SERVER_PARAMS.filter((p) => p.group === 'server').map((p) => (
-                        <div key={p.id} className="mb-4 last:mb-0">
-                          <label className="text-[11px] text-slate-600">{p.label}</label>
-                          <input
-                            type={p.type}
-                            value={paramValues[p.id] ?? ''}
-                            onChange={(e) => setParamValues((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                            placeholder={p.placeholder}
-                            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                          />
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Webサーバー設定グループ */}
-                    <div className="rounded-xl bg-gray-50 p-4 px-5 mb-4">
-                      <p className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">Webサーバー設定</p>
-                      {SERVER_PARAMS.filter((p) => p.group === 'web').map((p) => (
-                        <div key={p.id} className="mb-4 last:mb-0">
-                          <label className="text-[11px] text-slate-600">{p.label}</label>
-                          <input
-                            type={p.type}
-                            value={paramValues[p.id] ?? ''}
-                            onChange={(e) => setParamValues((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                            placeholder={p.placeholder}
-                            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                          />
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* データベース設定グループ */}
-                    <div className="rounded-xl bg-gray-50 p-4 px-5">
-                      <p className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">データベース設定</p>
-                      {SERVER_PARAMS.filter((p) => p.group === 'db').map((p) => (
-                        <div key={p.id} className="mb-4 last:mb-0">
-                          <label className="text-[11px] text-slate-600">{p.label}</label>
-                          <input
-                            type={p.type}
-                            value={paramValues[p.id] ?? ''}
-                            onChange={(e) => setParamValues((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                            placeholder={p.placeholder}
-                            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* AIレビューボタン（カード外） */}
-                  <div className="pt-0">
-                    <button
-                      type="button"
-                      onClick={() => { void scoreParams() }}
-                      disabled={paramScore.status === 'scoring' || !SERVER_PARAMS.every((p) => (paramValues[p.id] ?? '').trim())}
-                      className="w-full rounded-lg bg-teal-600 px-4 py-2.5 text-[12px] font-medium text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {paramScore.status === 'scoring' ? 'AIレビュー中...' : 'AIにレビューしてもらう'}
-                    </button>
-                  </div>
-                  <ScoreResult score={paramScore} />
-                </>
-              )}
-            </div>
-          )}
-        </section>
-
-        {/* ===== 5-2: 手順書作成（Excelアップロード方式） ===== */}
-        <section className="space-y-2">
-          <PhaseHeader phase={2} label="5-2 手順書作成" />
-          {openPhase === 2 && (
-            <div className="space-y-6">
-              {phaseDone[2] ? (
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft-card">
-                  <p className="text-[12px] text-emerald-700 font-semibold">✅ 手順書のレビューが完了しました。</p>
-                </div>
-              ) : (
-                <>
-                  <p className="text-[12px] text-slate-600">
-                    Excelテンプレートをダウンロードし、手順書を作成してアップロードしてください。
-                  </p>
-
-                  {/* 手順書カード */}
-                  <div className="rounded-2xl border border-gray-200 bg-white p-6">
-
-                    {/* Step 1: テンプレートダウンロード */}
-                    <div className="rounded-xl bg-gray-50 p-4 px-5 mb-4">
-                      <p className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">
-                        ① テンプレートをダウンロード
-                      </p>
-                      <p className="text-[11px] text-slate-600 mb-3">
-                        まず手順書のテンプレートをダウンロードし、必要な情報を入力してください。
-                      </p>
-                      <a
-                        href="/server_setup_template.xlsx"
-                        download="server_setup_template.xlsx"
-                        className="inline-flex items-center gap-2 rounded-lg bg-slate-700 px-4 py-2 text-[12px] font-medium text-white hover:bg-slate-800"
-                      >
-                        <Download className="h-4 w-4" />
-                        テンプレートをダウンロード
-                      </a>
-                    </div>
-
-                    {/* Step 2: ファイルアップロード */}
-                    <div className="rounded-xl bg-gray-50 p-4 px-5">
-                      <p className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">
-                        ② 作成した手順書をアップロード
-                      </p>
-
-                      <input
-                        ref={procedureFileRef}
-                        type="file"
-                        accept=".xlsx,.xls"
-                        onChange={handleProcedureFileUpload}
-                        className="hidden"
-                      />
-
-                      {!procedureFileName ? (
-                        <button
-                          type="button"
-                          onClick={() => procedureFileRef.current?.click()}
-                          className="flex items-center justify-center gap-2 w-full rounded-lg border-2 border-dashed border-slate-300 bg-white px-4 py-6 text-[12px] text-slate-600 hover:border-teal-400 hover:bg-teal-50 transition-colors"
-                        >
-                          <Upload className="h-5 w-5" />
-                          Excelファイルを選択またはドラッグ&ドロップ
-                        </button>
-                      ) : (
-                        <div className="space-y-3">
-                          {/* アップロード済みファイル表示 */}
-                          <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
-                              <span className="text-[12px] font-medium text-slate-800">{procedureFileName}</span>
-                              <span className="text-[11px] text-slate-500">({procedureRows.length}件の手順)</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={clearProcedureFile}
-                              className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-red-600"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              削除
-                            </button>
-                          </div>
-
-                          {/* プレビューテーブル */}
-                          <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-                            <div className="max-h-48 overflow-y-auto">
-                              <table className="w-full text-[11px]">
-                                <thead className="bg-slate-100 sticky top-0">
-                                  <tr>
-                                    <th className="px-2 py-1.5 text-left font-medium text-slate-700 w-12">No</th>
-                                    <th className="px-2 py-1.5 text-left font-medium text-slate-700 w-28">カテゴリ</th>
-                                    <th className="px-2 py-1.5 text-left font-medium text-slate-700">作業内容</th>
-                                    <th className="px-2 py-1.5 text-left font-medium text-slate-700">コマンド</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {procedureRows.map((row, idx) => (
-                                    <tr key={idx} className="border-t border-slate-100">
-                                      <td className="px-2 py-1.5 text-slate-600">{row.stepNo}</td>
-                                      <td className="px-2 py-1.5 text-slate-600">{row.category}</td>
-                                      <td className="px-2 py-1.5 text-slate-800">{row.task}</td>
-                                      <td className="px-2 py-1.5 text-slate-600 font-mono text-[10px]">{row.command}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-
-                          {/* 別ファイルを選択 */}
-                          <button
-                            type="button"
-                            onClick={() => procedureFileRef.current?.click()}
-                            className="text-[11px] text-teal-600 hover:text-teal-700 underline"
-                          >
-                            別のファイルを選択
-                          </button>
-                        </div>
-                      )}
-
-                      {procedureParseError && (
-                        <p className="mt-2 text-[11px] text-red-600">{procedureParseError}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* AIレビューボタン（カード外） */}
-                  <div className="pt-0">
-                    <button
-                      type="button"
-                      onClick={() => { void scoreProcedure() }}
-                      disabled={procedureScore.status === 'scoring' || procedureRows.length === 0}
-                      className="w-full rounded-lg bg-teal-600 px-4 py-2.5 text-[12px] font-medium text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {procedureScore.status === 'scoring' ? 'AIレビュー中...' : 'AIにレビューしてもらう'}
-                    </button>
-                  </div>
-                  <ScoreResult score={procedureScore} />
-                </>
-              )}
-            </div>
-          )}
-        </section>
-
-        {/* ===== 5-3: サーバー構築実践 ===== */}
-        <section className="space-y-2">
-          <PhaseHeader phase={3} label="5-3 サーバー構築実践" count={`${buildDoneCount}/${BUILD_QUESTIONS.length}問完了`} />
-          {openPhase === 3 && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card space-y-3">
-              {BUILD_QUESTIONS.map((q) => {
-                const score = buildScores[q.q]
-                const done = buildDone[q.q]
-                return (
-                  <div key={q.q} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-[12px] font-semibold text-slate-800">Q{q.q}. {q.title}</p>
-                      {done && (
-                        <span className="shrink-0 rounded-lg bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 border border-emerald-200">済</span>
-                      )}
-                    </div>
-                    <p className="mt-1.5 text-[11px] text-slate-600">{q.task}</p>
-                    <p className="mt-1 text-[11px] font-medium text-slate-700">{q.verify}</p>
-                    {!done && (
-                      <>
-                        <textarea
-                          value={buildAnswers[q.q] ?? ''}
-                          onChange={(e) => setBuildAnswers((prev) => ({ ...prev, [q.q]: e.target.value }))}
-                          rows={5}
-                          className="mt-2 w-full resize-y rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                          placeholder="ここに実行結果を貼り付けてください"
-                          spellCheck={false}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => { void scoreBuild(q.q) }}
-                          disabled={score?.status === 'scoring' || !(buildAnswers[q.q] ?? '').trim()}
-                          className="mt-2 rounded-lg bg-teal-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {score?.status === 'scoring' ? 'AI検証中...' : 'AIに確認してもらう'}
-                        </button>
-                      </>
-                    )}
-                    {score && <ScoreResult score={score} />}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </section>
-
-        {/* ===== 5-4: トラブルシューティング ===== */}
-        <section className="space-y-2">
-          <PhaseHeader phase={4} label="5-4 トラブルシューティング" count={`${troubleDoneCount}/${TROUBLE_QUESTIONS.length}問完了`} />
-          {openPhase === 4 && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card space-y-3">
-              {TROUBLE_QUESTIONS.map((q) => {
-                const score = troubleScores[q.q]
-                const done = troubleDone[q.q]
-                return (
-                  <div key={q.q} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-[12px] font-semibold text-slate-800">Q{q.q}. {q.title}</p>
-                      {done && (
-                        <span className="shrink-0 rounded-lg bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 border border-emerald-200">済</span>
-                      )}
-                    </div>
-                    <p className="mt-1.5 text-[11px] text-slate-600">{q.scenario}</p>
-                    <pre className="mt-2 rounded-lg bg-slate-900 text-slate-200 p-3 text-[11px] leading-relaxed overflow-x-auto whitespace-pre-wrap">{q.log}</pre>
-                    {!done && (
-                      <>
-                        <textarea
-                          value={troubleAnswers[q.q] ?? ''}
-                          onChange={(e) => setTroubleAnswers((prev) => ({ ...prev, [q.q]: e.target.value }))}
-                          rows={5}
-                          className="mt-2 w-full resize-y rounded-md border border-slate-300 bg-white px-2 py-1.5 text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                          placeholder="原因と対処法を記述してください"
-                          spellCheck={false}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => { void scoreTrouble(q.q) }}
-                          disabled={score?.status === 'scoring' || !(troubleAnswers[q.q] ?? '').trim()}
-                          className="mt-2 rounded-lg bg-teal-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {score?.status === 'scoring' ? 'AI検証中...' : 'AIに確認してもらう'}
-                        </button>
-                      </>
-                    )}
-                    {score && <ScoreResult score={score} />}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </section>
-
-        {/* ===== 5-5: セキュリティチェック ===== */}
-        <section className="space-y-2">
-          <PhaseHeader phase={5} label="5-5 セキュリティチェック" count={`${secDoneCount}/${SECURITY_QUESTIONS.length}問完了`} />
-          {openPhase === 5 && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card space-y-3">
-              {SECURITY_QUESTIONS.map((q) => {
-                const score = secScores[q.q]
-                const done = secDone[q.q]
-                return (
-                  <div key={q.q} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-[12px] font-semibold text-slate-800">Q{q.q}. {q.title}</p>
-                      {done && (
-                        <span className="shrink-0 rounded-lg bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 border border-emerald-200">済</span>
-                      )}
-                    </div>
-                    <p className="mt-1.5 text-[11px] text-slate-600">{q.task}</p>
-                    {!done && (
-                      <>
-                        <textarea
-                          value={secAnswers[q.q] ?? ''}
-                          onChange={(e) => setSecAnswers((prev) => ({ ...prev, [q.q]: e.target.value }))}
-                          rows={5}
-                          className="mt-2 w-full resize-y rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                          placeholder="ここに実行結果を貼り付けてください"
-                          spellCheck={false}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => { void scoreSec(q.q) }}
-                          disabled={score?.status === 'scoring' || !(secAnswers[q.q] ?? '').trim()}
-                          className="mt-2 rounded-lg bg-teal-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {score?.status === 'scoring' ? 'AI検証中...' : 'AIに確認してもらう'}
-                        </button>
-                      </>
-                    )}
-                    {score && <ScoreResult score={score} />}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </section>
       </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────
+// SectionBlock コンポーネント
+// ─────────────────────────────────────
+
+function SectionBlock({
+  section,
+  checkboxes,
+  sectionDone,
+  reviewAnswers,
+  reviewStates,
+  isOpen,
+  onToggleOpen,
+  onToggleCheck,
+  onToggleSectionDone,
+  onReviewAnswerChange,
+  onReviewScore,
+}: {
+  section: Infra5Section
+  checkboxes: boolean[]
+  sectionDone: boolean
+  reviewAnswers: Record<string, string>
+  reviewStates: Record<string, ReviewState>
+  isOpen: boolean
+  onToggleOpen: () => void
+  onToggleCheck: (index: number) => Promise<void>
+  onToggleSectionDone: () => void
+  onReviewAnswerChange: (taskId: string, value: string) => void
+  onReviewScore: (task: Infra5Task) => void
+  sectionIndex?: number
+}) {
+  const doneCount = section.tasks.filter((t) => checkboxes[t.index]).length
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white shadow-soft-card overflow-hidden">
+      {/* セクションヘッダー */}
+      <div
+        className="flex items-center justify-between gap-2 p-4 cursor-pointer select-none hover:bg-slate-50"
+        onClick={onToggleOpen}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold">
+            {section.number}
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-slate-800 truncate">
+              {section.title}
+            </h2>
+            <p className="text-xs text-slate-400">
+              {doneCount} / {section.tasks.length} 完了
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {sectionDone ? (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onToggleSectionDone() }}
+              className="cursor-pointer rounded-full border border-emerald-500/60 bg-emerald-600/20 px-2 py-0.5 text-[11px] font-medium text-emerald-700 hover:bg-emerald-600/30"
+              title="クリックで未完了に戻す"
+            >
+              済
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onToggleSectionDone() }}
+              className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:border-indigo-500 hover:bg-indigo-50"
+            >
+              セクション完了
+            </button>
+          )}
+          <span className="text-slate-400 text-xs">{isOpen ? '▲' : '▼'}</span>
+        </div>
+      </div>
+
+      {/* タスク一覧（アコーディオン） */}
+      {isOpen && (
+        <div className="border-t border-slate-100 px-4 pb-4 pt-2 space-y-3">
+          {section.tasks.map((task) => (
+            <TaskRow
+              key={task.id}
+              task={task}
+              checked={checkboxes[task.index] ?? false}
+              reviewAnswer={reviewAnswers[task.id] ?? ''}
+              reviewState={reviewStates[task.id] ?? { status: 'idle' }}
+              onToggle={() => { void onToggleCheck(task.index) }}
+              onReviewAnswerChange={(v) => onReviewAnswerChange(task.id, v)}
+              onReviewScore={() => onReviewScore(task)}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+// ─────────────────────────────────────
+// TaskRow コンポーネント
+// ─────────────────────────────────────
+
+function TaskRow({
+  task,
+  checked,
+  reviewAnswer,
+  reviewState,
+  onToggle,
+  onReviewAnswerChange,
+  onReviewScore,
+}: {
+  task: Infra5Task
+  checked: boolean
+  reviewAnswer: string
+  reviewState: ReviewState
+  onToggle: () => void
+  onReviewAnswerChange: (v: string) => void
+  onReviewScore: () => void
+}) {
+  const [showHint, setShowHint] = useState(false)
+
+  return (
+    <div className={`rounded-xl border p-3 transition-colors ${checked ? 'border-slate-200 bg-slate-50' : 'border-slate-200 bg-white'}`}>
+      {/* タスクヘッダー */}
+      <div className="flex items-start gap-2">
+        <input
+          type="checkbox"
+          id={`task-${task.id}`}
+          checked={checked}
+          onChange={onToggle}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-indigo-600"
+        />
+        <div className="flex-1 min-w-0">
+          <label
+            htmlFor={`task-${task.id}`}
+            className={`cursor-pointer text-sm font-medium leading-snug ${checked ? 'text-slate-400 line-through' : task.isReview ? 'text-indigo-700' : 'text-slate-800'}`}
+          >
+            <span className="text-[11px] text-slate-400 mr-1">{task.number}</span>
+            {task.title}
+          </label>
+          {!checked && (
+            <p className="mt-1 text-xs text-slate-500">{task.objective}</p>
+          )}
+        </div>
+      </div>
+
+      {/* ヒント */}
+      {!checked && task.hint && (
+        <div className="mt-2 ml-6">
+          <button
+            type="button"
+            onClick={() => setShowHint((v) => !v)}
+            className="text-[11px] text-indigo-500 hover:text-indigo-700 underline"
+          >
+            {showHint ? 'ヒントを隠す' : 'ヒントを見る'}
+          </button>
+          {showHint && (
+            <p className="mt-1 rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-700 font-mono whitespace-pre-wrap">
+              {task.hint}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* 理解度確認: テキストエリア + AI採点 */}
+      {task.isReview && !checked && (
+        <div className="mt-3 ml-6 space-y-2">
+          <textarea
+            value={reviewAnswer}
+            onChange={(e) => onReviewAnswerChange(e.target.value)}
+            placeholder="実施した手順と内容を記述してください..."
+            rows={4}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
+          />
+          <button
+            type="button"
+            onClick={onReviewScore}
+            disabled={!reviewAnswer.trim() || reviewState.status === 'scoring'}
+            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {reviewState.status === 'scoring' ? 'AI採点中...' : 'AIに採点してもらう'}
+          </button>
+          {/* 採点結果 */}
+          {reviewState.status === 'done' && reviewState.rating && (
+            <div className={`rounded-xl border p-3 ${RATING_STYLES[reviewState.rating].bg}`}>
+              <p className="text-xs font-semibold">
+                {RATING_STYLES[reviewState.rating].icon} {RATING_STYLES[reviewState.rating].label}
+              </p>
+              {reviewState.comment && <p className="mt-1 text-xs text-slate-700">{reviewState.comment}</p>}
+              {reviewState.advice && <p className="mt-1 text-xs text-slate-500">{reviewState.advice}</p>}
+              {reviewState.rating === 'pass' && (
+                <p className="mt-1 text-xs text-emerald-700 font-medium">チェックボックスが自動でオンになりました ✓</p>
+              )}
+            </div>
+          )}
+          {reviewState.status === 'error' && (
+            <p className="text-xs text-red-600">{reviewState.error ?? 'エラーが発生しました'}</p>
+          )}
+        </div>
+      )}
     </div>
   )
 }

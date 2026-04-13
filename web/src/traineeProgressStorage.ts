@@ -88,14 +88,20 @@ export type TraineeProgressSnapshot = {
   introStep?: number
   /** 導入課題: 問題IDと回答のマップ */
   introRiskAnswers?: Record<string, string>
-  /** 課題5: 完了済みフェーズ番号一覧（1〜5） */
+  /** 課題5: 完了済みフェーズ番号一覧（1〜5）※後方互換 */
   infra5PhaseDone?: number[]
-  /** 課題5: サーバー構築実践で完了済みの問題番号一覧 */
+  /** 課題5: サーバー構築実践で完了済みの問題番号一覧 ※後方互換 */
   infra5BuildDone?: number[]
-  /** 課題5: トラブルシューティングで完了済みの問題番号一覧 */
+  /** 課題5: トラブルシューティングで完了済みの問題番号一覧 ※後方互換 */
   infra5TroubleDone?: number[]
-  /** 課題5: セキュリティチェックで完了済みの問題番号一覧 */
+  /** 課題5: セキュリティチェックで完了済みの問題番号一覧 ※後方互換 */
   infra5SecDone?: number[]
+  /** 課題5（新）: チェックボックス状態（40項目） */
+  infra5Checkboxes?: boolean[]
+  /** 課題5（新）: セクション完了状態（s1〜s5） */
+  infra5SectionDone?: Record<string, boolean>
+  /** 課題5（新）: 理解度確認の回答テキスト（タスクIDキー） */
+  infra5ReviewAnswers?: Record<string, string>
 }
 
 /** 受講生IDは小文字統一（kira-test 等）。大文字小文字のずれを防ぐ。 */
