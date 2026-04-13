@@ -1394,6 +1394,9 @@ function App() {
               const infra4ShellDone = (snap?.infra4ShellDoneQuestions ?? []).length
               const infra4Ok = infra4ViDone >= VI_STEPS.length && infra4ShellDone >= SHELL_QUESTIONS.length
               const infra4Active = infra4ViDone > 0 || infra4ShellDone > 0
+              const infra5PhaseDone = (snap?.infra5PhaseDone ?? []).length
+              const infra5Ok = infra5PhaseDone >= 5
+              const infra5Active = infra5PhaseDone > 0
 
               const kiso: { name: string; status: 'done' | 'active' | 'todo'; action: () => void; newTab?: boolean }[] = [
                 { name: 'はじめに', status: introOk ? 'done' : (Number(snap?.introStep ?? 0) >= 1 ? 'active' : 'todo'), action: () => { window.location.hash = '#/training/intro' } },
@@ -1401,6 +1404,7 @@ function App() {
                 { name: 'インフラ基礎課題2', status: infra2Ok ? 'done' : ((snap?.l2CurrentQuestion ?? 0) > 0 ? 'active' : 'todo'), action: () => { if (introOk) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
                 { name: 'インフラ基礎課題3', status: infra3Ok ? 'done' : (Object.keys(snap?.infra32Answers ?? {}).length > 0 ? 'active' : 'todo'), action: () => { if (introOk) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
                 { name: 'インフラ基礎課題4', status: infra4Ok ? 'done' : (infra4Active ? 'active' : 'todo'), action: () => { if (introOk) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
+                { name: 'インフラ基礎課題5', status: infra5Ok ? 'done' : (infra5Active ? 'active' : 'todo'), action: () => { if (introOk) window.open(getTrainingUrl('/training/infra-basic-5'), '_blank'); else setShowIntroRequiredPopup(true) }, newTab: true },
               ]
 
               const renderItem = (item: typeof kiso[0], extraStyle?: React.CSSProperties, badge?: React.ReactNode) => (
