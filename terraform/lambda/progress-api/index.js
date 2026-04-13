@@ -205,7 +205,7 @@ fail（再挑戦してください）:
 
       try {
         const command = new InvokeModelCommand({
-          modelId: 'anthropic.claude-sonnet-4-5-20250929-v1:0',
+          modelId: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
           contentType: 'application/json',
           accept: 'application/json',
           body: JSON.stringify({
@@ -320,7 +320,7 @@ fail（再挑戦してください）:
 
       try {
         const command = new InvokeModelCommand({
-          modelId: 'anthropic.claude-sonnet-4-5-20250929-v1:0',
+          modelId: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
           contentType: 'application/json',
           accept: 'application/json',
           body: JSON.stringify({
