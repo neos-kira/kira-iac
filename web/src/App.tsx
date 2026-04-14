@@ -1466,42 +1466,58 @@ function App() {
                 { id: 'win',   icon: '🪟', name: 'Windowsサーバー基礎', isAvailable: false, tasks: [], pct: 0 },
               ]
 
+              const activeCourses = courses.filter((c) => c.isAvailable)
+              const inactiveCourses = courses.filter((c) => !c.isAvailable)
+
+              const renderCourseCard = (course: Course) => (
+                <div key={course.id} className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                  {/* コースヘッダー */}
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xl">{course.icon}</span>
+                      <div>
+                        <p className="text-[13px] font-bold text-slate-800">{course.name}</p>
+                        <p className="text-[10px] text-slate-400">{course.tasks.filter((t) => t.status === 'done').length} / {course.tasks.length} 完了</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                        <div className="h-full rounded-full bg-teal-500 transition-all" style={{ width: `${course.pct}%` }} />
+                      </div>
+                      <span className="text-[11px] font-semibold text-slate-600 tabular-nums w-8 text-right">{course.pct}%</span>
+                    </div>
+                  </div>
+                  {/* タスク一覧 */}
+                  <ul className="divide-y divide-slate-50 px-3 py-2 space-y-1">
+                    {course.tasks.map(renderTask)}
+                  </ul>
+                </div>
+              )
+
               return (
                 <>
-                  {courses.map((course) => (
-                    <div key={course.id} className={`rounded-2xl border bg-white shadow-sm overflow-hidden ${course.isAvailable ? 'border-slate-200' : 'border-slate-100 opacity-60'}`}>
-                      {/* コースヘッダー */}
-                      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-xl">{course.icon}</span>
-                          <div>
-                            <p className="text-[13px] font-bold text-slate-800">{course.name}</p>
-                            {course.isAvailable ? (
-                              <p className="text-[10px] text-slate-400">{course.tasks.filter((t) => t.status === 'done').length} / {course.tasks.length} 完了</p>
-                            ) : (
-                              <p className="text-[10px] text-slate-400">準備中</p>
-                            )}
-                          </div>
-                        </div>
-                        {course.isAvailable && (
-                          <div className="flex items-center gap-2">
-                            <div className="w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                              <div className="h-full rounded-full bg-teal-500 transition-all" style={{ width: `${course.pct}%` }} />
+                  {/* 受講中のコース */}
+                  {activeCourses.map(renderCourseCard)}
+
+                  {/* 準備中のコース */}
+                  {inactiveCourses.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide px-1 mb-2">準備中のコース</p>
+                      <div className="space-y-2">
+                        {inactiveCourses.map((course) => (
+                          <div key={course.id} className="rounded-xl border border-slate-100 bg-slate-50 overflow-hidden opacity-70">
+                            <div className="flex items-center gap-2.5 px-4 py-3">
+                              <span className="text-lg grayscale">{course.icon}</span>
+                              <div>
+                                <p className="text-[12px] font-semibold text-slate-500">{course.name}</p>
+                                <p className="text-[10px] text-slate-400">準備中 — 今後追加予定</p>
+                              </div>
                             </div>
-                            <span className="text-[11px] font-semibold text-slate-600 tabular-nums w-8 text-right">{course.pct}%</span>
                           </div>
-                        )}
+                        ))}
                       </div>
-                      {/* タスク一覧 */}
-                      {course.isAvailable ? (
-                        <ul className="divide-y divide-slate-50 px-3 py-2 space-y-1">
-                          {course.tasks.map(renderTask)}
-                        </ul>
-                      ) : (
-                        <div className="px-4 py-4 text-[12px] text-slate-400 text-center">今後追加予定</div>
-                      )}
                     </div>
-                  ))}
+                  )}
 
                   {/* IT業界の歩き方 */}
                   <div className="rounded-2xl border border-teal-100 bg-white shadow-sm overflow-hidden">
