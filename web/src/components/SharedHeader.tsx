@@ -77,7 +77,7 @@ export function SharedHeader({ delayed, progressPct, completedCount, totalCount,
               <button
                 type="button"
                 onClick={onWbs}
-                className="text-[11px] font-medium text-teal-600 hover:text-teal-700 hover:underline shrink-0"
+                className="text-[11px] font-medium text-slate-500 hover:text-slate-700 hover:underline shrink-0"
               >
                 WBS（進捗管理表）→
               </button>
@@ -85,7 +85,7 @@ export function SharedHeader({ delayed, progressPct, completedCount, totalCount,
             <button
               type="button"
               onClick={() => setShowWBSHelp((v) => !v)}
-              className="flex items-center justify-center w-4 h-4 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 text-[10px] font-bold shrink-0"
+              className="flex items-center justify-center w-4 h-4 rounded-full bg-transparent border border-slate-300 text-slate-500 hover:bg-slate-100 text-[10px] font-bold shrink-0"
               title="WBSとは？"
             >
               ?

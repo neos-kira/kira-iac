@@ -1011,7 +1011,7 @@ function App() {
               // ── introStepが0: はじめに案内バナーのみ ──
               if (introStep === 0) {
                 return (
-                  <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 shadow-sm">
+                  <div className="rounded-2xl border-2 border-teal-400 bg-amber-50 p-6 shadow-sm">
                     <p className="text-sm font-semibold text-amber-800">はじめに</p>
                     <p className="mt-2 text-sm text-slate-700">
                       インフラ基礎課題に進む前に、「はじめに」でプロフェッショナルとしての行動基準を確認してください。
@@ -1034,7 +1034,7 @@ function App() {
                   4: 'はじめに · インシデント報告 Step4/5',
                 }
                 return (
-                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="rounded-2xl border-2 border-teal-400 bg-white p-6 shadow-sm">
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">{stepLabels[introStep]}</p>
                     <button type="button" onClick={() => { window.location.hash = '#/training/intro' }} className="mt-4 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700">つづきから →</button>
@@ -1467,7 +1467,6 @@ function App() {
               ]
 
               const activeCourses = courses.filter((c) => c.isAvailable)
-              const inactiveCourses = courses.filter((c) => !c.isAvailable)
 
               const renderCourseCard = (course: Course) => (
                 <div key={course.id} className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -1499,26 +1498,6 @@ function App() {
                   {/* 受講中のコース */}
                   {activeCourses.map(renderCourseCard)}
 
-                  {/* 準備中のコース */}
-                  {inactiveCourses.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide px-1 mb-2">準備中のコース</p>
-                      <div className="space-y-2">
-                        {inactiveCourses.map((course) => (
-                          <div key={course.id} className="rounded-xl border border-slate-100 bg-slate-50 overflow-hidden opacity-70">
-                            <div className="flex items-center gap-2.5 px-4 py-3">
-                              <span className="text-lg grayscale">{course.icon}</span>
-                              <div>
-                                <p className="text-[12px] font-semibold text-slate-500">{course.name}</p>
-                                <p className="text-[10px] text-slate-400">準備中 — 今後追加予定</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
                   {/* IT業界の歩き方 */}
                   <div className="rounded-2xl border border-teal-100 bg-white shadow-sm overflow-hidden">
                     <div className="flex items-center justify-between px-4 py-3 border-b border-teal-50">
@@ -1526,7 +1505,6 @@ function App() {
                         <span className="text-xl">📚</span>
                         <div>
                           <p className="text-[13px] font-bold text-slate-800">IT業界の歩き方</p>
-                          <p className="text-[10px] text-teal-600 font-medium">座学</p>
                         </div>
                       </div>
                     </div>
