@@ -387,6 +387,33 @@ export function IntroPage() {
     setCurrentInput('')
   }
 
+  // ── 前のステップ / 前の問題へ（進捗データは変更しない） ──────────────────
+  const handleBack = () => {
+    setMcSelected([])
+    setMcResult(null)
+    setCurrentResult(null)
+    setCurrentInput('')
+
+    if (step === 2) {
+      setStep(1)
+      return
+    }
+    // steps 3-5: 同セクション内に前の問題があれば戻る、なければ前ステップへ
+    if (sectionQIdx > 0) {
+      setSectionQIdx((prev) => prev - 1)
+    } else {
+      const prevStep = step - 1
+      if (prevStep === 2) {
+        setStep(2)
+      } else {
+        const prevSectionName = STEP_SECTION[prevStep] ?? ''
+        const prevSqs = INTRO_RISK_QUESTIONS.filter((q) => q.section === prevSectionName)
+        setSectionQIdx(Math.max(0, prevSqs.length - 1))
+        setStep(prevStep)
+      }
+    }
+  }
+
   // ── 次の問題へ / セクション完了 ───────────────────────────────────────────
   const handleNext = async () => {
     if (isScoring) return
@@ -706,12 +733,20 @@ export function IntroPage() {
           })}
         </div>
 
-        <div className="mt-6">
+        <div className="mt-6 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={handleBack}
+            disabled={isScoring}
+            className="rounded-lg border border-slate-200 px-5 py-3.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            ← 前へ
+          </button>
           <button
             type="button"
             onClick={handleStep2Complete}
             disabled={isScoring}
-            className="w-full rounded-lg bg-teal-600 py-3.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 rounded-lg bg-teal-600 py-3.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isScoring ? '保存中...' : '確認しました・次へ →'}
           </button>
@@ -732,6 +767,15 @@ export function IntroPage() {
       <>
         {headerBlock}
         <StepProgress current={step} />
+
+        <button
+          type="button"
+          onClick={handleBack}
+          disabled={isScoring}
+          className="mb-4 flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 disabled:opacity-40"
+        >
+          ← 前へ
+        </button>
 
         <div className="mb-5">
           <h2 className="text-lg font-bold text-slate-800">{sectionName}</h2>
@@ -854,6 +898,15 @@ export function IntroPage() {
     <>
       {headerBlock}
       <StepProgress current={step} />
+
+      <button
+        type="button"
+        onClick={handleBack}
+        disabled={isScoring}
+        className="mb-4 flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 disabled:opacity-40"
+      >
+        ← 前へ
+      </button>
 
       <div className="mb-5">
         <h2 className="text-lg font-bold text-slate-800">{sectionName}</h2>
