@@ -114,6 +114,35 @@ function inferIntroStep(item) {
   return 0
 }
 
+/** セッションユーザーのロールを取得（admin は常に 'manager'） */
+async function getSessionRole(session) {
+  if (!session) return null
+  if (session.username === 'admin') return 'manager'
+  if (session.role) return session.role
+  try {
+    const res = await client.send(new GetItemCommand({
+      TableName: AccountsTableName,
+      Key: marshall({ username: session.username }),
+    }))
+    if (!res.Item) return 'student'
+    const account = unmarshall(res.Item)
+    return account.role || 'student'
+  } catch {
+    return 'student'
+  }
+}
+
+/** 現在進行中の課題ラベルを返す */
+function getCurrentChapterLabel(progress) {
+  if (!progress || !Array.isArray(progress.chapterProgress) || progress.chapterProgress.length === 0) {
+    return Number(progress?.introStep ?? 0) >= 5 && progress?.introConfirmed ? '課題1' : 'はじめに'
+  }
+  for (const ch of progress.chapterProgress) {
+    if (!ch.cleared) return ch.label || `課題${ch.chapter}`
+  }
+  return '全完了'
+}
+
 /** セッション検証：有効なセッションオブジェクトを返す。無効なら null。 */
 async function verifySession(event) {
   const token =
@@ -191,6 +220,12 @@ async function handler(event) {
         // 導入課題 中断・再開（デフォルトは0=未開始）
         introStep: typeof body.introStep === 'number' ? body.introStep : 0,
         introRiskAnswers: body.introRiskAnswers && typeof body.introRiskAnswers === 'object' ? body.introRiskAnswers : {},
+        // 演習サーバー管理（受講生ごと）
+        ec2PublicIp: typeof body.ec2PublicIp === 'string' ? body.ec2PublicIp : null,
+        ec2State: body.ec2State === 'running' || body.ec2State === 'stopped' ? body.ec2State : null,
+        keyPairName: typeof body.keyPairName === 'string' ? body.keyPairName : null,
+        ec2CreatedAt: typeof body.ec2CreatedAt === 'string' ? body.ec2CreatedAt : null,
+        ec2StartTime: typeof body.ec2StartTime === 'string' ? body.ec2StartTime : null,
       }
       await client.send(new PutItemCommand({ TableName, Item: marshall(Item, { removeUndefinedValues: true }) }))
       return json({ ok: true })
@@ -349,7 +384,7 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         return json({ error: '本日のAI講師の利用上限（50回）に達しました。明日の午前0時にリセットされます。' }, 429)
       }
 
-      const systemPrompt = `あなたはNIC（Neos IT College）のAI講師です。
+      const systemPrompt = `あなたはNIC（Neos IT College）のAI研修コーチです。
 
 【返答スタイル・最重要】
 - 返答は必ず5行以内に収めること
@@ -368,17 +403,27 @@ fail: 意味不明・設問と無関係・空欄に近い内容
 すべての幕末回答末尾：「…ところで、研修の方は進んでいますか？」
 
 【通常ルール】
-研修内容の質問には5行以内で端的に回答。
 システム操作（保存・中断等）：「その操作は画面上のボタンから行ってください。」
 幕末・研修以外の雑談：「研修に関すること以外はお答えできません。わからないことがあれば聞いてください。」
+課題コンテキストが不明な場合：「今どの課題に取り組んでいますか？」と確認する。
 
-【研修問題への回答禁止ルール】
-研修生が現在取り組んでいる問題の答えを直接教えてはいけない。
-「〇〇するには？」「〇〇のコマンドは？」という質問に対しては答えを直接提示せず、以下の形式でヒントのみ提供する：
-- 「どのコマンドを使うか」のカテゴリだけ教える
-- 「man コマンド名」や「--help」で調べる方法を案内する
-- 「どこで詰まっていますか？」と確認する
-答えを直接教えることは研修生の学習を妨げるため絶対に禁止する。
+【コーチングルール・絶対遵守】
+質問の種類によって以下のように対応を分ける：
+
+■ 定義質問（「〇〇ってなに？」「〇〇とは？」）
+1〜2行で簡潔に定義だけを伝える。使い方・オプション・具体的な手順は教えない。
+定義を伝えた後、必ず「まず man コマンド名 を打ってみてください。どんな情報が出てきましたか？」と動かすよう促す。
+
+■ 操作・手順・答えに直結する質問（「〇〇するには？」「〇〇のコマンドは？」「どうやって〇〇する？」）
+答えを直接教えてはいけない。「どこで詰まっていますか？」と確認し、詰まりの場所を絞り込む。
+
+■ 2回目以降（同じ内容が繰り返された場合）
+コマンドカテゴリや操作の方向性だけ教える（コマンド名・オプションは教えない）。
+例:「ユーザーを管理するコマンド群があります。user という単語で検索してみてください。」
+
+■ 明らかに詰まり切っている場合（3回以上同じ内容、または強い困惑が明確）
+コマンド名だけ教える（オプション・使い方は自分で調べさせる）。
+例:「useradd を使います。使い方は man で確認してください。」
 
 現在の課題コンテキスト: ${context ?? '不明'}`
 
@@ -470,10 +515,12 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       if (!password) {
         return json({ error: 'invalid password' }, 400)
       }
+      const userRole = ['student', 'manager'].includes(body.role) ? body.role : 'student'
       const passwordHash = crypto.createHash('sha256').update(password).digest('hex')
       const Item = {
         username,
         passwordHash,
+        role: userRole,
         createdAt: new Date().toISOString(),
       }
       await client.send(
@@ -547,8 +594,10 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         return json({ error: 'username and password required' }, 400)
       }
       let ok = false
+      let loginRole = 'student'
       if (username === 'admin' && AdminPassword) {
         ok = password === AdminPassword
+        if (ok) loginRole = 'manager'
       } else {
         const res = await client.send(
           new GetItemCommand({
@@ -561,13 +610,14 @@ fail: 意味不明・設問と無関係・空欄に近い内容
           const expected = typeof account.passwordHash === 'string' ? account.passwordHash : ''
           const actual = crypto.createHash('sha256').update(password).digest('hex')
           ok = expected && expected === actual
+          if (ok) loginRole = account.role || 'student'
         }
       }
       if (!ok) {
         return json({ error: 'unauthorized' }, 401)
       }
       if (!SessionsTableName) {
-        return json({ ok: true, username })
+        return json({ ok: true, username, role: loginRole })
       }
       const sessionId = crypto.randomBytes(24).toString('hex')
       const expiresAt = Math.floor(Date.now() / 1000) + 24 * 60 * 60
@@ -578,10 +628,11 @@ fail: 意味不明・設問と無関係・空欄に近い内容
             sessionId,
             username,
             expiresAt,
+            role: loginRole,
           }, { removeUndefinedValues: true }),
         }),
       )
-      return json({ ok: true, username, token: sessionId })
+      return json({ ok: true, username, token: sessionId, role: loginRole })
     }
 
     // ログアウト（セッション削除）
@@ -618,7 +669,7 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       if (expiresAt && parseInt(expiresAt, 10) < Math.floor(Date.now() / 1000)) {
         return json({ error: 'unauthorized' }, 401)
       }
-      return json({ username: session.username })
+      return json({ username: session.username, role: session.role || 'student' })
     }
 
     // ログイン可否チェック（LoginPage 用）
@@ -643,6 +694,135 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       const actual = crypto.createHash('sha256').update(password).digest('hex')
       const ok = expected && expected === actual
       return json({ ok })
+    }
+
+    // ============================
+    // Admin API（manager ロール専用）
+    // ============================
+
+    // 全ユーザー一覧 + 進捗マージ（GET /admin/users）
+    if (method === 'GET' && (path === '/admin/users' || path === '/admin/users/')) {
+      const session = await verifySession(event)
+      if (!session) return json({ error: 'unauthorized' }, 401)
+      const role = await getSessionRole(session)
+      if (role !== 'manager') return json({ error: 'forbidden' }, 403)
+
+      const [{ Items: accountItems }, { Items: progressItems }] = await Promise.all([
+        client.send(new ScanCommand({ TableName: AccountsTableName })),
+        client.send(new ScanCommand({ TableName })),
+      ])
+      const progressMap = {}
+      for (const item of (progressItems || [])) {
+        const p = unmarshall(item)
+        if (p.traineeId) progressMap[p.traineeId] = p
+      }
+      const users = (accountItems || [])
+        .map((item) => unmarshall(item))
+        .filter((a) => a.username !== 'admin')
+        .map((a) => {
+          const p = progressMap[a.username] || null
+          return {
+            username: a.username,
+            role: a.role || 'student',
+            createdAt: a.createdAt || null,
+            wbsPercent: p?.wbsPercent || 0,
+            currentChapter: getCurrentChapterLabel(p),
+            lastLogin: p?.updatedAt || null,
+            ec2State: p?.ec2State || null,
+            ec2PublicIp: p?.ec2PublicIp || null,
+            introConfirmed: p?.introConfirmed || false,
+            chapterProgress: p?.chapterProgress || [],
+            delayedIds: p?.delayedIds || [],
+            infra1Checkboxes: p?.infra1Checkboxes || [],
+            infra1SectionDone: p?.infra1SectionDone || {},
+            ec2Host: p?.ec2Host || null,
+            ec2Username: p?.ec2Username || null,
+            keyPairName: p?.keyPairName || null,
+            ec2CreatedAt: p?.ec2CreatedAt || null,
+            ec2StartTime: p?.ec2StartTime || null,
+          }
+        })
+      return json({ users })
+    }
+
+    // ユーザー作成（POST /admin/users）- managerのみ、roleフィールド必須
+    if (method === 'POST' && (path === '/admin/users' || path === '/admin/users/')) {
+      const session = await verifySession(event)
+      if (!session) return json({ error: 'unauthorized' }, 401)
+      const role = await getSessionRole(session)
+      if (role !== 'manager') return json({ error: 'forbidden' }, 403)
+
+      const body = JSON.parse(event.body || '{}')
+      const username = (body.username || '').trim().toLowerCase()
+      if (!username || username === 'admin') return json({ error: 'invalid username' }, 400)
+      if (!/^[a-z0-9-]+$/.test(username)) return json({ error: 'username must be alphanumeric or hyphen' }, 400)
+      const password = typeof body.password === 'string' ? body.password : ''
+      if (!password || password.length < 8) return json({ error: 'password_too_short' }, 400)
+      const userRole = ['student', 'manager'].includes(body.role) ? body.role : 'student'
+
+      const existing = await client.send(new GetItemCommand({
+        TableName: AccountsTableName,
+        Key: marshall({ username }),
+      }))
+      if (existing.Item) return json({ error: 'username_exists' }, 409)
+
+      const passwordHash = crypto.createHash('sha256').update(password).digest('hex')
+      await client.send(new PutItemCommand({
+        TableName: AccountsTableName,
+        Item: marshall({ username, passwordHash, role: userRole, createdAt: new Date().toISOString() }, { removeUndefinedValues: true }),
+      }))
+      return json({ ok: true, username, role: userRole })
+    }
+
+    // ユーザー削除（DELETE /admin/users/:username）- managerのみ
+    if (method === 'DELETE' && path.startsWith('/admin/users/')) {
+      const session = await verifySession(event)
+      if (!session) return json({ error: 'unauthorized' }, 401)
+      const role = await getSessionRole(session)
+      if (role !== 'manager') return json({ error: 'forbidden' }, 403)
+
+      const targetUsername = decodeURIComponent(path.replace('/admin/users/', '')).trim().toLowerCase()
+      if (!targetUsername || targetUsername === 'admin') return json({ error: 'invalid username' }, 400)
+
+      const targetRes = await client.send(new GetItemCommand({
+        TableName: AccountsTableName,
+        Key: marshall({ username: targetUsername }),
+      }))
+      if (!targetRes.Item) return json({ error: 'user not found' }, 404)
+      const targetAccount = unmarshall(targetRes.Item)
+
+      // managerは最後の1人を削除不可
+      if (targetAccount.role === 'manager') {
+        const { Items: allAccounts } = await client.send(new ScanCommand({ TableName: AccountsTableName }))
+        const managers = (allAccounts || []).map((i) => unmarshall(i)).filter((a) => a.role === 'manager' && a.username !== targetUsername)
+        if (managers.length === 0) return json({ error: 'last_manager' }, 400)
+      }
+
+      await Promise.allSettled([
+        client.send(new DeleteItemCommand({ TableName: AccountsTableName, Key: marshall({ username: targetUsername }) })),
+        client.send(new DeleteItemCommand({ TableName, Key: marshall({ traineeId: targetUsername }) })),
+      ])
+      return json({ ok: true })
+    }
+
+    // 全EC2サーバー一括停止（POST /admin/ec2/stop-all）- managerのみ
+    if (method === 'POST' && (path === '/admin/ec2/stop-all' || path === '/admin/ec2/stop-all/')) {
+      const session = await verifySession(event)
+      if (!session) return json({ error: 'unauthorized' }, 401)
+      const role = await getSessionRole(session)
+      if (role !== 'manager') return json({ error: 'forbidden' }, 403)
+
+      const { Items } = await client.send(new ScanCommand({ TableName }))
+      const running = (Items || []).map((i) => unmarshall(i)).filter((t) => t.ec2State === 'running')
+      let stoppedCount = 0
+      await Promise.allSettled(running.map(async (t) => {
+        try {
+          const updated = { ...t, ec2State: 'stopped', updatedAt: new Date().toISOString() }
+          await client.send(new PutItemCommand({ TableName, Item: marshall(updated, { removeUndefinedValues: true }) }))
+          stoppedCount++
+        } catch { /* ignore */ }
+      }))
+      return json({ ok: true, stoppedCount })
     }
 
     return json({ error: 'not found' }, 404)

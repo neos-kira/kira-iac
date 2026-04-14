@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { NeOSLogo } from './components/NeOSLogo'
-import { setLoggedIn } from './auth'
+import { setLoggedIn, setCurrentRole } from './auth'
 import { useAuth } from './AuthContext'
 import { addTrainee } from './traineeProgressStorage'
 import { isJTerada, J_TERADA_PASSWORD } from './specialUsers'
@@ -80,8 +80,8 @@ export function LoginPage() {
         return
       }
 
-      const ok = await checkAccount(normalized, pass)
-      if (!ok) {
+      const result = await checkAccount(normalized, pass)
+      if (!result.ok) {
         setLoginError('ユーザー名かパスワードが間違っています。')
         return
       }
@@ -90,6 +90,7 @@ export function LoginPage() {
       safeSetItem(USER_DISPLAY_NAME_KEY, normalized)
       setCookieValue(USER_DISPLAY_NAME_KEY, normalized)
       setLoggedIn()
+      setCurrentRole(result.role)
       safeSessionRemoveItem('kira-login-reload-tried')
       if (normalized !== 'admin') {
         addTrainee(name)
@@ -101,9 +102,10 @@ export function LoginPage() {
       // AuthContextを更新してReactの状態を同期
       refreshAuth()
 
-      // React Routerで遷移（ページリロードなし）
-      console.log('[LoginPage] Navigating to dashboard...')
-      navigate('/', { replace: true })
+      // ロールに応じて遷移
+      const destination = result.role === 'manager' ? '/admin' : '/'
+      console.log('[LoginPage] Navigating to', destination)
+      navigate(destination, { replace: true })
     } finally {
       if (!didNavigate) setIsLoggingIn(false)
     }

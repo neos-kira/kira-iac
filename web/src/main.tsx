@@ -59,6 +59,7 @@ function handleGlobalLogout() {
   safeRemoveItem('kira-session-token')
   safeRemoveItem('kira-user-logged-in')
   safeRemoveItem('kira-user-display-name')
+  safeRemoveItem('kira-user-role')
   clearCookieValue('kira-session-token')
   clearCookieValue('kira-user-logged-in')
   window.location.hash = '#/login'
@@ -332,6 +333,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <Navigate to="/login" replace />
 }
 
+function ManagerRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, role } = useAuth()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  const isManager = role === 'manager' || getCurrentDisplayName().trim().toLowerCase() === 'admin'
+  if (!isManager) return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <HashRouter>
@@ -343,7 +352,7 @@ createRoot(document.getElementById('root')!).render(
             <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/" element={<ProtectedRoute><App /></ProtectedRoute>} />
-            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/admin" element={<ManagerRoute><AdminPage /></ManagerRoute>} />
             <Route path="/training/linux-level1" element={<IntroGate><LinuxLevel1Page /></IntroGate>} />
             <Route path="/training/infra-basic-1" element={<IntroGate><InfraBasic1Page /></IntroGate>} />
             <Route path="/training/infra-basic-top" element={<IntroGate><InfraBasicTopPage /></IntroGate>} />

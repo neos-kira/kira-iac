@@ -6,6 +6,9 @@ export const LOGIN_FLAG_KEY = 'kira-user-logged-in'
 /** 表示名（ログイン時のユーザー名。進捗のユーザー別キーに使用） */
 export const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
 
+/** ロール（student / manager） */
+export const USER_ROLE_KEY = 'kira-user-role'
+
 const LOGIN_COOKIE_KEY = 'kira-user-logged-in'
 
 /**
@@ -44,4 +47,21 @@ export function setLoggedIn(): void {
 /** 現在ログイン中のユーザー名（進捗キー用に小文字統一。正しくは kira-test 等） */
 export function getCurrentUsername(): string {
   return getCurrentDisplayName().trim().toLowerCase()
+}
+
+/** 現在のロールを取得（student / manager） */
+export function getCurrentRole(): string {
+  if (typeof window === 'undefined') return 'student'
+  const v = safeGetItem(USER_ROLE_KEY) || ''
+  if (v) return v
+  // admin ユーザーは常に manager
+  if (getCurrentDisplayName().trim().toLowerCase() === 'admin') return 'manager'
+  return 'student'
+}
+
+/** ロールを保存 */
+export function setCurrentRole(role: string): void {
+  if (typeof window === 'undefined') return
+  safeSetItem(USER_ROLE_KEY, role)
+  setCookieValue(USER_ROLE_KEY, role)
 }

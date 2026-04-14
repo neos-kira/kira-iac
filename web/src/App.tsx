@@ -22,7 +22,7 @@ import {
 import { isJTerada, J_TERADA_ALLOWED_LINKS } from './specialUsers'
 import { VI_STEPS, SHELL_QUESTIONS } from './training/InfraBasic4Data'
 import { clearIntroForCurrentUser } from './training/introGate'
-import { LOGIN_FLAG_KEY, getCurrentDisplayName } from './auth'
+import { LOGIN_FLAG_KEY, getCurrentDisplayName, getCurrentRole, USER_ROLE_KEY } from './auth'
 import { restoreProgressToLocalStorage, type TraineeProgressSnapshot } from './traineeProgressStorage'
 import { isProgressApiAvailable, postProgress, fetchMyProgress, fetchProgressFromApi } from './progressApi'
 import { createAccount, fetchAccounts, isAccountApiAvailable, deleteAccount, type Account } from './accountsApi'
@@ -114,6 +114,7 @@ function handleLogout() {
   safeRemoveItem(USER_DISPLAY_NAME_KEY)
   safeRemoveItem(LOGIN_FLAG_KEY)
   safeRemoveItem('kira-session-token')
+  safeRemoveItem(USER_ROLE_KEY)
   clearCookieValue('kira-user-display-name')
   clearCookieValue('kira-user-logged-in')
   clearCookieValue('kira-session-token')
@@ -452,7 +453,7 @@ function App() {
   }, [showSearchHistory])
 
   const displayName = getDisplayName()?.toLowerCase()
-  const isAdminView = displayName === 'admin'
+  const isAdminView = displayName === 'admin' || getCurrentRole() === 'manager'
   const isKiraTest = isKiraTestUser()
 
   /** 初回のみ: サーバーから進捗を取得し pinnedTraining をセット。必要なら localStorage を 1 回だけサーバーにマージ。完了後に isDataReady を true にする。 */
