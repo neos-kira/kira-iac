@@ -11,52 +11,16 @@ type GradeState = Record<string, GradeResult>
 
 const SECTION_IDS = ['teraterm', 'sakura', 'winmerge', 'winscp'] as const
 
+const FAIL_MESSAGES: Record<string, string> = {
+  teraterm: 'SSH接続が確認できません。接続成功後のプロンプト画面をアップロードしてください',
+  sakura: '2ファイルが確認できません。趣味.txtと好きな動物.txtが表示されている画面をアップロードしてください',
+  winmerge: 'WinMergeの差分画面が確認できません。2ファイルの差分が表示されている画面をアップロードしてください',
+  winscp: 'WinSCPの画面が確認できません。接続成功またはファイル転送完了の画面をアップロードしてください',
+}
+
 const EMPTY_SNAPSHOT: TraineeProgressSnapshot = {
   introConfirmed: false, introAt: null, wbsPercent: 0,
   chapterProgress: [], currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
-}
-
-// ---- クリップボード ----
-function copyToClipboard(text: string): Promise<boolean> {
-  if (typeof navigator?.clipboard?.writeText === 'function') {
-    return navigator.clipboard.writeText(text).then(() => true).catch(() => fallbackCopy(text))
-  }
-  return Promise.resolve(fallbackCopy(text))
-}
-function fallbackCopy(text: string): boolean {
-  const ta = document.createElement('textarea')
-  ta.value = text
-  ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;'
-  document.body.appendChild(ta)
-  ta.select()
-  let ok = false
-  try { ok = document.execCommand('copy') } finally { document.body.removeChild(ta) }
-  return ok
-}
-
-function CopyRow({ label, value }: { label: string; value: string }) {
-  const [copied, setCopied] = useState(false)
-  const handleCopy = useCallback((e: React.MouseEvent) => {
-    e.preventDefault(); e.stopPropagation()
-    void copyToClipboard(value).then((ok) => {
-      if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000) }
-    })
-  }, [value])
-  return (
-    <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
-      <span className="text-xs text-slate-400 shrink-0">{label}</span>
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-        <code className="truncate text-sm text-slate-700">{value || '—'}</code>
-        {value && (
-          <button type="button" onClick={handleCopy}
-            className="shrink-0 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:border-indigo-500 hover:bg-indigo-50"
-          >
-            {copied ? 'コピーしました' : 'コピー'}
-          </button>
-        )}
-      </div>
-    </div>
-  )
 }
 
 // ---- 画像→base64変換 ----
@@ -75,7 +39,8 @@ async function gradeWithImage(
   file: File,
   username: string,
 ): Promise<{ passed: boolean; message: string }> {
-  if (!BASE_URL) return { passed: false, message: 'APIが設定されていません' }
+  const failMsg = FAIL_MESSAGES[section] ?? '画面を確認できませんでした。再度アップロードしてください'
+  if (!BASE_URL) return { passed: false, message: failMsg }
   try {
     const base64 = await fileToBase64(file)
     const res = await fetch(`${BASE_URL}/ai/grade-image`, {
@@ -84,22 +49,12 @@ async function gradeWithImage(
       credentials: 'omit',
       body: JSON.stringify({ section, username, image: base64, imageType: file.type }),
     })
-    if (!res.ok) return { passed: false, message: '採点に失敗しました' }
+    if (!res.ok) return { passed: false, message: failMsg }
     const data = await res.json() as { passed?: boolean; message?: string }
-    return { passed: !!data.passed, message: data.message ?? '採点完了' }
+    return { passed: !!data.passed, message: data.message ?? failMsg }
   } catch {
-    return { passed: false, message: '採点に失敗しました' }
+    return { passed: false, message: failMsg }
   }
-}
-
-// ---- 秘密鍵再ダウンロード ----
-function redownloadKey(keyPairName: string, loginUsername: string) {
-  const filename = `${keyPairName}.pem`
-  const content = `-----BEGIN RSA PRIVATE KEY-----\n(mock key for ${loginUsername})\n-----END RSA PRIVATE KEY-----`
-  const blob = new Blob([content], { type: 'application/octet-stream' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a'); a.href = url; a.download = filename; a.click()
-  URL.revokeObjectURL(url)
 }
 
 // ---- セクションコンポーネント（全て画像採点） ----
@@ -110,7 +65,7 @@ function ToolSection({
   title: string
   why: string
   tips: string
-  steps: (string | React.ReactNode)[]
+  steps: string[]
   gradeResult?: GradeResult
   isGrading: boolean
   onImageGrade: (file: File) => void
@@ -150,13 +105,14 @@ function ToolSection({
         {/* スクリーンショット枠 */}
         <div
           className="mb-3 flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-[#f8f9fa] px-4 py-6 text-center transition-colors hover:border-emerald-400 hover:bg-emerald-50"
+          style={{ borderWidth: '0.5px', padding: '12px' }}
           onClick={() => !isGrading && fileRef.current?.click()}
         >
           <svg className="mb-1 h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
           <p className="text-xs text-slate-500">
-            {isGrading ? 'AI採点中...' : 'スクリーンショットをドロップまたはクリックしてアップロード'}
+            {isGrading ? 'AI採点中...' : 'クリックしてスクリーンショットをアップロード'}
           </p>
         </div>
 
@@ -204,9 +160,7 @@ export function InfraBasic1Page() {
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const [gradeState, setGradeState] = useState<GradeState>({})
   const [gradingSection, setGradingSection] = useState<string | null>(null)
-  const [ec2Params, setEc2Params] = useState<{
-    ip: string; loginUsername: string; keyPairName: string; ec2CreatedAt: string; hasServer: boolean
-  }>({ ip: '', loginUsername: '', keyPairName: '', ec2CreatedAt: '', hasServer: false })
+  const [hasServer, setHasServer] = useState(false)
 
   const username = getCurrentDisplayName().trim().toLowerCase()
   const clearedKey = getProgressKey(INFRA_BASIC_1_CLEARED_KEY)
@@ -220,13 +174,7 @@ export function InfraBasic1Page() {
       if (snap) {
         setServerSnapshot(snap)
         const ip = snap.ec2PublicIp || snap.ec2Host || ''
-        setEc2Params({
-          ip,
-          loginUsername: username,
-          keyPairName: snap.keyPairName || '',
-          ec2CreatedAt: snap.ec2CreatedAt || '',
-          hasServer: !!ip,
-        })
+        setHasServer(!!ip)
         setGradeState(snap.infra1GradeState ?? {})
       }
       setIsLoading(false)
@@ -286,59 +234,28 @@ export function InfraBasic1Page() {
           <h1 className="text-xl font-bold text-slate-800">インフラ基礎演習1</h1>
         </div>
 
-        {/* 演習サーバー情報 or 未作成警告 */}
-        {ec2Params.hasServer ? (
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">演習サーバー情報</p>
-            <div className="mt-3 space-y-2">
-              <CopyRow label="サーバーIP" value={ec2Params.ip} />
-              <CopyRow label="接続ユーザー" value={ec2Params.loginUsername} />
-              <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
-                <span className="text-xs text-slate-400 shrink-0">秘密鍵</span>
-                <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-                  <code className="truncate text-sm text-slate-700">{ec2Params.keyPairName || '—'}.pem</code>
-                  {ec2Params.keyPairName && (
-                    <button
-                      type="button"
-                      onClick={() => redownloadKey(ec2Params.keyPairName, ec2Params.loginUsername)}
-                      className="shrink-0 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:border-indigo-500 hover:bg-indigo-50"
-                    >
-                      再ダウンロード
-                    </button>
-                  )}
-                </div>
-              </div>
-              {ec2Params.ec2CreatedAt && (
-                <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  <span className="text-xs text-slate-400">作成日時</span>
-                  <span className="text-sm text-slate-600">{ec2Params.ec2CreatedAt}</span>
-                </div>
-              )}
-            </div>
-          </section>
-        ) : (
-          <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-            <p className="font-semibold text-amber-900">演習サーバーがまだ作成されていません</p>
-            <p className="mt-1 text-sm text-amber-700">トップページでサーバーを作成してください。</p>
-            <button
-              type="button"
-              onClick={() => { window.location.hash = '#/' }}
-              className="mt-3 rounded-lg border border-amber-400 bg-white px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-50"
-            >
-              トップページへ
-            </button>
-          </section>
+        {/* EC2未作成警告 */}
+        {!hasServer && (
+          <>
+            <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+              <p className="font-semibold text-amber-900">演習サーバーがまだ作成されていません</p>
+              <p className="mt-1 text-sm text-amber-700">トップページでサーバーを作成してください。</p>
+              <button
+                type="button"
+                onClick={() => { window.location.hash = '#/' }}
+                className="mt-3 rounded-lg border border-amber-400 bg-white px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-50"
+              >
+                トップページへ
+              </button>
+            </section>
+            <p className="text-center text-xs text-slate-400">
+              サーバーを作成後、この画面に戻ってきてください。
+            </p>
+          </>
         )}
 
-        {/* サーバー未作成時はここで終了 */}
-        {!ec2Params.hasServer && (
-          <p className="text-center text-xs text-slate-400">
-            サーバーを作成後、この画面に戻ってきてください。
-          </p>
-        )}
-
-        {/* サーバー作成済み：以降のセクションを表示 */}
-        {ec2Params.hasServer && (
+        {/* サーバー作成済み：全セクションを表示 */}
+        {hasServer && (
           <>
             {/* 前提 */}
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -367,14 +284,14 @@ export function InfraBasic1Page() {
               onImageGrade={(file) => { void handleImageGrade('teraterm', file) }}
               steps={[
                 'デスクトップの「TeraTerm」をダブルクリック',
-                <span key="host">ホスト名に <code className="rounded bg-slate-100 px-1 font-mono text-xs">{ec2Params.ip}</code> を入力（コピーボタンから貼り付け）</span>,
+                'ホスト名に自分のサーバーIPを入力',
                 'OKをクリック',
-                <span key="user">ユーザー名に <code className="rounded bg-slate-100 px-1 font-mono text-xs">{ec2Params.loginUsername}</code> を入力</span>,
+                'ユーザー名に自分のユーザー名を入力',
                 '「RSA/DSA/ECDSA/ED25519鍵を使う」を選択',
-                <span key="key">デスクトップの <code className="rounded bg-slate-100 px-1 font-mono text-xs">{ec2Params.keyPairName || '（秘密鍵ファイル）'}.pem</code> を選択</span>,
+                'デスクトップの秘密鍵ファイル（.pem）を選択',
                 'OKをクリック → 接続成功を確認',
-                <span key="exit"><code className="rounded bg-slate-100 px-1 font-mono text-xs">exit</code> でログアウト</span>,
-                <span key="ss">接続成功後のプロンプト画面をスクリーンショット撮影し、下のボタンからアップロード</span>,
+                'exit でログアウト',
+                'SSH接続成功後のプロンプト画面をスクリーンショット撮影し、下のボタンからアップロード',
               ]}
             />
 
@@ -390,9 +307,9 @@ export function InfraBasic1Page() {
                 'デスクトップの「sakura」アイコンをダブルクリック',
                 '新規ファイルに「自分の名前と趣味」を入力',
                 '「ファイル」→「名前を付けて保存」をクリック',
-                <span key="趣味">ファイル名を <code className="rounded bg-slate-100 px-1 font-mono text-xs">趣味.txt</code> にして保存</span>,
-                <span key="動物">同様に <code className="rounded bg-slate-100 px-1 font-mono text-xs">好きな動物.txt</code> も作成</span>,
-                'ファイル保存ダイアログ、またはエディタ画面にファイル名が表示された状態でスクリーンショット撮影し、下のボタンからアップロード',
+                'ファイル名を「趣味.txt」にして保存',
+                '同様に「好きな動物.txt」も作成',
+                '2ファイルが保存されたフォルダ画面をスクリーンショット撮影し、下のボタンからアップロード',
               ]}
             />
 
@@ -408,7 +325,7 @@ export function InfraBasic1Page() {
                 'WinMergeを起動',
                 '「ファイル」→「開く」で、先ほど作成した2つのファイルを選択',
                 '差分が表示されることを確認',
-                'WinMergeの差分表示画面をスクリーンショット撮影し、下のボタンからアップロード',
+                '差分表示画面をスクリーンショット撮影し、下のボタンからアップロード',
               ]}
             />
 
@@ -422,11 +339,11 @@ export function InfraBasic1Page() {
               onImageGrade={(file) => { void handleImageGrade('winscp', file) }}
               steps={[
                 'WinSCPを起動',
-                <span key="host">ホスト名に <code className="rounded bg-slate-100 px-1 font-mono text-xs">{ec2Params.ip}</code> を入力</span>,
-                <span key="user">ユーザー名に <code className="rounded bg-slate-100 px-1 font-mono text-xs">{ec2Params.loginUsername}</code> を入力</span>,
-                <span key="key">設定 → SSH → 認証 で秘密鍵（<code className="rounded bg-slate-100 px-1 font-mono text-xs">{ec2Params.keyPairName || '秘密鍵ファイル'}.pem</code>）を指定</span>,
+                'ホスト名に自分のサーバーIPを入力',
+                'ユーザー名に自分のユーザー名を入力',
+                '設定 → SSH → 認証 で自分の秘密鍵ファイル（.pem）を指定',
                 'ログインをクリック',
-                <span key="transfer">ローカルの2ファイルをサーバーの <code className="rounded bg-slate-100 px-1 font-mono text-xs">/tmp</code> に転送</span>,
+                'ローカルの2ファイルをサーバーの /tmp に転送',
                 '転送成功を確認後、サーバー側のファイルを右クリックで削除',
                 'WinSCPの接続成功画面またはファイル転送画面をスクリーンショット撮影し、下のボタンからアップロード',
               ]}
