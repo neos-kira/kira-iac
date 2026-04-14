@@ -1,6 +1,8 @@
 const { DynamoDBClient, PutItemCommand, ScanCommand, GetItemCommand, DeleteItemCommand } = require('@aws-sdk/client-dynamodb')
 const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime')
 const bedrockClient = new BedrockRuntimeClient({ region: 'ap-northeast-1' })
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3')
+const s3Client = new S3Client({ region: 'ap-northeast-1' })
 const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb')
 const crypto = require('crypto')
 
@@ -9,6 +11,7 @@ const TableName = process.env.TABLE_NAME
 const AccountsTableName = process.env.ACCOUNTS_TABLE_NAME
 const SessionsTableName = process.env.SESSIONS_TABLE_NAME || ''
 const AdminPassword = process.env.ADMIN_PASSWORD || ''
+const ScreenshotsBucket = process.env.SCREENSHOTS_BUCKET || 'kira-project-dev-screenshots'
 
 /** Bedrock InvokeModel をリトライ付きで実行（ServiceUnavailableException 対策） */
 async function invokeModelWithRetry(command, maxRetries = 5) {
@@ -751,6 +754,98 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         return json({ success: true, passed: !!parsed.passed, message: String(parsed.message || '採点完了') })
       } catch {
         return json({ success: true, passed: true, message: 'スクリーンショットを確認しました' })
+      }
+    }
+
+    // 画像アップロード採点（POST /ai/grade-image）
+    // 全セクション共通: 画像 → S3保存 → Bedrock vision 判定
+    if (method === 'POST' && (path === '/ai/grade-image' || path === '/ai/grade-image/')) {
+      const session = await verifySession(event)
+      if (!session) return json({ error: 'unauthorized' }, 401)
+
+      let body
+      try { body = JSON.parse(event.body || '{}') } catch { body = {} }
+      const section = body.section || ''
+      const imageBase64 = body.image || ''
+      const imageType = body.imageType || 'image/png'
+      const loginUsername = session.username || body.username || 'unknown'
+
+      if (!imageBase64) {
+        return json({ success: false, passed: false, message: '画像が送信されていません' }, 400)
+      }
+
+      // S3に画像を保存（失敗しても採点は続行）
+      const timestamp = Date.now()
+      const ext = imageType.includes('jpeg') ? 'jpg' : imageType.includes('webp') ? 'webp' : 'png'
+      const s3Key = `screenshots/${loginUsername}/${section}/${timestamp}.${ext}`
+      try {
+        const imgBuffer = Buffer.from(imageBase64, 'base64')
+        await s3Client.send(new PutObjectCommand({
+          Bucket: ScreenshotsBucket,
+          Key: s3Key,
+          Body: imgBuffer,
+          ContentType: imageType,
+        }))
+      } catch (s3Err) {
+        console.warn('[grade-image] S3 upload failed (continuing):', s3Err.message)
+      }
+
+      // セクション別の判定プロンプト
+      const systemPrompts = {
+        teraterm: 'あなたはITインフラ研修の採点者です。スクリーンショットを確認し、TeraTerm（SSH）でLinuxサーバーへの接続が成功しているか判定してください。接続成功の証拠：ターミナルにLinuxのプロンプト（例: username@hostname:~$ やコマンドライン画面）が表示されていること。必ず {"passed":true,"message":"..."} または {"passed":false,"message":"..."} 形式のJSONのみを返してください。messageは日本語で30文字以内にしてください。',
+        sakura: 'あなたはITインフラ研修の採点者です。スクリーンショットを確認し、sakuraエディタでファイルが作成されているか判定してください。合格条件：「趣味.txt」または「好きな動物.txt」というファイル名が画面に表示されていること（ファイル保存ダイアログ・エディタのタイトルバー・ファイル一覧のどれでも可）。必ず {"passed":true,"message":"..."} または {"passed":false,"message":"..."} 形式のJSONのみを返してください。messageは日本語で30文字以内にしてください。',
+        winmerge: 'あなたはITインフラ研修の採点者です。スクリーンショットを確認し、WinMergeで2つのファイルの差分比較が表示されているか判定してください。合格条件：WinMergeの差分表示画面（左右にファイルが並んで表示、色付きハイライトが見える）が確認できること。必ず {"passed":true,"message":"..."} または {"passed":false,"message":"..."} 形式のJSONのみを返してください。messageは日本語で30文字以内にしてください。',
+        winscp: 'あなたはITインフラ研修の採点者です。スクリーンショットを確認し、WinSCPでサーバーへの接続またはファイル転送が完了しているか判定してください。合格条件：WinSCPの接続成功画面（ローカルとサーバーの2ペイン表示）またはファイル転送完了画面が確認できること。必ず {"passed":true,"message":"..."} または {"passed":false,"message":"..."} 形式のJSONのみを返してください。messageは日本語で30文字以内にしてください。',
+      }
+
+      const successMessages = {
+        teraterm: 'SSH接続が確認できました',
+        sakura: 'ファイル作成が確認できました',
+        winmerge: 'WinMergeの差分表示が確認できました',
+        winscp: 'WinSCPの接続・転送が確認できました',
+      }
+      const failMessages = {
+        teraterm: 'SSH接続成功後のプロンプト画面をアップロードしてください',
+        sakura: '趣味.txt または 好きな動物.txt が表示された画面をアップロードしてください',
+        winmerge: 'WinMergeの差分表示画面をアップロードしてください',
+        winscp: 'WinSCPの接続成功またはファイル転送画面をアップロードしてください',
+      }
+
+      const systemPrompt = systemPrompts[section] || 'スクリーンショットを確認し、演習が完了していれば {"passed":true,"message":"完了が確認できました"} を返してください。'
+      const userContent = [
+        { type: 'image', source: { type: 'base64', media_type: imageType, data: imageBase64 } },
+        { type: 'text', text: '上記スクリーンショットを確認し、合否をJSONで返してください。' },
+      ]
+
+      try {
+        const command = new InvokeModelCommand({
+          modelId: 'apac.anthropic.claude-sonnet-4-20250514-v1:0',
+          contentType: 'application/json',
+          accept: 'application/json',
+          body: JSON.stringify({
+            anthropic_version: 'bedrock-2023-05-31',
+            max_tokens: 100,
+            temperature: 0,
+            system: systemPrompt,
+            messages: [{ role: 'user', content: userContent }],
+          }),
+        })
+        const response = await invokeModelWithRetry(command)
+        const result = JSON.parse(Buffer.from(response.body).toString())
+        const text = (result.content?.[0]?.text ?? '').trim()
+        const match = text.match(/\{[\s\S]*?\}/)
+        if (!match) {
+          return json({ success: true, passed: true, message: successMessages[section] || '採点完了', s3Key })
+        }
+        const parsed = JSON.parse(match[0])
+        const passed = !!parsed.passed
+        const message = passed
+          ? (String(parsed.message || successMessages[section] || '合格'))
+          : (String(parsed.message || failMessages[section] || '不合格'))
+        return json({ success: true, passed, message, s3Key })
+      } catch (err) {
+        console.error('[grade-image] Bedrock error:', err.name, err.message)
+        return json({ success: true, passed: true, message: successMessages[section] || 'スクリーンショットを確認しました', s3Key })
       }
     }
 

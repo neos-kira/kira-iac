@@ -59,24 +59,7 @@ function CopyRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-// ---- AI採点 ----
-async function gradeSection(section: string): Promise<{ passed: boolean; message: string }> {
-  if (!BASE_URL) return { passed: false, message: 'APIが設定されていません' }
-  try {
-    const res = await fetch(`${BASE_URL}/ai/grade`, {
-      method: 'POST',
-      headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
-      credentials: 'omit',
-      body: JSON.stringify({ section }),
-    })
-    if (!res.ok) return { passed: false, message: '採点に失敗しました' }
-    const data = await res.json() as { passed?: boolean; message?: string }
-    return { passed: !!data.passed, message: data.message ?? '採点完了' }
-  } catch {
-    return { passed: false, message: '採点に失敗しました' }
-  }
-}
-
+// ---- 画像→base64変換 ----
 async function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -86,15 +69,20 @@ async function fileToBase64(file: File): Promise<string> {
   })
 }
 
-async function gradeWithImage(section: string, file: File): Promise<{ passed: boolean; message: string }> {
+// ---- AI画像採点 ----
+async function gradeWithImage(
+  section: string,
+  file: File,
+  username: string,
+): Promise<{ passed: boolean; message: string }> {
   if (!BASE_URL) return { passed: false, message: 'APIが設定されていません' }
   try {
     const base64 = await fileToBase64(file)
-    const res = await fetch(`${BASE_URL}/ai/grade`, {
+    const res = await fetch(`${BASE_URL}/ai/grade-image`, {
       method: 'POST',
       headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
       credentials: 'omit',
-      body: JSON.stringify({ section, image: { base64, type: file.type } }),
+      body: JSON.stringify({ section, username, image: base64, imageType: file.type }),
     })
     if (!res.ok) return { passed: false, message: '採点に失敗しました' }
     const data = await res.json() as { passed?: boolean; message?: string }
@@ -114,10 +102,10 @@ function redownloadKey(keyPairName: string, loginUsername: string) {
   URL.revokeObjectURL(url)
 }
 
-// ---- セクションコンポーネント ----
+// ---- セクションコンポーネント（全て画像採点） ----
 function ToolSection({
   title, why, tips, steps,
-  gradeResult, isGrading, onGrade, onImageGrade, gradingType,
+  gradeResult, isGrading, onImageGrade,
 }: {
   title: string
   why: string
@@ -125,9 +113,7 @@ function ToolSection({
   steps: (string | React.ReactNode)[]
   gradeResult?: GradeResult
   isGrading: boolean
-  onGrade: () => void
-  onImageGrade?: (file: File) => void
-  gradingType: 'button' | 'image'
+  onImageGrade: (file: File) => void
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const isPassed = gradeResult?.passed === true
@@ -161,42 +147,43 @@ function ToolSection({
 
       {/* 採点エリア */}
       <div className="mt-5">
-        {gradingType === 'button' ? (
-          <button
-            type="button"
-            onClick={onGrade}
-            disabled={isGrading}
-            className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isGrading ? '採点中...' : 'AI採点を実行'}
-          </button>
-        ) : (
-          <>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file && onImageGrade) onImageGrade(file)
-                if (fileRef.current) fileRef.current.value = ''
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={isGrading}
-              className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isGrading ? '解析中...' : 'スクリーンショットをアップロード'}
-            </button>
-          </>
-        )}
+        {/* スクリーンショット枠 */}
+        <div
+          className="mb-3 flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-[#f8f9fa] px-4 py-6 text-center transition-colors hover:border-emerald-400 hover:bg-emerald-50"
+          onClick={() => !isGrading && fileRef.current?.click()}
+        >
+          <svg className="mb-1 h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <p className="text-xs text-slate-500">
+            {isGrading ? 'AI採点中...' : 'スクリーンショットをドロップまたはクリックしてアップロード'}
+          </p>
+        </div>
+
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) onImageGrade(file)
+            if (fileRef.current) fileRef.current.value = ''
+          }}
+        />
+
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={isGrading}
+          className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isGrading ? 'AI採点中...' : 'スクリーンショットをアップロード'}
+        </button>
 
         {/* 採点結果 */}
         {gradeResult && (
-          <div className={`mt-3 rounded-xl px-4 py-3 text-sm font-medium ${gradeResult.passed ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+          <div className={`mt-3 rounded-xl border px-4 py-3 text-sm font-medium ${gradeResult.passed ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800'}`}>
             {gradeResult.passed ? '✓ ' : '✗ '}{gradeResult.message}
           </div>
         )}
@@ -271,21 +258,13 @@ export function InfraBasic1Page() {
     }
   }, [gradeState, serverSnapshot, username, clearedKey])
 
-  // テキスト採点（TeraTerm/WinSCP）
-  const handleGrade = useCallback(async (sectionId: string) => {
-    setGradingSection(sectionId)
-    const result = await gradeSection(sectionId)
-    await saveGrade(sectionId, { ...result, gradedAt: new Date().toISOString() })
-    setGradingSection(null)
-  }, [saveGrade])
-
-  // 画像採点（sakura/WinMerge）
+  // 画像採点（全セクション共通）
   const handleImageGrade = useCallback(async (sectionId: string, file: File) => {
     setGradingSection(sectionId)
-    const result = await gradeWithImage(sectionId, file)
+    const result = await gradeWithImage(sectionId, file, username)
     await saveGrade(sectionId, { ...result, gradedAt: new Date().toISOString() })
     setGradingSection(null)
-  }, [saveGrade])
+  }, [saveGrade, username])
 
   const allPassed = SECTION_IDS.every((id) => gradeState[id]?.passed)
 
@@ -383,10 +362,9 @@ export function InfraBasic1Page() {
               title="TeraTerm"
               why="現場でLinuxサーバーに接続する際に必須のツールです"
               tips="秘密鍵紛失時はトップページで再ダウンロード。接続失敗時はWindowsファイアウォール設定を確認してください"
-              gradingType="button"
               gradeResult={gradeState.teraterm}
               isGrading={gradingSection === 'teraterm'}
-              onGrade={() => { void handleGrade('teraterm') }}
+              onImageGrade={(file) => { void handleImageGrade('teraterm', file) }}
               steps={[
                 'デスクトップの「TeraTerm」をダブルクリック',
                 <span key="host">ホスト名に <code className="rounded bg-slate-100 px-1 font-mono text-xs">{ec2Params.ip}</code> を入力（コピーボタンから貼り付け）</span>,
@@ -396,6 +374,7 @@ export function InfraBasic1Page() {
                 <span key="key">デスクトップの <code className="rounded bg-slate-100 px-1 font-mono text-xs">{ec2Params.keyPairName || '（秘密鍵ファイル）'}.pem</code> を選択</span>,
                 'OKをクリック → 接続成功を確認',
                 <span key="exit"><code className="rounded bg-slate-100 px-1 font-mono text-xs">exit</code> でログアウト</span>,
+                <span key="ss">接続成功後のプロンプト画面をスクリーンショット撮影し、下のボタンからアップロード</span>,
               ]}
             />
 
@@ -404,10 +383,8 @@ export function InfraBasic1Page() {
               title="sakuraエディタ"
               why="設定ファイルやログファイルを編集する際に使います"
               tips="文字コード「UTF-8」、改行コード「LF」で保存。Linux環境との互換性を意識してください。"
-              gradingType="image"
               gradeResult={gradeState.sakura}
               isGrading={gradingSection === 'sakura'}
-              onGrade={() => {}}
               onImageGrade={(file) => { void handleImageGrade('sakura', file) }}
               steps={[
                 'デスクトップの「sakura」アイコンをダブルクリック',
@@ -415,6 +392,7 @@ export function InfraBasic1Page() {
                 '「ファイル」→「名前を付けて保存」をクリック',
                 <span key="趣味">ファイル名を <code className="rounded bg-slate-100 px-1 font-mono text-xs">趣味.txt</code> にして保存</span>,
                 <span key="動物">同様に <code className="rounded bg-slate-100 px-1 font-mono text-xs">好きな動物.txt</code> も作成</span>,
+                'ファイル保存ダイアログ、またはエディタ画面にファイル名が表示された状態でスクリーンショット撮影し、下のボタンからアップロード',
               ]}
             />
 
@@ -423,15 +401,14 @@ export function InfraBasic1Page() {
               title="WinMerge"
               why="リリース作業で変更内容を証明するために必須のツールです"
               tips="リリース作業で「何を変えたか」を証明するために必須のツール。差分確認を習慣にしましょう。"
-              gradingType="image"
               gradeResult={gradeState.winmerge}
               isGrading={gradingSection === 'winmerge'}
-              onGrade={() => {}}
               onImageGrade={(file) => { void handleImageGrade('winmerge', file) }}
               steps={[
                 'WinMergeを起動',
                 '「ファイル」→「開く」で、先ほど作成した2つのファイルを選択',
                 '差分が表示されることを確認',
+                'WinMergeの差分表示画面をスクリーンショット撮影し、下のボタンからアップロード',
               ]}
             />
 
@@ -440,10 +417,9 @@ export function InfraBasic1Page() {
               title="WinSCP"
               why="ローカルとサーバー間でファイルを転送する際に使います"
               tips="ファイルを置いたら「消す」まで作業。不要なファイルをサーバーに残さない習慣をつけましょう。"
-              gradingType="button"
               gradeResult={gradeState.winscp}
               isGrading={gradingSection === 'winscp'}
-              onGrade={() => { void handleGrade('winscp') }}
+              onImageGrade={(file) => { void handleImageGrade('winscp', file) }}
               steps={[
                 'WinSCPを起動',
                 <span key="host">ホスト名に <code className="rounded bg-slate-100 px-1 font-mono text-xs">{ec2Params.ip}</code> を入力</span>,
@@ -452,6 +428,7 @@ export function InfraBasic1Page() {
                 'ログインをクリック',
                 <span key="transfer">ローカルの2ファイルをサーバーの <code className="rounded bg-slate-100 px-1 font-mono text-xs">/tmp</code> に転送</span>,
                 '転送成功を確認後、サーバー側のファイルを右クリックで削除',
+                'WinSCPの接続成功画面またはファイル転送画面をスクリーンショット撮影し、下のボタンからアップロード',
               ]}
             />
 
