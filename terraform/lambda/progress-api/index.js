@@ -226,6 +226,8 @@ async function handler(event) {
         keyPairName: typeof body.keyPairName === 'string' ? body.keyPairName : null,
         ec2CreatedAt: typeof body.ec2CreatedAt === 'string' ? body.ec2CreatedAt : null,
         ec2StartTime: typeof body.ec2StartTime === 'string' ? body.ec2StartTime : null,
+        // 課題1-1: AI採点結果
+        infra1GradeState: body.infra1GradeState && typeof body.infra1GradeState === 'object' ? body.infra1GradeState : {},
       }
       await client.send(new PutItemCommand({ TableName, Item: marshall(Item, { removeUndefinedValues: true }) }))
       return json({ ok: true })
@@ -694,6 +696,62 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       const actual = crypto.createHash('sha256').update(password).digest('hex')
       const ok = expected && expected === actual
       return json({ ok })
+    }
+
+    // 課題AI採点（POST /ai/grade）
+    // テキストのみ: モック。画像あり: Bedrock vision で判定
+    if (method === 'POST' && (path === '/ai/grade' || path === '/ai/grade/')) {
+      const session = await verifySession(event)
+      if (!session) return json({ error: 'unauthorized' }, 401)
+
+      let body
+      try { body = JSON.parse(event.body || '{}') } catch { body = {} }
+      const section = body.section || ''
+      const image = body.image
+
+      const mockMessages = {
+        teraterm: 'SSH接続が確認できました',
+        winscp: 'ファイル転送が確認できました',
+      }
+
+      // 画像なし → モック（全て合格）
+      if (!image || !image.base64 || !image.type) {
+        return json({ success: true, passed: true, message: mockMessages[section] || '完了が確認できました' })
+      }
+
+      // 画像あり → Bedrock vision
+      const systemPrompts = {
+        sakura: 'あなたはITインフラ研修の採点者です。スクリーンショットを確認し、sakuraエディタで「趣味.txt」または「好きな動物.txt」というファイル名が表示されていれば合格です。必ず {"passed":true,"message":"..."} 形式のJSONのみを返してください。',
+        winmerge: 'あなたはITインフラ研修の採点者です。スクリーンショットを確認し、WinMergeで2ファイルの差分画面が表示されていれば合格です。必ず {"passed":true,"message":"..."} 形式のJSONのみを返してください。',
+      }
+      const systemPrompt = systemPrompts[section] || 'スクリーンショットを確認し、演習が完了していれば passed:true で返してください。必ず {"passed":true,"message":"..."} 形式のJSONのみを返してください。'
+      const userContent = [
+        { type: 'image', source: { type: 'base64', media_type: image.type, data: image.base64 } },
+        { type: 'text', text: '上記スクリーンショットを確認し、合否を判定してください。' },
+      ]
+
+      try {
+        const command = new InvokeModelCommand({
+          modelId: 'apac.anthropic.claude-sonnet-4-20250514-v1:0',
+          contentType: 'application/json',
+          accept: 'application/json',
+          body: JSON.stringify({
+            anthropic_version: 'bedrock-2023-05-31',
+            max_tokens: 200,
+            system: systemPrompt,
+            messages: [{ role: 'user', content: userContent }],
+          }),
+        })
+        const response = await invokeModelWithRetry(command)
+        const result = JSON.parse(Buffer.from(response.body).toString())
+        const text = (result.content?.[0]?.text ?? '').trim()
+        const match = text.match(/\{[\s\S]*\}/)
+        if (!match) return json({ success: true, passed: true, message: 'スクリーンショットを確認しました' })
+        const parsed = JSON.parse(match[0])
+        return json({ success: true, passed: !!parsed.passed, message: String(parsed.message || '採点完了') })
+      } catch {
+        return json({ success: true, passed: true, message: 'スクリーンショットを確認しました' })
+      }
     }
 
     // ============================

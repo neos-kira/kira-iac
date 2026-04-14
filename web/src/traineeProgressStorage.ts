@@ -112,6 +112,8 @@ export type TraineeProgressSnapshot = {
   infra5SectionDone?: Record<string, boolean>
   /** 課題5（新）: 理解度確認の回答テキスト（タスクIDキー） */
   infra5ReviewAnswers?: Record<string, string>
+  /** 課題1-1: AI採点結果 */
+  infra1GradeState?: Record<string, { passed: boolean; message: string; gradedAt: string }>
 }
 
 /** 受講生IDは小文字統一（kira-test 等）。大文字小文字のずれを防ぐ。 */
