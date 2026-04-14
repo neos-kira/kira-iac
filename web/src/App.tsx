@@ -199,6 +199,9 @@ function App() {
   const [ec2EditPassword, setEc2EditPassword] = useState<Record<string, string>>({})
   const [showEc2Panel, setShowEc2Panel] = useState(false)
   const [ec2SaveMsg, setEc2SaveMsg] = useState<string | null>(null)
+  const [isCreatingServer, setIsCreatingServer] = useState(false)
+  const [serverCreateMsg, setServerCreateMsg] = useState<string | null>(null)
+  const [serverCreateProgress, setServerCreateProgress] = useState(0)
   const openedRef = useRef<string | null>(null)
   const searchContainerRef = useRef<HTMLDivElement | null>(null)
   const searchFormRef = useRef<HTMLFormElement | null>(null)
@@ -673,6 +676,92 @@ function App() {
   }, [isAdminView])
 
   const navigate = useNavigate()
+
+  /** 演習サーバー作成（モック実装） */
+  const handleCreateServer = async () => {
+    if (isCreatingServer) return
+    const username = getDisplayName().trim().toLowerCase()
+    if (!username || username === 'admin') return
+    setIsCreatingServer(true)
+    setServerCreateMsg(null)
+    setServerCreateProgress(0)
+
+    // プログレスバーアニメーション（3秒で完了）
+    const startMs = Date.now()
+    const duration = 3000
+    const progressInterval = window.setInterval(() => {
+      const elapsed = Date.now() - startMs
+      setServerCreateProgress(Math.min(95, Math.round((elapsed / duration) * 100)))
+    }, 100)
+
+    // 秘密鍵をblobでDL
+    const timestamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0]
+    const filename = `nic-${username}-${timestamp}.pem`
+    const keyContent = `-----BEGIN RSA PRIVATE KEY-----\n(mock key for ${username} ${timestamp})\n-----END RSA PRIVATE KEY-----`
+    const blob = new Blob([keyContent], { type: 'application/octet-stream' })
+    const blobUrl = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = blobUrl
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(blobUrl)
+
+    await new Promise<void>((resolve) => window.setTimeout(resolve, duration))
+    window.clearInterval(progressInterval)
+    setServerCreateProgress(100)
+
+    // モックデータ生成
+    const octet = Math.floor(Math.random() * 90) + 10
+    const ec2PublicIp = `54.123.45.${octet}`
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const ec2StartTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`
+    const ec2CreatedAt = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${ec2StartTime}`
+    const keyPairName = `nic-${username}-${timestamp}`
+
+    // DynamoDB保存（serverSnapshotをベースに変化した値だけ上書き）
+    if (isProgressApiAvailable()) {
+      const base: TraineeProgressSnapshot = serverSnapshot ?? {
+        introConfirmed: false, introAt: null, wbsPercent: 0,
+        chapterProgress: [], currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
+      }
+      const updated: TraineeProgressSnapshot = {
+        ...base,
+        ec2PublicIp, ec2State: 'running', keyPairName,
+        ec2CreatedAt, ec2StartTime,
+        ec2Host: ec2PublicIp,
+        updatedAt: new Date().toISOString(),
+      }
+      await postProgress(username, updated)
+      setServerSnapshot(updated)
+    }
+
+    setIsCreatingServer(false)
+    setServerCreateMsg(`✓ 秘密鍵がダウンロードされました: ${filename}`)
+    window.setTimeout(() => setServerCreateMsg(null), 3000)
+  }
+
+  /** 演習サーバー停止（モック） */
+  const handleStopServer = async () => {
+    const username = getDisplayName().trim().toLowerCase()
+    if (!username || username === 'admin' || !serverSnapshot || !isProgressApiAvailable()) return
+    const updated: TraineeProgressSnapshot = { ...serverSnapshot, ec2State: 'stopped', updatedAt: new Date().toISOString() }
+    setServerSnapshot(updated)
+    await postProgress(username, updated)
+  }
+
+  /** 演習サーバー起動（モック） */
+  const handleStartServer = async () => {
+    const username = getDisplayName().trim().toLowerCase()
+    if (!username || username === 'admin' || !serverSnapshot || !isProgressApiAvailable()) return
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const ec2StartTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`
+    const updated: TraineeProgressSnapshot = { ...serverSnapshot, ec2State: 'running', ec2StartTime, updatedAt: new Date().toISOString() }
+    setServerSnapshot(updated)
+    await postProgress(username, updated)
+  }
+
   // 「はじめに」（introStep === 5 かつ introConfirmed）完了後 かつ trainingStartDate が設定されている場合のみ遅延判定する
   const trainingStarted = !!serverSnapshot
     && Number(serverSnapshot.introStep ?? 0) === 5
@@ -1407,6 +1496,86 @@ function App() {
                   </li>
                 )}
               </ul>
+            </section>
+          )}
+
+          {/* 演習サーバー管理 */}
+          {!isAdminView && (
+            <section className="mt-6 w-full max-w-2xl">
+              {!(serverSnapshot?.ec2PublicIp) ? (
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <p className="text-sm font-bold text-slate-800">演習サーバー</p>
+                  <p className="mt-2 text-sm text-slate-600">まず演習サーバーを作成しましょう</p>
+                  <p className="mt-1 text-xs text-slate-500">研修にはLinuxサーバーが必要です。作成は1分で完了します。</p>
+                  {isCreatingServer && (
+                    <div className="mt-3">
+                      <p className="text-xs text-slate-500 mb-1.5">作成中...（約2分）</p>
+                      <div className="h-1 w-full overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-blue-500 transition-all duration-300"
+                          style={{ width: `${serverCreateProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {serverCreateMsg && (
+                    <div className="mt-3 rounded-lg bg-emerald-50 px-3 py-2.5 text-xs font-medium text-emerald-700">
+                      {serverCreateMsg}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { void handleCreateServer() }}
+                    disabled={isCreatingServer}
+                    className="mt-4 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    サーバーを作成する
+                  </button>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <p className="text-sm font-bold text-slate-800">あなたの演習サーバー</p>
+                  <div className="mt-3 space-y-1.5 text-xs text-slate-600">
+                    <div className="flex items-center gap-2">
+                      <span className="w-16 shrink-0 text-slate-400">状態</span>
+                      <span>{serverSnapshot.ec2State === 'running' ? '起動中 🟢' : '停止中 ⚫'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-16 shrink-0 text-slate-400">IP</span>
+                      <span className="font-mono">{serverSnapshot.ec2PublicIp}</span>
+                    </div>
+                    {serverSnapshot.ec2State === 'running' && serverSnapshot.ec2StartTime && (
+                      <div className="flex items-center gap-2">
+                        <span className="w-16 shrink-0 text-slate-400">起動時刻</span>
+                        <span>{serverSnapshot.ec2StartTime}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { void handleStopServer() }}
+                      disabled={serverSnapshot.ec2State !== 'running'}
+                      className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      停止する
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { void handleStartServer() }}
+                      disabled={serverSnapshot.ec2State !== 'stopped'}
+                      className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      起動する
+                    </button>
+                  </div>
+                  <p className="mt-2 text-[10px] text-slate-400">
+                    {serverSnapshot.ec2State === 'running'
+                      ? '※ 使用後は必ず停止してください'
+                      : '※ 起動後、演習を開始してください'}
+                  </p>
+                </div>
+              )}
             </section>
           )}
 

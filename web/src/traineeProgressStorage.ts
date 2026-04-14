@@ -78,6 +78,16 @@ export type TraineeProgressSnapshot = {
   ec2Username?: string | null
   /** EC2パスワード */
   ec2Password?: string | null
+  /** EC2公開IP（演習サーバー管理用） */
+  ec2PublicIp?: string | null
+  /** EC2状態 */
+  ec2State?: 'running' | 'stopped' | null
+  /** 秘密鍵ペア名（nic-{username}-{timestamp}） */
+  keyPairName?: string | null
+  /** EC2作成日時（YYYY/MM/DD HH:mm） */
+  ec2CreatedAt?: string | null
+  /** EC2起動時刻（HH:mm） */
+  ec2StartTime?: string | null
   /** 課題1-1（ツール演習）クリア済み */
   infra1Cleared?: boolean
   /** 課題1-2（Linux30問）クリア済み */

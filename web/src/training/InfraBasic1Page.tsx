@@ -84,11 +84,15 @@ export function InfraBasic1Page() {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [state, setState] = useState<InfraBasic1StoredState>({ checkboxes: [], sectionDone: {} })
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
-  const [ec2Params, setEc2Params] = useState<{ host: string; userRoot: string; userKensyu: string; password: string }>({
+  const [ec2Params, setEc2Params] = useState<{
+    host: string; userRoot: string; userKensyu: string; password: string
+    ip: string; loginUsername: string; keyPairName: string; ec2CreatedAt: string; hasServer: boolean
+  }>({
     host: INFRA_BASIC_1_PARAMS.host,
     userRoot: INFRA_BASIC_1_PARAMS.userRoot,
     userKensyu: INFRA_BASIC_1_PARAMS.userKensyu,
     password: INFRA_BASIC_1_PARAMS.password,
+    ip: '', loginUsername: '', keyPairName: '', ec2CreatedAt: '', hasServer: false,
   })
 
   useEffect(() => {
@@ -101,11 +105,16 @@ export function InfraBasic1Page() {
       const snap = await fetchMyProgress(username)
       if (snap) {
         setServerSnapshot(snap)
+        const ip = snap.ec2PublicIp || snap.ec2Host || ''
         setEc2Params({
-          host: snap.ec2Host || INFRA_BASIC_1_PARAMS.host,
+          host: ip || INFRA_BASIC_1_PARAMS.host,
           userRoot: INFRA_BASIC_1_PARAMS.userRoot,
           userKensyu: snap.ec2Username || INFRA_BASIC_1_PARAMS.userKensyu,
           password: snap.ec2Password || INFRA_BASIC_1_PARAMS.password,
+          ip, loginUsername: username,
+          keyPairName: snap.keyPairName || '',
+          ec2CreatedAt: snap.ec2CreatedAt || '',
+          hasServer: !!ip,
         })
         // serverSnapshotから状態を復元（localStorageは参照しない）
         setState({
@@ -198,6 +207,20 @@ export function InfraBasic1Page() {
   const isChecked = (index: number) => (state.checkboxes ?? [])[index] === true
   const isSectionDone = (id: string) => state.sectionDone[id] === true
 
+  const handleRedownloadKey = () => {
+    const { keyPairName, loginUsername } = ec2Params
+    if (!keyPairName) return
+    const filename = `${keyPairName}.pem`
+    const keyContent = `-----BEGIN RSA PRIVATE KEY-----\n(mock key for ${loginUsername})\n-----END RSA PRIVATE KEY-----`
+    const blob = new Blob([keyContent], { type: 'application/octet-stream' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -228,6 +251,51 @@ export function InfraBasic1Page() {
           </div>
         </div>
 
+        {/* 演習サーバー情報 */}
+        {ec2Params.hasServer ? (
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+              演習サーバー情報
+            </p>
+            <div className="mt-3 space-y-2">
+              <CopyRow label="サーバーIP" value={ec2Params.ip} />
+              <CopyRow label="接続ユーザー" value={ec2Params.loginUsername} />
+              <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2">
+                <span className="text-xs text-slate-400">秘密鍵</span>
+                <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+                  <code className="truncate text-sm text-slate-700">{ec2Params.keyPairName}.pem</code>
+                  <button
+                    type="button"
+                    onClick={handleRedownloadKey}
+                    className="min-h-[32px] shrink-0 cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:border-indigo-500 hover:bg-indigo-50"
+                  >
+                    再ダウンロード
+                  </button>
+                </div>
+              </div>
+              {ec2Params.ec2CreatedAt && (
+                <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2">
+                  <span className="text-xs text-slate-400">作成日時</span>
+                  <span className="text-sm text-slate-600">{ec2Params.ec2CreatedAt}</span>
+                </div>
+              )}
+            </div>
+          </section>
+        ) : (
+          <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <p className="text-sm text-amber-800">
+              演習サーバーがまだ作成されていません。トップページでサーバーを作成してください。
+            </p>
+            <button
+              type="button"
+              onClick={() => { window.location.hash = '#/' }}
+              className="mt-2 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-50"
+            >
+              トップページへ
+            </button>
+          </section>
+        )}
+
         {/* 前提 */}
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
@@ -236,11 +304,23 @@ export function InfraBasic1Page() {
           <p className="mt-2 text-sm text-slate-700">
             本演習を実施する前に、<strong className="text-slate-800">端末に以下のツールをインストール</strong>してください。
           </p>
-          <ul className="mt-2 list-inside list-disc text-sm text-slate-600">
-            <li>TeraTerm</li>
-            <li>sakuraエディタ</li>
-            <li>WinMerge</li>
-            <li>WinSCP</li>
+          <ul className="mt-3 space-y-2 text-sm text-slate-700">
+            <li className="flex items-center justify-between gap-2">
+              <span>TeraTerm</span>
+              <a href="https://ttssh2.osdn.jp/" target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 underline hover:text-indigo-800">ダウンロード</a>
+            </li>
+            <li className="flex items-center justify-between gap-2">
+              <span>sakuraエディタ</span>
+              <a href="https://sakura-editor.github.io/" target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 underline hover:text-indigo-800">ダウンロード</a>
+            </li>
+            <li className="flex items-center justify-between gap-2">
+              <span>WinMerge</span>
+              <a href="https://winmerge.org/" target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 underline hover:text-indigo-800">ダウンロード</a>
+            </li>
+            <li className="flex items-center justify-between gap-2">
+              <span>WinSCP</span>
+              <a href="https://winscp.net/" target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 underline hover:text-indigo-800">ダウンロード</a>
+            </li>
           </ul>
         </section>
 
@@ -280,14 +360,24 @@ export function InfraBasic1Page() {
           sectionId="teraterm"
           isSectionDone={isSectionDone('teraterm')}
           onSectionDone={() => toggleSectionDone('teraterm')}
-          tips="現場の鉄則！作業開始前に [設定] > [ログ] から証跡保存を必ず行うこと。"
+          why="現場でLinuxサーバーに接続する際に必須のツールです"
+          tips={`秘密鍵紛失時はトップページで再ダウンロード。接続失敗時はWindowsファイアウォール設定を確認してください`}
           items={[
-            { idx: 0, checked: isChecked(0), onToggle: () => toggleCheck(0), text: 'TeraTermの用途を調査する' },
-            { idx: 1, checked: isChecked(1), onToggle: () => toggleCheck(1), text: `ホスト ${ec2Params.host} にSSH接続する` },
-            { idx: 2, checked: isChecked(2), onToggle: () => toggleCheck(2), text: `ユーザ: root / パスワード: ${ec2Params.password} でログイン` },
-            { idx: 3, checked: isChecked(3), onToggle: () => toggleCheck(3), text: 'ログイン後、exit でログアウトする' },
+            { idx: 0, checked: isChecked(0), onToggle: () => toggleCheck(0), text: 'デスクトップの「TeraTerm」をダブルクリック' },
+            { idx: 1, checked: isChecked(1), onToggle: () => toggleCheck(1), text: `ホスト名に ${ec2Params.ip || ec2Params.host} を入力（コピーボタンから貼り付け）` },
+            { idx: 2, checked: isChecked(2), onToggle: () => toggleCheck(2), text: 'OKをクリック' },
+            { idx: 3, checked: isChecked(3), onToggle: () => toggleCheck(3), text: `ユーザー名に ${ec2Params.loginUsername || '（ログインユーザー名）'} を入力` },
+            { idx: 4, checked: isChecked(4), onToggle: () => toggleCheck(4), text: '「RSA/DSA/ECDSA/ED25519鍵を使う」を選択' },
+            { idx: 5, checked: isChecked(5), onToggle: () => toggleCheck(5), text: `デスクトップの ${ec2Params.keyPairName ? ec2Params.keyPairName + '.pem' : '（秘密鍵ファイル）'} を選択` },
+            { idx: 6, checked: isChecked(6), onToggle: () => toggleCheck(6), text: 'OKをクリック → 接続成功を確認' },
+            { idx: 7, checked: isChecked(7), onToggle: () => toggleCheck(7), text: 'exit でログアウト' },
           ]}
         />
+        {/* TeraTerm スクリーンショット枠 */}
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-400">
+          接続成功時の画面イメージ<br />
+          <span className="text-[11px]">準備中: 接続成功時のスクリーンショットを表示予定</span>
+        </div>
 
         {/* ■ sakuraエディタ セクション */}
         <SectionBlock
@@ -295,14 +385,14 @@ export function InfraBasic1Page() {
           sectionId="sakura"
           isSectionDone={isSectionDone('sakura')}
           onSectionDone={() => toggleSectionDone('sakura')}
+          why="設定ファイルやログファイルを編集する際に使います"
           tips="文字コード「UTF-8」、改行コード「LF」で保存。Linux環境との互換性を意識。"
           items={[
-            {
-              idx: 4,
-              checked: isChecked(4),
-              onToggle: () => toggleCheck(4),
-              text: '下記2つのファイルを新規作成し、ローカルに保存する — 趣味.txt（内容：自分の名前と趣味） / 好きな動物.txt（内容：自分の名前と好きな動物）',
-            },
+            { idx: 8, checked: isChecked(8), onToggle: () => toggleCheck(8), text: 'デスクトップの「sakura」アイコンをダブルクリック' },
+            { idx: 9, checked: isChecked(9), onToggle: () => toggleCheck(9), text: '新規ファイルに「自分の名前と趣味」を入力' },
+            { idx: 10, checked: isChecked(10), onToggle: () => toggleCheck(10), text: '「ファイル」→「名前を付けて保存」をクリック' },
+            { idx: 11, checked: isChecked(11), onToggle: () => toggleCheck(11), text: 'ファイル名を 趣味.txt にして保存' },
+            { idx: 12, checked: isChecked(12), onToggle: () => toggleCheck(12), text: '同様に 好きな動物.txt も作成' },
           ]}
         />
 
@@ -312,10 +402,12 @@ export function InfraBasic1Page() {
           sectionId="winmerge"
           isSectionDone={isSectionDone('winmerge')}
           onSectionDone={() => toggleSectionDone('winmerge')}
+          why="リリース作業で変更内容を証明するために必須のツールです"
           tips="リリース作業で「何を変えたか」を証明するために必須のツール。"
           items={[
-            { idx: 5, checked: isChecked(5), onToggle: () => toggleCheck(5), text: 'WinMergeの用途を調査する' },
-            { idx: 6, checked: isChecked(6), onToggle: () => toggleCheck(6), text: '作成した2つのファイルの「差分」を確認する' },
+            { idx: 13, checked: isChecked(13), onToggle: () => toggleCheck(13), text: 'WinMergeを起動' },
+            { idx: 14, checked: isChecked(14), onToggle: () => toggleCheck(14), text: '「ファイル」→「開く」で、先ほど作成した2つのファイルを選択' },
+            { idx: 15, checked: isChecked(15), onToggle: () => toggleCheck(15), text: '差分が表示されることを確認' },
           ]}
         />
 
@@ -325,12 +417,16 @@ export function InfraBasic1Page() {
           sectionId="winscp"
           isSectionDone={isSectionDone('winscp')}
           onSectionDone={() => toggleSectionDone('winscp')}
+          why="ローカルとサーバー間でファイルを転送する際に使います"
           tips="ファイルを置いたら「消す」までが作業。不要なファイルをサーバに残さない。"
           items={[
-            { idx: 7, checked: isChecked(7), onToggle: () => toggleCheck(7), text: `ホスト ${ec2Params.host} に接続` },
-            { idx: 8, checked: isChecked(8), onToggle: () => toggleCheck(8), text: `ユーザ: neos-training / パスワード: ${ec2Params.password} でログイン` },
-            { idx: 9, checked: isChecked(9), onToggle: () => toggleCheck(9), text: 'ローカルの2ファイルをサーバの /tmp に転送' },
-            { idx: 10, checked: isChecked(10), onToggle: () => toggleCheck(10), text: '転送成功を確認後、サーバ側のファイルを右クリックで削除' },
+            { idx: 16, checked: isChecked(16), onToggle: () => toggleCheck(16), text: 'WinSCPを起動' },
+            { idx: 17, checked: isChecked(17), onToggle: () => toggleCheck(17), text: `ホスト名に ${ec2Params.ip || ec2Params.host} を入力` },
+            { idx: 18, checked: isChecked(18), onToggle: () => toggleCheck(18), text: `ユーザー名に ${ec2Params.loginUsername || '（ログインユーザー名）'} を入力` },
+            { idx: 19, checked: isChecked(19), onToggle: () => toggleCheck(19), text: `設定 → SSH → 認証 で秘密鍵（${ec2Params.keyPairName ? ec2Params.keyPairName + '.pem' : '秘密鍵ファイル'}）を指定` },
+            { idx: 20, checked: isChecked(20), onToggle: () => toggleCheck(20), text: 'ログインをクリック' },
+            { idx: 21, checked: isChecked(21), onToggle: () => toggleCheck(21), text: 'ローカルの2ファイルをサーバの /tmp に転送' },
+            { idx: 22, checked: isChecked(22), onToggle: () => toggleCheck(22), text: '転送成功を確認後、サーバ側のファイルを右クリックで削除' },
           ]}
         />
 
@@ -367,6 +463,7 @@ function SectionBlock({
   sectionId,
   isSectionDone,
   onSectionDone,
+  why,
   tips,
   items,
 }: {
@@ -374,13 +471,17 @@ function SectionBlock({
   sectionId: string
   isSectionDone: boolean
   onSectionDone: () => void
+  why?: string
   tips: string
   items: SectionItem[]
 }) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-slate-800">■ {title}</h2>
+        <div>
+          <h2 className="text-sm font-semibold text-slate-800">■ {title}</h2>
+          {why && <p className="mt-0.5 text-[11px] text-slate-400">なぜ学ぶか：{why}</p>}
+        </div>
         {isSectionDone ? (
           <button
             type="button"
