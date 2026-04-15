@@ -3,6 +3,8 @@ const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-be
 const bedrockClient = new BedrockRuntimeClient({ region: 'ap-northeast-1' })
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3')
 const s3Client = new S3Client({ region: 'ap-northeast-1' })
+const { EC2Client, CreateKeyPairCommand, RunInstancesCommand, DescribeInstancesCommand } = require('@aws-sdk/client-ec2')
+const ec2Client = new EC2Client({ region: 'ap-northeast-1' })
 const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb')
 const crypto = require('crypto')
 
@@ -992,6 +994,100 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         client.send(new DeleteItemCommand({ TableName, Key: marshall({ traineeId: targetUsername }) })),
       ])
       return json({ ok: true, success: true, message: `ユーザー ${targetUsername} を削除しました` })
+    }
+
+    // EC2サーバー作成（POST /server/create）
+    if (method === 'POST' && (path === '/server/create' || path === '/server/create/')) {
+      const session = await verifySession(event)
+      if (!session) return json({ error: 'unauthorized' }, 401)
+      const { username } = session
+
+      // 既存サーバー確認
+      const progRes = await client.send(new GetItemCommand({ TableName, Key: marshall({ traineeId: username }) }))
+      const existing = progRes.Item ? unmarshall(progRes.Item) : null
+      if (existing?.ec2InstanceId || existing?.ec2State === 'running' || existing?.ec2State === 'stopped') {
+        return json({ error: 'server_exists', message: '既にサーバーが作成されています' }, 409)
+      }
+
+      const now = new Date()
+      const pad = (n) => String(n).padStart(2, '0')
+      const ec2StartTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`
+      const ec2CreatedAt = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${ec2StartTime}`
+      const keyPairName = `nic-${username}-${Date.now()}`
+
+      // キーペア作成
+      let privateKey
+      try {
+        const keyRes = await ec2Client.send(new CreateKeyPairCommand({
+          KeyName: keyPairName,
+          KeyType: 'rsa',
+          KeyFormat: 'pem',
+        }))
+        privateKey = keyRes.KeyMaterial
+      } catch (e) {
+        console.error('[server/create] CreateKeyPair失敗:', e)
+        return json({ error: 'keypair_failed', message: 'キーペアの作成に失敗しました' }, 500)
+      }
+
+      // EC2インスタンス起動
+      let instanceId
+      try {
+        const runRes = await ec2Client.send(new RunInstancesCommand({
+          ImageId: 'ami-0caa0c30aa31d3dad', // Ubuntu 24.04 LTS ARM64 (ap-northeast-1)
+          InstanceType: 't4g.nano',
+          MinCount: 1,
+          MaxCount: 1,
+          KeyName: keyPairName,
+          SubnetId: 'subnet-068ea8d2158183e3d',
+          SecurityGroupIds: ['sg-0883a2001af516886'],
+          TagSpecifications: [{
+            ResourceType: 'instance',
+            Tags: [
+              { Key: 'Name', Value: `nic-training-${username}` },
+              { Key: 'Project', Value: 'kira-project' },
+              { Key: 'Trainee', Value: username },
+            ],
+          }],
+        }))
+        instanceId = runRes.Instances[0].InstanceId
+      } catch (e) {
+        console.error('[server/create] RunInstances失敗:', e)
+        return json({ error: 'launch_failed', message: 'インスタンスの起動に失敗しました' }, 500)
+      }
+
+      // パブリックIPが払い出されるまで最大20秒ポーリング
+      let publicIp = null
+      for (let i = 0; i < 5; i++) {
+        await new Promise((r) => setTimeout(r, 4000))
+        try {
+          const descRes = await ec2Client.send(new DescribeInstancesCommand({ InstanceIds: [instanceId] }))
+          const inst = descRes.Reservations?.[0]?.Instances?.[0]
+          if (inst?.PublicIpAddress) { publicIp = inst.PublicIpAddress; break }
+        } catch (e) {
+          console.warn('[server/create] DescribeInstances失敗:', e.message)
+        }
+      }
+
+      // DynamoDB保存
+      const base = existing || { traineeId: username }
+      const updated = {
+        ...base,
+        ec2InstanceId: instanceId,
+        ec2State: 'running',
+        ec2PublicIp: publicIp || null,
+        ec2Host: publicIp || null,
+        ec2Username: 'ubuntu',
+        keyPairName,
+        ec2CreatedAt,
+        ec2StartTime,
+        updatedAt: new Date().toISOString(),
+      }
+      await client.send(new PutItemCommand({
+        TableName,
+        Item: marshall(updated, { removeUndefinedValues: true }),
+      }))
+
+      return json({ ok: true, instanceId, publicIp, keyPairName, privateKey, ec2CreatedAt, ec2StartTime, ec2Username: 'ubuntu' })
     }
 
     // 全EC2サーバー一括停止（POST /admin/ec2/stop-all）- managerのみ

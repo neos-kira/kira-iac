@@ -80,6 +80,45 @@ resource "aws_iam_role_policy" "progress_api_bedrock" {
   })
 }
 
+resource "aws_iam_role_policy" "progress_api_ec2" {
+  name   = "ec2-manage"
+  role   = aws_iam_role.progress_api.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:RunInstances",
+          "ec2:CreateKeyPair",
+          "ec2:DescribeInstances",
+          "ec2:DescribeImages",
+          "ec2:CreateTags",
+          "ec2:DescribeKeyPairs",
+          "ec2:DeleteKeyPair",
+          "ec2:StopInstances",
+          "ec2:StartInstances",
+          "ec2:TerminateInstances",
+        ]
+        Resource = "*"
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "progress_api_s3" {
+  name   = "s3-screenshots"
+  role   = aws_iam_role.progress_api.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["s3:PutObject", "s3:GetObject"]
+      Resource = "arn:aws:s3:::kira-project-dev-screenshots/*"
+    }]
+  })
+}
+
 resource "aws_lambda_function" "progress_api" {
   function_name = "${local.app_name}-progress-api"
   role          = aws_iam_role.progress_api.arn
@@ -87,6 +126,7 @@ resource "aws_lambda_function" "progress_api" {
   handler       = "index.handler"
   filename      = data.archive_file.progress_api_zip.output_path
   source_code_hash = data.archive_file.progress_api_zip.output_base64sha256
+  timeout       = 60
 
   environment {
     variables = merge(

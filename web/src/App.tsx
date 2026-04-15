@@ -24,7 +24,7 @@ import { VI_STEPS, SHELL_QUESTIONS } from './training/InfraBasic4Data'
 import { clearIntroForCurrentUser } from './training/introGate'
 import { LOGIN_FLAG_KEY, getCurrentDisplayName, getCurrentRole, USER_ROLE_KEY } from './auth'
 import { restoreProgressToLocalStorage, type TraineeProgressSnapshot } from './traineeProgressStorage'
-import { isProgressApiAvailable, postProgress, fetchMyProgress, fetchProgressFromApi } from './progressApi'
+import { isProgressApiAvailable, postProgress, fetchMyProgress, fetchProgressFromApi, buildAuthHeaders, BASE_URL } from './progressApi'
 import { createAccount, fetchAccounts, isAccountApiAvailable, deleteAccount, type Account } from './accountsApi'
 import { safeGetItem, safeSetItem, safeRemoveItem, safeSessionRemoveItem, clearCookieValue } from './utils/storage'
 
@@ -678,79 +678,86 @@ function App() {
 
   const navigate = useNavigate()
 
-  /** 演習サーバー作成（モック実装） */
+  /** 演習サーバー作成（実EC2） */
   const handleCreateServer = async () => {
     if (isCreatingServer) return
     const username = getDisplayName().trim().toLowerCase()
     if (!username || username === 'admin') return
     setIsCreatingServer(true)
     setServerCreateMsg(null)
-    setServerCreateProgress(0)
+    setServerCreateProgress(5)
 
-    // プログレスバーアニメーション（3秒で完了）
-    const startMs = Date.now()
-    const duration = 3000
+    // プログレスバーアニメーション（API 完了まで 90% まで進める）
     const progressInterval = window.setInterval(() => {
-      const elapsed = Date.now() - startMs
-      setServerCreateProgress(Math.min(95, Math.round((elapsed / duration) * 100)))
-    }, 100)
+      setServerCreateProgress((prev) => prev < 88 ? prev + 1 : prev)
+    }, 600)
 
-    // 秘密鍵をblobでDL
-    const timestamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0]
-    const filename = `nic-${username}-${timestamp}.pem`
-    const keyContent = `-----BEGIN RSA PRIVATE KEY-----\n(mock key for ${username} ${timestamp})\n-----END RSA PRIVATE KEY-----`
-    const blob = new Blob([keyContent], { type: 'application/octet-stream' })
-    const blobUrl = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = blobUrl
-    a.download = filename
-    a.click()
-    URL.revokeObjectURL(blobUrl)
+    try {
+      const res = await fetch(`${BASE_URL}/server/create`, {
+        method: 'POST',
+        headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
+        credentials: 'omit',
+        body: JSON.stringify({}),
+      })
+      window.clearInterval(progressInterval)
+      setServerCreateProgress(100)
 
-    await new Promise<void>((resolve) => window.setTimeout(resolve, duration))
-    window.clearInterval(progressInterval)
-    setServerCreateProgress(100)
-
-    // モックデータ生成（ユニークなパブリックIPをランダム生成）
-    const ec2PublicIp = (() => {
-      // プライベート・予約済みレンジを除外した第1オクテット候補
-      const excluded = new Set([0, 10, 100, 127, 169, 170, 171, 172, 192, 198, 203, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255])
-      const candidates: number[] = []
-      for (let i = 1; i <= 223; i++) {
-        if (!excluded.has(i)) candidates.push(i)
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string; message?: string }
+        if (data.error === 'server_exists') {
+          setServerCreateMsg('サーバーは既に作成されています')
+        } else {
+          setServerCreateMsg('サーバーの作成に失敗しました。もう一度お試しください')
+        }
+        return
       }
-      const o1 = candidates[Math.floor(Math.random() * candidates.length)]
-      const o2 = Math.floor(Math.random() * 256)
-      const o3 = Math.floor(Math.random() * 256)
-      const o4 = Math.floor(Math.random() * 254) + 1 // .0と.255を除外
-      return `${o1}.${o2}.${o3}.${o4}`
-    })()
-    const now = new Date()
-    const pad = (n: number) => String(n).padStart(2, '0')
-    const ec2StartTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`
-    const ec2CreatedAt = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${ec2StartTime}`
-    const keyPairName = `nic-${username}-${timestamp}`
 
-    // DynamoDB保存（serverSnapshotをベースに変化した値だけ上書き）
-    if (isProgressApiAvailable()) {
+      const data = (await res.json()) as {
+        ok: boolean; instanceId?: string; publicIp?: string | null;
+        keyPairName?: string; privateKey?: string; ec2CreatedAt?: string; ec2StartTime?: string; ec2Username?: string
+      }
+
+      // 秘密鍵をblobでDL
+      if (data.privateKey) {
+        const timestamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0]
+        const filename = `nic-${username}-${timestamp}.pem`
+        const blob = new Blob([data.privateKey], { type: 'application/octet-stream' })
+        const blobUrl = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = blobUrl
+        a.download = filename
+        a.click()
+        URL.revokeObjectURL(blobUrl)
+        setServerCreateMsg(`✓ 秘密鍵がダウンロードされました: ${filename}`)
+      } else {
+        setServerCreateMsg('✓ サーバーを作成しました')
+      }
+
+      // ローカル状態を DynamoDB 保存済みデータで更新
       const base: TraineeProgressSnapshot = serverSnapshot ?? {
         introConfirmed: false, introAt: null, wbsPercent: 0,
         chapterProgress: [], currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
       }
       const updated: TraineeProgressSnapshot = {
         ...base,
-        ec2PublicIp, ec2State: 'running', keyPairName,
-        ec2CreatedAt, ec2StartTime,
-        ec2Host: ec2PublicIp,
+        ec2PublicIp: data.publicIp ?? null,
+        ec2State: 'running',
+        keyPairName: data.keyPairName ?? null,
+        ec2CreatedAt: data.ec2CreatedAt ?? null,
+        ec2StartTime: data.ec2StartTime ?? null,
+        ec2Host: data.publicIp ?? null,
         updatedAt: new Date().toISOString(),
       }
-      await postProgress(username, updated)
       setServerSnapshot(updated)
-    }
 
-    setIsCreatingServer(false)
-    setServerCreateMsg(`✓ 秘密鍵がダウンロードされました: ${filename}`)
-    window.setTimeout(() => setServerCreateMsg(null), 3000)
+      window.setTimeout(() => setServerCreateMsg(null), 5000)
+    } catch {
+      window.clearInterval(progressInterval)
+      setServerCreateProgress(0)
+      setServerCreateMsg('サーバーの作成に失敗しました。もう一度お試しください')
+    } finally {
+      setIsCreatingServer(false)
+    }
   }
 
   /** 演習サーバー停止（モック） */
