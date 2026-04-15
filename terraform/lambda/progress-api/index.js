@@ -1,8 +1,9 @@
 const { DynamoDBClient, PutItemCommand, ScanCommand, GetItemCommand, DeleteItemCommand } = require('@aws-sdk/client-dynamodb')
 const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime')
 const bedrockClient = new BedrockRuntimeClient({ region: 'ap-northeast-1' })
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3')
+const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3')
 const s3Client = new S3Client({ region: 'ap-northeast-1' })
+const KeysBucket = process.env.KEYS_BUCKET || 'kira-project-dev-keys'
 const { EC2Client, CreateKeyPairCommand, RunInstancesCommand, DescribeInstancesCommand } = require('@aws-sdk/client-ec2')
 const ec2Client = new EC2Client({ region: 'ap-northeast-1' })
 const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb')
@@ -1085,6 +1086,19 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         }
       }
 
+      // 秘密鍵をS3に保存（再ダウンロード用）
+      try {
+        await s3Client.send(new PutObjectCommand({
+          Bucket: KeysBucket,
+          Key: `keys/${username}/${keyPairName}.pem`,
+          Body: privateKey,
+          ContentType: 'application/x-pem-file',
+          ServerSideEncryption: 'AES256',
+        }))
+      } catch (s3Err) {
+        console.warn('[server/create] 秘密鍵S3保存失敗（続行）:', s3Err.message)
+      }
+
       // DynamoDB保存
       const base = existing || { traineeId: username }
       const updated = {
@@ -1105,6 +1119,32 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       }))
 
       return json({ ok: true, instanceId, publicIp, keyPairName, privateKey, ec2CreatedAt, ec2StartTime, ec2Username: sanitizedUsername })
+    }
+
+    // 秘密鍵再ダウンロード（POST /server/download-key）
+    if (method === 'POST' && (path === '/server/download-key' || path === '/server/download-key/')) {
+      const session = await verifySession(event)
+      if (!session) return json({ error: 'unauthorized' }, 401)
+      const { username } = session
+
+      // DynamoDBからkeyPairNameを取得
+      const progRes = await client.send(new GetItemCommand({ TableName, Key: marshall({ traineeId: username }) }))
+      const prog = progRes.Item ? unmarshall(progRes.Item) : null
+      if (!prog?.keyPairName) return json({ error: 'no_server', message: 'サーバーが作成されていません' }, 404)
+
+      const keyPairName = prog.keyPairName
+      const s3Key = `keys/${username}/${keyPairName}.pem`
+
+      try {
+        const s3Res = await s3Client.send(new GetObjectCommand({ Bucket: KeysBucket, Key: s3Key }))
+        const chunks = []
+        for await (const chunk of s3Res.Body) chunks.push(chunk)
+        const privateKey = Buffer.concat(chunks).toString('utf-8')
+        return json({ ok: true, privateKey, keyPairName })
+      } catch (e) {
+        console.error('[download-key] S3取得失敗:', e.message)
+        return json({ error: 'not_found', message: '秘密鍵が見つかりません。サーバーを再作成してください' }, 404)
+      }
     }
 
     // 全EC2サーバー一括停止（POST /admin/ec2/stop-all）- managerのみ

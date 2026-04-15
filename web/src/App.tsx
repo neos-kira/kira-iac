@@ -751,6 +751,31 @@ function App() {
     }
   }
 
+  /** 秘密鍵再ダウンロード */
+  const handleDownloadKey = async () => {
+    const username = getDisplayName().trim().toLowerCase()
+    if (!username || !serverSnapshot?.keyPairName) return
+    try {
+      const res = await fetch(`${BASE_URL}/server/download-key`, {
+        method: 'POST',
+        headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
+        credentials: 'omit',
+        body: JSON.stringify({}),
+      })
+      if (!res.ok) return
+      const data = (await res.json()) as { ok: boolean; privateKey?: string; keyPairName?: string }
+      if (!data.privateKey) return
+      const filename = `${data.keyPairName ?? serverSnapshot.keyPairName}.pem`
+      const blob = new Blob([data.privateKey], { type: 'application/octet-stream' })
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(blobUrl)
+    } catch { /* ignore */ }
+  }
+
   /** 演習サーバー停止（モック） */
   const handleStopServer = async () => {
     const username = getDisplayName().trim().toLowerCase()
@@ -819,7 +844,7 @@ function App() {
               </div>
             </div>
             <p className="mt-4 text-xs text-slate-500">この情報はトップページの「あなたの演習サーバー」セクションでいつでも確認できます。</p>
-            <p className="mt-1.5 text-xs text-amber-600">秘密鍵は作成時のみダウンロード可能です。大切に保管してください。</p>
+            <p className="mt-1.5 text-xs text-slate-500">秘密鍵はトップページの「再DL」ボタンからいつでもダウンロードできます。</p>
             <button
               type="button"
               onClick={() => setServerCreatedModal(null)}
@@ -1615,7 +1640,10 @@ function App() {
                         {serverSnapshot.keyPairName && (
                           <div>
                             <p className="text-[10px] text-slate-400 mb-0.5">秘密鍵</p>
-                            <span className="text-xs font-mono text-slate-500 leading-none">{serverSnapshot.keyPairName}.pem</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-mono text-slate-500 leading-none">{serverSnapshot.keyPairName}.pem</span>
+                              <button type="button" onClick={() => { void handleDownloadKey() }} className="rounded px-1.5 py-0.5 text-[10px] font-medium text-blue-600 border border-blue-200 hover:bg-blue-50 leading-none" title="再ダウンロード">再DL</button>
+                            </div>
                           </div>
                         )}
                         {/* アクションボタン */}
