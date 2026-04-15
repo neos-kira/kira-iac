@@ -711,9 +711,20 @@ function App() {
     window.clearInterval(progressInterval)
     setServerCreateProgress(100)
 
-    // モックデータ生成
-    const octet = Math.floor(Math.random() * 90) + 10
-    const ec2PublicIp = `54.123.45.${octet}`
+    // モックデータ生成（ユニークなパブリックIPをランダム生成）
+    const ec2PublicIp = (() => {
+      // プライベート・予約済みレンジを除外した第1オクテット候補
+      const excluded = new Set([0, 10, 100, 127, 169, 170, 171, 172, 192, 198, 203, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255])
+      const candidates: number[] = []
+      for (let i = 1; i <= 223; i++) {
+        if (!excluded.has(i)) candidates.push(i)
+      }
+      const o1 = candidates[Math.floor(Math.random() * candidates.length)]
+      const o2 = Math.floor(Math.random() * 256)
+      const o3 = Math.floor(Math.random() * 256)
+      const o4 = Math.floor(Math.random() * 254) + 1 // .0と.255を除外
+      return `${o1}.${o2}.${o3}.${o4}`
+    })()
     const now = new Date()
     const pad = (n: number) => String(n).padStart(2, '0')
     const ec2StartTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`
