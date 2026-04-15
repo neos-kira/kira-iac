@@ -4,7 +4,7 @@ const bedrockClient = new BedrockRuntimeClient({ region: 'ap-northeast-1' })
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3')
 const s3Client = new S3Client({ region: 'ap-northeast-1' })
 const KeysBucket = process.env.KEYS_BUCKET || 'kira-project-dev-keys'
-const { EC2Client, CreateKeyPairCommand, RunInstancesCommand, DescribeInstancesCommand } = require('@aws-sdk/client-ec2')
+const { EC2Client, CreateKeyPairCommand, RunInstancesCommand, DescribeInstancesCommand, StopInstancesCommand, StartInstancesCommand } = require('@aws-sdk/client-ec2')
 const ec2Client = new EC2Client({ region: 'ap-northeast-1' })
 const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb')
 const crypto = require('crypto')
@@ -1145,6 +1145,66 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         console.error('[download-key] S3取得失敗:', e.message)
         return json({ error: 'not_found', message: '秘密鍵が見つかりません。サーバーを再作成してください' }, 404)
       }
+    }
+
+    // EC2停止（POST /server/stop）
+    if (method === 'POST' && (path === '/server/stop' || path === '/server/stop/')) {
+      const session = await verifySession(event)
+      if (!session) return json({ error: 'unauthorized' }, 401)
+      const { username } = session
+
+      const progRes = await client.send(new GetItemCommand({ TableName, Key: marshall({ traineeId: username }) }))
+      const prog = progRes.Item ? unmarshall(progRes.Item) : null
+      if (!prog?.ec2InstanceId) return json({ error: 'no_instance', message: 'インスタンスが見つかりません' }, 404)
+      if (prog.ec2State === 'stopped') return json({ ok: true, ec2State: 'stopped' })
+
+      await ec2Client.send(new StopInstancesCommand({ InstanceIds: [prog.ec2InstanceId] }))
+
+      const updated = { ...prog, ec2State: 'stopped', updatedAt: new Date().toISOString() }
+      await client.send(new PutItemCommand({ TableName, Item: marshall(updated, { removeUndefinedValues: true }) }))
+
+      return json({ ok: true, ec2State: 'stopped' })
+    }
+
+    // EC2起動（POST /server/start）
+    if (method === 'POST' && (path === '/server/start' || path === '/server/start/')) {
+      const session = await verifySession(event)
+      if (!session) return json({ error: 'unauthorized' }, 401)
+      const { username } = session
+
+      const progRes = await client.send(new GetItemCommand({ TableName, Key: marshall({ traineeId: username }) }))
+      const prog = progRes.Item ? unmarshall(progRes.Item) : null
+      if (!prog?.ec2InstanceId) return json({ error: 'no_instance', message: 'インスタンスが見つかりません' }, 404)
+      if (prog.ec2State === 'running') return json({ ok: true, ec2State: 'running', publicIp: prog.ec2PublicIp })
+
+      await ec2Client.send(new StartInstancesCommand({ InstanceIds: [prog.ec2InstanceId] }))
+
+      // パブリックIP取得（起動後に変わる可能性があるため再取得）
+      let publicIp = prog.ec2PublicIp || null
+      for (let i = 0; i < 8; i++) {
+        await new Promise((r) => setTimeout(r, 3000))
+        try {
+          const descRes = await ec2Client.send(new DescribeInstancesCommand({ InstanceIds: [prog.ec2InstanceId] }))
+          const inst = descRes.Reservations?.[0]?.Instances?.[0]
+          if (inst?.PublicIpAddress) { publicIp = inst.PublicIpAddress; break }
+        } catch { /* continue */ }
+      }
+
+      const jst = new Date(Date.now() + 9 * 60 * 60 * 1000)
+      const pad = (n) => String(n).padStart(2, '0')
+      const ec2StartTime = `${pad(jst.getUTCHours())}:${pad(jst.getUTCMinutes())}`
+
+      const updated = {
+        ...prog,
+        ec2State: 'running',
+        ec2PublicIp: publicIp,
+        ec2Host: publicIp,
+        ec2StartTime,
+        updatedAt: new Date().toISOString(),
+      }
+      await client.send(new PutItemCommand({ TableName, Item: marshall(updated, { removeUndefinedValues: true }) }))
+
+      return json({ ok: true, ec2State: 'running', publicIp, ec2StartTime })
     }
 
     // 全EC2サーバー一括停止（POST /admin/ec2/stop-all）- managerのみ

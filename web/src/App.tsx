@@ -203,6 +203,8 @@ function App() {
   const [isCreatingServer, setIsCreatingServer] = useState(false)
   const [serverCreateProgress, setServerCreateProgress] = useState(0)
   const [serverCreatedModal, setServerCreatedModal] = useState<{ publicIp: string; keyPairName: string; pemFilename: string } | null>(null)
+  const [showStopConfirm, setShowStopConfirm] = useState(false)
+  const [isServerActionLoading, setIsServerActionLoading] = useState(false)
   const openedRef = useRef<string | null>(null)
   const searchContainerRef = useRef<HTMLDivElement | null>(null)
   const searchFormRef = useRef<HTMLFormElement | null>(null)
@@ -776,25 +778,51 @@ function App() {
     } catch { /* ignore */ }
   }
 
-  /** 演習サーバー停止（モック） */
+  /** 演習サーバー停止（実EC2） */
   const handleStopServer = async () => {
-    const username = getDisplayName().trim().toLowerCase()
-    if (!username || username === 'admin' || !serverSnapshot || !isProgressApiAvailable()) return
-    const updated: TraineeProgressSnapshot = { ...serverSnapshot, ec2State: 'stopped', updatedAt: new Date().toISOString() }
-    setServerSnapshot(updated)
-    await postProgress(username, updated)
+    if (isServerActionLoading || !serverSnapshot) return
+    setShowStopConfirm(false)
+    setIsServerActionLoading(true)
+    // 楽観的更新
+    setServerSnapshot({ ...serverSnapshot, ec2State: 'stopped', updatedAt: new Date().toISOString() })
+    try {
+      await fetch(`${BASE_URL}/server/stop`, {
+        method: 'POST',
+        headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
+        credentials: 'omit',
+        body: JSON.stringify({}),
+      })
+    } catch { /* ignore */ } finally {
+      setIsServerActionLoading(false)
+    }
   }
 
-  /** 演習サーバー起動（モック） */
+  /** 演習サーバー起動（実EC2） */
   const handleStartServer = async () => {
-    const username = getDisplayName().trim().toLowerCase()
-    if (!username || username === 'admin' || !serverSnapshot || !isProgressApiAvailable()) return
-    const now = new Date()
-    const pad = (n: number) => String(n).padStart(2, '0')
-    const ec2StartTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`
-    const updated: TraineeProgressSnapshot = { ...serverSnapshot, ec2State: 'running', ec2StartTime, updatedAt: new Date().toISOString() }
-    setServerSnapshot(updated)
-    await postProgress(username, updated)
+    if (isServerActionLoading || !serverSnapshot) return
+    setIsServerActionLoading(true)
+    // 楽観的更新
+    setServerSnapshot({ ...serverSnapshot, ec2State: 'running', updatedAt: new Date().toISOString() })
+    try {
+      const res = await fetch(`${BASE_URL}/server/start`, {
+        method: 'POST',
+        headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
+        credentials: 'omit',
+        body: JSON.stringify({}),
+      })
+      if (res.ok) {
+        const data = (await res.json()) as { ok: boolean; publicIp?: string | null; ec2StartTime?: string }
+        setServerSnapshot((prev) => prev ? {
+          ...prev,
+          ec2State: 'running',
+          ec2PublicIp: data.publicIp ?? prev.ec2PublicIp,
+          ec2Host: data.publicIp ?? prev.ec2Host,
+          updatedAt: new Date().toISOString(),
+        } : prev)
+      }
+    } catch { /* ignore */ } finally {
+      setIsServerActionLoading(false)
+    }
   }
 
   // 「はじめに」（introStep === 5 かつ introConfirmed）完了後 かつ trainingStartDate が設定されている場合のみ遅延判定する
@@ -822,6 +850,19 @@ function App() {
   return (
     <div className="min-h-screen bg-white text-slate-800">
       {/* サーバー作成成功モーダル */}
+      {/* 停止確認ダイアログ */}
+      {showStopConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 className="text-base font-bold text-slate-800 mb-2">サーバーを停止しますか？</h2>
+            <p className="text-sm text-slate-600 mb-5">停止中はSSH接続できません。作業中のデータは保持されます。</p>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setShowStopConfirm(false)} className="flex-1 rounded-xl border border-slate-300 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">キャンセル</button>
+              <button type="button" onClick={() => { void handleStopServer() }} className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700">停止する</button>
+            </div>
+          </div>
+        </div>
+      )}
       {serverCreatedModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-7 shadow-2xl">
@@ -1649,9 +1690,19 @@ function App() {
                         {/* アクションボタン */}
                         <div className="ml-auto">
                           {serverSnapshot.ec2State === 'running' ? (
-                            <button type="button" onClick={() => { void handleStopServer() }} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">停止する</button>
+                            <button
+                              type="button"
+                              onClick={() => setShowStopConfirm(true)}
+                              disabled={isServerActionLoading}
+                              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >停止する</button>
                           ) : (
-                            <button type="button" onClick={() => { void handleStartServer() }} className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">起動する</button>
+                            <button
+                              type="button"
+                              onClick={() => { void handleStartServer() }}
+                              disabled={isServerActionLoading}
+                              className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >{isServerActionLoading ? '起動中...' : '起動する'}</button>
                           )}
                         </div>
                       </div>
