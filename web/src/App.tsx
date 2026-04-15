@@ -203,6 +203,7 @@ function App() {
   const [isCreatingServer, setIsCreatingServer] = useState(false)
   const [serverCreateMsg, setServerCreateMsg] = useState<string | null>(null)
   const [serverCreateProgress, setServerCreateProgress] = useState(0)
+  const [serverCreatedModal, setServerCreatedModal] = useState<{ publicIp: string; keyPairName: string; pemFilename: string } | null>(null)
   const openedRef = useRef<string | null>(null)
   const searchContainerRef = useRef<HTMLDivElement | null>(null)
   const searchFormRef = useRef<HTMLFormElement | null>(null)
@@ -718,19 +719,16 @@ function App() {
       }
 
       // 秘密鍵をblobでDL
+      const keyPairName = data.keyPairName ?? `nic-${username}`
+      const pemFilename = `${keyPairName}.pem`
       if (data.privateKey) {
-        const timestamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0]
-        const filename = `nic-${username}-${timestamp}.pem`
         const blob = new Blob([data.privateKey], { type: 'application/octet-stream' })
         const blobUrl = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = blobUrl
-        a.download = filename
+        a.download = pemFilename
         a.click()
         URL.revokeObjectURL(blobUrl)
-        setServerCreateMsg(`✓ 秘密鍵がダウンロードされました: ${filename}`)
-      } else {
-        setServerCreateMsg('✓ サーバーを作成しました')
       }
 
       // ローカル状態を DynamoDB 保存済みデータで更新
@@ -742,7 +740,8 @@ function App() {
         ...base,
         ec2PublicIp: data.publicIp ?? null,
         ec2State: 'running',
-        keyPairName: data.keyPairName ?? null,
+        keyPairName,
+        ec2Username: data.ec2Username ?? 'ubuntu',
         ec2CreatedAt: data.ec2CreatedAt ?? null,
         ec2StartTime: data.ec2StartTime ?? null,
         ec2Host: data.publicIp ?? null,
@@ -750,7 +749,8 @@ function App() {
       }
       setServerSnapshot(updated)
 
-      window.setTimeout(() => setServerCreateMsg(null), 5000)
+      // 成功モーダルを表示
+      setServerCreatedModal({ publicIp: data.publicIp ?? '', keyPairName, pemFilename })
     } catch {
       window.clearInterval(progressInterval)
       setServerCreateProgress(0)
@@ -805,6 +805,40 @@ function App() {
       })()
   return (
     <div className="min-h-screen bg-white text-slate-800">
+      {/* サーバー作成成功モーダル */}
+      {serverCreatedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-7 shadow-2xl">
+            <div className="flex items-center gap-3 mb-5">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">✓</span>
+              <h2 className="text-lg font-bold text-slate-800">サーバーを作成しました</h2>
+            </div>
+            <div className="space-y-3 rounded-xl bg-slate-50 p-4 text-sm">
+              <div>
+                <p className="text-xs text-slate-400 mb-0.5">IPアドレス</p>
+                <p className="font-bold font-mono text-slate-800 text-lg">{serverCreatedModal.publicIp || '取得中...'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-0.5">接続ユーザー名</p>
+                <p className="font-semibold font-mono text-slate-700">ubuntu</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-0.5">秘密鍵ファイル（ダウンロード済み）</p>
+                <p className="font-mono text-slate-600 text-xs break-all">{serverCreatedModal.pemFilename}</p>
+              </div>
+            </div>
+            <p className="mt-4 text-xs text-slate-500">この情報はトップページの「あなたの演習サーバー」セクションでいつでも確認できます。</p>
+            <p className="mt-1.5 text-xs text-amber-600">秘密鍵は作成時のみダウンロード可能です。大切に保管してください。</p>
+            <button
+              type="button"
+              onClick={() => setServerCreatedModal(null)}
+              className="mt-5 w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              研修を始める
+            </button>
+          </div>
+        </div>
+      )}
       <div className="mx-auto flex min-h-screen flex-col">
         <SharedHeader
           delayed={delayed}
@@ -1553,6 +1587,7 @@ function App() {
                 </div>
               ) : (
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  {/* ヘッダー */}
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-bold text-slate-800">あなたの演習サーバー</p>
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${serverSnapshot.ec2State === 'running' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
@@ -1560,6 +1595,7 @@ function App() {
                       {serverSnapshot.ec2State === 'running' ? '起動中' : '停止中'}
                     </span>
                   </div>
+                  {/* IPアドレス */}
                   <div className="mt-4">
                     <p className="text-xs text-slate-400 mb-1">IPアドレス</p>
                     <div className="flex items-center gap-2">
@@ -1576,6 +1612,36 @@ function App() {
                       </button>
                     </div>
                   </div>
+                  {/* 接続ユーザー名 */}
+                  {serverSnapshot.ec2Username && (
+                    <div className="mt-3">
+                      <p className="text-xs text-slate-400 mb-1">接続ユーザー名</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-base font-semibold font-mono text-slate-700">{serverSnapshot.ec2Username}</span>
+                        <button
+                          type="button"
+                          onClick={() => { void navigator.clipboard.writeText(serverSnapshot.ec2Username ?? '') }}
+                          className="rounded-md border border-slate-200 p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"
+                          title="コピー"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {/* 秘密鍵 */}
+                  {serverSnapshot.keyPairName && (
+                    <div className="mt-3">
+                      <p className="text-xs text-slate-400 mb-1">秘密鍵ファイル</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-mono text-slate-600">{serverSnapshot.keyPairName}.pem</span>
+                      </div>
+                      <p className="mt-1 text-[11px] text-amber-600">※ 秘密鍵は作成時のみダウンロード可能です。紛失した場合はサーバーを削除して再作成してください。</p>
+                    </div>
+                  )}
+                  {/* アクションボタン */}
                   <div className="mt-4">
                     {serverSnapshot.ec2State === 'running' ? (
                       <button
