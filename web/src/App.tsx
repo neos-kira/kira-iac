@@ -201,7 +201,6 @@ function App() {
   const [showEc2Panel, setShowEc2Panel] = useState(false)
   const [ec2SaveMsg, setEc2SaveMsg] = useState<string | null>(null)
   const [isCreatingServer, setIsCreatingServer] = useState(false)
-  const [serverCreateMsg, setServerCreateMsg] = useState<string | null>(null)
   const [serverCreateProgress, setServerCreateProgress] = useState(0)
   const [serverCreatedModal, setServerCreatedModal] = useState<{ publicIp: string; keyPairName: string; pemFilename: string } | null>(null)
   const openedRef = useRef<string | null>(null)
@@ -685,7 +684,6 @@ function App() {
     const username = getDisplayName().trim().toLowerCase()
     if (!username || username === 'admin') return
     setIsCreatingServer(true)
-    setServerCreateMsg(null)
     setServerCreateProgress(5)
 
     // プログレスバーアニメーション（API 完了まで 90% まで進める）
@@ -704,12 +702,6 @@ function App() {
       setServerCreateProgress(100)
 
       if (!res.ok) {
-        const data = (await res.json()) as { error?: string; message?: string }
-        if (data.error === 'server_exists') {
-          setServerCreateMsg('サーバーは既に作成されています')
-        } else {
-          setServerCreateMsg('サーバーの作成に失敗しました。もう一度お試しください')
-        }
         return
       }
 
@@ -754,7 +746,6 @@ function App() {
     } catch {
       window.clearInterval(progressInterval)
       setServerCreateProgress(0)
-      setServerCreateMsg('サーバーの作成に失敗しました。もう一度お試しください')
     } finally {
       setIsCreatingServer(false)
     }
@@ -1554,119 +1545,94 @@ function App() {
 
           {/* 演習サーバー管理 */}
           {!isAdminView && (
-            <section className="mt-6 w-full max-w-2xl">
+            <section className="mt-4 w-full max-w-2xl">
               {!(serverSnapshot?.ec2PublicIp) ? (
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <p className="text-sm font-bold text-slate-800">演習サーバー</p>
-                  <p className="mt-2 text-sm text-slate-600">まず演習サーバーを作成しましょう</p>
-                  <p className="mt-1 text-xs text-slate-500">研修にはLinuxサーバーが必要です。作成は1分で完了します。</p>
-                  {isCreatingServer && (
-                    <div className="mt-3">
-                      <p className="text-xs text-slate-500 mb-1.5">作成中...（約2分）</p>
-                      <div className="h-1 w-full overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className="h-full rounded-full bg-blue-500 transition-all duration-300"
-                          style={{ width: `${serverCreateProgress}%` }}
-                        />
-                      </div>
+                /* 未作成: コンパクトな横並び */
+                <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800">演習サーバー</p>
+                      {!isCreatingServer && <p className="text-xs text-slate-500 mt-0.5">研修にはLinuxサーバーが必要です</p>}
+                      {isCreatingServer && (
+                        <div className="mt-1.5 w-48">
+                          <p className="text-xs text-slate-500 mb-1">作成中...（約2分）</p>
+                          <div className="h-1 w-full overflow-hidden rounded-full bg-slate-100">
+                            <div className="h-full rounded-full bg-blue-500 transition-all duration-300" style={{ width: `${serverCreateProgress}%` }} />
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {serverCreateMsg && (
-                    <div className="mt-3 rounded-lg bg-emerald-50 px-3 py-2.5 text-xs font-medium text-emerald-700">
-                      {serverCreateMsg}
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => { void handleCreateServer() }}
-                    disabled={isCreatingServer}
-                    className="mt-4 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    サーバーを作成する
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => { void handleCreateServer() }}
+                      disabled={isCreatingServer}
+                      className="shrink-0 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isCreatingServer ? '作成中...' : 'サーバーを作成する'}
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  {/* ヘッダー */}
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold text-slate-800">あなたの演習サーバー</p>
-                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${serverSnapshot.ec2State === 'running' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                      <span className={`h-1.5 w-1.5 rounded-full ${serverSnapshot.ec2State === 'running' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-                      {serverSnapshot.ec2State === 'running' ? '起動中' : '停止中'}
-                    </span>
-                  </div>
-                  {/* IPアドレス */}
-                  <div className="mt-4">
-                    <p className="text-xs text-slate-400 mb-1">IPアドレス</p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl font-bold font-mono text-slate-800 tracking-wide">{serverSnapshot.ec2PublicIp}</span>
-                      <button
-                        type="button"
-                        onClick={() => { void navigator.clipboard.writeText(serverSnapshot.ec2PublicIp ?? '') }}
-                        className="rounded-md border border-slate-200 p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"
-                        title="コピー"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                  {/* 接続ユーザー名 */}
-                  {serverSnapshot.ec2Username && (
-                    <div className="mt-3">
-                      <p className="text-xs text-slate-400 mb-1">接続ユーザー名</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-base font-semibold font-mono text-slate-700">{serverSnapshot.ec2Username}</span>
-                        <button
-                          type="button"
-                          onClick={() => { void navigator.clipboard.writeText(serverSnapshot.ec2Username ?? '') }}
-                          className="rounded-md border border-slate-200 p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"
-                          title="コピー"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
-                        </button>
+                /* 作成済み: コンパクト横並び */
+                (() => {
+                  const displayUser = (serverSnapshot.ec2Username && serverSnapshot.ec2Username !== 'ubuntu')
+                    ? serverSnapshot.ec2Username
+                    : getDisplayName().trim().toLowerCase()
+                  const CopyBtn = ({ text }: { text: string }) => (
+                    <button type="button" onClick={() => { void navigator.clipboard.writeText(text) }} className="text-slate-300 hover:text-slate-500 transition-colors shrink-0" title="コピー">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  )
+                  return (
+                    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <p className="text-xs font-semibold text-slate-600">あなたの演習サーバー</p>
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${serverSnapshot.ec2State === 'running' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${serverSnapshot.ec2State === 'running' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                          {serverSnapshot.ec2State === 'running' ? '起動中' : '停止中'}
+                        </span>
                       </div>
-                    </div>
-                  )}
-                  {/* 秘密鍵 */}
-                  {serverSnapshot.keyPairName && (
-                    <div className="mt-3">
-                      <p className="text-xs text-slate-400 mb-1">秘密鍵ファイル</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-mono text-slate-600">{serverSnapshot.keyPairName}.pem</span>
+                      <div className="flex items-end gap-4 flex-wrap">
+                        {/* IP */}
+                        <div>
+                          <p className="text-[10px] text-slate-400 mb-0.5">IPアドレス</p>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xl font-bold font-mono text-slate-800 tracking-wide leading-none">{serverSnapshot.ec2PublicIp}</span>
+                            <CopyBtn text={serverSnapshot.ec2PublicIp ?? ''} />
+                          </div>
+                        </div>
+                        {/* ユーザー名 */}
+                        <div>
+                          <p className="text-[10px] text-slate-400 mb-0.5">ユーザー名</p>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-semibold font-mono text-slate-700 leading-none">{displayUser}</span>
+                            <CopyBtn text={displayUser} />
+                          </div>
+                        </div>
+                        {/* 秘密鍵 */}
+                        {serverSnapshot.keyPairName && (
+                          <div>
+                            <p className="text-[10px] text-slate-400 mb-0.5">秘密鍵</p>
+                            <span className="text-xs font-mono text-slate-500 leading-none">{serverSnapshot.keyPairName}.pem</span>
+                          </div>
+                        )}
+                        {/* アクションボタン */}
+                        <div className="ml-auto">
+                          {serverSnapshot.ec2State === 'running' ? (
+                            <button type="button" onClick={() => { void handleStopServer() }} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">停止する</button>
+                          ) : (
+                            <button type="button" onClick={() => { void handleStartServer() }} className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">起動する</button>
+                          )}
+                        </div>
                       </div>
-                      <p className="mt-1 text-[11px] text-amber-600">※ 秘密鍵は作成時のみダウンロード可能です。紛失した場合はサーバーを削除して再作成してください。</p>
+                      <p className="mt-2 text-[10px] text-slate-400">
+                        {serverSnapshot.ec2State === 'running' ? '※ 使用後は必ず停止してください' : '※ 起動後、演習を開始してください'}
+                      </p>
                     </div>
-                  )}
-                  {/* アクションボタン */}
-                  <div className="mt-4">
-                    {serverSnapshot.ec2State === 'running' ? (
-                      <button
-                        type="button"
-                        onClick={() => { void handleStopServer() }}
-                        className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                      >
-                        停止する
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => { void handleStartServer() }}
-                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                      >
-                        起動する
-                      </button>
-                    )}
-                  </div>
-                  <p className="mt-2.5 text-[10px] text-slate-400">
-                    {serverSnapshot.ec2State === 'running'
-                      ? '※ 使用後は必ず停止してください'
-                      : '※ 起動後、演習を開始してください'}
-                  </p>
-                </div>
+                  )
+                })()
               )}
             </section>
           )}

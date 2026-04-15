@@ -1030,6 +1030,22 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       }
 
       // EC2インスタンス起動
+      // cloud-init: 受講生ユーザーを作成しubuntuのSSH公開鍵をコピー
+      const sanitizedUsername = username.replace(/[^a-z0-9_-]/g, '_')
+      const userDataScript = [
+        '#!/bin/bash',
+        `TRAINEE_USER="${sanitizedUsername}"`,
+        'useradd -m -s /bin/bash "$TRAINEE_USER"',
+        'usermod -aG sudo "$TRAINEE_USER"',
+        `echo "$TRAINEE_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$TRAINEE_USER`,
+        'mkdir -p /home/$TRAINEE_USER/.ssh',
+        '[ -f /home/ubuntu/.ssh/authorized_keys ] && cp /home/ubuntu/.ssh/authorized_keys /home/$TRAINEE_USER/.ssh/authorized_keys',
+        'chown -R $TRAINEE_USER:$TRAINEE_USER /home/$TRAINEE_USER/.ssh',
+        'chmod 700 /home/$TRAINEE_USER/.ssh',
+        '[ -f /home/$TRAINEE_USER/.ssh/authorized_keys ] && chmod 600 /home/$TRAINEE_USER/.ssh/authorized_keys',
+      ].join('\n')
+      const userDataBase64 = Buffer.from(userDataScript).toString('base64')
+
       let instanceId
       try {
         const runRes = await ec2Client.send(new RunInstancesCommand({
@@ -1040,6 +1056,7 @@ fail: 意味不明・設問と無関係・空欄に近い内容
           KeyName: keyPairName,
           SubnetId: 'subnet-068ea8d2158183e3d',
           SecurityGroupIds: ['sg-0883a2001af516886'],
+          UserData: userDataBase64,
           TagSpecifications: [{
             ResourceType: 'instance',
             Tags: [
@@ -1076,7 +1093,7 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         ec2State: 'running',
         ec2PublicIp: publicIp || null,
         ec2Host: publicIp || null,
-        ec2Username: 'ubuntu',
+        ec2Username: sanitizedUsername,
         keyPairName,
         ec2CreatedAt,
         ec2StartTime,
@@ -1087,7 +1104,7 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         Item: marshall(updated, { removeUndefinedValues: true }),
       }))
 
-      return json({ ok: true, instanceId, publicIp, keyPairName, privateKey, ec2CreatedAt, ec2StartTime, ec2Username: 'ubuntu' })
+      return json({ ok: true, instanceId, publicIp, keyPairName, privateKey, ec2CreatedAt, ec2StartTime, ec2Username: sanitizedUsername })
     }
 
     // 全EC2サーバー一括停止（POST /admin/ec2/stop-all）- managerのみ
