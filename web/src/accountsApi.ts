@@ -220,10 +220,10 @@ export async function createAdminUser(username: string, password: string, role: 
       credentials: 'omit',
       body: JSON.stringify({ username: name, password, role }),
     })
-    const data = (await res.json()) as { ok?: boolean; error?: string }
-    if (res.status === 409 || data.error === 'username_exists') return { ok: false, error: 'そのユーザー名は既に使用されています' }
+    const data = (await res.json()) as { ok?: boolean; error?: string; message?: string }
+    if (res.status === 409 || data.error === 'username_exists' || data.error === 'already_exists') return { ok: false, error: 'そのユーザー名は既に使用されています' }
     if (res.status === 400 && data.error === 'password_too_short') return { ok: false, error: 'パスワードは8文字以上必要です' }
-    if (!res.ok) return { ok: false, error: data.error || '作成に失敗しました' }
+    if (!res.ok) return { ok: false, error: data.message || data.error || '作成に失敗しました' }
     return { ok: true }
   } catch {
     return { ok: false, error: 'ネットワークエラー' }

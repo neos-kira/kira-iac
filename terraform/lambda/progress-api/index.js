@@ -615,7 +615,8 @@ fail: 意味不明・設問と無関係・空欄に近い内容
           const expected = typeof account.passwordHash === 'string' ? account.passwordHash : ''
           const actual = crypto.createHash('sha256').update(password).digest('hex')
           ok = expected && expected === actual
-          if (ok) loginRole = account.role || 'student'
+          // adminユーザー名は常にmanager（ADMIN_PASSWORDなしでaccountsテーブルで認証した場合も同様）
+          if (ok) loginRole = username === 'admin' ? 'manager' : (account.role || 'student')
         }
       }
       if (!ok) {
@@ -917,14 +918,35 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         TableName: AccountsTableName,
         Key: marshall({ username }),
       }))
-      if (existing.Item) return json({ error: 'username_exists' }, 409)
+      if (existing.Item) return json({ success: false, error: 'already_exists', message: 'ユーザー名が既に使用されています' }, 409)
 
       const passwordHash = crypto.createHash('sha256').update(password).digest('hex')
+      const now = new Date().toISOString()
+      // accountsテーブルに保存
       await client.send(new PutItemCommand({
         TableName: AccountsTableName,
-        Item: marshall({ username, passwordHash, role: userRole, createdAt: new Date().toISOString() }, { removeUndefinedValues: true }),
+        Item: marshall({ username, passwordHash, role: userRole, createdAt: now }, { removeUndefinedValues: true }),
       }))
-      return json({ ok: true, username, role: userRole })
+      // progressテーブルに初期レコード作成
+      try {
+        await client.send(new PutItemCommand({
+          TableName,
+          Item: marshall({
+            traineeId: username,
+            wbsPercent: 0,
+            introConfirmed: false,
+            introAt: null,
+            chapterProgress: [],
+            currentDay: 0,
+            delayedIds: [],
+            pins: [],
+            updatedAt: now,
+          }, { removeUndefinedValues: true }),
+        }))
+      } catch (progressErr) {
+        console.warn('[admin/users] progress初期レコード作成失敗（続行）:', progressErr.message)
+      }
+      return json({ ok: true, success: true, message: `ユーザー ${username} を作成しました`, username, role: userRole })
     }
 
     // ユーザー削除（DELETE /admin/users/:username）- managerのみ
@@ -948,14 +970,14 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       if (targetAccount.role === 'manager') {
         const { Items: allAccounts } = await client.send(new ScanCommand({ TableName: AccountsTableName }))
         const managers = (allAccounts || []).map((i) => unmarshall(i)).filter((a) => a.role === 'manager' && a.username !== targetUsername)
-        if (managers.length === 0) return json({ error: 'last_manager' }, 400)
+        if (managers.length === 0) return json({ success: false, error: 'last_manager', message: '最後の管理者は削除できません' }, 400)
       }
 
       await Promise.allSettled([
         client.send(new DeleteItemCommand({ TableName: AccountsTableName, Key: marshall({ username: targetUsername }) })),
         client.send(new DeleteItemCommand({ TableName, Key: marshall({ traineeId: targetUsername }) })),
       ])
-      return json({ ok: true })
+      return json({ ok: true, success: true, message: `ユーザー ${targetUsername} を削除しました` })
     }
 
     // 全EC2サーバー一括停止（POST /admin/ec2/stop-all）- managerのみ
