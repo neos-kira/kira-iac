@@ -1552,43 +1552,50 @@ function App() {
                   </button>
                 </div>
               ) : (
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <p className="text-sm font-bold text-slate-800">あなたの演習サーバー</p>
-                  <div className="mt-3 space-y-1.5 text-xs text-slate-600">
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold text-slate-800">あなたの演習サーバー</p>
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${serverSnapshot.ec2State === 'running' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${serverSnapshot.ec2State === 'running' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                      {serverSnapshot.ec2State === 'running' ? '起動中' : '停止中'}
+                    </span>
+                  </div>
+                  <div className="mt-4">
+                    <p className="text-xs text-slate-400 mb-1">IPアドレス</p>
                     <div className="flex items-center gap-2">
-                      <span className="w-16 shrink-0 text-slate-400">状態</span>
-                      <span>{serverSnapshot.ec2State === 'running' ? '起動中 🟢' : '停止中 ⚫'}</span>
+                      <span className="text-2xl font-bold font-mono text-slate-800 tracking-wide">{serverSnapshot.ec2PublicIp}</span>
+                      <button
+                        type="button"
+                        onClick={() => { void navigator.clipboard.writeText(serverSnapshot.ec2PublicIp ?? '') }}
+                        className="rounded-md border border-slate-200 p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"
+                        title="コピー"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-16 shrink-0 text-slate-400">IP</span>
-                      <span className="font-mono">{serverSnapshot.ec2PublicIp}</span>
-                    </div>
-                    {serverSnapshot.ec2State === 'running' && serverSnapshot.ec2StartTime && (
-                      <div className="flex items-center gap-2">
-                        <span className="w-16 shrink-0 text-slate-400">起動時刻</span>
-                        <span>{serverSnapshot.ec2StartTime}</span>
-                      </div>
+                  </div>
+                  <div className="mt-4">
+                    {serverSnapshot.ec2State === 'running' ? (
+                      <button
+                        type="button"
+                        onClick={() => { void handleStopServer() }}
+                        className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                      >
+                        停止する
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => { void handleStartServer() }}
+                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                      >
+                        起動する
+                      </button>
                     )}
                   </div>
-                  <div className="mt-3 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => { void handleStopServer() }}
-                      disabled={serverSnapshot.ec2State !== 'running'}
-                      className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      停止する
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { void handleStartServer() }}
-                      disabled={serverSnapshot.ec2State !== 'stopped'}
-                      className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      起動する
-                    </button>
-                  </div>
-                  <p className="mt-2 text-[10px] text-slate-400">
+                  <p className="mt-2.5 text-[10px] text-slate-400">
                     {serverSnapshot.ec2State === 'running'
                       ? '※ 使用後は必ず停止してください'
                       : '※ 起動後、演習を開始してください'}

@@ -1009,10 +1009,10 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         return json({ error: 'server_exists', message: '既にサーバーが作成されています' }, 409)
       }
 
-      const now = new Date()
+      const jst = new Date(Date.now() + 9 * 60 * 60 * 1000)
       const pad = (n) => String(n).padStart(2, '0')
-      const ec2StartTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`
-      const ec2CreatedAt = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${ec2StartTime}`
+      const ec2StartTime = `${pad(jst.getUTCHours())}:${pad(jst.getUTCMinutes())}`
+      const ec2CreatedAt = `${jst.getUTCFullYear()}/${pad(jst.getUTCMonth() + 1)}/${pad(jst.getUTCDate())} ${ec2StartTime}`
       const keyPairName = `nic-${username}-${Date.now()}`
 
       // キーペア作成
