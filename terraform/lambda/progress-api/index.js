@@ -627,6 +627,7 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       }
       const sessionId = crypto.randomBytes(24).toString('hex')
       const expiresAt = Math.floor(Date.now() / 1000) + 24 * 60 * 60
+      const loginAt = new Date().toISOString()
       await client.send(
         new PutItemCommand({
           TableName: SessionsTableName,
@@ -638,6 +639,19 @@ fail: 意味不明・設問と無関係・空欄に近い内容
           }, { removeUndefinedValues: true }),
         }),
       )
+      // progressテーブルのlastLoginAtを更新（GetItem+PutItemでUpdateItem権限不要）
+      if (username !== 'admin') {
+        try {
+          const progRes = await client.send(new GetItemCommand({ TableName, Key: marshall({ traineeId: username }) }))
+          const existing = progRes.Item ? unmarshall(progRes.Item) : { traineeId: username }
+          await client.send(new PutItemCommand({
+            TableName,
+            Item: marshall({ ...existing, lastLoginAt: loginAt }, { removeUndefinedValues: true }),
+          }))
+        } catch (e) {
+          console.warn('[login] lastLoginAt更新失敗:', e.message)
+        }
+      }
       return json({ ok: true, username, token: sessionId, role: loginRole })
     }
 
@@ -881,7 +895,7 @@ fail: 意味不明・設問と無関係・空欄に近い内容
             createdAt: a.createdAt || null,
             wbsPercent: p?.wbsPercent || 0,
             currentChapter: getCurrentChapterLabel(p),
-            lastLogin: p?.updatedAt || null,
+            lastLogin: p?.lastLoginAt || null,
             ec2State: p?.ec2State || null,
             ec2PublicIp: p?.ec2PublicIp || null,
             introConfirmed: p?.introConfirmed || false,
