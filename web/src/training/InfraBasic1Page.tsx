@@ -11,12 +11,15 @@ type GradeState = Record<string, GradeResult>
 
 const SECTION_IDS = ['teraterm', 'sakura', 'winmerge', 'winscp'] as const
 
-const FAIL_MESSAGES: Record<string, string> = {
+// APIレスポンスにmessageがない場合のフォールバック（通常はLambdaが返す）
+const FALLBACK_FAIL_MESSAGES: Record<string, string> = {
   teraterm: 'SSH接続が確認できません。接続成功後のプロンプト画面をアップロードしてください',
   sakura: '2ファイルが確認できません。趣味.txtと好きな動物.txtが表示されている画面をアップロードしてください',
   winmerge: 'WinMergeの差分画面が確認できません。2ファイルの差分が表示されている画面をアップロードしてください',
   winscp: 'WinSCPの画面が確認できません。接続成功またはファイル転送完了の画面をアップロードしてください',
 }
+
+const API_ERROR_MSG = '採点処理でエラーが発生しました。もう一度お試しください'
 
 const EMPTY_SNAPSHOT: TraineeProgressSnapshot = {
   introConfirmed: false, introAt: null, wbsPercent: 0,
@@ -39,8 +42,8 @@ async function gradeWithImage(
   file: File,
   username: string,
 ): Promise<{ passed: boolean; message: string }> {
-  const failMsg = FAIL_MESSAGES[section] ?? '画面を確認できませんでした。再度アップロードしてください'
-  if (!BASE_URL) return { passed: false, message: failMsg }
+  // APIエラー・ネットワークエラー時は再試行を促すメッセージ（セクション別不合格メッセージは表示しない）
+  if (!BASE_URL) return { passed: false, message: API_ERROR_MSG }
   try {
     const base64 = await fileToBase64(file)
     const res = await fetch(`${BASE_URL}/ai/grade-image`, {
@@ -49,11 +52,14 @@ async function gradeWithImage(
       credentials: 'omit',
       body: JSON.stringify({ section, username, image: base64, imageType: file.type }),
     })
-    if (!res.ok) return { passed: false, message: failMsg }
+    if (!res.ok) return { passed: false, message: API_ERROR_MSG }
     const data = await res.json() as { passed?: boolean; message?: string }
-    return { passed: !!data.passed, message: data.message ?? failMsg }
+    // AI判定結果：Lambdaが返したmessageを優先、なければフォールバック
+    const fallback = FALLBACK_FAIL_MESSAGES[section] ?? '画面を確認できませんでした。再度アップロードしてください'
+    return { passed: !!data.passed, message: data.message ?? fallback }
   } catch {
-    return { passed: false, message: failMsg }
+    // fetch自体の失敗（ネットワーク断など）
+    return { passed: false, message: API_ERROR_MSG }
   }
 }
 
