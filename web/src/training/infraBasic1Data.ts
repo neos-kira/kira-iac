@@ -1,6 +1,6 @@
-/** 演習用パラメータ（一括コピー用） */
+/** 演習用パラメータ（管理画面のフォームプレースホルダー用途のみ — 実際の接続先IPは各研修生のec2PublicIpを使用すること） */
 export const INFRA_BASIC_1_PARAMS = {
-  host: '43.207.53.141',
+  host: 'xx.xx.xx.xx',
   userRoot: 'root',
   userKensyu: 'neos-training',
   password: 'neos-training',

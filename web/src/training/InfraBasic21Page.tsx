@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { getProgressKey } from './trainingWbsData'
+import { fetchMyProgress } from '../progressApi'
+import { getCurrentDisplayName } from '../auth'
 import {
   INFRA_BASIC_21_DEFAULT_STATE,
   INFRA_BASIC_21_STORAGE_KEY,
@@ -11,6 +13,9 @@ import {
   type KnowledgeQuestionId,
   type KnowledgeQuestionConfig,
 } from './infraBasic21Data'
+
+/** 研修時間帯ガイダンス（将来テナント毎に変更可能な定数） */
+const TRAINING_HOURS_GUIDANCE = '平日9:40〜19:00が目安です'
 
 export function InfraBasic21Page() {
   const navigate = useSafeNavigate()
@@ -24,9 +29,23 @@ export function InfraBasic21Page() {
     pass: false,
     message: '',
   })
+  const [ec2Ip, setEc2Ip] = useState<string | null>(null)
+  const [ec2State, setEc2State] = useState<string | null>(null)
 
   useEffect(() => {
     document.title = 'インフラ基礎課題2-1 ネットワーク実践編'
+  }, [])
+
+  // 研修生の演習EC2 IPをDynamoDBから取得（マルチテナント対応）
+  useEffect(() => {
+    const username = getCurrentDisplayName().trim().toLowerCase()
+    if (!username || username === 'admin') return
+    fetchMyProgress(username).then((snap) => {
+      if (snap) {
+        setEc2Ip(snap.ec2PublicIp || snap.ec2Host || null)
+        setEc2State(snap.ec2State ?? null)
+      }
+    })
   }, [])
 
   useEffect(() => {
@@ -391,31 +410,43 @@ export function InfraBasic21Page() {
 
           {/* Q5-6 */}
           <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
-            <div className="rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700">
-              ⚠️ この課題は研修用サーバ（43.207.53.141）が起動している時間帯のみ実施できます。平日9:40〜19:00が目安です。
-            </div>
-            <p className="text-xs font-semibold text-sky-600">Q5-6. サーバ 43.207.53.141 への疎通・SSH接続</p>
+            {ec2Ip ? (
+              <div className="rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700">
+                ⚠️ この課題は演習サーバが起動している時間帯のみ実施できます。{TRAINING_HOURS_GUIDANCE}
+              </div>
+            ) : (
+              <div className="rounded border border-rose-200 bg-rose-50 p-2 text-xs text-rose-700">
+                ⚠️ 演習サーバが{ec2State === 'stopped' ? '停止中' : '未起動または未作成'}です。トップページから演習サーバを起動後、このページを再読み込みしてください。
+              </div>
+            )}
+            <p className="text-xs font-semibold text-sky-600">
+              Q5-6. サーバ {ec2Ip ?? '(演習サーバを起動してください)'} への疎通・SSH接続
+            </p>
             <p className="text-[11px] text-slate-600">
-              研修用サーバ 43.207.53.141 に対して、Ping および SSH 接続を試み、実施できたらチェックを入れてください。
+              {ec2Ip
+                ? <>あなたの演習サーバ <strong>{ec2Ip}</strong> に対して、Ping および SSH 接続を試み、実施できたらチェックを入れてください。</>
+                : 'トップページで演習サーバを起動すると、ここに接続先IPが自動表示されます。'}
             </p>
             <div className="mt-2 space-y-2 text-xs text-slate-700">
-              <label className="flex items-center gap-2">
+              <label className={`flex items-center gap-2 ${!ec2Ip ? 'opacity-40' : ''}`}>
                 <input
                   type="checkbox"
                   checked={state.practical.q6PingServerOk}
                   onChange={(e) => handlePracticalChange('q6PingServerOk', e.target.checked)}
                   className="h-4 w-4 accent-sky-600"
+                  disabled={!ec2Ip}
                 />
-                <span>43.207.53.141 への Ping 疎通を確認した</span>
+                <span>{ec2Ip ? `${ec2Ip} への Ping 疎通を確認した` : '(演習サーバIP取得後に有効化されます)'}</span>
               </label>
-              <label className="flex items-center gap-2">
+              <label className={`flex items-center gap-2 ${!ec2Ip ? 'opacity-40' : ''}`}>
                 <input
                   type="checkbox"
                   checked={state.practical.q7SshServerOk}
                   onChange={(e) => handlePracticalChange('q7SshServerOk', e.target.checked)}
                   className="h-4 w-4 accent-sky-600"
+                  disabled={!ec2Ip}
                 />
-                <span>43.207.53.141 への SSH 接続（neos-training 等）を確認した</span>
+                <span>{ec2Ip ? `${ec2Ip} への SSH 接続を確認した` : '(演習サーバIP取得後に有効化されます)'}</span>
               </label>
             </div>
           </div>
