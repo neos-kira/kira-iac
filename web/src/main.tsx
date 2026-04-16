@@ -301,7 +301,8 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   )
 }
 import { IntroGate } from './components/IntroGate'
-import { Task1Gate, Task2Gate } from './components/TaskGates'
+// Task1Gate, Task2Gate は削除済み（ネットワーク基礎・ファイル操作・viのガードを解除）
+// TODO: 仕様確定後にガードを再適用する場合は TaskGates.tsx のコンポーネントを再 import すること
 
 class ErrorBoundary extends Component<
   { children: ReactNode },
@@ -447,12 +448,12 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/training/linux-level1" element={<IntroGate><LinuxLevel1Page /></IntroGate>} />
             <Route path="/training/infra-basic-1" element={<IntroGate><InfraBasic1Page /></IntroGate>} />
             <Route path="/training/infra-basic-top" element={<IntroGate><InfraBasicTopPage /></IntroGate>} />
-            <Route path="/training/infra-basic-2-top" element={<IntroGate><Task1Gate><InfraBasic2TopPage /></Task1Gate></IntroGate>} />
-            <Route path="/training/infra-basic-2-1" element={<IntroGate><Task1Gate><InfraBasic21Page /></Task1Gate></IntroGate>} />
-            <Route path="/training/linux-level2" element={<IntroGate><Task1Gate><LinuxLevel2Page /></Task1Gate></IntroGate>} />
-            <Route path="/training/infra-basic-3-top" element={<IntroGate><Task1Gate><Task2Gate><InfraBasic3TopPage /></Task2Gate></Task1Gate></IntroGate>} />
-            <Route path="/training/infra-basic-3-1" element={<IntroGate><Task1Gate><Task2Gate><InfraBasic31Page /></Task2Gate></Task1Gate></IntroGate>} />
-            <Route path="/training/infra-basic-3-2" element={<IntroGate><Task1Gate><Task2Gate><InfraBasic32Page /></Task2Gate></Task1Gate></IntroGate>} />
+            <Route path="/training/infra-basic-2-top" element={<IntroGate><InfraBasic2TopPage /></IntroGate>} />
+            <Route path="/training/infra-basic-2-1" element={<IntroGate><InfraBasic21Page /></IntroGate>} />
+            <Route path="/training/linux-level2" element={<IntroGate><LinuxLevel2Page /></IntroGate>} />
+            <Route path="/training/infra-basic-3-top" element={<IntroGate><InfraBasic3TopPage /></IntroGate>} />
+            <Route path="/training/infra-basic-3-1" element={<IntroGate><InfraBasic31Page /></IntroGate>} />
+            <Route path="/training/infra-basic-3-2" element={<IntroGate><InfraBasic32Page /></IntroGate>} />
             <Route path="/training/infra-basic-4" element={<IntroGate><InfraBasic4Page /></IntroGate>} />
             <Route path="/training/infra-basic-5" element={<IntroGate><InfraBasic5Page /></IntroGate>} />
             <Route path="/training/infra-wbs" element={<InfraWbsPage />} />
