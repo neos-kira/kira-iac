@@ -16,9 +16,12 @@ crash.*.log
 # Sensitive Terraform variable files
 *.tfvars
 *.tfvars.json
+!terraform/terraform.tfvars
 
 # OS / editor
 .DS_Store
 .idea/
 .vscode/
 
+.aidesigner/*
+!.aidesigner/.gitkeep
