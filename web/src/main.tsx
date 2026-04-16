@@ -194,8 +194,8 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         )}
-        {/* AI講師トグルボタン: サイドパネルモードで常に右下に表示 */}
-        {showSidePanel && (
+        {/* AI講師トグルボタン: パネルが閉じているときのみ表示（開いているときはヘッダー×で閉じる） */}
+        {showSidePanel && !isAiOpen && (
           <button
             type="button"
             onClick={() => {
@@ -203,7 +203,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
               setIsAiOpen(next)
               if (next) window.dispatchEvent(new CustomEvent('nic:close-user-menu'))
             }}
-            title={isAiOpen ? 'AI講師を閉じる' : 'AI講師に質問する'}
+            title="AI講師に質問する"
             style={{
               position: 'fixed',
               bottom: 24,
@@ -234,7 +234,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
               e.currentTarget.style.boxShadow = '0 4px 14px rgba(125,211,252,0.5)'
             }}
           >
-            {isAiOpen ? '✕' : '🎓'}
+            🎓
           </button>
         )}
       </div>
