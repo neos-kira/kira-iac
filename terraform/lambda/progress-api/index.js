@@ -516,6 +516,17 @@ fail: 意味不明・設問と無関係・空欄に近い内容
 
     // アカウント作成（admin 画面用）
     if (method === 'POST' && (path === '/accounts' || path === '/accounts/')) {
+      // manager 認証必須
+      const session = await verifySession(event)
+      if (!session) {
+        console.log(JSON.stringify({ level: 'warn', event: 'legacy_accounts_unauthenticated', endpoint: 'POST /accounts', source_ip: event.requestContext?.http?.sourceIp, user_agent: event.headers?.['user-agent'], timestamp: new Date().toISOString() }))
+        return json({ error: 'unauthorized' }, 401)
+      }
+      const sessionRole = await getSessionRole(session)
+      if (sessionRole !== 'manager') {
+        console.log(JSON.stringify({ level: 'warn', event: 'legacy_accounts_forbidden', endpoint: 'POST /accounts', username: session.username, role: sessionRole, source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
+        return json({ error: 'forbidden' }, 403)
+      }
       const body = JSON.parse(event.body || '{}')
       const username = (body.username || '').trim().toLowerCase()
       if (!username || username === 'admin') {
@@ -525,6 +536,7 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       if (!password) {
         return json({ error: 'invalid password' }, 400)
       }
+      console.log(JSON.stringify({ level: 'info', event: 'legacy_accounts_call', endpoint: 'POST /accounts', operator: session.username, operator_role: sessionRole, target_username: username, source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
       const userRole = ['student', 'manager'].includes(body.role) ? body.role : 'student'
       const passwordHash = crypto.createHash('sha256').update(password).digest('hex')
       const Item = {
@@ -544,6 +556,18 @@ fail: 意味不明・設問と無関係・空欄に近い内容
 
     // アカウント一覧取得（admin 画面用）
     if (method === 'GET' && (path === '/accounts' || path === '/accounts/')) {
+      // manager 認証必須
+      const session = await verifySession(event)
+      if (!session) {
+        console.log(JSON.stringify({ level: 'warn', event: 'legacy_accounts_unauthenticated', endpoint: 'GET /accounts', source_ip: event.requestContext?.http?.sourceIp, user_agent: event.headers?.['user-agent'], timestamp: new Date().toISOString() }))
+        return json({ error: 'unauthorized' }, 401)
+      }
+      const sessionRole = await getSessionRole(session)
+      if (sessionRole !== 'manager') {
+        console.log(JSON.stringify({ level: 'warn', event: 'legacy_accounts_forbidden', endpoint: 'GET /accounts', username: session.username, role: sessionRole, source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
+        return json({ error: 'forbidden' }, 403)
+      }
+      console.log(JSON.stringify({ level: 'info', event: 'legacy_accounts_call', endpoint: 'GET /accounts', operator: session.username, operator_role: sessionRole, target_username: 'N/A', source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
       const { Items } = await client.send(new ScanCommand({ TableName: AccountsTableName }))
       const accounts = (Items || []).map((item) => unmarshall(item))
       return json({ accounts })
@@ -551,12 +575,24 @@ fail: 意味不明・設問と無関係・空欄に近い内容
 
     // パスワードリセット（admin 用）
     if (method === 'PUT' && (path === '/accounts/password' || path === '/accounts/password/')) {
+      // manager 認証必須
+      const session = await verifySession(event)
+      if (!session) {
+        console.log(JSON.stringify({ level: 'warn', event: 'legacy_accounts_unauthenticated', endpoint: 'PUT /accounts/password', source_ip: event.requestContext?.http?.sourceIp, user_agent: event.headers?.['user-agent'], timestamp: new Date().toISOString() }))
+        return json({ error: 'unauthorized' }, 401)
+      }
+      const sessionRole = await getSessionRole(session)
+      if (sessionRole !== 'manager') {
+        console.log(JSON.stringify({ level: 'warn', event: 'legacy_accounts_forbidden', endpoint: 'PUT /accounts/password', username: session.username, role: sessionRole, source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
+        return json({ error: 'forbidden' }, 403)
+      }
       const body = JSON.parse(event.body || '{}')
       const username = (body.username || '').trim().toLowerCase()
       const newPassword = typeof body.newPassword === 'string' ? body.newPassword : ''
       if (!username || username === 'admin' || !newPassword) {
         return json({ error: 'invalid username or password' }, 400)
       }
+      console.log(JSON.stringify({ level: 'info', event: 'legacy_accounts_call', endpoint: 'PUT /accounts/password', operator: session.username, operator_role: sessionRole, target_username: username, source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
       const existing = await client.send(
         new GetItemCommand({
           TableName: AccountsTableName,
@@ -581,11 +617,23 @@ fail: 意味不明・設問と無関係・空欄に近い内容
 
     // アカウント削除（admin 用）
     if (method === 'DELETE' && (path === '/accounts' || path === '/accounts/')) {
+      // manager 認証必須
+      const session = await verifySession(event)
+      if (!session) {
+        console.log(JSON.stringify({ level: 'warn', event: 'legacy_accounts_unauthenticated', endpoint: 'DELETE /accounts', source_ip: event.requestContext?.http?.sourceIp, user_agent: event.headers?.['user-agent'], timestamp: new Date().toISOString() }))
+        return json({ error: 'unauthorized' }, 401)
+      }
+      const sessionRole = await getSessionRole(session)
+      if (sessionRole !== 'manager') {
+        console.log(JSON.stringify({ level: 'warn', event: 'legacy_accounts_forbidden', endpoint: 'DELETE /accounts', username: session.username, role: sessionRole, source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
+        return json({ error: 'forbidden' }, 403)
+      }
       const body = JSON.parse(event.body || '{}')
       const username = (body.username || '').trim().toLowerCase()
       if (!username || username === 'admin') {
         return json({ error: 'invalid username' }, 400)
       }
+      console.log(JSON.stringify({ level: 'info', event: 'legacy_accounts_call', endpoint: 'DELETE /accounts', operator: session.username, operator_role: sessionRole, target_username: username, source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
       await client.send(
         new DeleteItemCommand({
           TableName: AccountsTableName,
