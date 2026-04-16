@@ -20,7 +20,7 @@ function formatDate(iso: string | null): string {
 }
 
 function ProgressBar({ pct }: { pct: number }) {
-  const color = pct <= 30 ? 'bg-red-500' : pct <= 70 ? 'bg-amber-400' : 'bg-emerald-500'
+  const color = pct <= 30 ? 'bg-red-500' : pct <= 70 ? 'bg-amber-400' : 'bg-sky-500'
   return (
     <div className="flex items-center gap-2">
       <div className="h-2 w-20 overflow-hidden rounded-full bg-slate-200">

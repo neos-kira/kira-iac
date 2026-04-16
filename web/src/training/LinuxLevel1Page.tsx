@@ -424,7 +424,7 @@ export function LinuxLevel1Page() {
                 <button
                   type="button"
                   onClick={() => startPart(activePart + 1)}
-                  className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                  className="mt-4 rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700"
                 >
                   {PART_LABELS[activePart + 1]}（{PART_NAMES[activePart + 1]}）へ進む
                 </button>
@@ -438,7 +438,7 @@ export function LinuxLevel1Page() {
               <button
                 type="button"
                 onClick={() => startPart(activePart)}
-                className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                className="mt-4 rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700"
               >
                 もう一度チャレンジ
               </button>

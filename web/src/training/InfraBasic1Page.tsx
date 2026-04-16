@@ -328,7 +328,7 @@ export function InfraBasic1Page() {
                     type="button"
                     onClick={() => fileRef.current?.click()}
                     disabled={isGrading}
-                    className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full rounded-xl bg-sky-600 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isGrading ? 'AI採点中...' : 'スクリーンショットをアップロード'}
                   </button>

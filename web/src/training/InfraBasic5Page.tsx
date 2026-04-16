@@ -204,7 +204,7 @@ export function InfraBasic5Page() {
             </div>
             <div className="h-2 w-full rounded-full bg-slate-200">
               <div
-                className="h-2 rounded-full bg-indigo-500 transition-all"
+                className="h-2 rounded-full bg-sky-500 transition-all"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
@@ -268,7 +268,7 @@ export function InfraBasic5Page() {
             <button
               type="button"
               onClick={() => { window.location.hash = '#/' }}
-              className="mt-4 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
+              className="mt-4 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700"
             >
               トップに戻る
             </button>
@@ -318,7 +318,7 @@ function SectionBlock({
         onClick={onToggleOpen}
       >
         <div className="flex items-center gap-3 min-w-0">
-          <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold">
+          <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-sky-100 text-sky-700 text-xs font-bold">
             {section.number}
           </span>
           <div className="min-w-0">
@@ -344,7 +344,7 @@ function SectionBlock({
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onToggleSectionDone() }}
-              className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:border-indigo-500 hover:bg-indigo-50"
+              className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:border-sky-500 hover:bg-sky-50"
             >
               セクション完了
             </button>
@@ -414,7 +414,7 @@ function TaskRow({
       <div>
         <p className="text-sm font-medium text-slate-800 leading-snug">
           <span className="text-[11px] text-slate-400 mr-1">{task.number}</span>
-          {task.isReview ? <span className="text-indigo-700">{task.title}</span> : task.title}
+          {task.isReview ? <span className="text-sky-700">{task.title}</span> : task.title}
         </p>
         <p className="mt-1 text-xs text-slate-500">{task.objective}</p>
       </div>
@@ -425,12 +425,12 @@ function TaskRow({
           <button
             type="button"
             onClick={() => setShowHint((v) => !v)}
-            className="text-[11px] text-indigo-500 hover:text-indigo-700 underline"
+            className="text-[11px] text-sky-500 hover:text-sky-700 underline"
           >
             {showHint ? 'ヒントを隠す' : 'ヒントを見る（考え方）'}
           </button>
           {showHint && (
-            <p className="mt-1 rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-700">
+            <p className="mt-1 rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-700">
               {task.hint}
             </p>
           )}
@@ -451,13 +451,13 @@ function TaskRow({
             onChange={(e) => onReviewAnswerChange(e.target.value)}
             placeholder="実行結果をここに貼り付けてください..."
             rows={4}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none font-mono"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 resize-none font-mono"
           />
           <button
             type="button"
             onClick={onReviewScore}
             disabled={!reviewAnswer.trim() || reviewState.status === 'scoring'}
-            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {reviewState.status === 'scoring' ? 'AI確認中...' : 'AIに確認してもらう'}
           </button>
@@ -604,7 +604,7 @@ function ReviewUploadSection({
           type="button"
           onClick={onReviewScore}
           disabled={!reviewAnswer.trim() || reviewState.status === 'scoring'}
-          className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {reviewState.status === 'scoring' ? 'AI採点中...' : 'AIに採点してもらう'}
         </button>
