@@ -101,12 +101,13 @@ export function InfraBasicTopPage() {
         </div>
 
         {/* 進捗サマリー */}
+        {/* 進捗サマリー — color-primary (brand) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: '#0d9488' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: '#0369a1' }}>
             {completedCount} / {totalCount} 完了
           </span>
           <div style={{ flex: 1, height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden', maxWidth: '120px' }}>
-            <div style={{ width: `${(completedCount / totalCount) * 100}%`, height: '100%', background: '#0d9488', borderRadius: '3px', transition: 'width 0.3s ease' }} />
+            <div style={{ width: `${(completedCount / totalCount) * 100}%`, height: '100%', background: '#7dd3fc', borderRadius: '3px', transition: 'width 0.3s ease' }} />
           </div>
         </div>
 
@@ -129,7 +130,8 @@ export function InfraBasicTopPage() {
                   background: isCompleted ? '#f0fdf9' : 'white',
                 }}
               >
-                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: isCompleted ? '#0d9488' : '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: '16px', fontSize: '14px', color: isCompleted ? 'white' : '#9ca3af', fontWeight: 600 }}>
+                {/* 完了チェック円 — 達成時は color-success (emerald) */}
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: isCompleted ? '#10b981' : '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: '16px', fontSize: '14px', color: isCompleted ? 'white' : '#9ca3af', fontWeight: 600 }}>
                   {isCompleted ? '✓' : index + 1}
                 </div>
 
@@ -151,10 +153,12 @@ export function InfraBasicTopPage() {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0, marginLeft: '16px' }}>
+                  {/* 開くボタン — color-primary (light sky: 反復遷移系) */}
                   <button
                     type="button"
                     onClick={() => { window.location.href = getTrainingUrl(task.path) }}
-                    style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', cursor: 'pointer', fontWeight: 500 }}
+                    className="rounded-lg bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 transition-colors"
+                    style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 500 }}
                   >
                     開く
                   </button>

@@ -394,7 +394,7 @@ export function LinuxLevel1Page() {
               window.alert('インフラ研修1をクリアしました。インフラ研修2にチャレンジできます。')
               navigate('/')
             }}
-            className="mt-4 rounded-xl bg-emerald-600/80 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+            className="mt-4 rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700"
           >
             クリアを記録する
           </button>
@@ -500,7 +500,7 @@ export function LinuxLevel1Page() {
             {progressLabel}
           </span>
           <div style={{ flex: 1, height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
-            <div style={{ width: `${((queueIdx + 1) / queue.length) * 100}%`, height: '100%', background: '#0d9488', borderRadius: '3px', transition: 'width 0.3s ease' }} />
+            <div style={{ width: `${((queueIdx + 1) / queue.length) * 100}%`, height: '100%', background: '#7dd3fc', borderRadius: '3px', transition: 'width 0.3s ease' }} />
           </div>
         </div>
       </div>
@@ -564,7 +564,7 @@ export function LinuxLevel1Page() {
                 disabled={inputValue.trim() === ''}
                 style={inputValue.trim() === ''
                   ? { background: '#e5e7eb', color: '#9ca3af', cursor: 'not-allowed', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500, pointerEvents: 'none' as const }
-                  : { background: '#0d9488', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500 }
+                  : { background: '#0ea5e9', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500 }
                 }
                 className="shrink-0"
               >
@@ -574,7 +574,7 @@ export function LinuxLevel1Page() {
               <button
                 type="button"
                 onClick={goNext}
-                style={{ background: '#0d9488', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500 }}
+                style={{ background: '#0ea5e9', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500 }}
                 className="shrink-0"
               >
                 {queueIdx < queue.length - 1 ? '次へ' : '採点する'}

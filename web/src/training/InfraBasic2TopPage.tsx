@@ -62,7 +62,8 @@ export function InfraBasic2TopPage() {
           fontSize: '13px',
           color: '#6b7280',
         }}>
-          <span style={{ fontWeight: 600, color: '#0d9488' }}>
+          {/* 進捗サマリー — color-primary (brand) */}
+          <span style={{ fontWeight: 600, color: '#0369a1' }}>
             {completedCount} / {totalCount} 完了
           </span>
           <div style={{
@@ -76,7 +77,7 @@ export function InfraBasic2TopPage() {
             <div style={{
               width: `${(completedCount / totalCount) * 100}%`,
               height: '100%',
-              background: '#0d9488',
+              background: '#7dd3fc',
               borderRadius: '3px',
               transition: 'width 0.3s ease',
             }} />
@@ -112,11 +113,12 @@ export function InfraBasic2TopPage() {
                 }}
               >
                 {/* 左: 完了チェック or 番号 */}
+                {/* 完了チェック円 — 達成時は color-success (emerald) */}
                 <div style={{
                   width: '32px',
                   height: '32px',
                   borderRadius: '50%',
-                  background: isCompleted ? '#0d9488' : '#e5e7eb',
+                  background: isCompleted ? '#10b981' : '#e5e7eb',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -158,20 +160,17 @@ export function InfraBasic2TopPage() {
                   flexShrink: 0,
                   marginLeft: '16px',
                 }}>
+                  {/* 開くボタン — color-primary (light sky: 反復遷移系) */}
                   <button
                     type="button"
                     onClick={isLocked ? undefined : () => { window.location.href = getTrainingUrl(task.path) }}
                     disabled={isLocked}
-                    style={{
-                      background: isLocked ? '#e5e7eb' : '#0d9488',
-                      color: isLocked ? '#9ca3af' : 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '8px 16px',
-                      fontSize: '13px',
-                      cursor: isLocked ? 'not-allowed' : 'pointer',
-                      fontWeight: 500,
-                    }}
+                    className={`rounded-lg transition-colors ${
+                      isLocked
+                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        : 'bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 cursor-pointer'
+                    }`}
+                    style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 500 }}
                   >
                     開く
                   </button>

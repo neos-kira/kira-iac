@@ -220,14 +220,14 @@ export function TrainingQuizFrame({
             {currentIndex + 1} / {total}問
           </span>
           <div style={{ flex: 1, height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
-            <div style={{ width: `${((currentIndex + 1) / total) * 100}%`, height: '100%', background: '#0d9488', borderRadius: '3px', transition: 'width 0.3s ease' }} />
+            <div style={{ width: `${((currentIndex + 1) / total) * 100}%`, height: '100%', background: '#7dd3fc', borderRadius: '3px', transition: 'width 0.3s ease' }} />
           </div>
         </div>
         <button
           type="button"
           onClick={handleNext}
           disabled={!isCurrentAnswered || currentIndex >= total - 1}
-          style={{ background: isCurrentAnswered && currentIndex < total - 1 ? '#0d9488' : '#e5e7eb', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', color: isCurrentAnswered && currentIndex < total - 1 ? 'white' : '#9ca3af', cursor: isCurrentAnswered && currentIndex < total - 1 ? 'pointer' : 'not-allowed' }}
+          style={{ background: isCurrentAnswered && currentIndex < total - 1 ? '#0ea5e9' : '#e5e7eb', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', color: isCurrentAnswered && currentIndex < total - 1 ? 'white' : '#9ca3af', cursor: isCurrentAnswered && currentIndex < total - 1 ? 'pointer' : 'not-allowed' }}
         >
           次の問題 →
         </button>
@@ -281,7 +281,7 @@ export function TrainingQuizFrame({
               disabled={selectedIndex == null}
               style={selectedIndex == null
                 ? { background: '#e5e7eb', color: '#9ca3af', cursor: 'not-allowed', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: 500, pointerEvents: 'none' as const }
-                : { background: '#0d9488', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: 500 }
+                : { background: '#0ea5e9', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: 500 }
               }
             >
               {currentIndex < total - 1 ? '次へ' : '終了して得点を見る'}

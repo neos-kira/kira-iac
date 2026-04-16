@@ -28,6 +28,18 @@ body,
      warning        : #f59e0b  遅延・注意 (amber-500)
      danger         : #ef4444  エラー・不合格 (red-500)
   ============================================= */
+  /* ─── アクション3階層 ───────────────────────────────────────
+     primary-strong   : 1画面に1つの最重要CTA (bg-sky-500 text-white)
+     primary (light)  : 反復遷移系 (bg-sky-50 text-sky-700 border-sky-200)
+     primary-ghost    : 三次 (transparent text-sky-700)
+  ─────────────────────────────────────────────────────── */
+  --color-primary-strong: #0ea5e9;        /* sky-500 */
+  --color-primary-strong-hover: #0284c7;  /* sky-600 */
+  --color-primary-light-bg: #f0f9ff;      /* sky-50 */
+  --color-primary-light-text: #0369a1;    /* sky-700 */
+  --color-primary-light-border: #bae6fd;  /* sky-200 */
+  --color-primary-light-hover: #e0f2fe;   /* sky-100 */
+
   --color-primary: #7dd3fc;
   --color-primary-hover: #38bdf8;
   --color-action: #0ea5e9;

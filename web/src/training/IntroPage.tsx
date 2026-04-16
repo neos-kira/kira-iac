@@ -672,7 +672,7 @@ export function IntroPage() {
             onClick={handleOrientationComplete}
             disabled={isScoring}
             className="w-full rounded-lg py-3.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ backgroundColor: '#0d9488' }}
+            style={{ backgroundColor: '#0ea5e9' }}
           >
             {isScoring ? '保存中...' : 'はじめる →'}
           </button>
