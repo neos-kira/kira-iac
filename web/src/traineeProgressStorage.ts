@@ -83,7 +83,7 @@ export type TraineeProgressSnapshot = {
   /** EC2公開IP（演習サーバー管理用） */
   ec2PublicIp?: string | null
   /** EC2状態 */
-  ec2State?: 'running' | 'stopped' | null
+  ec2State?: 'running' | 'stopped' | 'pending' | 'stopping' | null
   /** 秘密鍵ペア名（nic-{username}-{timestamp}） */
   keyPairName?: string | null
   /** EC2作成日時（YYYY/MM/DD HH:mm） */

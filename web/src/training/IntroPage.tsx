@@ -14,10 +14,10 @@ import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 
 const CARD_ACCENTS = [
   { bg: 'bg-emerald-100', border: 'border-emerald-200', icon: 'bg-emerald-500' },
-  { bg: 'bg-sky-100', border: 'border-sky-200', icon: 'bg-sky-500' },
+  { bg: 'bg-sky-50', border: 'border-sky-100', icon: 'bg-[#7dd3fc]' },
   { bg: 'bg-violet-100', border: 'border-violet-200', icon: 'bg-violet-500' },
   { bg: 'bg-amber-100', border: 'border-amber-200', icon: 'bg-amber-500' },
-  { bg: 'bg-sky-100', border: 'border-sky-200', icon: 'bg-sky-500' },
+  { bg: 'bg-sky-50', border: 'border-sky-100', icon: 'bg-[#7dd3fc]' },
 ] as const
 
 const STANDARDS: Array<{
@@ -113,7 +113,8 @@ function StepProgress({ current }: { current: number }) {
             <div
               title={label}
               className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold
-                ${done ? 'bg-emerald-500 text-white' : active ? 'bg-sky-600 text-white' : 'bg-slate-200 text-slate-500'}`}
+                ${done ? 'bg-emerald-500 text-white' : active ? 'text-white' : 'bg-slate-200 text-slate-500'}`}
+              style={active ? { background: '#7dd3fc' } : undefined}
             >
               {done ? '✓' : stepNum}
             </div>
@@ -542,7 +543,7 @@ export function IntroPage() {
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="rounded-lg bg-sky-600 px-8 py-3.5 text-base font-semibold text-white hover:bg-sky-700"
+              className="rounded-lg px-8 py-3.5 text-base font-semibold text-slate-900 bg-[#7dd3fc] hover:bg-[#38bdf8]"
             >
               研修を始める
             </button>
@@ -564,7 +565,7 @@ export function IntroPage() {
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700"
+            className="rounded-lg bg-[#7dd3fc] px-4 py-2.5 text-sm font-medium text-slate-900 hover:bg-[#38bdf8]"
           >
             トップページへ →
           </button>
@@ -631,7 +632,7 @@ export function IntroPage() {
               <span
                 key={tag}
                 className={`px-3 py-1.5 rounded-lg text-[13px] font-medium ${
-                  i === 0 ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-600'
+                  i === 0 ? 'bg-sky-50 text-[#38bdf8]' : 'bg-slate-100 text-slate-600'
                 }`}
               >
                 {tag}
@@ -649,7 +650,7 @@ export function IntroPage() {
                 <div className="flex flex-col items-center">
                   <div
                     className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${
-                      step.num === 1 ? 'bg-sky-600 text-white' : 'bg-slate-200 text-slate-500'
+                      step.num === 1 ? 'bg-[#7dd3fc] text-slate-900' : 'bg-slate-200 text-slate-500'
                     }`}
                   >
                     {step.num}
@@ -746,7 +747,7 @@ export function IntroPage() {
             type="button"
             onClick={handleStep2Complete}
             disabled={isScoring}
-            className="flex-1 rounded-lg bg-sky-600 py-3.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 rounded-lg bg-[#7dd3fc] py-3.5 text-sm font-semibold text-slate-900 hover:bg-[#38bdf8] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isScoring ? '保存中...' : '確認しました・次へ →'}
           </button>
@@ -796,7 +797,7 @@ export function IntroPage() {
                           : showMissed
                             ? 'border-amber-300 bg-amber-50'
                             : isSelected
-                              ? 'border-sky-200 bg-sky-50'
+                              ? 'border-[#7dd3fc] bg-sky-50'
                               : 'border-slate-200 bg-white hover:bg-slate-50'
                     }`}
                   >
@@ -809,7 +810,7 @@ export function IntroPage() {
                             : showMissed
                               ? 'bg-amber-500 text-white'
                               : isSelected
-                                ? 'bg-sky-200 text-sky-800'
+                                ? 'bg-sky-100 text-[#38bdf8]'
                                 : 'bg-slate-200 text-slate-500'
                       }`}
                     >
@@ -846,7 +847,7 @@ export function IntroPage() {
               type="button"
               disabled={mcSelected.length === 0}
               onClick={handleCheckMC}
-              className="flex-1 rounded-xl bg-sky-600 py-3.5 text-sm font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex-1 rounded-xl bg-[#7dd3fc] py-3.5 text-sm font-medium text-slate-900 hover:bg-[#38bdf8] disabled:cursor-not-allowed disabled:opacity-50"
             >
               確認する
             </button>
@@ -874,7 +875,7 @@ export function IntroPage() {
                   type="button"
                   disabled={isScoring}
                   onClick={handleNext}
-                  className="rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+                  className="rounded-xl bg-[#7dd3fc] px-5 py-2.5 text-sm font-medium text-slate-900 hover:bg-[#38bdf8] disabled:opacity-50"
                 >
                   {nextBtnLabel}
                 </button>
@@ -944,7 +945,7 @@ export function IntroPage() {
             type="button"
             disabled={!currentInput.trim()}
             onClick={handleScore}
-            className="flex-1 rounded-xl bg-sky-600 py-3.5 text-sm font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-1 rounded-xl bg-[#7dd3fc] py-3.5 text-sm font-medium text-slate-900 hover:bg-[#38bdf8] disabled:cursor-not-allowed disabled:opacity-50"
           >
             採点する
           </button>
@@ -971,7 +972,7 @@ export function IntroPage() {
                 type="button"
                 disabled={isScoring}
                 onClick={handleNext}
-                className="rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+                className="rounded-xl bg-[#7dd3fc] px-5 py-2.5 text-sm font-medium text-slate-900 hover:bg-[#38bdf8] disabled:opacity-50"
               >
                 {nextBtnLabel}
               </button>

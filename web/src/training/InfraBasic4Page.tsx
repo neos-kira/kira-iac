@@ -236,7 +236,7 @@ export function InfraBasic4Page() {
         {/* EC2実機演習の説明 */}
         <section className="rounded-2xl border border-sky-200 bg-sky-50 p-4 shadow-soft-card">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-sky-700">EC2 実機演習</p>
-          <div className="mt-2 space-y-1 text-[12px] text-teal-900">
+          <div className="mt-2 space-y-1 text-[12px] text-slate-700">
             <p>この課題はEC2インスタンスにSSH接続して実機で操作します。</p>
             <ol className="mt-2 list-decimal pl-4 space-y-1 text-[11px] text-sky-800">
               <li>EC2にSSH接続する（接続情報はダッシュボードを確認）</li>

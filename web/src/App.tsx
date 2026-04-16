@@ -205,6 +205,8 @@ function App() {
   const [serverCreatedModal, setServerCreatedModal] = useState<{ publicIp: string; keyPairName: string; pemFilename: string } | null>(null)
   const [showStopConfirm, setShowStopConfirm] = useState(false)
   const [isServerActionLoading, setIsServerActionLoading] = useState(false)
+  const [ec2StatusError, setEc2StatusError] = useState(false)
+  const ec2PollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const openedRef = useRef<string | null>(null)
   const searchContainerRef = useRef<HTMLDivElement | null>(null)
   const searchFormRef = useRef<HTMLFormElement | null>(null)
@@ -228,36 +230,57 @@ function App() {
     setIsIntroCompleted(completed)
   }, [serverSnapshot])
 
-  /** EC2実ステータス同期: マウント時にDynamoDBのキャッシュではなく実際のEC2状態を取得 */
+  /** EC2実ステータス取得（AWS実態）*/
+  const doFetchEc2Status = useCallback(async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/server/status`, {
+        method: 'GET',
+        headers: buildAuthHeaders(),
+        credentials: 'omit',
+      })
+      if (!res.ok) { setEc2StatusError(true); return }
+      const data = (await res.json()) as { ok: boolean; status?: string; publicIp?: string | null }
+      if (!data.status) return
+      setEc2StatusError(false)
+      setServerSnapshot((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          ec2State: data.status as NonNullable<typeof prev.ec2State>,
+          ec2PublicIp: data.publicIp ?? prev.ec2PublicIp,
+          ec2Host: data.publicIp ?? prev.ec2Host,
+        }
+      })
+    } catch { setEc2StatusError(true) }
+  }, []) // buildAuthHeaders/BASE_URL はモジュールスコープで安定
+
+  /** pending/stopping 中は 3 秒ポーリング */
+  useEffect(() => {
+    const state = serverSnapshot?.ec2State
+    const instanceId = serverSnapshot?.ec2InstanceId
+    if (!isSnapLoaded || !instanceId) return
+    const isTransient = state === 'pending' || state === 'stopping'
+    if (isTransient) {
+      if (!ec2PollingRef.current) {
+        ec2PollingRef.current = setInterval(() => { void doFetchEc2Status() }, 3000)
+      }
+    } else {
+      if (ec2PollingRef.current) { clearInterval(ec2PollingRef.current); ec2PollingRef.current = null }
+    }
+    return () => {
+      if (ec2PollingRef.current) { clearInterval(ec2PollingRef.current); ec2PollingRef.current = null }
+    }
+  }, [serverSnapshot?.ec2State, serverSnapshot?.ec2InstanceId, isSnapLoaded, doFetchEc2Status])
+
+  /** 初回ロード時のみ実際の EC2 状態を取得 */
   const ec2StatusFetchedRef = useRef(false)
   useEffect(() => {
     if (!isSnapLoaded) return
     if (!serverSnapshot?.ec2InstanceId) return
     if (ec2StatusFetchedRef.current) return
     ec2StatusFetchedRef.current = true
-    const fetchStatus = async () => {
-      try {
-        const res = await fetch(`${BASE_URL}/server/status`, {
-          method: 'GET',
-          headers: buildAuthHeaders(),
-          credentials: 'omit',
-        })
-        if (!res.ok) return
-        const data = (await res.json()) as { ok: boolean; status?: string; publicIp?: string | null }
-        if (!data.status) return
-        setServerSnapshot((prev) => {
-          if (!prev) return prev
-          return {
-            ...prev,
-            ec2State: data.status as 'running' | 'stopped',
-            ec2PublicIp: data.publicIp ?? prev.ec2PublicIp,
-            ec2Host: data.publicIp ?? prev.ec2Host,
-          }
-        })
-      } catch { /* ignore */ }
-    }
-    void fetchStatus()
-  }, [isSnapLoaded, serverSnapshot?.ec2InstanceId])
+    void doFetchEc2Status()
+  }, [isSnapLoaded, serverSnapshot?.ec2InstanceId, doFetchEc2Status])
 
   function goToIntroAndClosePopup() {
     setShowIntroRequiredPopup(false)
@@ -815,8 +838,8 @@ function App() {
     setShowStopConfirm(false)
     setIsServerActionLoading(true)
     const prevSnapshot = serverSnapshot
-    // 楽観的更新
-    setServerSnapshot({ ...serverSnapshot, ec2State: 'stopped', updatedAt: new Date().toISOString() })
+    // 楽観的更新: stopping 状態へ（ポーリングが実態を追跡）
+    setServerSnapshot({ ...serverSnapshot, ec2State: 'stopping', updatedAt: new Date().toISOString() })
     try {
       const res = await fetch(`${BASE_URL}/server/stop`, {
         method: 'POST',
@@ -825,9 +848,9 @@ function App() {
         body: JSON.stringify({}),
       })
       if (!res.ok) {
-        // 失敗時は元の状態に戻す
         setServerSnapshot(prevSnapshot)
       }
+      // 成功時は ec2State: 'stopping' のまま → useEffect がポーリングを開始する
     } catch {
       setServerSnapshot(prevSnapshot)
     } finally {
@@ -840,8 +863,8 @@ function App() {
     if (isServerActionLoading || !serverSnapshot) return
     setIsServerActionLoading(true)
     const prevSnapshot = serverSnapshot
-    // 楽観的更新
-    setServerSnapshot({ ...serverSnapshot, ec2State: 'running', updatedAt: new Date().toISOString() })
+    // 楽観的更新: pending 状態へ（ポーリングが実態を追跡）
+    setServerSnapshot({ ...serverSnapshot, ec2State: 'pending', updatedAt: new Date().toISOString() })
     try {
       const res = await fetch(`${BASE_URL}/server/start`, {
         method: 'POST',
@@ -849,18 +872,10 @@ function App() {
         credentials: 'omit',
         body: JSON.stringify({}),
       })
-      if (res.ok) {
-        const data = (await res.json()) as { ok: boolean; publicIp?: string | null; ec2StartTime?: string }
-        setServerSnapshot((prev) => prev ? {
-          ...prev,
-          ec2State: 'running',
-          ec2PublicIp: data.publicIp ?? prev.ec2PublicIp,
-          ec2Host: data.publicIp ?? prev.ec2Host,
-          updatedAt: new Date().toISOString(),
-        } : prev)
-      } else {
+      if (!res.ok) {
         setServerSnapshot(prevSnapshot)
       }
+      // 成功時は ec2State: 'pending' のまま → useEffect がポーリングを開始する
     } catch {
       setServerSnapshot(prevSnapshot)
     } finally {
@@ -1392,7 +1407,7 @@ function App() {
             {/* j-terada 用：はじめにの下に課題1完了後の案内を表示。課題1クリア前はリンク無効 */}
             {isJTerada(getDisplayName()) && (
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="text-base font-semibold text-teal-900">
+                <p className="text-base font-semibold text-slate-800">
                   インフラ基礎課題1が完了したら、以下の課題を実施してください。
                 </p>
                 <ul className="mt-4 space-y-3">
@@ -1704,9 +1719,19 @@ function App() {
                     <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                       <div className="flex items-center justify-between gap-2 mb-2">
                         <p className="text-xs font-semibold text-slate-600">あなたの演習サーバー</p>
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${serverSnapshot.ec2State === 'running' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${serverSnapshot.ec2State === 'running' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-                          {serverSnapshot.ec2State === 'running' ? '起動中' : '停止中'}
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                          serverSnapshot.ec2State === 'running' ? 'bg-emerald-50 text-emerald-700' :
+                          (serverSnapshot.ec2State === 'pending' || serverSnapshot.ec2State === 'stopping') ? 'bg-amber-50 text-amber-600' :
+                          'bg-slate-100 text-slate-500'
+                        }`}>
+                          {(serverSnapshot.ec2State === 'pending' || serverSnapshot.ec2State === 'stopping') ? (
+                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-amber-200 border-t-amber-500" />
+                          ) : (
+                            <span className={`h-1.5 w-1.5 rounded-full ${serverSnapshot.ec2State === 'running' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                          )}
+                          {serverSnapshot.ec2State === 'running' ? '実行中' :
+                           serverSnapshot.ec2State === 'pending' ? '起動中...' :
+                           serverSnapshot.ec2State === 'stopping' ? '停止中...' : '停止中'}
                         </span>
                       </div>
                       <div className="flex items-end gap-4 flex-wrap">
@@ -1745,19 +1770,36 @@ function App() {
                               disabled={isServerActionLoading}
                               className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >停止する</button>
+                          ) : (serverSnapshot.ec2State === 'pending' || serverSnapshot.ec2State === 'stopping') ? (
+                            <button
+                              type="button"
+                              disabled
+                              className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-400 cursor-not-allowed"
+                            >{serverSnapshot.ec2State === 'pending' ? '起動中...' : '停止中...'}</button>
                           ) : (
                             <button
                               type="button"
                               onClick={() => { void handleStartServer() }}
                               disabled={isServerActionLoading}
                               className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >{isServerActionLoading ? '起動中...' : '起動する'}</button>
+                            >起動する</button>
                           )}
                         </div>
                       </div>
-                      <p className="mt-2 text-[10px] text-slate-400">
-                        {serverSnapshot.ec2State === 'running' ? '※ 使用後は必ず停止してください' : '※ 起動後、演習を開始してください'}
-                      </p>
+                      {ec2StatusError ? (
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className="text-[10px] text-red-500">状態を取得できません</span>
+                          <button type="button" onClick={() => { setEc2StatusError(false); void doFetchEc2Status() }}
+                            className="text-[10px] text-blue-500 underline hover:text-blue-700">再試行</button>
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-[10px] text-slate-400">
+                          {serverSnapshot.ec2State === 'running' ? '※ 使用後は必ず停止してください' :
+                           serverSnapshot.ec2State === 'pending' ? '※ 起動完了まで少々お待ちください' :
+                           serverSnapshot.ec2State === 'stopping' ? '※ 停止完了まで少々お待ちください' :
+                           '※ 起動後、演習を開始してください'}
+                        </p>
+                      )}
                     </div>
                   )
                 })()

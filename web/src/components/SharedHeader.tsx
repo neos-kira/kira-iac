@@ -60,7 +60,7 @@ export function SharedHeader({ delayed, progressPct, completedCount, totalCount,
   const handleCancel = () => { setShowModal(false) }
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-slate-200/80 bg-white/95 backdrop-blur-sm px-5 shrink-0">
+    <header className="flex h-14 items-center justify-between border-b bg-white/95 backdrop-blur-sm px-5 shrink-0" style={{ borderColor: 'rgba(14,165,233,0.15)' }}>
       <div className="shrink-0" onClick={handleLogoClick} style={isTopPage ? {} : { cursor: 'pointer' }}>
         <NeOSLogo height={40} noLink />
       </div>
@@ -94,12 +94,12 @@ export function SharedHeader({ delayed, progressPct, completedCount, totalCount,
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowWBSHelp(false)} />
                 <div className="absolute top-full right-0 mt-2 z-50 w-72 rounded-xl border border-slate-200 bg-slate-900 text-white p-4 shadow-xl text-[12px] leading-relaxed">
-                  <p className="font-semibold text-sky-400 mb-1.5">WBS（Work Breakdown Structure）とは？</p>
+                  <p className="font-semibold mb-1.5" style={{ color: '#7dd3fc' }}>WBS（Work Breakdown Structure）とは？</p>
                   <p className="text-slate-300">プロジェクトの作業を細かく分解して進捗を管理する表です。各課題の完了状況や遅延がひと目でわかります。</p>
                   <button
                     type="button"
                     onClick={() => setShowWBSHelp(false)}
-                    className="mt-2.5 text-[11px] text-sky-400 hover:text-sky-300 transition-colors"
+                    className="mt-2.5 text-[11px] transition-colors" style={{ color: '#7dd3fc' }}
                   >
                     閉じる
                   </button>
@@ -116,7 +116,7 @@ export function SharedHeader({ delayed, progressPct, completedCount, totalCount,
               )}
               <div className="flex items-center gap-2">
                 <div className="w-20 h-1 rounded-full bg-slate-200 overflow-hidden">
-                  <div className="h-full rounded-full bg-sky-500 transition-all duration-500" style={{ width: `${progressPct}%` }} />
+                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progressPct}%`, background: '#7dd3fc' }} />
                 </div>
                 <span className="text-[11px] text-slate-500 tabular-nums w-7 text-right">{progressPct}%</span>
               </div>
@@ -133,7 +133,10 @@ export function SharedHeader({ delayed, progressPct, completedCount, totalCount,
           <button
             type="button"
             onClick={() => setShowMenu((v) => !v)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-500 text-[13px] font-semibold text-white transition-colors hover:bg-sky-600 ring-2 ring-sky-500/20"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-semibold text-white transition-colors ring-2 ring-[rgba(125,211,252,0.2)]"
+            style={{ background: '#7dd3fc' }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#38bdf8')}
+            onMouseLeave={e => (e.currentTarget.style.background = '#7dd3fc')}
             title={name}
           >
             {initial || <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}

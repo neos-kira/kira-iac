@@ -174,17 +174,18 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
         {/* モード1: サイドパネル（pointer:fine & width>=900px） */}
         {showSidePanel && isAiOpen && (
           <div style={{ flex: `0 0 ${panelWidth}px`, flexShrink: 0, display: 'flex', flexDirection: 'row', background: 'white', height: `calc(100vh - ${NAV_HEIGHT}px)`, position: 'sticky', top: NAV_HEIGHT }}>
-            <div onMouseDown={startDragX} style={{ width: 4, cursor: 'col-resize', background: 'transparent', flexShrink: 0, transition: 'background 0.15s' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#0d9488' }} onMouseLeave={(e) => { if (!isDragging.current) (e.currentTarget as HTMLElement).style.background = 'transparent' }} />
+            <div onMouseDown={startDragX} style={{ width: 4, cursor: 'col-resize', background: 'transparent', flexShrink: 0, transition: 'background 0.15s' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#7dd3fc' }} onMouseLeave={(e) => { if (!isDragging.current) (e.currentTarget as HTMLElement).style.background = 'transparent' }} />
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e5e7eb', minWidth: 0 }}>
               <MentorDesk context={ctx} sidebar embedded onClose={() => setIsAiOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
             </div>
           </div>
         )}
-        {showSidePanel && !isAiOpen && (
+        {/* AI講師トグルボタン: サイドパネルモードで常に右下に表示 */}
+        {showSidePanel && (
           <button
             type="button"
-            onClick={() => setIsAiOpen(true)}
-            title="AI講師に質問する"
+            onClick={() => setIsAiOpen((v) => !v)}
+            title={isAiOpen ? 'AI講師を閉じる' : 'AI講師に質問する'}
             style={{
               position: 'fixed',
               bottom: 24,
@@ -192,28 +193,30 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
               width: 56,
               height: 56,
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #0d9488 0%, #0369a1 100%)',
-              color: 'white',
+              background: '#7dd3fc',
+              color: '#0f172a',
               border: 'none',
               cursor: 'pointer',
-              fontSize: 24,
+              fontSize: 22,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(13,148,136,0.4)',
-              zIndex: 201,
+              boxShadow: '0 4px 14px rgba(125,211,252,0.5)',
+              zIndex: 9999,
               transition: 'transform 0.15s, box-shadow 0.15s',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'scale(1.1)'
-              e.currentTarget.style.boxShadow = '0 6px 18px rgba(13,148,136,0.55)'
+              e.currentTarget.style.background = '#38bdf8'
+              e.currentTarget.style.boxShadow = '0 6px 18px rgba(125,211,252,0.65)'
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'scale(1)'
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.4)'
+              e.currentTarget.style.background = '#7dd3fc'
+              e.currentTarget.style.boxShadow = '0 4px 14px rgba(125,211,252,0.5)'
             }}
           >
-            🎓
+            {isAiOpen ? '✕' : '🎓'}
           </button>
         )}
       </div>
@@ -223,8 +226,8 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
         <>
           {/* 展開パネル */}
           {isBottomBarOpen && (
-            <div style={{ position: 'fixed', bottom: 48, left: 0, right: 0, height: panelHeight, display: 'flex', flexDirection: 'column', background: 'white', borderTop: '1px solid #e5e7eb', zIndex: 100, boxShadow: '0 -4px 16px rgba(0,0,0,0.08)' }}>
-              <div onMouseDown={startDragY} style={{ height: 4, cursor: 'row-resize', background: 'transparent', flexShrink: 0, transition: 'background 0.15s' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#0d9488' }} onMouseLeave={(e) => { if (!isDragging.current) (e.currentTarget as HTMLElement).style.background = 'transparent' }} />
+            <div style={{ position: 'fixed', bottom: 48, left: 0, right: 0, height: panelHeight, display: 'flex', flexDirection: 'column', background: 'white', borderTop: '1px solid #e5e7eb', zIndex: 9998, boxShadow: '0 -4px 16px rgba(0,0,0,0.08)' }}>
+              <div onMouseDown={startDragY} style={{ height: 4, cursor: 'row-resize', background: 'transparent', flexShrink: 0, transition: 'background 0.15s' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#7dd3fc' }} onMouseLeave={(e) => { if (!isDragging.current) (e.currentTarget as HTMLElement).style.background = 'transparent' }} />
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 <MentorDesk context={ctx} sidebar embedded onClose={() => setIsBottomBarOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
               </div>
@@ -233,7 +236,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
           {/* 固定バー */}
           <div
             onClick={() => setIsBottomBarOpen((v) => !v)}
-            style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 48, background: 'white', borderTop: '1px solid #e5e7eb', zIndex: 101, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#0d9488' }}
+            style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 48, background: 'white', borderTop: '1px solid #e5e7eb', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#0f172a' }}
           >
             <span style={{ fontSize: 18 }}>🎓</span> AI講師 <span style={{ fontSize: 12, color: '#9ca3af' }}>{isBottomBarOpen ? '▼' : '▲'}</span>
           </div>
@@ -242,7 +245,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
       {/* モード3: モバイル 🎓ボタン */}
       {showMobile && !isChatOpen && (
-        <button type="button" onClick={() => setIsChatOpen(true)} style={{ position: 'fixed', bottom: 24, right: 24, width: 52, height: 52, borderRadius: '50%', background: '#0d9488', color: 'white', border: 'none', cursor: 'pointer', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 201 }}>
+        <button type="button" onClick={() => setIsChatOpen(true)} style={{ position: 'fixed', bottom: 24, right: 24, width: 52, height: 52, borderRadius: '50%', background: '#7dd3fc', color: '#0f172a', border: 'none', cursor: 'pointer', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(125,211,252,0.5)', zIndex: 9999 }}>
           🎓
         </button>
       )}

@@ -19,7 +19,7 @@ function renderMarkdown(raw: string): string {
   s = s.replace(/^## (.+)$/gm, '<h3 style="font-weight:700;font-size:14px;margin:4px 0">$1</h3>')
   s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
   s = s.replace(/^---$/gm, '<hr style="border:0;border-top:1px solid #e2e8f0;margin:6px 0"/>')
-  s = s.replace(/^&gt; (.+)$/gm, '<blockquote style="border-left:3px solid #0d9488;padding-left:8px;margin:4px 0;color:#475569">$1</blockquote>')
+  s = s.replace(/^&gt; (.+)$/gm, '<blockquote style="border-left:3px solid #7dd3fc;padding-left:8px;margin:4px 0;color:#475569">$1</blockquote>')
   s = s.replace(/`([^`]+)`/g, '<code style="background:#f1f5f9;padding:1px 4px;border-radius:3px;font-size:11px">$1</code>')
   s = s.replace(/\n/g, '<br/>')
   return s
@@ -220,7 +220,7 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
           {isSending && (
             <div className="flex justify-start">
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '12px 16px', background: '#f3f4f6', borderRadius: '12px 12px 12px 4px', width: 'fit-content' }}>
-                {[0, 1, 2].map((i) => (<div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#0d9488', animation: 'typing-dot 1.2s infinite', animationDelay: `${i * 0.2}s` }} />))}
+                {[0, 1, 2].map((i) => (<div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#7dd3fc', animation: 'typing-dot 1.2s infinite', animationDelay: `${i * 0.2}s` }} />))}
                 <style>{`@keyframes typing-dot { 0%,60%,100%{opacity:.3;transform:scale(.8)} 30%{opacity:1;transform:scale(1.2)} }`}</style>
               </div>
             </div>

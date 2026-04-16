@@ -150,19 +150,18 @@ export function LoginPage() {
   const canReset = !isResetting && resetUsername.trim().length > 0 && resetNewPassword.length > 0 && resetConfirmPassword.length > 0
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white overflow-hidden">
-        {/* ブランドアクセントライン */}
-        <div className="h-[3px] bg-[#0ea5e9]" />
-        <div className="p-8">
-          <div className="flex justify-center mb-6">
-            <NeOSLogo height={96} noLink={true} />
+    <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #eff6ff 50%, #e0f2fe 100%)' }}>
+      {/* アクセントバー */}
+      <div className="w-[80px] h-[4px] rounded-full mb-4" style={{ background: '#7dd3fc' }} />
+      <div className="w-full bg-white" style={{ maxWidth: 440, borderRadius: 16, padding: '56px', border: '1px solid rgba(14,165,233,0.15)' }}>
+          <div className="flex justify-center mb-10">
+            <NeOSLogo height={160} noLink={true} />
           </div>
 
         {mode === 'login' ? (
-          <div className="mt-4 space-y-4">
+          <div className="space-y-6">
             <div>
-              <label htmlFor="login-username" className="block text-[13px] font-medium text-slate-600 mb-1.5">
+              <label htmlFor="login-username" className="block font-medium mb-2" style={{ fontSize: 15, letterSpacing: '0.01em', color: '#334155' }}>
                 ユーザー名
               </label>
               <input
@@ -173,7 +172,10 @@ export function LoginPage() {
                 onKeyDown={handleKeyDown}
                 placeholder="ユーザー名を入力"
                 disabled={isLoggingIn}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 transition-shadow disabled:bg-slate-50"
+                className="w-full bg-white text-slate-900 placeholder:text-slate-400 disabled:bg-slate-50 outline-none transition-all"
+                style={{ height: 52, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0 16px', fontSize: 16 }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#7dd3fc'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(125,211,252,0.1)' }}
+                onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none' }}
                 autoComplete="username"
                 autoCorrect="off"
                 autoCapitalize="off"
@@ -183,7 +185,7 @@ export function LoginPage() {
               />
             </div>
             <div>
-              <label htmlFor="login-password" className="block text-[13px] font-medium text-slate-600 mb-1.5">
+              <label htmlFor="login-password" className="block font-medium mb-2" style={{ fontSize: 15, letterSpacing: '0.01em', color: '#334155' }}>
                 パスワード
               </label>
               <div className="relative">
@@ -195,7 +197,10 @@ export function LoginPage() {
                   onKeyDown={handleKeyDown}
                   placeholder="パスワードを入力"
                   disabled={isLoggingIn}
-                  className="w-full h-10 rounded-lg border border-slate-200 bg-white pr-10 pl-3 text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 transition-shadow disabled:bg-slate-50"
+                  className="w-full bg-white text-slate-900 placeholder:text-slate-400 disabled:bg-slate-50 outline-none transition-all"
+                  style={{ height: 52, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0 48px 0 16px', fontSize: 16 }}
+                  onFocus={e => { e.currentTarget.style.borderColor = '#7dd3fc'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(125,211,252,0.1)' }}
+                  onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none' }}
                   autoComplete="current-password"
                   autoCorrect="off"
                   autoCapitalize="off"
@@ -206,10 +211,11 @@ export function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute inset-y-0 right-0 flex items-center pr-4 transition-colors"
+                  style={{ color: '#64748b' }}
                   aria-label={showPassword ? 'パスワードを非表示' : 'パスワードを表示'}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
             </div>
@@ -222,25 +228,32 @@ export function LoginPage() {
               type="button"
               onClick={() => void handleLogin()}
               disabled={!canSubmit || isLoggingIn}
-              className="mt-2 w-full h-10 rounded-lg bg-[#0ea5e9] text-[14px] font-medium text-white hover:bg-[#0284c7] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              style={{ height: 52, borderRadius: 10, background: '#7dd3fc', fontSize: 16, letterSpacing: '0.02em', border: 'none', cursor: 'pointer', color: '#0f172a' }}
+              onMouseEnter={e => { if (canSubmit) { e.currentTarget.style.background = '#38bdf8'; e.currentTarget.style.transform = 'translateY(-1px)' } }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#7dd3fc'; e.currentTarget.style.transform = 'translateY(0)' }}
+              onMouseDown={e => { e.currentTarget.style.transform = 'translateY(0)' }}
             >
               {isLoggingIn ? 'ログイン中...' : 'ログイン'}
             </button>
-            <p className="text-center pt-1">
+            <p className="text-center">
               <button
                 type="button"
                 onClick={() => { setMode('reset'); setLoginError('') }}
-                className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                className="transition-all duration-200"
+                style={{ fontSize: 14, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#7dd3fc'; e.currentTarget.style.textDecoration = 'underline' }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.textDecoration = 'none' }}
               >
                 パスワードを忘れた方はこちら
               </button>
             </p>
           </div>
         ) : (
-          <div className="mt-6 space-y-4">
+          <div className="space-y-5">
             <h2 className="text-sm font-semibold text-slate-700">パスワードのリセット</h2>
             <div>
-              <label htmlFor="reset-username" className="block text-sm font-medium text-slate-700 mb-1">
+              <label htmlFor="reset-username" className="block font-medium mb-2" style={{ fontSize: 15, letterSpacing: '0.01em', color: '#334155' }}>
                 ユーザー名
               </label>
               <input
@@ -249,12 +262,15 @@ export function LoginPage() {
                 value={resetUsername}
                 onChange={(e) => setResetUsername(e.target.value)}
                 placeholder="ユーザー名を入力"
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                className="w-full bg-white text-slate-800 placeholder:text-slate-400 outline-none transition-all"
+                style={{ height: 52, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0 16px', fontSize: 16 }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#7dd3fc'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(125,211,252,0.1)' }}
+                onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none' }}
                 autoComplete="username"
               />
             </div>
             <div>
-              <label htmlFor="reset-new-password" className="block text-sm font-medium text-slate-700 mb-1">
+              <label htmlFor="reset-new-password" className="block font-medium mb-2" style={{ fontSize: 15, letterSpacing: '0.01em', color: '#334155' }}>
                 新しいパスワード
               </label>
               <div className="relative">
@@ -264,21 +280,25 @@ export function LoginPage() {
                   value={resetNewPassword}
                   onChange={(e) => setResetNewPassword(e.target.value)}
                   placeholder="新しいパスワードを入力"
-                  className="w-full rounded-lg border border-slate-300 bg-white pr-10 pl-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  className="w-full bg-white text-slate-800 placeholder:text-slate-400 outline-none transition-all"
+                  style={{ height: 52, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0 48px 0 16px', fontSize: 16 }}
+                  onFocus={e => { e.currentTarget.style.borderColor = '#7dd3fc'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(125,211,252,0.1)' }}
+                  onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none' }}
                   autoComplete="new-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowResetPassword((v) => !v)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute inset-y-0 right-0 flex items-center pr-4 transition-colors"
+                  style={{ color: '#64748b' }}
                   aria-label={showResetPassword ? 'パスワードを非表示' : 'パスワードを表示'}
                 >
-                  {showResetPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showResetPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
             </div>
             <div>
-              <label htmlFor="reset-confirm-password" className="block text-sm font-medium text-slate-700 mb-1">
+              <label htmlFor="reset-confirm-password" className="block font-medium mb-2" style={{ fontSize: 15, letterSpacing: '0.01em', color: '#334155' }}>
                 新しいパスワード（確認）
               </label>
               <div className="relative">
@@ -294,16 +314,20 @@ export function LoginPage() {
                     }
                   }}
                   placeholder="新しいパスワードを再入力"
-                  className="w-full rounded-lg border border-slate-300 bg-white pr-10 pl-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  className="w-full bg-white text-slate-800 placeholder:text-slate-400 outline-none transition-all"
+                  style={{ height: 52, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0 48px 0 16px', fontSize: 16 }}
+                  onFocus={e => { e.currentTarget.style.borderColor = '#7dd3fc'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(125,211,252,0.1)' }}
+                  onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none' }}
                   autoComplete="new-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowResetConfirmPassword((v) => !v)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute inset-y-0 right-0 flex items-center pr-4 transition-colors"
+                  style={{ color: '#64748b' }}
                   aria-label={showResetConfirmPassword ? 'パスワードを非表示' : 'パスワードを表示'}
                 >
-                  {showResetConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showResetConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
             </div>
@@ -321,22 +345,27 @@ export function LoginPage() {
               type="button"
               onClick={() => void handleReset()}
               disabled={!canReset}
-              className="mt-2 w-full h-10 rounded-lg bg-[#0ea5e9] text-[14px] font-medium text-white hover:bg-[#0284c7] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              style={{ height: 52, borderRadius: 10, background: '#7dd3fc', fontSize: 16, letterSpacing: '0.02em', border: 'none', cursor: 'pointer', color: '#0f172a' }}
+              onMouseEnter={e => { if (canReset) { e.currentTarget.style.background = '#38bdf8'; e.currentTarget.style.transform = 'translateY(-1px)' } }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#7dd3fc'; e.currentTarget.style.transform = 'translateY(0)' }}
             >
               {isResetting ? 'リセット中...' : 'リセットする'}
             </button>
-            <p className="text-center pt-1">
+            <p className="text-center">
               <button
                 type="button"
                 onClick={() => { setMode('login'); setResetError(''); setResetSuccess('') }}
-                className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                className="transition-all duration-200"
+                style={{ fontSize: 14, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#7dd3fc'; e.currentTarget.style.textDecoration = 'underline' }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.textDecoration = 'none' }}
               >
                 ログインに戻る
               </button>
             </p>
           </div>
         )}
-        </div>{/* /p-8 */}
       </div>
     </div>
   )

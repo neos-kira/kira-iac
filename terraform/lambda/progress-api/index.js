@@ -1193,14 +1193,28 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       const progRes = await client.send(new GetItemCommand({ TableName, Key: marshall({ traineeId: username }) }))
       const prog = progRes.Item ? unmarshall(progRes.Item) : null
       if (!prog?.ec2InstanceId) return json({ error: 'no_instance', message: 'インスタンスが見つかりません' }, 404)
-      if (prog.ec2State === 'stopped') return json({ ok: true, ec2State: 'stopped' })
+
+      // 実際のEC2状態を取得して冪等性チェック
+      let realState = prog.ec2State || 'stopped'
+      try {
+        const descRes = await ec2Client.send(new DescribeInstancesCommand({ InstanceIds: [prog.ec2InstanceId] }))
+        const inst = descRes.Reservations?.[0]?.Instances?.[0]
+        if (inst) realState = inst.State?.Name || realState
+      } catch (e) { console.warn('[server/stop] DescribeInstances失敗:', e.message) }
+
+      // 既に停止中/停止済みなら何もしない（冪等性）
+      if (realState === 'stopped' || realState === 'stopping') {
+        console.log(JSON.stringify({ action: 'stop', user_id: username, instance_id: prog.ec2InstanceId, before_state: realState, after_state: realState, skipped: true }))
+        return json({ ok: true, ec2State: realState })
+      }
 
       await ec2Client.send(new StopInstancesCommand({ InstanceIds: [prog.ec2InstanceId] }))
 
-      const updated = { ...prog, ec2State: 'stopped', updatedAt: new Date().toISOString() }
+      const updated = { ...prog, ec2State: 'stopping', updatedAt: new Date().toISOString() }
       await client.send(new PutItemCommand({ TableName, Item: marshall(updated, { removeUndefinedValues: true }) }))
 
-      return json({ ok: true, ec2State: 'stopped' })
+      console.log(JSON.stringify({ action: 'stop', user_id: username, instance_id: prog.ec2InstanceId, before_state: realState, after_state: 'stopping' }))
+      return json({ ok: true, ec2State: 'stopping' })
     }
 
     // EC2起動（POST /server/start）
@@ -1212,36 +1226,37 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       const progRes = await client.send(new GetItemCommand({ TableName, Key: marshall({ traineeId: username }) }))
       const prog = progRes.Item ? unmarshall(progRes.Item) : null
       if (!prog?.ec2InstanceId) return json({ error: 'no_instance', message: 'インスタンスが見つかりません' }, 404)
-      if (prog.ec2State === 'running') return json({ ok: true, ec2State: 'running', publicIp: prog.ec2PublicIp })
+
+      // 実際のEC2状態を取得して冪等性チェック
+      let realState = prog.ec2State || 'stopped'
+      let publicIp = prog.ec2PublicIp || null
+      try {
+        const descRes = await ec2Client.send(new DescribeInstancesCommand({ InstanceIds: [prog.ec2InstanceId] }))
+        const inst = descRes.Reservations?.[0]?.Instances?.[0]
+        if (inst) {
+          realState = inst.State?.Name || realState
+          publicIp = inst.PublicIpAddress || publicIp
+        }
+      } catch (e) { console.warn('[server/start] DescribeInstances失敗:', e.message) }
+
+      // 既に起動中/起動済みなら何もしない（冪等性）
+      if (realState === 'running' || realState === 'pending') {
+        console.log(JSON.stringify({ action: 'start', user_id: username, instance_id: prog.ec2InstanceId, before_state: realState, after_state: realState, skipped: true }))
+        return json({ ok: true, ec2State: realState, publicIp })
+      }
 
       await ec2Client.send(new StartInstancesCommand({ InstanceIds: [prog.ec2InstanceId] }))
-
-      // パブリックIP取得（起動後に変わる可能性があるため再取得）
-      let publicIp = prog.ec2PublicIp || null
-      for (let i = 0; i < 8; i++) {
-        await new Promise((r) => setTimeout(r, 3000))
-        try {
-          const descRes = await ec2Client.send(new DescribeInstancesCommand({ InstanceIds: [prog.ec2InstanceId] }))
-          const inst = descRes.Reservations?.[0]?.Instances?.[0]
-          if (inst?.PublicIpAddress) { publicIp = inst.PublicIpAddress; break }
-        } catch { /* continue */ }
-      }
 
       const jst = new Date(Date.now() + 9 * 60 * 60 * 1000)
       const pad = (n) => String(n).padStart(2, '0')
       const ec2StartTime = `${pad(jst.getUTCHours())}:${pad(jst.getUTCMinutes())}`
 
-      const updated = {
-        ...prog,
-        ec2State: 'running',
-        ec2PublicIp: publicIp,
-        ec2Host: publicIp,
-        ec2StartTime,
-        updatedAt: new Date().toISOString(),
-      }
+      const updated = { ...prog, ec2State: 'pending', ec2StartTime, updatedAt: new Date().toISOString() }
       await client.send(new PutItemCommand({ TableName, Item: marshall(updated, { removeUndefinedValues: true }) }))
 
-      return json({ ok: true, ec2State: 'running', publicIp, ec2StartTime })
+      console.log(JSON.stringify({ action: 'start', user_id: username, instance_id: prog.ec2InstanceId, before_state: realState, after_state: 'pending' }))
+      // pending を即返し（フロントエンドがポーリングで running を検知する）
+      return json({ ok: true, ec2State: 'pending', publicIp })
     }
 
     // 全EC2サーバー一括停止（POST /admin/ec2/stop-all）- managerのみ
