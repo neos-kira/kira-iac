@@ -205,6 +205,8 @@ function App() {
   const [serverCreatedModal, setServerCreatedModal] = useState<{ publicIp: string; keyPairName: string; pemFilename: string } | null>(null)
   const [showStopConfirm, setShowStopConfirm] = useState(false)
   const [isServerActionLoading, setIsServerActionLoading] = useState(false)
+  const [isRedownloading, setIsRedownloading] = useState(false)
+  const [redownloadError, setRedownloadError] = useState<string | null>(null)
   const [ec2StatusError, setEc2StatusError] = useState(false)
   const ec2PollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const openedRef = useRef<string | null>(null)
@@ -807,10 +809,11 @@ function App() {
     }
   }
 
-  /** 秘密鍵再ダウンロード */
+  /** 秘密鍵再ダウンロード（presigned URL方式） */
   const handleDownloadKey = async () => {
-    const username = getDisplayName().trim().toLowerCase()
-    if (!username || !serverSnapshot?.keyPairName) return
+    if (isRedownloading) return
+    setIsRedownloading(true)
+    setRedownloadError(null)
     try {
       const res = await fetch(`${BASE_URL}/server/download-key`, {
         method: 'POST',
@@ -818,18 +821,31 @@ function App() {
         credentials: 'omit',
         body: JSON.stringify({}),
       })
-      if (!res.ok) return
-      const data = (await res.json()) as { ok: boolean; privateKey?: string; keyPairName?: string }
-      if (!data.privateKey) return
-      const filename = `${data.keyPairName ?? serverSnapshot.keyPairName}.pem`
-      const blob = new Blob([data.privateKey], { type: 'application/octet-stream' })
+      const data = (await res.json()) as { ok?: boolean; presignedUrl?: string; filename?: string; keyPairName?: string; error?: string; message?: string }
+      if (!res.ok || !data.presignedUrl) {
+        setRedownloadError(data.message ?? 'ダウンロードに失敗しました')
+        return
+      }
+      // presigned URLからblobを取得してダウンロード（mobile Safari対応）
+      const pemRes = await fetch(data.presignedUrl)
+      if (!pemRes.ok) {
+        setRedownloadError('ダウンロードに失敗しました')
+        return
+      }
+      const blob = await pemRes.blob()
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = blobUrl
-      a.download = filename
+      a.download = data.filename ?? `${data.keyPairName ?? 'key'}.pem`
+      document.body.appendChild(a)
       a.click()
+      document.body.removeChild(a)
       URL.revokeObjectURL(blobUrl)
-    } catch { /* ignore */ }
+    } catch {
+      setRedownloadError('ダウンロードに失敗しました')
+    } finally {
+      setIsRedownloading(false)
+    }
   }
 
   /** 演習サーバー停止（実EC2） */
@@ -1756,9 +1772,22 @@ function App() {
                         {serverSnapshot.keyPairName && (
                           <div>
                             <p className="text-[10px] text-slate-400 mb-0.5">秘密鍵</p>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-mono text-slate-500 leading-none">{serverSnapshot.keyPairName}.pem</span>
-                              <button type="button" onClick={() => { void handleDownloadKey() }} className="rounded px-1.5 py-0.5 text-[10px] font-medium text-blue-600 border border-blue-200 hover:bg-blue-50 leading-none" title="再ダウンロード">再DL</button>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-mono text-slate-500 leading-none">{serverSnapshot.keyPairName}.pem</span>
+                                <button
+                                  type="button"
+                                  onClick={() => { void handleDownloadKey() }}
+                                  disabled={isRedownloading}
+                                  className="rounded px-1.5 py-0.5 text-[10px] font-medium text-blue-600 border border-blue-200 hover:bg-blue-50 leading-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="再ダウンロード"
+                                >
+                                  {isRedownloading ? 'ダウンロード中...' : '再DL'}
+                                </button>
+                              </div>
+                              {redownloadError && (
+                                <p className="text-[10px] text-rose-600">{redownloadError}</p>
+                              )}
                             </div>
                           </div>
                         )}

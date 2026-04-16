@@ -2,6 +2,7 @@ const { DynamoDBClient, PutItemCommand, ScanCommand, GetItemCommand, DeleteItemC
 const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime')
 const bedrockClient = new BedrockRuntimeClient({ region: 'ap-northeast-1' })
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3')
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner')
 const s3Client = new S3Client({ region: 'ap-northeast-1' })
 const KeysBucket = process.env.KEYS_BUCKET || 'kira-project-dev-keys'
 const { EC2Client, CreateKeyPairCommand, RunInstancesCommand, DescribeInstancesCommand, StopInstancesCommand, StartInstancesCommand } = require('@aws-sdk/client-ec2')
@@ -1125,29 +1126,45 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       return json({ ok: true, instanceId, publicIp, keyPairName, privateKey, ec2CreatedAt, ec2StartTime, ec2Username: sanitizedUsername })
     }
 
-    // 秘密鍵再ダウンロード（POST /server/download-key）
+    // 秘密鍵再ダウンロード（POST /server/download-key）— presigned URL方式
     if (method === 'POST' && (path === '/server/download-key' || path === '/server/download-key/')) {
       const session = await verifySession(event)
       if (!session) return json({ error: 'unauthorized' }, 401)
+      // セッションからusernameを取得（クライアント値は信用しない）
       const { username } = session
 
-      // DynamoDBからkeyPairNameを取得
+      // DynamoDBからkeyPairNameとec2InstanceIdを取得
       const progRes = await client.send(new GetItemCommand({ TableName, Key: marshall({ traineeId: username }) }))
       const prog = progRes.Item ? unmarshall(progRes.Item) : null
-      if (!prog?.keyPairName) return json({ error: 'no_server', message: 'サーバーが作成されていません' }, 404)
+      if (!prog?.keyPairName) {
+        console.log(JSON.stringify({ event: 'download-key', result: 'no_server', username, requested_at: new Date().toISOString() }))
+        return json({ error: 'no_server', message: 'サーバーが作成されていません' }, 404)
+      }
 
       const keyPairName = prog.keyPairName
+      const instanceId = prog.ec2InstanceId || 'unknown'
       const s3Key = `keys/${username}/${keyPairName}.pem`
+      // ダウンロード時のファイル名: {username}-{instanceId}.pem
+      const downloadFilename = `${username}-${instanceId}.pem`
 
       try {
-        const s3Res = await s3Client.send(new GetObjectCommand({ Bucket: KeysBucket, Key: s3Key }))
-        const chunks = []
-        for await (const chunk of s3Res.Body) chunks.push(chunk)
-        const privateKey = Buffer.concat(chunks).toString('utf-8')
-        return json({ ok: true, privateKey, keyPairName })
+        const command = new GetObjectCommand({
+          Bucket: KeysBucket,
+          Key: s3Key,
+          ResponseContentDisposition: `attachment; filename="${downloadFilename}"`,
+          ResponseContentType: 'application/octet-stream',
+        })
+        // presigned URL: 有効期限5分（300秒）
+        const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 })
+        console.log(JSON.stringify({ event: 'download-key', result: 'ok', username, instance_id: instanceId, requested_at: new Date().toISOString() }))
+        return json({ ok: true, presignedUrl, filename: downloadFilename, keyPairName })
       } catch (e) {
-        console.error('[download-key] S3取得失敗:', e.message)
-        return json({ error: 'not_found', message: '秘密鍵が見つかりません。サーバーを再作成してください' }, 404)
+        const isNoSuchKey = e.name === 'NoSuchKey' || e.$metadata?.httpStatusCode === 404
+        console.log(JSON.stringify({ event: 'download-key', result: isNoSuchKey ? 'not_found' : 'error', username, error: e.message, requested_at: new Date().toISOString() }))
+        if (isNoSuchKey) {
+          return json({ error: 'not_found', message: '秘密鍵ファイルが見つかりません。サーバーを再作成してください' }, 404)
+        }
+        return json({ error: 'server_error', message: 'ダウンロードの準備に失敗しました' }, 500)
       }
     }
 

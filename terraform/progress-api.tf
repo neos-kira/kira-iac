@@ -119,6 +119,19 @@ resource "aws_iam_role_policy" "progress_api_s3" {
   })
 }
 
+resource "aws_iam_role_policy" "progress_api_s3_keys" {
+  name   = "s3-keys"
+  role   = aws_iam_role.progress_api.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["s3:PutObject", "s3:GetObject"]
+      Resource = "arn:aws:s3:::kira-project-dev-keys/*"
+    }]
+  })
+}
+
 resource "aws_lambda_function" "progress_api" {
   function_name = "${local.app_name}-progress-api"
   role          = aws_iam_role.progress_api.arn
@@ -135,6 +148,7 @@ resource "aws_lambda_function" "progress_api" {
         ACCOUNTS_TABLE_NAME = aws_dynamodb_table.accounts.name
         SESSIONS_TABLE_NAME = aws_dynamodb_table.sessions.name
         ALLOWED_ORIGIN      = "https://training-org.neos-nic.jp"
+        KEYS_BUCKET         = "kira-project-dev-keys"
       },
       var.admin_password != null && var.admin_password != "" ? { ADMIN_PASSWORD = var.admin_password } : {}
     )
