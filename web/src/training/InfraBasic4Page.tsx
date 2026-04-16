@@ -194,6 +194,12 @@ export function InfraBasic4Page() {
         ...base,
         infra4ViDoneSteps: viSteps,
         infra4ShellDoneQuestions: shellQs,
+        lastActive: {
+          moduleId: 'infra-basic-4',
+          label: `課題4 · vi&シェルスクリプト演習(途中)`,
+          path: '/training/infra-basic-4',
+          savedAt: new Date().toISOString(),
+        },
         updatedAt: new Date().toISOString(),
       })
       if (!ok) {

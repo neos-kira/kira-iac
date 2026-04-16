@@ -82,6 +82,12 @@ export function LinuxLevel2Page() {
           ...base,
           l2CurrentQuestion: currentIndex,
           l2WrongIds: wrongIds,
+          lastActive: {
+            moduleId: 'linux-level2',
+            label: `課題2-2 · TCP/IP ${currentIndex}/${TCPIP_LEVEL2_QUESTIONS.length}問`,
+            path: '/training/linux-level2',
+            savedAt: new Date().toISOString(),
+          },
           updatedAt: new Date().toISOString(),
         })
       }}

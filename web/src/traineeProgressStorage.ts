@@ -116,6 +116,16 @@ export type TraineeProgressSnapshot = {
   infra5ReviewAnswers?: Record<string, string>
   /** 課題1-1: AI採点結果 */
   infra1GradeState?: Record<string, { passed: boolean; message: string; gradedAt: string }>
+  /**
+   * 最後に「中断して保存」したモジュール情報。
+   * ダッシュボードの「つづきから」はこのフィールドを最優先で表示する。
+   */
+  lastActive?: {
+    moduleId: string   // 'linux-level1' | 'linux-level2' | 'infra-basic-3-2' | 'infra-basic-4' | 'infra-basic-5'
+    label: string      // 例: '課題1-2 · 基本操作 3/10問'
+    path: string       // ルートパス (例: '/training/linux-level1')
+    savedAt: string    // ISO 8601 タイムスタンプ
+  } | null
 }
 
 /** 受講生IDは小文字統一（kira-test 等）。大文字小文字のずれを防ぐ。 */

@@ -348,12 +348,19 @@ export function LinuxLevel1Page() {
       }
       const cmdMap: Record<string, string> = {}
       Object.entries(answeredCommands).forEach(([k, v]) => { cmdMap[String(k)] = v })
+      const partName = PART_NAMES[activePart] ?? '基本操作'
       const ok = await postProgress(username, {
         ...base,
         l1CurrentPart: activePart,
         l1CurrentQuestion: currentQuestion,
         l1WrongIds: wrongIds,
         l1AnsweredCommands: cmdMap,
+        lastActive: {
+          moduleId: 'linux-level1',
+          label: `課題1-2 · ${partName} ${currentQuestion}/${PART_SIZE}問`,
+          path: '/training/linux-level1',
+          savedAt: new Date().toISOString(),
+        },
         updatedAt: new Date().toISOString(),
       })
       if (!ok) {

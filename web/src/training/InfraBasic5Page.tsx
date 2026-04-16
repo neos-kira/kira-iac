@@ -130,6 +130,12 @@ export function InfraBasic5Page() {
         infra5Checkboxes: checkboxes,
         infra5SectionDone: sectionDone,
         infra5ReviewAnswers: reviewAnswers,
+        lastActive: {
+          moduleId: 'infra-basic-5',
+          label: `課題5 · サーバー構築実践(途中)`,
+          path: '/training/infra-basic-5',
+          savedAt: new Date().toISOString(),
+        },
         updatedAt: new Date().toISOString(),
       })
       if (!ok) { setSaveError('保存に失敗しました'); setIsSaving(false); return }

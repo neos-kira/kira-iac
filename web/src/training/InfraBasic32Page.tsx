@@ -297,9 +297,16 @@ export function InfraBasic32Page() {
     const username = getCurrentDisplayName().trim().toLowerCase()
     if (username && username !== 'admin' && isProgressApiAvailable()) {
       const base = serverSnapshot ?? EMPTY_SNAPSHOT
+      const answeredCount = Object.values(state.answers).filter((v) => v && v.trim()).length
       const ok = await postProgress(username, {
         ...base,
         infra32Answers: state.answers,
+        lastActive: {
+          moduleId: 'infra-basic-3-2',
+          label: `課題3-2 · 理解度チェック ${answeredCount}/${QUESTIONS.length}問`,
+          path: '/training/infra-basic-3-2',
+          savedAt: new Date().toISOString(),
+        },
         updatedAt: new Date().toISOString(),
       })
       if (!ok) {

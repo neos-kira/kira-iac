@@ -1333,6 +1333,22 @@ function App() {
 
               // ── introStep 5以上: 課題進捗で「つづきから」を判定 ──
 
+              // ── lastActive: 最後に「中断して保存」したモジュールを最優先表示 ──
+              if (snap.lastActive) {
+                const la = snap.lastActive
+                return (
+                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
+                    <p className="mt-1 text-sm text-slate-700">{la.label}</p>
+                    <button type="button" onClick={() => {
+                      if (isIntroCompleted) window.open(getTrainingUrl(la.path), '_blank')
+                      else setShowIntroRequiredPopup(true)
+                    }} className="mt-4 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2.5 text-sm font-medium hover:bg-sky-100">つづきから →</button>
+                  </div>
+                )
+              }
+
+              // 以下は lastActive が null の場合のフォールバック（旧ロジック）
               // 課題1-2途中（最優先）
               const l1Part = snap.l1CurrentPart ?? 0
               const l1Q = snap.l1CurrentQuestion ?? 0

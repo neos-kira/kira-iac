@@ -236,6 +236,19 @@ async function handler(event) {
         ec2StartTime: typeof body.ec2StartTime === 'string' ? body.ec2StartTime : null,
         // 課題1-1: AI採点結果
         infra1GradeState: body.infra1GradeState && typeof body.infra1GradeState === 'object' ? body.infra1GradeState : {},
+        // 最後に「中断して保存」したモジュール（つづきから表示用）
+        lastActive: (body.lastActive && typeof body.lastActive === 'object'
+          && typeof body.lastActive.moduleId === 'string'
+          && typeof body.lastActive.label === 'string'
+          && typeof body.lastActive.path === 'string')
+          ? { moduleId: body.lastActive.moduleId, label: body.lastActive.label, path: body.lastActive.path, savedAt: body.lastActive.savedAt || new Date().toISOString() }
+          : (body.lastActive === null ? null : undefined),
+        // Linux30問: 回答済みコマンドテキスト
+        l1AnsweredCommands: body.l1AnsweredCommands && typeof body.l1AnsweredCommands === 'object' ? body.l1AnsweredCommands : undefined,
+        // 課題5
+        infra5Checkboxes: Array.isArray(body.infra5Checkboxes) ? body.infra5Checkboxes : undefined,
+        infra5SectionDone: body.infra5SectionDone && typeof body.infra5SectionDone === 'object' ? body.infra5SectionDone : undefined,
+        infra5ReviewAnswers: body.infra5ReviewAnswers && typeof body.infra5ReviewAnswers === 'object' ? body.infra5ReviewAnswers : undefined,
       }
       await client.send(new PutItemCommand({ TableName, Item: marshall(Item, { removeUndefinedValues: true }) }))
       return json({ ok: true })
