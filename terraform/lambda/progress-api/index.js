@@ -1151,6 +1151,39 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       }
     }
 
+    // EC2実ステータス取得（GET /server/status）
+    if (method === 'GET' && (path === '/server/status' || path === '/server/status/')) {
+      const session = await verifySession(event)
+      if (!session) return json({ error: 'unauthorized' }, 401)
+      const { username } = session
+
+      const progRes = await client.send(new GetItemCommand({ TableName, Key: marshall({ traineeId: username }) }))
+      const prog = progRes.Item ? unmarshall(progRes.Item) : null
+      if (!prog?.ec2InstanceId) return json({ error: 'no_instance', message: 'インスタンスが見つかりません' }, 404)
+
+      // EC2の実際の状態をDescribeInstancesで取得
+      let realState = prog.ec2State || 'stopped'
+      let publicIp = prog.ec2PublicIp || null
+      try {
+        const descRes = await ec2Client.send(new DescribeInstancesCommand({ InstanceIds: [prog.ec2InstanceId] }))
+        const inst = descRes.Reservations?.[0]?.Instances?.[0]
+        if (inst) {
+          realState = inst.State?.Name || realState
+          publicIp = inst.PublicIpAddress || publicIp
+        }
+      } catch (e) {
+        console.warn('[server/status] DescribeInstances失敗:', e.message)
+      }
+
+      // DynamoDBのキャッシュが古ければ更新
+      if (realState !== prog.ec2State || (publicIp && publicIp !== prog.ec2PublicIp)) {
+        const updated = { ...prog, ec2State: realState, ec2PublicIp: publicIp, ec2Host: publicIp, updatedAt: new Date().toISOString() }
+        await client.send(new PutItemCommand({ TableName, Item: marshall(updated, { removeUndefinedValues: true }) })).catch(() => {})
+      }
+
+      return json({ ok: true, status: realState, publicIp })
+    }
+
     // EC2停止（POST /server/stop）
     if (method === 'POST' && (path === '/server/stop' || path === '/server/stop/')) {
       const session = await verifySession(event)

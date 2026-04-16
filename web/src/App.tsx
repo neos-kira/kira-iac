@@ -125,7 +125,7 @@ function handleLogout() {
 /** j-terada が課題1クリア後に表示する限定ページ（指定2リンクのみ） */
 function JTeradaRestrictedView() {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen">
       <header className="border-b border-slate-200 bg-white px-4 py-3 flex items-center justify-between">
         <NeOSLogo height={32} />
         <div className="flex items-center gap-2">
@@ -227,6 +227,37 @@ function App() {
       serverSnapshot.introConfirmed === true
     setIsIntroCompleted(completed)
   }, [serverSnapshot])
+
+  /** EC2実ステータス同期: マウント時にDynamoDBのキャッシュではなく実際のEC2状態を取得 */
+  const ec2StatusFetchedRef = useRef(false)
+  useEffect(() => {
+    if (!isSnapLoaded) return
+    if (!serverSnapshot?.ec2InstanceId) return
+    if (ec2StatusFetchedRef.current) return
+    ec2StatusFetchedRef.current = true
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/server/status`, {
+          method: 'GET',
+          headers: buildAuthHeaders(),
+          credentials: 'omit',
+        })
+        if (!res.ok) return
+        const data = (await res.json()) as { ok: boolean; status?: string; publicIp?: string | null }
+        if (!data.status) return
+        setServerSnapshot((prev) => {
+          if (!prev) return prev
+          return {
+            ...prev,
+            ec2State: data.status as 'running' | 'stopped',
+            ec2PublicIp: data.publicIp ?? prev.ec2PublicIp,
+            ec2Host: data.publicIp ?? prev.ec2Host,
+          }
+        })
+      } catch { /* ignore */ }
+    }
+    void fetchStatus()
+  }, [isSnapLoaded, serverSnapshot?.ec2InstanceId])
 
   function goToIntroAndClosePopup() {
     setShowIntroRequiredPopup(false)
@@ -860,7 +891,7 @@ function App() {
         return { pct: Math.round(subCleared / 8 * 100), completed: subCleared, total: 8 }
       })()
   return (
-    <div className="min-h-screen bg-white text-slate-800">
+    <div className="min-h-screen text-slate-800">
       {/* サーバー作成成功モーダル */}
       {/* 停止確認ダイアログ */}
       {showStopConfirm && (
@@ -901,7 +932,10 @@ function App() {
             <button
               type="button"
               onClick={() => setServerCreatedModal(null)}
-              className="mt-5 w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+              className="mt-5 w-full rounded-xl py-3 text-sm font-semibold text-white"
+              style={{ background: '#7dd3fc' }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#38bdf8')}
+              onMouseLeave={e => (e.currentTarget.style.background = '#7dd3fc')}
             >
               研修を始める
             </button>
@@ -933,7 +967,10 @@ function App() {
                 <button
                   type="button"
                   onClick={goToIntroAndClosePopup}
-                  className="flex-1 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700"
+                  className="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white"
+                  style={{ background: '#7dd3fc' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#38bdf8')}
+                  onMouseLeave={e => (e.currentTarget.style.background = '#7dd3fc')}
                 >
                   はじめに
                 </button>
@@ -1013,7 +1050,7 @@ function App() {
                       <button
                         type="submit"
                         disabled={!newAccountName.trim() || !newAccountPassword}
-                        className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg bg-[#7dd3fc] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#38bdf8] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         アカウント作成
                       </button>
@@ -1133,7 +1170,7 @@ function App() {
                                   <button
                                     type="button"
                                     onClick={() => void saveEc2ForUser(a.username)}
-                                    className="mt-1 rounded bg-sky-600 px-2 py-1 text-[10px] font-medium text-white hover:bg-sky-700"
+                                    className="mt-1 rounded bg-[#7dd3fc] px-2 py-1 text-[10px] font-medium text-white hover:bg-[#38bdf8]"
                                   >
                                     保存
                                   </button>
@@ -1230,7 +1267,7 @@ function App() {
                     <OpenInNewTabButton
                       url={getTrainingUrl('/training/intro')}
                       label="はじめに"
-                      className="mt-4 inline-flex rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700"
+                      className="mt-4 inline-flex rounded-lg bg-[#7dd3fc] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#38bdf8]"
                     />
                   </div>
                 )
@@ -1248,7 +1285,7 @@ function App() {
                   <div className="rounded-2xl border-2 border-sky-400 bg-white p-6 shadow-sm">
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">{stepLabels[introStep]}</p>
-                    <button type="button" onClick={() => { window.location.hash = '#/training/intro' }} className="mt-4 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700">つづきから →</button>
+                    <button type="button" onClick={() => { window.location.hash = '#/training/intro' }} className="mt-4 rounded-xl bg-[#7dd3fc] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#38bdf8]">つづきから →</button>
                   </div>
                 )
               }
@@ -1269,7 +1306,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level1'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700">つづきから →</button>
+                    }} className="mt-4 rounded-xl bg-[#7dd3fc] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#38bdf8]">つづきから →</button>
                   </div>
                 )
               }
@@ -1284,7 +1321,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-1'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700">つづきから →</button>
+                    }} className="mt-4 rounded-xl bg-[#7dd3fc] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#38bdf8]">つづきから →</button>
                   </div>
                 )
               }
@@ -1299,7 +1336,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level2'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700">つづきから →</button>
+                    }} className="mt-4 rounded-xl bg-[#7dd3fc] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#38bdf8]">つづきから →</button>
                   </div>
                 )
               }
@@ -1314,7 +1351,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700">つづきから →</button>
+                    }} className="mt-4 rounded-xl bg-[#7dd3fc] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#38bdf8]">つづきから →</button>
                   </div>
                 )
               }
@@ -1329,7 +1366,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700">つづきから →</button>
+                    }} className="mt-4 rounded-xl bg-[#7dd3fc] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#38bdf8]">つづきから →</button>
                   </div>
                 )
               }
@@ -1344,7 +1381,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700">つづきから →</button>
+                    }} className="mt-4 rounded-xl bg-[#7dd3fc] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#38bdf8]">つづきから →</button>
                   </div>
                 )
               }
@@ -1497,7 +1534,7 @@ function App() {
                     <button
                       type="button"
                       onClick={() => { window.location.hash = '#/training/intro' }}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-600 text-white hover:bg-sky-700"
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-[#7dd3fc] text-slate-900 hover:bg-[#38bdf8]"
                     >
                       開く
                     </button>
@@ -1532,7 +1569,7 @@ function App() {
                         if (isIntroCompleted || isKiraTest) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank')
                         else setShowIntroRequiredPopup(true)
                       }}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-600 text-white hover:bg-sky-700"
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-[#7dd3fc] text-slate-900 hover:bg-[#38bdf8]"
                     >
                       開く
                     </button>
@@ -1571,7 +1608,7 @@ function App() {
                         if (isIntroCompleted || isKiraTest) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank')
                         else setShowIntroRequiredPopup(true)
                       }}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-600 text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-[#7dd3fc] text-slate-900 hover:bg-[#38bdf8] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       開く
                     </button>
@@ -1611,7 +1648,7 @@ function App() {
                         if (isIntroCompleted || isKiraTest) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
                         else setShowIntroRequiredPopup(true)
                       }}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-600 text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-[#7dd3fc] text-slate-900 hover:bg-[#38bdf8] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       開く
                     </button>
@@ -1765,20 +1802,20 @@ function App() {
                       item.status === 'done'
                         ? 'bg-emerald-500 text-white'
                         : item.status === 'active'
-                        ? 'bg-sky-500 text-white'
+                        ? 'bg-[#7dd3fc] text-white'
                         : 'bg-slate-200 text-slate-400'
                     }`}>
                       {item.status === 'done' ? '✓' : item.status === 'active' ? '▶' : ''}
                     </span>
                     <div className="min-w-0">
                       <p className={`text-[13px] font-medium leading-tight ${item.status === 'done' ? 'text-slate-500' : 'text-slate-800'}`}>{item.name}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5 truncate">{item.sub}</p>
+                      <p className="text-[10px] text-slate-600 mt-0.5 truncate">{item.sub}</p>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={item.action}
-                    className="flex-shrink-0 rounded-md border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] font-medium text-sky-700 hover:bg-sky-100 hover:border-sky-300 transition-colors"
+                    className="flex-shrink-0 rounded-md border border-[rgba(14,165,233,0.2)] bg-sky-50 px-3 py-1.5 text-[11px] font-medium text-[#38bdf8] hover:bg-sky-100 transition-colors"
                   >
                     開く
                   </button>
@@ -1806,7 +1843,7 @@ function App() {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-24 h-1 rounded-full bg-slate-100 overflow-hidden">
-                        <div className="h-full rounded-full bg-sky-500 transition-all duration-500" style={{ width: `${course.pct}%` }} />
+                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${course.pct}%`, background: '#7dd3fc' }} />
                       </div>
                       <span className="text-[11px] font-medium text-slate-500 tabular-nums w-8 text-right">{course.pct}%</span>
                     </div>
@@ -1840,7 +1877,7 @@ function App() {
                         <button
                           type="button"
                           onClick={() => { window.location.hash = '#/it-basics' }}
-                          className="flex-shrink-0 rounded-md border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] font-medium text-sky-700 hover:bg-sky-100 hover:border-sky-300 transition-colors"
+                          className="flex-shrink-0 rounded-md border border-[rgba(14,165,233,0.2)] bg-sky-50 px-3 py-1.5 text-[11px] font-medium text-[#38bdf8] hover:bg-sky-100 transition-colors"
                         >開く</button>
                       </li>
                     </div>
@@ -1898,7 +1935,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
               <button
                 type="button"
                 onClick={onOpenIntro}
-                className="rounded-lg bg-sky-600 px-4 py-2 text-xs font-medium text-white hover:bg-sky-700"
+                className="rounded-lg bg-[#7dd3fc] px-4 py-2 text-xs font-medium text-white hover:bg-[#38bdf8]"
               >
                 はじめにを開く
               </button>
@@ -1918,7 +1955,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
             <button
               type="button"
               onClick={onOpenWbs}
-              className="mt-3 rounded-lg bg-sky-600 px-4 py-2 text-xs font-medium text-white hover:bg-sky-700"
+              className="mt-3 rounded-lg bg-[#7dd3fc] px-4 py-2 text-xs font-medium text-white hover:bg-[#38bdf8]"
             >
               WBSを開く
             </button>
@@ -1991,7 +2028,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
               <button
                 type="button"
                 onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-top'))}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-600 text-white hover:bg-sky-700"
+                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-[#7dd3fc] text-slate-900 hover:bg-[#38bdf8]"
               >
                 開く
               </button>
@@ -2027,7 +2064,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                 type="button"
                 disabled={!isKiraTestUser() && !infra1Cleared}
                 onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-2-top'))}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-600 text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-[#7dd3fc] text-slate-900 hover:bg-[#38bdf8] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 開く
               </button>
@@ -2063,7 +2100,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                 type="button"
                 disabled={!isKiraTestUser() && !infra2Cleared}
                 onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-3-top'))}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-600 text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-[#7dd3fc] text-slate-900 hover:bg-[#38bdf8] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 開く
               </button>
@@ -2094,7 +2131,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                 type="button"
                 disabled={!isKiraTestUser() && !infra3Cleared}
                 onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-4'))}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-600 text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-[#7dd3fc] text-slate-900 hover:bg-[#38bdf8] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 開く
               </button>
@@ -2109,7 +2146,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
               <button
                 type="button"
                 onClick={() => { window.location.hash = '#/it-basics' }}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-600 text-white hover:bg-sky-700"
+                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-[#7dd3fc] text-slate-900 hover:bg-[#38bdf8]"
               >
                 開く
               </button>
