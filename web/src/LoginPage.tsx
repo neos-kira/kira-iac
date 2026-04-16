@@ -151,15 +151,18 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="flex justify-center mb-6">
-          <NeOSLogo height={128} noLink={true} />
-        </div>
+      <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white overflow-hidden">
+        {/* ブランドアクセントライン */}
+        <div className="h-[3px] bg-[#0ea5e9]" />
+        <div className="p-8">
+          <div className="flex justify-center mb-6">
+            <NeOSLogo height={96} noLink={true} />
+          </div>
 
         {mode === 'login' ? (
-          <div className="mt-6 space-y-4">
+          <div className="mt-4 space-y-4">
             <div>
-              <label htmlFor="login-username" className="block text-sm font-medium text-slate-700 mb-1">
+              <label htmlFor="login-username" className="block text-[13px] font-medium text-slate-600 mb-1.5">
                 ユーザー名
               </label>
               <input
@@ -170,7 +173,7 @@ export function LoginPage() {
                 onKeyDown={handleKeyDown}
                 placeholder="ユーザー名を入力"
                 disabled={isLoggingIn}
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-slate-100"
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 transition-shadow disabled:bg-slate-50"
                 autoComplete="username"
                 autoCorrect="off"
                 autoCapitalize="off"
@@ -180,7 +183,7 @@ export function LoginPage() {
               />
             </div>
             <div>
-              <label htmlFor="login-password" className="block text-sm font-medium text-slate-700 mb-1">
+              <label htmlFor="login-password" className="block text-[13px] font-medium text-slate-600 mb-1.5">
                 パスワード
               </label>
               <div className="relative">
@@ -192,7 +195,7 @@ export function LoginPage() {
                   onKeyDown={handleKeyDown}
                   placeholder="パスワードを入力"
                   disabled={isLoggingIn}
-                  className="w-full rounded-lg border border-slate-300 bg-white pr-10 pl-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-slate-100"
+                  className="w-full h-10 rounded-lg border border-slate-200 bg-white pr-10 pl-3 text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 transition-shadow disabled:bg-slate-50"
                   autoComplete="current-password"
                   autoCorrect="off"
                   autoCapitalize="off"
@@ -219,15 +222,15 @@ export function LoginPage() {
               type="button"
               onClick={() => void handleLogin()}
               disabled={!canSubmit || isLoggingIn}
-              className="w-full rounded-xl bg-blue-600 py-3 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-2 w-full h-10 rounded-lg bg-[#0ea5e9] text-[14px] font-medium text-white hover:bg-[#0284c7] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoggingIn ? 'ログイン中...' : 'ログイン'}
             </button>
-            <p className="text-center">
+            <p className="text-center pt-1">
               <button
                 type="button"
                 onClick={() => { setMode('reset'); setLoginError('') }}
-                className="text-xs text-slate-400 hover:text-slate-600 underline"
+                className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
               >
                 パスワードを忘れた方はこちら
               </button>
@@ -246,7 +249,7 @@ export function LoginPage() {
                 value={resetUsername}
                 onChange={(e) => setResetUsername(e.target.value)}
                 placeholder="ユーザー名を入力"
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                 autoComplete="username"
               />
             </div>
@@ -261,7 +264,7 @@ export function LoginPage() {
                   value={resetNewPassword}
                   onChange={(e) => setResetNewPassword(e.target.value)}
                   placeholder="新しいパスワードを入力"
-                  className="w-full rounded-lg border border-slate-300 bg-white pr-10 pl-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  className="w-full rounded-lg border border-slate-300 bg-white pr-10 pl-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                   autoComplete="new-password"
                 />
                 <button
@@ -291,7 +294,7 @@ export function LoginPage() {
                     }
                   }}
                   placeholder="新しいパスワードを再入力"
-                  className="w-full rounded-lg border border-slate-300 bg-white pr-10 pl-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  className="w-full rounded-lg border border-slate-300 bg-white pr-10 pl-4 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                   autoComplete="new-password"
                 />
                 <button
@@ -318,21 +321,22 @@ export function LoginPage() {
               type="button"
               onClick={() => void handleReset()}
               disabled={!canReset}
-              className="w-full rounded-xl bg-blue-600 py-3 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-2 w-full h-10 rounded-lg bg-[#0ea5e9] text-[14px] font-medium text-white hover:bg-[#0284c7] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isResetting ? 'リセット中...' : 'リセットする'}
             </button>
-            <p className="text-center">
+            <p className="text-center pt-1">
               <button
                 type="button"
                 onClick={() => { setMode('login'); setResetError(''); setResetSuccess('') }}
-                className="text-xs text-slate-400 hover:text-slate-600 underline"
+                className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
               >
                 ログインに戻る
               </button>
             </p>
           </div>
         )}
+        </div>{/* /p-8 */}
       </div>
     </div>
   )

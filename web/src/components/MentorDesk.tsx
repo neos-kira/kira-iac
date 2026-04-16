@@ -211,7 +211,7 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
         <div ref={scrollRef} className="flex-1 min-h-0 space-y-3 overflow-y-auto p-4" style={{ WebkitOverflowScrolling: 'touch' }}>
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-xs leading-relaxed ${m.role === 'user' ? 'bg-teal-500 text-white' : 'bg-slate-100 text-slate-800'}`}>
+              <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-xs leading-relaxed ${m.role === 'user' ? 'bg-sky-500 text-white' : 'bg-slate-100 text-slate-800'}`}>
                 {m.image && <img src={m.image} alt="添付画像" className="max-h-20 rounded-lg mb-1" />}
                 {m.role === 'assistant' ? <span dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }} /> : m.content}
               </div>
@@ -241,13 +241,13 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
           <button type="button" onClick={() => fileInputRef.current?.click()} className="rounded-xl px-2 py-2 text-xs bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors" aria-label="画像を添付" title="画像を添付">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
           </button>
-          <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste} onFocus={(e) => { setTimeout(() => { (e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'nearest' }) }, 300) }} rows={1} placeholder="メッセージを入力" className="flex-1 resize-none rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/40" style={{ maxHeight: 72 }} />
+          <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste} onFocus={(e) => { setTimeout(() => { (e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'nearest' }) }, 300) }} rows={1} placeholder="メッセージを入力" className="flex-1 resize-none rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40" style={{ maxHeight: 72 }} />
           {SpeechRecognitionAPI && (
             <button type="button" onClick={toggleVoice} className={`rounded-xl px-2 py-2 text-xs transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`} aria-label={isListening ? '音声入力を停止' : '音声入力'} title={isListening ? '音声入力を停止' : '音声入力'}>
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z" /></svg>
             </button>
           )}
-          <button type="button" onClick={() => void handleSend()} disabled={isSending || !input.trim()} className="rounded-xl bg-teal-500 px-3 py-2 text-xs font-medium text-white hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed">送信</button>
+          <button type="button" onClick={() => void handleSend()} disabled={isSending || !input.trim()} className="rounded-xl bg-sky-500 px-3 py-2 text-xs font-medium text-white hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed">送信</button>
         </div>
       </aside>
     )
@@ -262,7 +262,7 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
           <button
             type="button"
             onClick={() => setInternalOpen(true)}
-            className="md:hidden fixed bottom-6 right-6 z-[9999] flex items-center justify-center w-14 h-14 rounded-full bg-teal-500 text-white shadow-2xl hover:bg-teal-600 transition-all"
+            className="md:hidden fixed bottom-6 right-6 z-[9999] flex items-center justify-center w-14 h-14 rounded-full bg-sky-500 text-white shadow-2xl hover:bg-sky-600 transition-all"
             aria-label="AI講師に聞く"
           >
             <span className="text-2xl">🎓</span>
@@ -275,14 +275,14 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
         {/* チャットパネル（画面75%高さ） */}
         {open && (
           <div className="md:hidden fixed bottom-0 left-0 right-0 z-[9999] flex flex-col bg-white rounded-t-2xl shadow-xl" style={{ height: '75vh' }}>
-            <header className="flex items-center justify-between bg-teal-50 border-b border-teal-100 px-4 py-3 rounded-t-2xl">
+            <header className="flex items-center justify-between bg-sky-50 border-b border-sky-100 px-4 py-3 rounded-t-2xl">
               <p className="text-sm font-semibold text-slate-800">🎓 AI講師</p>
               <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg leading-none">✕</button>
             </header>
             <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
               {messages.map((m, i) => (
                 <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-xs leading-relaxed ${m.role === 'user' ? 'bg-teal-500 text-white' : 'bg-slate-100 text-slate-800'}`}>
+                  <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-xs leading-relaxed ${m.role === 'user' ? 'bg-sky-500 text-white' : 'bg-slate-100 text-slate-800'}`}>
                     {m.image && <img src={m.image} alt="添付画像" className="max-h-20 rounded-lg mb-1" />}
                     {m.role === 'assistant' ? <span dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }} /> : m.content}
                   </div>
@@ -307,13 +307,13 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
               <button type="button" onClick={() => fileInputRef.current?.click()} className="rounded-xl px-2 py-2 text-xs bg-slate-100 text-slate-500 hover:bg-slate-200" aria-label="画像を添付">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
               </button>
-              <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste} onFocus={(e) => { setTimeout(() => { (e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'nearest' }) }, 300) }} rows={1} placeholder="メッセージを入力" className="flex-1 resize-none rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/40" style={{ maxHeight: 72 }} />
+              <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste} onFocus={(e) => { setTimeout(() => { (e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'nearest' }) }, 300) }} rows={1} placeholder="メッセージを入力" className="flex-1 resize-none rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40" style={{ maxHeight: 72 }} />
               {SpeechRecognitionAPI && (
                 <button type="button" onClick={toggleVoice} className={`rounded-xl px-2 py-2 text-xs transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`} aria-label={isListening ? '音声入力を停止' : '音声入力'}>
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z" /></svg>
                 </button>
               )}
-              <button type="button" onClick={() => void handleSend()} disabled={isSending || !input.trim()} className="rounded-xl bg-teal-500 px-3 py-2 text-xs font-medium text-white hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed">送信</button>
+              <button type="button" onClick={() => void handleSend()} disabled={isSending || !input.trim()} className="rounded-xl bg-sky-500 px-3 py-2 text-xs font-medium text-white hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed">送信</button>
             </div>
           </div>
         )}

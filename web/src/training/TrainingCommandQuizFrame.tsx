@@ -279,7 +279,7 @@ export function TrainingCommandQuizFrame({
               }}
               disabled={showFeedback || isCurrentAnswered}
               placeholder=""
-              className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50 disabled:opacity-70"
+              className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50 disabled:opacity-70"
               autoComplete="off"
               spellCheck={false}
             />

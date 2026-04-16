@@ -101,7 +101,7 @@ export function ITBasicsStudyPage() {
         <div className="flex justify-center pt-4">
           <a
             href={getTrainingUrl(`/it-basics/${cat.id}/test`)}
-            className="rounded-xl bg-teal-600 px-8 py-3 text-sm font-semibold text-white hover:bg-teal-700 shadow-sm"
+            className="rounded-xl bg-sky-600 px-8 py-3 text-sm font-semibold text-white hover:bg-sky-700 shadow-sm"
           >
             テストを受ける →
           </a>

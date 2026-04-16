@@ -234,11 +234,11 @@ export function InfraBasic4Page() {
         </section>
 
         {/* EC2実機演習の説明 */}
-        <section className="rounded-2xl border border-teal-200 bg-teal-50 p-4 shadow-soft-card">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-teal-700">EC2 実機演習</p>
+        <section className="rounded-2xl border border-sky-200 bg-sky-50 p-4 shadow-soft-card">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-sky-700">EC2 実機演習</p>
           <div className="mt-2 space-y-1 text-[12px] text-teal-900">
             <p>この課題はEC2インスタンスにSSH接続して実機で操作します。</p>
-            <ol className="mt-2 list-decimal pl-4 space-y-1 text-[11px] text-teal-800">
+            <ol className="mt-2 list-decimal pl-4 space-y-1 text-[11px] text-sky-800">
               <li>EC2にSSH接続する（接続情報はダッシュボードを確認）</li>
               <li>各ステップの指示に従い、実機でコマンドを実行する</li>
               <li>指定された結果（cat, ls, 実行結果など）をテキストエリアに貼り付ける</li>
@@ -278,7 +278,7 @@ export function InfraBasic4Page() {
                         value={viAnswers[s.step] ?? ''}
                         onChange={(e) => setViAnswers((prev) => ({ ...prev, [s.step]: e.target.value }))}
                         rows={5}
-                        className="mt-2 w-full resize-y rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                        className="mt-2 w-full resize-y rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500"
                         placeholder="ここに実行結果を貼り付けてください"
                         spellCheck={false}
                       />
@@ -286,7 +286,7 @@ export function InfraBasic4Page() {
                         type="button"
                         onClick={() => { void scoreVi(s.step) }}
                         disabled={score?.status === 'scoring' || !(viAnswers[s.step] ?? '').trim()}
-                        className="mt-2 rounded-lg bg-teal-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="mt-2 rounded-lg bg-sky-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {score?.status === 'scoring' ? 'AI検証中...' : 'AIに確認してもらう'}
                       </button>
@@ -349,7 +349,7 @@ export function InfraBasic4Page() {
                         value={shellAnswers[q.q] ?? ''}
                         onChange={(e) => setShellAnswers((prev) => ({ ...prev, [q.q]: e.target.value }))}
                         rows={5}
-                        className="mt-2 w-full resize-y rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                        className="mt-2 w-full resize-y rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500"
                         placeholder="ここにスクリプト内容と実行結果を貼り付けてください"
                         spellCheck={false}
                       />
@@ -357,7 +357,7 @@ export function InfraBasic4Page() {
                         type="button"
                         onClick={() => { void scoreShell(q.q) }}
                         disabled={score?.status === 'scoring' || !(shellAnswers[q.q] ?? '').trim()}
-                        className="mt-2 rounded-lg bg-teal-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="mt-2 rounded-lg bg-sky-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {score?.status === 'scoring' ? 'AI検証中...' : 'AIに確認してもらう'}
                       </button>
@@ -391,7 +391,7 @@ export function InfraBasic4Page() {
             <button
               type="button"
               onClick={() => { window.location.hash = '#/training/infra-basic-5' }}
-              className="mt-3 w-full rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-teal-700"
+              className="mt-3 w-full rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-700"
             >
               課題5：サーバー構築へ進む →
             </button>

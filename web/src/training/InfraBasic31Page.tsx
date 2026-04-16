@@ -124,7 +124,7 @@ export function InfraBasic31Page() {
             {'マンションを想像してください。\n1棟の建物（物理サーバー）の中に、複数の部屋（仮想サーバー）があります。\n各部屋は独立していますが、建物の電気・水道（CPUやメモリ）は共有しています。\nこれが仮想化の基本的な考え方です。\nAWSのEC2は、この「マンションの1部屋」にあたります。'}
           </p>
 
-          <div className="rounded-xl border border-teal-200 bg-teal-50" style={{ padding: 20, marginBottom: 16 }}>
+          <div className="rounded-xl border border-sky-200 bg-sky-50" style={{ padding: 20, marginBottom: 16 }}>
             <p style={{ fontSize: 14, fontWeight: 600, color: '#134e4a', marginBottom: 8 }}>NICの研修環境</p>
             <p style={{ fontSize: 14, lineHeight: 1.8, color: '#115e59' }}>
               この研修ではAWSの<strong>EC2（仮想サーバー）</strong>を使う。
@@ -307,7 +307,7 @@ export function InfraBasic31Page() {
                 type="checkbox"
                 checked={ack}
                 onChange={(e) => handleAckChange(e.target.checked)}
-                className="h-4 w-4 accent-teal-600"
+                className="h-4 w-4 accent-sky-600"
               />
               <span>解説を一通り読みました（要点を自分の言葉で説明できる状態です）</span>
             </label>
@@ -315,7 +315,7 @@ export function InfraBasic31Page() {
               type="button"
               disabled={!ack}
               onClick={() => (window.location.hash = '#/training/infra-basic-3-2')}
-              className="rounded-xl bg-teal-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-xl bg-sky-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
               理論を理解し、確認テストへ進む
             </button>

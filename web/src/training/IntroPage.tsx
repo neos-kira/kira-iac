@@ -17,7 +17,7 @@ const CARD_ACCENTS = [
   { bg: 'bg-sky-100', border: 'border-sky-200', icon: 'bg-sky-500' },
   { bg: 'bg-violet-100', border: 'border-violet-200', icon: 'bg-violet-500' },
   { bg: 'bg-amber-100', border: 'border-amber-200', icon: 'bg-amber-500' },
-  { bg: 'bg-teal-100', border: 'border-teal-200', icon: 'bg-teal-500' },
+  { bg: 'bg-sky-100', border: 'border-sky-200', icon: 'bg-sky-500' },
 ] as const
 
 const STANDARDS: Array<{
@@ -113,7 +113,7 @@ function StepProgress({ current }: { current: number }) {
             <div
               title={label}
               className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold
-                ${done ? 'bg-emerald-500 text-white' : active ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-500'}`}
+                ${done ? 'bg-emerald-500 text-white' : active ? 'bg-sky-600 text-white' : 'bg-slate-200 text-slate-500'}`}
             >
               {done ? '✓' : stepNum}
             </div>
@@ -542,7 +542,7 @@ export function IntroPage() {
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="rounded-lg bg-teal-600 px-8 py-3.5 text-base font-semibold text-white hover:bg-teal-700"
+              className="rounded-lg bg-sky-600 px-8 py-3.5 text-base font-semibold text-white hover:bg-sky-700"
             >
               研修を始める
             </button>
@@ -564,7 +564,7 @@ export function IntroPage() {
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700"
+            className="rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700"
           >
             トップページへ →
           </button>
@@ -591,7 +591,7 @@ export function IntroPage() {
         {/* ヒーローセクション */}
         <section
           className="rounded-xl p-6 mb-6"
-          style={{ background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)' }}
+          style={{ background: 'linear-gradient(135deg, #0d9488 0%, #0369a1 100%)' }}
         >
           <h1 className="text-2xl font-bold text-white leading-tight">
             この研修が終わる頃には、<br />Linuxサーバーを構築できる
@@ -649,7 +649,7 @@ export function IntroPage() {
                 <div className="flex flex-col items-center">
                   <div
                     className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${
-                      step.num === 1 ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-500'
+                      step.num === 1 ? 'bg-sky-600 text-white' : 'bg-slate-200 text-slate-500'
                     }`}
                   >
                     {step.num}
@@ -746,7 +746,7 @@ export function IntroPage() {
             type="button"
             onClick={handleStep2Complete}
             disabled={isScoring}
-            className="flex-1 rounded-lg bg-teal-600 py-3.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 rounded-lg bg-sky-600 py-3.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isScoring ? '保存中...' : '確認しました・次へ →'}
           </button>
@@ -767,15 +767,6 @@ export function IntroPage() {
       <>
         {headerBlock}
         <StepProgress current={step} />
-
-        <button
-          type="button"
-          onClick={handleBack}
-          disabled={isScoring}
-          className="mb-4 flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 disabled:opacity-40"
-        >
-          ← 前へ
-        </button>
 
         <div className="mb-5">
           <h2 className="text-lg font-bold text-slate-800">{sectionName}</h2>
@@ -839,17 +830,28 @@ export function IntroPage() {
             })}
           </ul>
 
-          {mcResult === null && (
+        </div>
+
+        {mcResult === null && (
+          <div className="mt-6 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={handleBack}
+              disabled={isScoring}
+              className="rounded-lg border border-slate-200 px-5 py-3.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              ← 前へ
+            </button>
             <button
               type="button"
               disabled={mcSelected.length === 0}
               onClick={handleCheckMC}
-              className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex-1 rounded-xl bg-sky-600 py-3.5 text-sm font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               確認する
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* 結果フィードバック */}
         {mcResult !== null && (
@@ -872,7 +874,7 @@ export function IntroPage() {
                   type="button"
                   disabled={isScoring}
                   onClick={handleNext}
-                  className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+                  className="rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
                 >
                   {nextBtnLabel}
                 </button>
@@ -899,15 +901,6 @@ export function IntroPage() {
       {headerBlock}
       <StepProgress current={step} />
 
-      <button
-        type="button"
-        onClick={handleBack}
-        disabled={isScoring}
-        className="mb-4 flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 disabled:opacity-40"
-      >
-        ← 前へ
-      </button>
-
       <div className="mb-5">
         <h2 className="text-lg font-bold text-slate-800">{sectionName}</h2>
         <p className="mt-0.5 text-xs text-slate-500">{sectionQIdx + 1} / {sectionQuestions.length}問</p>
@@ -922,30 +915,41 @@ export function IntroPage() {
           </pre>
         )}
         <textarea
-          className="w-full rounded-xl border border-slate-300 bg-slate-50 p-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 resize-none disabled:opacity-60"
+          className="w-full rounded-xl border border-slate-300 bg-slate-50 p-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 resize-none disabled:opacity-60"
           rows={6}
           placeholder="回答を入力してください..."
           value={currentInput}
           disabled={isScoring || currentResult !== null}
           onChange={(e) => setCurrentInput(e.target.value)}
         />
-        {!currentResult && !isScoring && (
-          <button
-            type="button"
-            disabled={!currentInput.trim()}
-            onClick={handleScore}
-            className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            採点する
-          </button>
-        )}
         {isScoring && (
           <div className="flex flex-col items-center py-4">
-            <div className="h-5 w-5 animate-spin rounded-full border-[3px] border-slate-200 border-t-teal-600" />
+            <div className="h-5 w-5 animate-spin rounded-full border-[3px] border-slate-200 border-t-sky-600" />
             <p className="mt-2 text-sm text-slate-500">AIが採点しています...</p>
           </div>
         )}
       </div>
+
+      {!currentResult && !isScoring && (
+        <div className="mt-6 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={handleBack}
+            disabled={isScoring}
+            className="rounded-lg border border-slate-200 px-5 py-3.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            ← 前へ
+          </button>
+          <button
+            type="button"
+            disabled={!currentInput.trim()}
+            onClick={handleScore}
+            className="flex-1 rounded-xl bg-sky-600 py-3.5 text-sm font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            採点する
+          </button>
+        </div>
+      )}
 
       {/* 採点結果 */}
       {currentResult && (
@@ -967,7 +971,7 @@ export function IntroPage() {
                 type="button"
                 disabled={isScoring}
                 onClick={handleNext}
-                className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+                className="rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
               >
                 {nextBtnLabel}
               </button>

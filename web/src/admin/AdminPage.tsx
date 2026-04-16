@@ -180,7 +180,7 @@ export function AdminPage() {
 
       <main className="mx-auto max-w-6xl space-y-6 p-6">
         {stopAllMsg && (
-          <div className="rounded-lg bg-teal-50 border border-teal-200 px-4 py-2 text-sm text-teal-800">
+          <div className="rounded-lg bg-sky-50 border border-sky-200 px-4 py-2 text-sm text-sky-800">
             {stopAllMsg}
           </div>
         )}
@@ -214,12 +214,12 @@ export function AdminPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="受講生名を検索..."
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
             />
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value as Filter)}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 focus:border-teal-500 focus:outline-none"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 focus:border-sky-500 focus:outline-none"
             >
               <option value="all">全員</option>
               <option value="delayed">遅延者のみ</option>
@@ -229,7 +229,7 @@ export function AdminPage() {
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as Sort)}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 focus:border-teal-500 focus:outline-none"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 focus:border-sky-500 focus:outline-none"
             >
               <option value="progress_desc">進捗順（高い順）</option>
               <option value="progress_asc">進捗順（低い順）</option>
@@ -246,7 +246,7 @@ export function AdminPage() {
               <button
                 type="button"
                 onClick={() => setShowCreateModal(true)}
-                className="rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700"
+                className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700"
               >
                 + 新規ユーザー作成
               </button>

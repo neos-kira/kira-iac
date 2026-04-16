@@ -255,14 +255,14 @@ export function TrainingQuizFrame({
               <label
                 key={c}
                 className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-sm ${isSelected
-                  ? 'border-teal-500/60 bg-teal-50'
+                  ? 'border-sky-500/60 bg-sky-50'
                   : 'border-slate-200 bg-slate-50 hover:border-slate-300'
                   } ${isCurrentAnswered ? 'cursor-default' : 'cursor-pointer'}`}
               >
                 <input
                   type="radio"
                   name={current.id}
-                  className="h-4 w-4 accent-teal-600"
+                  className="h-4 w-4 accent-sky-600"
                   checked={isSelected}
                   onChange={() => { if (!isCurrentAnswered) setSelectedIndex(idx) }}
                   disabled={isCurrentAnswered}

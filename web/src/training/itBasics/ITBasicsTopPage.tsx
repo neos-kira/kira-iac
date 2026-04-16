@@ -44,7 +44,7 @@ export function ITBasicsTopPage() {
                 </a>
                 <a
                   href={getTrainingUrl(`/it-basics/${cat.id}/test`)}
-                  className="flex-1 rounded-lg bg-teal-600 px-3 py-2 text-center text-xs font-medium text-white hover:bg-teal-700"
+                  className="flex-1 rounded-lg bg-sky-600 px-3 py-2 text-center text-xs font-medium text-white hover:bg-sky-700"
                 >
                   テスト
                 </a>

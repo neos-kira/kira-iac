@@ -95,14 +95,14 @@ export function UserCreateModal({ onClose, onCreated }: Props) {
           <button
             type="button"
             onClick={() => { setCsvMode(false); setError(null); setSuccess(null) }}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium ${!csvMode ? 'bg-teal-600 text-white' : 'border border-slate-300 text-slate-700'}`}
+            className={`rounded-md px-3 py-1.5 text-xs font-medium ${!csvMode ? 'bg-sky-600 text-white' : 'border border-slate-300 text-slate-700'}`}
           >
             個別作成
           </button>
           <button
             type="button"
             onClick={() => { setCsvMode(true); setError(null); setSuccess(null) }}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium ${csvMode ? 'bg-teal-600 text-white' : 'border border-slate-300 text-slate-700'}`}
+            className={`rounded-md px-3 py-1.5 text-xs font-medium ${csvMode ? 'bg-sky-600 text-white' : 'border border-slate-300 text-slate-700'}`}
           >
             CSVで一括登録
           </button>
@@ -117,7 +117,7 @@ export function UserCreateModal({ onClose, onCreated }: Props) {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="例: kira-yamada"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
               />
               <p className="mt-0.5 text-[11px] text-slate-400">半角英数字・ハイフンのみ</p>
             </div>
@@ -127,7 +127,7 @@ export function UserCreateModal({ onClose, onCreated }: Props) {
                 <button
                   type="button"
                   onClick={() => setPassword(generatePassword())}
-                  className="text-[11px] text-teal-600 hover:underline"
+                  className="text-[11px] text-sky-600 hover:underline"
                 >
                   自動生成
                 </button>
@@ -137,7 +137,7 @@ export function UserCreateModal({ onClose, onCreated }: Props) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="8文字以上"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
               />
             </div>
             <div>
@@ -145,19 +145,19 @@ export function UserCreateModal({ onClose, onCreated }: Props) {
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none"
               >
                 <option value="student">student（受講生）</option>
                 <option value="manager">manager（管理者）</option>
               </select>
             </div>
             {error && <p className="text-xs text-red-600">{error}</p>}
-            {success && <p className="text-xs text-teal-700">{success}</p>}
+            {success && <p className="text-xs text-sky-700">{success}</p>}
             <button
               type="button"
               onClick={() => void handleCreate()}
               disabled={isCreating}
-              className="w-full rounded-xl bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
+              className="w-full rounded-xl bg-sky-600 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
             >
               {isCreating ? '作成中...' : '作成する'}
             </button>
@@ -183,13 +183,13 @@ export function UserCreateModal({ onClose, onCreated }: Props) {
               onChange={(e) => setCsvText(e.target.value)}
               rows={6}
               placeholder={'username,password,role\nkira-yamada,MyPass123,student\nkira-suzuki,Pass5678,student'}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs focus:border-teal-500 focus:outline-none"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs focus:border-sky-500 focus:outline-none"
             />
             {error && <p className="text-xs text-red-600">{error}</p>}
             {csvResults.length > 0 && (
               <ul className="space-y-1 text-xs">
                 {csvResults.map((r) => (
-                  <li key={r.username} className={`flex items-center gap-1 ${r.ok ? 'text-teal-700' : 'text-red-600'}`}>
+                  <li key={r.username} className={`flex items-center gap-1 ${r.ok ? 'text-sky-700' : 'text-red-600'}`}>
                     <span>{r.ok ? '✓' : '✗'}</span>
                     <span>{r.username}</span>
                     {!r.ok && <span>— {r.error}</span>}
@@ -201,7 +201,7 @@ export function UserCreateModal({ onClose, onCreated }: Props) {
               type="button"
               onClick={() => void handleBulkCreate()}
               disabled={isBulkCreating || !csvText.trim()}
-              className="w-full rounded-xl bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
+              className="w-full rounded-xl bg-sky-600 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
             >
               {isBulkCreating ? '登録中...' : '一括登録する'}
             </button>

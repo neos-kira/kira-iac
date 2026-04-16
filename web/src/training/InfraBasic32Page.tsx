@@ -380,7 +380,7 @@ export function InfraBasic32Page() {
                 value={state.answers[q.id]}
                 onChange={(e) => updateAnswer(q.id, e.target.value)}
                 rows={4}
-                className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-teal-500 focus:ring-1 focus:ring-teal-500/40"
+                className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500/40"
                 placeholder="ここに回答を入力してください"
               />
               <div className="flex justify-end">
@@ -388,7 +388,7 @@ export function InfraBasic32Page() {
                   type="button"
                   onClick={() => { void handleScoreOne(q) }}
                   disabled={!state.answers[q.id].trim() || qs.status === 'scoring'}
-                  className="rounded-xl bg-teal-600 px-4 py-2 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-xl bg-sky-600 px-4 py-2 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   この問題を採点する
                 </button>
@@ -441,7 +441,7 @@ export function InfraBasic32Page() {
           <button
             type="button"
             onClick={() => { void handleScoreAll() }}
-            className="w-full rounded-xl bg-teal-600 py-3 text-sm font-semibold text-white hover:bg-teal-700"
+            className="w-full rounded-xl bg-sky-600 py-3 text-sm font-semibold text-white hover:bg-sky-700"
           >
             全問採点する
           </button>

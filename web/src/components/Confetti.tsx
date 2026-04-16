@@ -2,7 +2,7 @@
  * 合格演出用の紙吹雪（Confetti）
  */
 export function Confetti() {
-  const colors = ['#2dd4bf', '#5eead4', '#99f6e4', '#14b8a6', '#0d9488', '#ec4899', '#f43f5e']
+  const colors = ['#2dd4bf', '#5eead4', '#99f6e4', '#0ea5e9', '#0d9488', '#ec4899', '#f43f5e']
   const count = 50
   const items = Array.from({ length: count }, (_, i) => ({
     id: i,

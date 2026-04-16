@@ -95,7 +95,7 @@ export function ProgressDetailModal({ user, onClose }: Props) {
                   {(user.infra1Checkboxes ?? []).map((done, i) => (
                     <span
                       key={i}
-                      className={`inline-block h-3 w-3 rounded-sm ${done ? 'bg-teal-500' : 'bg-slate-200'}`}
+                      className={`inline-block h-3 w-3 rounded-sm ${done ? 'bg-sky-500' : 'bg-slate-200'}`}
                       title={`ステップ${i + 1}: ${done ? '完了' : '未完了'}`}
                     />
                   ))}

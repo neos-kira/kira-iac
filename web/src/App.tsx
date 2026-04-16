@@ -152,7 +152,7 @@ function JTeradaRestrictedView() {
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block rounded-xl bg-teal-50 px-4 py-3 text-sm font-medium text-teal-700 hover:bg-teal-100"
+                  className="block rounded-xl bg-sky-50 px-4 py-3 text-sm font-medium text-sky-700 hover:bg-sky-100"
                 >
                   {label}
                 </a>
@@ -933,7 +933,7 @@ function App() {
                 <button
                   type="button"
                   onClick={goToIntroAndClosePopup}
-                  className="flex-1 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700"
+                  className="flex-1 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700"
                 >
                   はじめに
                 </button>
@@ -958,7 +958,7 @@ function App() {
                 <button
                   type="button"
                   onClick={() => navigate('/admin')}
-                  className="flex w-full flex-col items-start rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-teal-200 hover:bg-teal-50/50"
+                  className="flex w-full flex-col items-start rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-sky-200 hover:bg-sky-50/50"
                 >
                   <span className="text-base font-semibold text-slate-800">受講生の進捗</span>
                   <span className="mt-1 text-xs text-slate-600">WBSに基づく進捗一覧を表示</span>
@@ -1001,19 +1001,19 @@ function App() {
                         value={newAccountName}
                         onChange={(e) => setNewAccountName(e.target.value)}
                         placeholder="新しいユーザー名（例: kira-test）"
-                        className="w-40 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                        className="w-40 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                       />
                       <input
                         type="password"
                         value={newAccountPassword}
                         onChange={(e) => setNewAccountPassword(e.target.value)}
                         placeholder="パスワード"
-                        className="w-32 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                        className="w-32 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                       />
                       <button
                         type="submit"
                         disabled={!newAccountName.trim() || !newAccountPassword}
-                        className="rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         アカウント作成
                       </button>
@@ -1114,26 +1114,26 @@ function App() {
                                     placeholder={`接続先IP（例: ${INFRA_BASIC_1_PARAMS.host}）`}
                                     value={ec2EditHost[a.username] ?? snap?.ec2Host ?? ''}
                                     onChange={(e) => setEc2EditHost((prev) => ({ ...prev, [a.username]: e.target.value }))}
-                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-800 placeholder:text-slate-400 focus:border-teal-400 focus:outline-none"
+                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-800 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none"
                                   />
                                   <input
                                     type="text"
                                     placeholder={`ユーザー名（例: ${INFRA_BASIC_1_PARAMS.userKensyu}）`}
                                     value={ec2EditUsername[a.username] ?? snap?.ec2Username ?? ''}
                                     onChange={(e) => setEc2EditUsername((prev) => ({ ...prev, [a.username]: e.target.value }))}
-                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-800 placeholder:text-slate-400 focus:border-teal-400 focus:outline-none"
+                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-800 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none"
                                   />
                                   <input
                                     type="text"
                                     placeholder={`パスワード（例: ${INFRA_BASIC_1_PARAMS.password}）`}
                                     value={ec2EditPassword[a.username] ?? snap?.ec2Password ?? ''}
                                     onChange={(e) => setEc2EditPassword((prev) => ({ ...prev, [a.username]: e.target.value }))}
-                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-800 placeholder:text-slate-400 focus:border-teal-400 focus:outline-none"
+                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-800 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none"
                                   />
                                   <button
                                     type="button"
                                     onClick={() => void saveEc2ForUser(a.username)}
-                                    className="mt-1 rounded bg-teal-600 px-2 py-1 text-[10px] font-medium text-white hover:bg-teal-700"
+                                    className="mt-1 rounded bg-sky-600 px-2 py-1 text-[10px] font-medium text-white hover:bg-sky-700"
                                   >
                                     保存
                                   </button>
@@ -1222,7 +1222,7 @@ function App() {
               // ── introStepが0: はじめに案内バナーのみ ──
               if (introStep === 0) {
                 return (
-                  <div className="rounded-2xl border-2 border-teal-400 bg-amber-50 p-6 shadow-sm">
+                  <div className="rounded-2xl border-2 border-sky-400 bg-amber-50 p-6 shadow-sm">
                     <p className="text-sm font-semibold text-amber-800">はじめに</p>
                     <p className="mt-2 text-sm text-slate-700">
                       インフラ基礎課題に進む前に、「はじめに」でプロフェッショナルとしての行動基準を確認してください。
@@ -1230,7 +1230,7 @@ function App() {
                     <OpenInNewTabButton
                       url={getTrainingUrl('/training/intro')}
                       label="はじめに"
-                      className="mt-4 inline-flex rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700"
+                      className="mt-4 inline-flex rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700"
                     />
                   </div>
                 )
@@ -1245,10 +1245,10 @@ function App() {
                   4: 'はじめに · インシデント報告 Step4/5',
                 }
                 return (
-                  <div className="rounded-2xl border-2 border-teal-400 bg-white p-6 shadow-sm">
+                  <div className="rounded-2xl border-2 border-sky-400 bg-white p-6 shadow-sm">
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">{stepLabels[introStep]}</p>
-                    <button type="button" onClick={() => { window.location.hash = '#/training/intro' }} className="mt-4 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700">つづきから →</button>
+                    <button type="button" onClick={() => { window.location.hash = '#/training/intro' }} className="mt-4 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1269,7 +1269,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level1'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700">つづきから →</button>
+                    }} className="mt-4 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1284,7 +1284,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-1'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700">つづきから →</button>
+                    }} className="mt-4 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1299,7 +1299,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level2'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700">つづきから →</button>
+                    }} className="mt-4 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1314,7 +1314,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700">つづきから →</button>
+                    }} className="mt-4 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1329,7 +1329,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700">つづきから →</button>
+                    }} className="mt-4 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1344,7 +1344,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700">つづきから →</button>
+                    }} className="mt-4 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700">つづきから →</button>
                   </div>
                 )
               }
@@ -1365,7 +1365,7 @@ function App() {
                         href="https://docs.google.com/presentation/d/1Xw--LXH056ekfvkneyzl-ZCFPKJon4vd/edit?usp=drivesdk&ouid=100622650885455094391&rtpof=true&sd=true"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-teal-800 shadow-sm ring-1 ring-teal-200 hover:bg-teal-100 hover:ring-teal-300"
+                        className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-sky-800 shadow-sm ring-1 ring-sky-200 hover:bg-sky-100 hover:ring-sky-300"
                       >
                         概要ppt
                       </a>
@@ -1381,7 +1381,7 @@ function App() {
                         href="https://docs.google.com/spreadsheets/d/127QyXSU1_nLAeRF5HPfsYcECDWjNZKZW/edit?usp=drivesdk&ouid=100622650885455094391&rtpof=true&sd=true"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-teal-800 shadow-sm ring-1 ring-teal-200 hover:bg-teal-100 hover:ring-teal-300"
+                        className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-sky-800 shadow-sm ring-1 ring-sky-200 hover:bg-sky-100 hover:ring-sky-300"
                       >
                         WBS
                       </a>
@@ -1408,7 +1408,7 @@ function App() {
                       <li
                         key={item}
                         className={`group flex items-center justify-between gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 ${
-                          index === searchHistoryHighlightIndex ? 'bg-teal-50' : ''
+                          index === searchHistoryHighlightIndex ? 'bg-sky-50' : ''
                         }`}
                       >
                         <button
@@ -1497,7 +1497,7 @@ function App() {
                     <button
                       type="button"
                       onClick={() => { window.location.hash = '#/training/intro' }}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700"
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-600 text-white hover:bg-sky-700"
                     >
                       開く
                     </button>
@@ -1532,7 +1532,7 @@ function App() {
                         if (isIntroCompleted || isKiraTest) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank')
                         else setShowIntroRequiredPopup(true)
                       }}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700"
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-600 text-white hover:bg-sky-700"
                     >
                       開く
                     </button>
@@ -1571,7 +1571,7 @@ function App() {
                         if (isIntroCompleted || isKiraTest) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank')
                         else setShowIntroRequiredPopup(true)
                       }}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-600 text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       開く
                     </button>
@@ -1611,7 +1611,7 @@ function App() {
                         if (isIntroCompleted || isKiraTest) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
                         else setShowIntroRequiredPopup(true)
                       }}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-600 text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       開く
                     </button>
@@ -1759,19 +1759,27 @@ function App() {
               const linuxPct = Math.round((linuxDone / linuxTasks.length) * 100)
 
               const renderTask = (item: TaskItem) => (
-                <li key={item.name} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5 gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                      item.status === 'done' ? 'bg-emerald-500 text-white' : item.status === 'active' ? 'bg-teal-500 text-white' : 'bg-slate-200 text-slate-400'
+                <li key={item.name} className="flex items-center justify-between rounded-lg bg-slate-50/70 px-3 py-2.5 gap-2 transition-colors hover:bg-slate-50">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${
+                      item.status === 'done'
+                        ? 'bg-emerald-500 text-white'
+                        : item.status === 'active'
+                        ? 'bg-sky-500 text-white'
+                        : 'bg-slate-200 text-slate-400'
                     }`}>
-                      {item.status === 'done' ? '✓' : item.status === 'active' ? '▶' : '—'}
+                      {item.status === 'done' ? '✓' : item.status === 'active' ? '▶' : ''}
                     </span>
                     <div className="min-w-0">
-                      <p className="text-[13px] font-medium text-slate-800 leading-tight">{item.name}</p>
+                      <p className={`text-[13px] font-medium leading-tight ${item.status === 'done' ? 'text-slate-500' : 'text-slate-800'}`}>{item.name}</p>
                       <p className="text-[10px] text-slate-400 mt-0.5 truncate">{item.sub}</p>
                     </div>
                   </div>
-                  <button type="button" onClick={item.action} className="flex-shrink-0 rounded-lg bg-teal-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-teal-700">
+                  <button
+                    type="button"
+                    onClick={item.action}
+                    className="flex-shrink-0 rounded-md border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] font-medium text-sky-700 hover:bg-sky-100 hover:border-sky-300 transition-colors"
+                  >
                     開く
                   </button>
                 </li>
@@ -1787,25 +1795,24 @@ function App() {
               const activeCourses = courses.filter((c) => c.isAvailable)
 
               const renderCourseCard = (course: Course) => (
-                <div key={course.id} className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                <div key={course.id} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
                   {/* コースヘッダー */}
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+                  <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 bg-gradient-to-r from-white to-slate-50/50">
                     <div className="flex items-center gap-2.5">
-                      <span className="text-xl">{course.icon}</span>
+                      <span className="text-lg">{course.icon}</span>
                       <div>
-                        <p className="text-[13px] font-bold text-slate-800">{course.name}</p>
-                        <p className="text-[10px] text-slate-400">{course.tasks.filter((t) => t.status === 'done').length} / {course.tasks.length} 完了</p>
+                        <p className="text-[13px] font-semibold text-slate-800 tracking-tight">{course.name}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                        <div className="h-full rounded-full bg-teal-500 transition-all" style={{ width: `${course.pct}%` }} />
+                      <div className="w-24 h-1 rounded-full bg-slate-100 overflow-hidden">
+                        <div className="h-full rounded-full bg-sky-500 transition-all duration-500" style={{ width: `${course.pct}%` }} />
                       </div>
-                      <span className="text-[11px] font-semibold text-slate-600 tabular-nums w-8 text-right">{course.pct}%</span>
+                      <span className="text-[11px] font-medium text-slate-500 tabular-nums w-8 text-right">{course.pct}%</span>
                     </div>
                   </div>
                   {/* タスク一覧 */}
-                  <ul className="divide-y divide-slate-50 px-3 py-2 space-y-1">
+                  <ul className="px-3 py-2 space-y-1">
                     {course.tasks.map(renderTask)}
                   </ul>
                 </div>
@@ -1817,22 +1824,24 @@ function App() {
                   {activeCourses.map(renderCourseCard)}
 
                   {/* IT業界の歩き方 */}
-                  <div className="rounded-2xl border border-teal-100 bg-white shadow-sm overflow-hidden">
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-teal-50">
+                  <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 bg-gradient-to-r from-white to-slate-50/50">
                       <div className="flex items-center gap-2.5">
-                        <span className="text-xl">📚</span>
-                        <div>
-                          <p className="text-[13px] font-bold text-slate-800">IT業界の歩き方</p>
-                        </div>
+                        <span className="text-lg">📚</span>
+                        <p className="text-[13px] font-semibold text-slate-800 tracking-tight">IT業界の歩き方</p>
                       </div>
                     </div>
                     <div className="px-3 py-2">
-                      <li className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5 gap-2 list-none">
-                        <div className="flex items-center gap-2.5">
-                          <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] bg-slate-200 text-slate-400 font-bold">—</span>
+                      <li className="flex items-center justify-between rounded-lg bg-slate-50/70 px-3 py-2.5 gap-2 list-none">
+                        <div className="flex items-center gap-3">
+                          <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] bg-slate-200 text-slate-400 font-bold" />
                           <p className="text-[13px] font-medium text-slate-800">IT業界の基礎知識</p>
                         </div>
-                        <button type="button" onClick={() => { window.location.hash = '#/it-basics' }} className="flex-shrink-0 rounded-lg bg-teal-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-teal-700">開く</button>
+                        <button
+                          type="button"
+                          onClick={() => { window.location.hash = '#/it-basics' }}
+                          className="flex-shrink-0 rounded-md border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] font-medium text-sky-700 hover:bg-sky-100 hover:border-sky-300 transition-colors"
+                        >開く</button>
                       </li>
                     </div>
                   </div>
@@ -1889,7 +1898,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
               <button
                 type="button"
                 onClick={onOpenIntro}
-                className="rounded-lg bg-teal-600 px-4 py-2 text-xs font-medium text-white hover:bg-teal-700"
+                className="rounded-lg bg-sky-600 px-4 py-2 text-xs font-medium text-white hover:bg-sky-700"
               >
                 はじめにを開く
               </button>
@@ -1909,7 +1918,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
             <button
               type="button"
               onClick={onOpenWbs}
-              className="mt-3 rounded-lg bg-teal-600 px-4 py-2 text-xs font-medium text-white hover:bg-teal-700"
+              className="mt-3 rounded-lg bg-sky-600 px-4 py-2 text-xs font-medium text-white hover:bg-sky-700"
             >
               WBSを開く
             </button>
@@ -1982,7 +1991,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
               <button
                 type="button"
                 onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-top'))}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700"
+                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-600 text-white hover:bg-sky-700"
               >
                 開く
               </button>
@@ -2018,7 +2027,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                 type="button"
                 disabled={!isKiraTestUser() && !infra1Cleared}
                 onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-2-top'))}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-600 text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 開く
               </button>
@@ -2054,7 +2063,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                 type="button"
                 disabled={!isKiraTestUser() && !infra2Cleared}
                 onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-3-top'))}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-600 text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 開く
               </button>
@@ -2085,7 +2094,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                 type="button"
                 disabled={!isKiraTestUser() && !infra3Cleared}
                 onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-4'))}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-600 text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 開く
               </button>
@@ -2100,7 +2109,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
               <button
                 type="button"
                 onClick={() => { window.location.hash = '#/it-basics' }}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-teal-600 text-white hover:bg-teal-700"
+                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-600 text-white hover:bg-sky-700"
               >
                 開く
               </button>

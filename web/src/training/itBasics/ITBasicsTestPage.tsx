@@ -91,7 +91,7 @@ export function ITBasicsTestPage() {
             </p>
             <div className="mt-6 flex justify-center gap-3">
               {!passed && (
-                <button type="button" onClick={handleRetry} className="rounded-xl bg-teal-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-teal-700">
+                <button type="button" onClick={handleRetry} className="rounded-xl bg-sky-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-sky-700">
                   もう一度
                 </button>
               )}
@@ -165,7 +165,7 @@ export function ITBasicsTestPage() {
               type="button"
               disabled={selectedIndex === null}
               onClick={handleAnswer}
-              className="mt-5 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-5 rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               回答する
             </button>
@@ -193,7 +193,7 @@ export function ITBasicsTestPage() {
             <div
               key={i}
               className={`h-1.5 flex-1 rounded-full ${
-                i < currentIndex ? 'bg-teal-400' : i === currentIndex ? 'bg-teal-600' : 'bg-slate-200'
+                i < currentIndex ? 'bg-sky-400' : i === currentIndex ? 'bg-sky-600' : 'bg-slate-200'
               }`}
             />
           ))}

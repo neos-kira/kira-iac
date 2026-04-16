@@ -140,7 +140,7 @@ export function MentorDeskMobileButton() {
         type="button"
         onClick={() => setIsOpen(true)}
         style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999 }}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-teal-500 text-2xl text-white shadow-lg hover:bg-teal-600"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-sky-500 text-2xl text-white shadow-lg hover:bg-sky-600"
         aria-label="AI講師に聞く"
       >
         🎓
@@ -149,15 +149,15 @@ export function MentorDeskMobileButton() {
       {isOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999 }} className="flex flex-col justify-end bg-black/20" onClick={() => setIsOpen(false)}>
           <div className="flex flex-col rounded-t-2xl bg-white" style={{ height: '60vh' }} onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-teal-100 bg-teal-50 px-3 py-2 rounded-t-2xl shrink-0">
-              <span className="text-sm font-semibold text-teal-800">🎓 AI講師</span>
+            <div className="flex items-center justify-between border-b border-sky-100 bg-sky-50 px-3 py-2 rounded-t-2xl shrink-0">
+              <span className="text-sm font-semibold text-sky-800">🎓 AI講師</span>
               <button type="button" onClick={(e) => { e.stopPropagation(); setIsOpen(false) }} style={{ zIndex: 10000 }} className="p-2 text-slate-500 hover:text-slate-800 text-lg">✕</button>
             </div>
 
             <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
               {messages.map((m, i) => (
                 <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-xs leading-relaxed ${m.role === 'user' ? 'bg-teal-500 text-white' : 'bg-slate-100 text-slate-800'}`}>
+                  <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-xs leading-relaxed ${m.role === 'user' ? 'bg-sky-500 text-white' : 'bg-slate-100 text-slate-800'}`}>
                     {m.image && <img src={m.image} alt="添付画像" className="max-h-16 rounded-lg mb-1" />}
                     {m.role === 'assistant' ? <span dangerouslySetInnerHTML={{ __html: renderMd(m.content) }} /> : m.content}
                   </div>
@@ -191,7 +191,7 @@ export function MentorDeskMobileButton() {
                 onPaste={handlePaste}
                 rows={1}
                 placeholder="メッセージを入力"
-                className="flex-1 resize-none rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/40"
+                className="flex-1 resize-none rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40"
                 style={{ maxHeight: 60 }}
               />
               {SpeechRecognitionAPI && (
@@ -199,7 +199,7 @@ export function MentorDeskMobileButton() {
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z" /></svg>
                 </button>
               )}
-              <button type="button" onClick={() => void send()} disabled={sending || (!input.trim() && !pendingImage)} className="rounded-xl bg-teal-500 px-3 py-2 text-xs font-medium text-white hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed">
+              <button type="button" onClick={() => void send()} disabled={sending || (!input.trim() && !pendingImage)} className="rounded-xl bg-sky-500 px-3 py-2 text-xs font-medium text-white hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed">
                 送信
               </button>
             </div>

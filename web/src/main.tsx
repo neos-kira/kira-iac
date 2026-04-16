@@ -192,7 +192,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
               width: 56,
               height: 56,
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)',
+              background: 'linear-gradient(135deg, #0d9488 0%, #0369a1 100%)',
               color: 'white',
               border: 'none',
               cursor: 'pointer',

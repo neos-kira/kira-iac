@@ -217,7 +217,7 @@ export function InfraBasic21Page() {
           <button
             type="button"
             onClick={() => { saveInfraBasic21State(state, storageKey); clearDirty(); window.location.hash = '#/' }}
-            className="rounded-lg border border-teal-500 px-4 py-2 text-xs font-medium text-teal-600 hover:bg-teal-50"
+            className="rounded-lg border border-sky-500 px-4 py-2 text-xs font-medium text-sky-600 hover:bg-sky-50"
           >
             保存して中断
           </button>
@@ -259,8 +259,8 @@ export function InfraBasic21Page() {
 
         {/* 1. ネットワーク実機調査 */}
         <section className="space-y-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
-          <div className="flex items-center justify-between gap-2 border-l-4 border-teal-500 bg-teal-50 p-4 rounded-r-lg">
-            <h2 className="text-lg font-bold text-teal-800">1. ネットワーク実機調査</h2>
+          <div className="flex items-center justify-between gap-2 border-l-4 border-sky-500 bg-sky-50 p-4 rounded-r-lg">
+            <h2 className="text-lg font-bold text-sky-800">1. ネットワーク実機調査</h2>
             <p className="text-[11px] text-slate-600">実際にコマンドを打った結果をここに整理します。</p>
           </div>
 
@@ -277,26 +277,26 @@ export function InfraBasic21Page() {
                 <rect x="26" y="58" width="28" height="3" rx="1" fill="#0d9488" opacity=".3"/>
               </svg>
             </div>
-            <p className="text-xs font-semibold text-teal-600">Q1. 自端末の基本情報</p>
+            <p className="text-xs font-semibold text-sky-600">Q1. 自端末の基本情報</p>
             <p className="text-[11px] text-slate-600 pr-16">
               自分のPCのIPアドレス・サブネットマスク・デフォルトゲートウェイ・MACアドレスを調べて記録します。
             </p>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               <label className="text-[11px] text-slate-600">
                 IPアドレス
-                <input type="text" value={state.practical.q1Ip} onChange={(e) => handlePracticalChange('q1Ip', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50" placeholder="IPアドレス" />
+                <input type="text" value={state.practical.q1Ip} onChange={(e) => handlePracticalChange('q1Ip', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50" placeholder="IPアドレス" />
               </label>
               <label className="text-[11px] text-slate-600">
                 サブネットマスク
-                <input type="text" value={state.practical.q1Mask} onChange={(e) => handlePracticalChange('q1Mask', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50" placeholder="サブネットマスク" />
+                <input type="text" value={state.practical.q1Mask} onChange={(e) => handlePracticalChange('q1Mask', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50" placeholder="サブネットマスク" />
               </label>
               <label className="text-[11px] text-slate-600">
                 デフォルトゲートウェイ
-                <input type="text" value={state.practical.q1Dg} onChange={(e) => handlePracticalChange('q1Dg', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50" placeholder="デフォルトゲートウェイ" />
+                <input type="text" value={state.practical.q1Dg} onChange={(e) => handlePracticalChange('q1Dg', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50" placeholder="デフォルトゲートウェイ" />
               </label>
               <label className="text-[11px] text-slate-600">
                 MACアドレス
-                <input type="text" value={state.practical.q1Mac} onChange={(e) => handlePracticalChange('q1Mac', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50" placeholder="MACアドレス" />
+                <input type="text" value={state.practical.q1Mac} onChange={(e) => handlePracticalChange('q1Mac', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50" placeholder="MACアドレス" />
               </label>
             </div>
           </div>
@@ -315,19 +315,19 @@ export function InfraBasic21Page() {
                 <defs><marker id="arrowG" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L6 3L0 6Z" fill="#10b981"/></marker><marker id="arrowG2" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L6 3L0 6Z" fill="#10b981" opacity=".5"/></marker></defs>
               </svg>
             </div>
-            <p className="text-xs font-semibold text-teal-600">Q2. 疎通確認（Ping）</p>
+            <p className="text-xs font-semibold text-sky-600">Q2. 疎通確認（Ping）</p>
               <p className="text-[11px] text-slate-600 pr-16">pingコマンドの実行結果をそのまま貼り付けてください。pingが失敗した場合（ファイアウォール等）も、その結果をそのまま記録してください。</p>
               <textarea
                 value={state.practical.q3PingResult}
                 onChange={(e) => handlePracticalChange('q3PingResult', e.target.value)}
-                className="mt-1 h-28 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
+                className="mt-1 h-28 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
                 placeholder="例: ping 8.8.8.8 の結果をそのまま貼り付け（成功・失敗どちらでも可）"
               />
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={handlePingCheck}
-                  className="rounded-lg border border-teal-500 bg-white px-3 py-1.5 text-xs font-medium text-teal-600 hover:bg-teal-50"
+                  className="rounded-lg border border-sky-500 bg-white px-3 py-1.5 text-xs font-medium text-sky-600 hover:bg-sky-50"
                 >
                   Pingログを判定する
                 </button>
@@ -358,7 +358,7 @@ export function InfraBasic21Page() {
                 <text x="46" y="58" fill="#10b981" fontSize="6">HOP3</text>
               </svg>
             </div>
-            <p className="text-xs font-semibold text-teal-600">Q3. 経路確認（tracert / traceroute）</p>
+            <p className="text-xs font-semibold text-sky-600">Q3. 経路確認（tracert / traceroute）</p>
             <p className="text-[11px] text-slate-600 pr-16">経路確認コマンドの結果を貼り付けてください。OS によってコマンドが異なります。</p>
               <div className="rounded bg-slate-50 p-2 text-xs text-slate-700">
                 <p><strong>Linux / Mac:</strong> <code className="bg-slate-200 px-1 rounded text-[11px]">traceroute 8.8.8.8</code></p>
@@ -367,14 +367,14 @@ export function InfraBasic21Page() {
               <textarea
                 value={state.practical.q4TraceResult}
                 onChange={(e) => handlePracticalChange('q4TraceResult', e.target.value)}
-                className="mt-1 h-28 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
+                className="mt-1 h-28 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
                 placeholder="経路確認コマンドの結果を貼り付けてください。"
               />
           </div>
 
           {/* Q4 */}
           <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
-            <p className="text-xs font-semibold text-teal-600">Q4. WAN と LAN の境界線となる機器のIP</p>
+            <p className="text-xs font-semibold text-sky-600">Q4. WAN と LAN の境界線となる機器のIP</p>
             <p className="text-[11px] text-slate-600">
               自宅やオフィスのネットワークで、「ここから先がインターネット側」となる境界機器のIPアドレスを記入します。
             </p>
@@ -382,7 +382,7 @@ export function InfraBasic21Page() {
               type="text"
               value={state.practical.q5BoundaryIp}
               onChange={(e) => handlePracticalChange('q5BoundaryIp', e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
               placeholder="境界となる機器のIPアドレス"
             />
           </div>
@@ -392,7 +392,7 @@ export function InfraBasic21Page() {
             <div className="rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700">
               ⚠️ この課題は研修用サーバ（43.207.53.141）が起動している時間帯のみ実施できます。平日9:40〜19:00が目安です。
             </div>
-            <p className="text-xs font-semibold text-teal-600">Q5-6. サーバ 43.207.53.141 への疎通・SSH接続</p>
+            <p className="text-xs font-semibold text-sky-600">Q5-6. サーバ 43.207.53.141 への疎通・SSH接続</p>
             <p className="text-[11px] text-slate-600">
               研修用サーバ 43.207.53.141 に対して、Ping および SSH 接続を試み、実施できたらチェックを入れてください。
             </p>
@@ -402,7 +402,7 @@ export function InfraBasic21Page() {
                   type="checkbox"
                   checked={state.practical.q6PingServerOk}
                   onChange={(e) => handlePracticalChange('q6PingServerOk', e.target.checked)}
-                  className="h-4 w-4 accent-teal-600"
+                  className="h-4 w-4 accent-sky-600"
                 />
                 <span>43.207.53.141 への Ping 疎通を確認した</span>
               </label>
@@ -411,7 +411,7 @@ export function InfraBasic21Page() {
                   type="checkbox"
                   checked={state.practical.q7SshServerOk}
                   onChange={(e) => handlePracticalChange('q7SshServerOk', e.target.checked)}
-                  className="h-4 w-4 accent-teal-600"
+                  className="h-4 w-4 accent-sky-600"
                 />
                 <span>43.207.53.141 への SSH 接続（neos-training 等）を確認した</span>
               </label>
@@ -420,7 +420,7 @@ export function InfraBasic21Page() {
 
           {/* Q7 */}
           <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
-            <p className="text-xs font-semibold text-teal-600">Q7. 接続先サーバのIP情報</p>
+            <p className="text-xs font-semibold text-sky-600">Q7. 接続先サーバのIP情報</p>
             <p className="text-[11px] text-slate-600">
               SSH 接続したサーバ上で「ip addr」「ip route」などを実行し、サーバ側のIPアドレスやデフォルトゲートウェイを確認します。
             </p>
@@ -431,7 +431,7 @@ export function InfraBasic21Page() {
                   type="text"
                   value={state.practical.q8ServerIp}
                   onChange={(e) => handlePracticalChange('q8ServerIp', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
                   placeholder="IPアドレス"
                 />
               </label>
@@ -441,7 +441,7 @@ export function InfraBasic21Page() {
                   type="text"
                   value={state.practical.q8ServerMask}
                   onChange={(e) => handlePracticalChange('q8ServerMask', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
                   placeholder="サブネットマスク"
                 />
               </label>
@@ -451,7 +451,7 @@ export function InfraBasic21Page() {
                   type="text"
                   value={state.practical.q8ServerDg}
                   onChange={(e) => handlePracticalChange('q8ServerDg', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
                   placeholder="デフォルトゲートウェイ"
                 />
               </label>
@@ -461,7 +461,7 @@ export function InfraBasic21Page() {
           {/* Q8 */}
           <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
             <div className="flex items-start justify-between">
-            <p className="text-xs font-semibold text-teal-600">
+            <p className="text-xs font-semibold text-sky-600">
               Q8. 論理積（AND 演算）によるネットワークアドレス計算（192.168.250.50 / 24）
             </p>
             <svg className="shrink-0" width="80" height="80" viewBox="0 0 80 80" fill="none" aria-hidden>
@@ -483,7 +483,7 @@ export function InfraBasic21Page() {
                   type="text"
                   value={state.practical.q9NetworkAddress}
                   onChange={(e) => handlePracticalChange('q9NetworkAddress', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
                   placeholder="ネットワークアドレス"
                 />
               </label>
@@ -492,7 +492,7 @@ export function InfraBasic21Page() {
                 <textarea
                   value={state.practical.q9Working}
                   onChange={(e) => handlePracticalChange('q9Working', e.target.value)}
-                  className="mt-1 h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
+                  className="mt-1 h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
                   placeholder="2進数変換や AND 演算の途中式などを記載してください。"
                 />
               </label>
@@ -502,9 +502,9 @@ export function InfraBasic21Page() {
 
         {/* 2. 知識確認小テスト */}
         <section className="space-y-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
-          <div className="flex items-center justify-between gap-2 border-l-4 border-teal-500 bg-teal-50 p-4 rounded-r-lg">
+          <div className="flex items-center justify-between gap-2 border-l-4 border-sky-500 bg-sky-50 p-4 rounded-r-lg">
             <div>
-              <h2 className="text-lg font-bold text-teal-800">2. 知識確認小テスト（記述式）</h2>
+              <h2 className="text-lg font-bold text-sky-800">2. 知識確認小テスト（記述式）</h2>
               <p className="mt-1 text-[11px] text-slate-600">キーワードを意識しながら、自分の言葉で説明してください。</p>
             </div>
             <svg className="shrink-0" width="80" height="80" viewBox="0 0 80 80" fill="none" aria-hidden>
@@ -535,11 +535,11 @@ export function InfraBasic21Page() {
                   key={q.id}
                   className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-soft-card"
                 >
-                  <p className="text-xs font-semibold text-teal-600">{q.title}</p>
+                  <p className="text-xs font-semibold text-sky-600">{q.title}</p>
                   <textarea
                     value={answer}
                     onChange={(e) => handleKnowledgeChange(q.id, e.target.value)}
-                    className="mt-1 h-28 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
+                    className="mt-1 h-28 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
                     placeholder="ここに自分の言葉で説明を書いてください。"
                   />
 
@@ -561,7 +561,7 @@ export function InfraBasic21Page() {
 
                   {hasChecked && (
                     <details className="mt-2 rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-[11px] text-slate-600">
-                      <summary className="cursor-pointer text-teal-600">
+                      <summary className="cursor-pointer text-sky-600">
                         プロの視点での解説（模範解答）
                       </summary>
                       <p className="mt-1 whitespace-pre-line">{q.modelAnswer}</p>
@@ -576,7 +576,7 @@ export function InfraBasic21Page() {
             <button
               type="button"
               onClick={handleKnowledgeCheck}
-              className="rounded-xl bg-gradient-to-r bg-teal-600 px-4 py-2 text-xs font-semibold text-white hover:bg-teal-700"
+              className="rounded-xl bg-gradient-to-r bg-sky-600 px-4 py-2 text-xs font-semibold text-white hover:bg-sky-700"
             >
               小テストを採点する
             </button>
@@ -595,7 +595,7 @@ export function InfraBasic21Page() {
           <button
             type="button"
             onClick={() => { saveInfraBasic21State(state, storageKey); clearDirty(); window.location.hash = '#/' }}
-            className="rounded-lg border border-teal-500 px-6 py-2.5 text-sm font-medium text-teal-600 hover:bg-teal-50"
+            className="rounded-lg border border-sky-500 px-6 py-2.5 text-sm font-medium text-sky-600 hover:bg-sky-50"
           >
             保存して中断
           </button>

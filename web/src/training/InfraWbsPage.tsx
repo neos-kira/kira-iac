@@ -376,14 +376,14 @@ export function InfraWbsPage() {
             <button
               type="button"
               onClick={() => setViewMode('table')}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'table' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'table' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               表形式
             </button>
             <button
               type="button"
               onClick={() => setViewMode('gantt')}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'gantt' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'gantt' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               ガントチャート
             </button>
@@ -397,7 +397,7 @@ export function InfraWbsPage() {
             <p className="text-3xl font-bold text-slate-800 tabular-nums">{overallPct}<span className="text-lg font-normal text-slate-400">%</span></p>
             <p className="text-[10px] text-slate-400 mt-1">{cleared} / {totalTasks} 課題完了</p>
             <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-              <div className="h-full rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 transition-all" style={{ width: `${overallPct}%` }} />
+              <div className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-500 transition-all" style={{ width: `${overallPct}%` }} />
             </div>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -511,7 +511,7 @@ export function InfraWbsPage() {
                         {row.path && (
                           <OpenInNewTabButton
                             url={getTrainingUrl(row.path)}
-                            className="rounded-lg bg-teal-50 px-2.5 py-1 text-[10px] font-medium text-teal-700 hover:bg-teal-100 whitespace-nowrap"
+                            className="rounded-lg bg-sky-50 px-2.5 py-1 text-[10px] font-medium text-sky-700 hover:bg-sky-100 whitespace-nowrap"
                           />
                         )}
                       </td>
