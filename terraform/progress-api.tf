@@ -234,6 +234,12 @@ resource "aws_apigatewayv2_route" "ai_score_post" {
   target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
 }
 
+resource "aws_apigatewayv2_route" "progress_default" {
+  api_id    = aws_apigatewayv2_api.progress.id
+  route_key = "$default"
+  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
+}
+
 resource "aws_apigatewayv2_stage" "progress" {
   api_id      = aws_apigatewayv2_api.progress.id
   name        = "$default"

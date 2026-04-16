@@ -72,6 +72,8 @@ export type TraineeProgressSnapshot = {
   infra1SectionDone?: Record<string, boolean>
   /** 課題3-2: 記述回答 */
   infra32Answers?: Record<string, string>
+  /** EC2インスタンスID（停止・起動・再開に必要） */
+  ec2InstanceId?: string | null
   /** EC2接続先IP */
   ec2Host?: string | null
   /** EC2ユーザー名 */

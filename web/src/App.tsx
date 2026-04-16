@@ -783,16 +783,23 @@ function App() {
     if (isServerActionLoading || !serverSnapshot) return
     setShowStopConfirm(false)
     setIsServerActionLoading(true)
+    const prevSnapshot = serverSnapshot
     // 楽観的更新
     setServerSnapshot({ ...serverSnapshot, ec2State: 'stopped', updatedAt: new Date().toISOString() })
     try {
-      await fetch(`${BASE_URL}/server/stop`, {
+      const res = await fetch(`${BASE_URL}/server/stop`, {
         method: 'POST',
         headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'omit',
         body: JSON.stringify({}),
       })
-    } catch { /* ignore */ } finally {
+      if (!res.ok) {
+        // 失敗時は元の状態に戻す
+        setServerSnapshot(prevSnapshot)
+      }
+    } catch {
+      setServerSnapshot(prevSnapshot)
+    } finally {
       setIsServerActionLoading(false)
     }
   }
@@ -801,6 +808,7 @@ function App() {
   const handleStartServer = async () => {
     if (isServerActionLoading || !serverSnapshot) return
     setIsServerActionLoading(true)
+    const prevSnapshot = serverSnapshot
     // 楽観的更新
     setServerSnapshot({ ...serverSnapshot, ec2State: 'running', updatedAt: new Date().toISOString() })
     try {
@@ -819,8 +827,12 @@ function App() {
           ec2Host: data.publicIp ?? prev.ec2Host,
           updatedAt: new Date().toISOString(),
         } : prev)
+      } else {
+        setServerSnapshot(prevSnapshot)
       }
-    } catch { /* ignore */ } finally {
+    } catch {
+      setServerSnapshot(prevSnapshot)
+    } finally {
       setIsServerActionLoading(false)
     }
   }

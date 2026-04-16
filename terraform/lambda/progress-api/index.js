@@ -215,6 +215,7 @@ async function handler(event) {
         // 課題3-2 記述回答
         infra32Answers: body.infra32Answers && typeof body.infra32Answers === 'object' ? body.infra32Answers : {},
         // EC2接続情報（受講生ごと）
+        ec2InstanceId: typeof body.ec2InstanceId === 'string' ? body.ec2InstanceId : null,
         ec2Host: typeof body.ec2Host === 'string' ? body.ec2Host : null,
         ec2Username: typeof body.ec2Username === 'string' ? body.ec2Username : null,
         ec2Password: typeof body.ec2Password === 'string' ? body.ec2Password : null,
@@ -810,6 +811,7 @@ fail: 意味不明・設問と無関係・空欄に近い内容
 
       // セクション別の判定プロンプト
       const systemPrompts = {
+        ssh: 'あなたはITインフラ研修の採点者です。スクリーンショットを確認し、ターミナル（macOS/Windows/Linuxを問わず）でLinuxサーバーへのSSH接続が成功しているか判定してください。合格条件：ターミナル画面にLinuxのプロンプト（例: username@hostname:~$ やシェルのプロンプト文字列）が表示されていること。TeraTerm、PowerShell、ターミナル.app、Windowsターミナルなど全てのSSHクライアントを合格とする。必ず {"passed":true,"message":"..."} または {"passed":false,"message":"..."} 形式のJSONのみを返してください。messageは日本語で30文字以内にしてください。',
         teraterm: 'あなたはITインフラ研修の採点者です。スクリーンショットを確認し、TeraTerm（SSH）でLinuxサーバーへの接続が成功しているか判定してください。接続成功の証拠：ターミナルにLinuxのプロンプト（例: username@hostname:~$ やコマンドライン画面）が表示されていること。必ず {"passed":true,"message":"..."} または {"passed":false,"message":"..."} 形式のJSONのみを返してください。messageは日本語で30文字以内にしてください。',
         sakura: 'あなたはITインフラ研修の採点者です。スクリーンショットを確認し、sakuraエディタでファイルが作成されているか判定してください。合格条件：「趣味.txt」または「好きな動物.txt」というファイル名が画面に表示されていること（ファイル保存ダイアログ・エディタのタイトルバー・ファイル一覧のどれでも可）。必ず {"passed":true,"message":"..."} または {"passed":false,"message":"..."} 形式のJSONのみを返してください。messageは日本語で30文字以内にしてください。',
         winmerge: 'あなたはITインフラ研修の採点者です。スクリーンショットを確認し、WinMergeで2つのファイルの差分比較が表示されているか判定してください。合格条件：WinMergeの差分表示画面（左右にファイルが並んで表示、色付きハイライトが見える）が確認できること。必ず {"passed":true,"message":"..."} または {"passed":false,"message":"..."} 形式のJSONのみを返してください。messageは日本語で30文字以内にしてください。',
@@ -817,12 +819,14 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       }
 
       const successMessages = {
+        ssh: 'SSH接続が確認できました',
         teraterm: 'SSH接続が確認できました',
         sakura: 'ファイル作成が確認できました',
         winmerge: 'WinMergeの差分表示が確認できました',
         winscp: 'WinSCPの接続・転送が確認できました',
       }
       const failMessages = {
+        ssh: 'SSH接続成功後のターミナル画面をアップロードしてください',
         teraterm: 'SSH接続成功後のプロンプト画面をアップロードしてください',
         sakura: '趣味.txt または 好きな動物.txt が表示された画面をアップロードしてください',
         winmerge: 'WinMergeの差分表示画面をアップロードしてください',
