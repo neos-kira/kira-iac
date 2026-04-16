@@ -155,15 +155,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('resize', h)
   }, [isMobile])
 
-  if (isLogin) return <>{children}</>
-  if (isTop) return <>{children}</>
-
-  // モード判定
-  const showSidePanel = showChat && !isMobile && isWide
-  const showBottomBar = showChat && !isMobile && !isWide
-  const showMobile = showChat && isMobile
-
-  // ESCキーでAI講師パネルを閉じる
+  // ESCキーでAI講師パネルを閉じる（conditional return より前に置くこと — Rules of Hooks）
   useEffect(() => {
     if (!isAiOpen && !isBottomBarOpen && !isChatOpen) return
     const onKey = (e: KeyboardEvent) => {
@@ -172,6 +164,14 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [isAiOpen, isBottomBarOpen, isChatOpen])
+
+  if (isLogin) return <>{children}</>
+  if (isTop) return <>{children}</>
+
+  // モード判定
+  const showSidePanel = showChat && !isMobile && isWide
+  const showBottomBar = showChat && !isMobile && !isWide
+  const showMobile = showChat && isMobile
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', flexDirection: 'column' }}>

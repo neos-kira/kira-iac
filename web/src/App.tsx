@@ -166,11 +166,6 @@ function JTeradaRestrictedView() {
 }
 
 function App() {
-  const rawDisplayName = getDisplayName()
-  if (isJTerada(rawDisplayName) && isTask1Cleared()) {
-    return <JTeradaRestrictedView />
-  }
-
   const [input, setInput] = useState('')
   const [resolution, setResolution] = useState<CommandResolution | null>(null)
   const [_isThinking, setIsThinking] = useState(false)
@@ -921,6 +916,11 @@ function App() {
         ].reduce((a, b) => a + b, 0)
         return { pct: Math.round(subCleared / 8 * 100), completed: subCleared, total: 8 }
       })()
+  // j-terada ユーザーかつ課題1クリア済みの場合は限定ビューを表示（全 hooks 呼び出し後に判定 — Rules of Hooks）
+  if (isJTerada(getDisplayName()) && isTask1Cleared()) {
+    return <JTeradaRestrictedView />
+  }
+
   if (!isSnapLoaded && !isAdminView) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
