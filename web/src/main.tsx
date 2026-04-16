@@ -303,17 +303,20 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
 import { IntroGate } from './components/IntroGate'
 import { Task1Gate, Task2Gate } from './components/TaskGates'
 
-class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean; error: Error | null; errorInfo: ErrorInfo | null }
+> {
   constructor(props: { children: ReactNode }) {
     super(props)
-    this.state = { hasError: false, error: null }
+    this.state = { hasError: false, error: null, errorInfo: null }
   }
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error }
   }
   componentDidCatch(error: Error, info: ErrorInfo) {
+    this.setState({ errorInfo: info })
     console.error('[ErrorBoundary]', error, info.componentStack)
-    // エラー情報をlocalStorageに保存（デバッグ用）
     try {
       localStorage.setItem('__nic_last_error', JSON.stringify({
         message: error.message,
@@ -321,6 +324,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
         componentStack: info.componentStack ?? '',
         timestamp: new Date().toISOString(),
         url: window.location.href,
+        userAgent: navigator.userAgent,
       }))
     } catch {
       // localStorage 書き込み失敗は無視
@@ -328,14 +332,28 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
   render() {
     if (this.state.hasError) {
-      // 完全静的フォールバック: setState / navigate は一切呼ばない
-      // "トップに戻る" は window.location.href でページ全体をリロード
+      const err = this.state.error
       return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24, background: '#f8fafc' }}>
           <p style={{ fontSize: 16, fontWeight: 600, color: '#1e293b' }}>表示中にエラーが発生しました</p>
-          <details style={{ maxWidth: 400, textAlign: 'center' }}>
-            <summary style={{ fontSize: 13, color: '#64748b', cursor: 'pointer' }}>{this.state.error?.message ?? 'Unknown error'}</summary>
-            <pre style={{ fontSize: 11, color: '#94a3b8', textAlign: 'left', marginTop: 8, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{this.state.error?.stack}</pre>
+          <p style={{ fontSize: 13, color: '#64748b', maxWidth: 400, textAlign: 'center' }}>{err?.message ?? 'Unknown error'}</p>
+          <details style={{ margin: '0 0 8px', textAlign: 'left', fontSize: '12px', maxWidth: 600, width: '100%' }}>
+            <summary style={{ cursor: 'pointer', color: '#64748b', padding: '4px 0' }}>詳細情報（開発者向け）</summary>
+            <pre style={{
+              background: '#f3f4f6',
+              padding: '12px',
+              borderRadius: '6px',
+              overflow: 'auto',
+              maxHeight: '300px',
+              fontSize: '11px',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all',
+              marginTop: 8,
+            }}>
+              {err?.stack}
+              {'\n\n--- componentStack ---\n'}
+              {this.state.errorInfo?.componentStack}
+            </pre>
           </details>
           <a
             href="/"
