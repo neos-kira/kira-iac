@@ -1,7 +1,7 @@
 const { DynamoDBClient, PutItemCommand, ScanCommand, GetItemCommand, DeleteItemCommand } = require('@aws-sdk/client-dynamodb')
 const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime')
 const bedrockClient = new BedrockRuntimeClient({ region: 'ap-northeast-1' })
-const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3')
+const { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3')
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner')
 const s3Client = new S3Client({ region: 'ap-northeast-1' })
 const KeysBucket = process.env.KEYS_BUCKET || 'kira-project-dev-keys'
@@ -1129,23 +1129,40 @@ fail: 意味不明・設問と無関係・空欄に近い内容
     // 秘密鍵再ダウンロード（POST /server/download-key）— presigned URL方式
     if (method === 'POST' && (path === '/server/download-key' || path === '/server/download-key/')) {
       const session = await verifySession(event)
-      if (!session) return json({ error: 'unauthorized' }, 401)
-      // セッションからusernameを取得（クライアント値は信用しない）
+      if (!session) {
+        console.log(JSON.stringify({ event: 'download-key', step: 'session', result: 'unauthorized', requested_at: new Date().toISOString() }))
+        return json({ error: 'unauthorized', message: 'セッションが無効です。再ログインしてください' }, 401)
+      }
+      // セッションからusernameを取得（クライアント値は信用しない — マルチテナント保護）
       const { username } = session
 
       // DynamoDBからkeyPairNameとec2InstanceIdを取得
       const progRes = await client.send(new GetItemCommand({ TableName, Key: marshall({ traineeId: username }) }))
       const prog = progRes.Item ? unmarshall(progRes.Item) : null
       if (!prog?.keyPairName) {
-        console.log(JSON.stringify({ event: 'download-key', result: 'no_server', username, requested_at: new Date().toISOString() }))
+        console.log(JSON.stringify({ event: 'download-key', step: 'dynamo', result: 'no_server', user_id: username, requested_at: new Date().toISOString() }))
         return json({ error: 'no_server', message: 'サーバーが作成されていません' }, 404)
       }
 
       const keyPairName = prog.keyPairName
       const instanceId = prog.ec2InstanceId || 'unknown'
       const s3Key = `keys/${username}/${keyPairName}.pem`
-      // ダウンロード時のファイル名: {username}-{instanceId}.pem
-      const downloadFilename = `${username}-${instanceId}.pem`
+      // ダウンロード時のファイル名: {keyPairName}.pem
+      const downloadFilename = `${keyPairName}.pem`
+
+      console.log(JSON.stringify({ event: 'download-key', step: 'head_check', user_id: username, s3_key: s3Key, requested_at: new Date().toISOString() }))
+
+      // S3にPEMファイルが存在するか事前確認（getSignedUrlは存在チェックをしないため必須）
+      try {
+        await s3Client.send(new HeadObjectCommand({ Bucket: KeysBucket, Key: s3Key }))
+      } catch (headErr) {
+        const is404 = headErr.$metadata?.httpStatusCode === 404 || headErr.name === 'NotFound' || headErr.name === 'NoSuchKey'
+        console.log(JSON.stringify({ event: 'download-key', step: 'head_check', result: is404 ? 'not_found' : 'error', user_id: username, s3_key: s3Key, error: headErr.message, requested_at: new Date().toISOString() }))
+        if (is404) {
+          return json({ error: 'not_found', message: '秘密鍵ファイルが見つかりません。サーバーを再作成してください' }, 404)
+        }
+        return json({ error: 'server_error', message: 'ダウンロードの準備に失敗しました。サーバー管理者にお問い合わせください' }, 500)
+      }
 
       try {
         const command = new GetObjectCommand({
@@ -1156,15 +1173,11 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         })
         // presigned URL: 有効期限5分（300秒）
         const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 })
-        console.log(JSON.stringify({ event: 'download-key', result: 'ok', username, instance_id: instanceId, requested_at: new Date().toISOString() }))
+        console.log(JSON.stringify({ event: 'download-key', step: 'presign', result: 'ok', user_id: username, instance_id: instanceId, filename: downloadFilename, requested_at: new Date().toISOString() }))
         return json({ ok: true, presignedUrl, filename: downloadFilename, keyPairName })
       } catch (e) {
-        const isNoSuchKey = e.name === 'NoSuchKey' || e.$metadata?.httpStatusCode === 404
-        console.log(JSON.stringify({ event: 'download-key', result: isNoSuchKey ? 'not_found' : 'error', username, error: e.message, requested_at: new Date().toISOString() }))
-        if (isNoSuchKey) {
-          return json({ error: 'not_found', message: '秘密鍵ファイルが見つかりません。サーバーを再作成してください' }, 404)
-        }
-        return json({ error: 'server_error', message: 'ダウンロードの準備に失敗しました' }, 500)
+        console.log(JSON.stringify({ event: 'download-key', step: 'presign', result: 'error', user_id: username, error: e.message, requested_at: new Date().toISOString() }))
+        return json({ error: 'server_error', message: 'ダウンロードの準備に失敗しました。サーバー管理者にお問い合わせください' }, 500)
       }
     }
 

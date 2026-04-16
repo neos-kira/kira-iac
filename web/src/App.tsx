@@ -818,13 +818,22 @@ function App() {
       })
       const data = (await res.json()) as { ok?: boolean; presignedUrl?: string; filename?: string; keyPairName?: string; error?: string; message?: string }
       if (!res.ok || !data.presignedUrl) {
-        setRedownloadError(data.message ?? 'ダウンロードに失敗しました')
+        // HTTPステータス別エラーメッセージ
+        if (res.status === 401 || res.status === 403) {
+          setRedownloadError(data.message ?? '認証エラーです。再ログインしてください')
+        } else if (res.status === 404) {
+          setRedownloadError(data.message ?? '秘密鍵ファイルが見つかりません。サーバーを再作成してください')
+        } else if (res.status >= 500) {
+          setRedownloadError(data.message ?? 'ダウンロードに失敗しました。サーバー管理者にお問い合わせください')
+        } else {
+          setRedownloadError(data.message ?? 'ダウンロードに失敗しました。しばらくして再試行してください')
+        }
         return
       }
       // presigned URLからblobを取得してダウンロード（mobile Safari対応）
       const pemRes = await fetch(data.presignedUrl)
       if (!pemRes.ok) {
-        setRedownloadError('ダウンロードに失敗しました')
+        setRedownloadError('ダウンロードに失敗しました。しばらくして再試行してください')
         return
       }
       const blob = await pemRes.blob()
@@ -837,7 +846,7 @@ function App() {
       document.body.removeChild(a)
       URL.revokeObjectURL(blobUrl)
     } catch {
-      setRedownloadError('ダウンロードに失敗しました')
+      setRedownloadError('ダウンロードに失敗しました。しばらくして再試行してください')
     } finally {
       setIsRedownloading(false)
     }

@@ -126,7 +126,7 @@ resource "aws_iam_role_policy" "progress_api_s3_keys" {
     Version = "2012-10-17"
     Statement = [{
       Effect   = "Allow"
-      Action   = ["s3:PutObject", "s3:GetObject"]
+      Action   = ["s3:PutObject", "s3:GetObject", "s3:HeadObject"]
       Resource = "arn:aws:s3:::kira-project-dev-keys/*"
     }]
   })
