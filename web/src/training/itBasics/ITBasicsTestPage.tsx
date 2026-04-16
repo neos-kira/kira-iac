@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { IT_BASICS_CATEGORIES, type ITBasicsQuestion } from '../itBasicsData'
+import { getCurrentDisplayName } from '../../auth'
+import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../../progressApi'
+import type { TraineeProgressSnapshot } from '../../traineeProgressStorage'
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
@@ -26,10 +29,44 @@ export function ITBasicsTestPage() {
   const [answered, setAnswered] = useState(false)
   const [score, setScore] = useState(0)
   const [finished, setFinished] = useState(false)
+  const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
 
   useEffect(() => {
     document.title = cat ? `${cat.title} — テスト` : 'IT業界の歩き方'
   }, [cat])
+
+  useEffect(() => {
+    const load = async () => {
+      const username = getCurrentDisplayName().trim().toLowerCase()
+      if (!username || username === 'admin') return
+      const snap = await fetchMyProgress(username)
+      if (snap) setServerSnapshot(snap)
+    }
+    void load()
+  }, [])
+
+  // 合格時にDynamoDB保存（操作→保存→表示の順序を遵守）
+  useEffect(() => {
+    if (!finished || !cat) return
+    const isPassed = score >= cat.passingScore
+    if (!isPassed) return
+    const doSave = async () => {
+      const username = getCurrentDisplayName().trim().toLowerCase()
+      if (!username || username === 'admin' || !isProgressApiAvailable()) return
+      const base: TraineeProgressSnapshot = serverSnapshot ?? {
+        introConfirmed: false, introAt: null, wbsPercent: 0, chapterProgress: [],
+        currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
+      }
+      await postProgress(username, {
+        ...base,
+        itBasicsPassed: { ...(base.itBasicsPassed ?? {}), [cat.id]: true },
+        updatedAt: new Date().toISOString(),
+      })
+    }
+    void doSave()
+  // finished が true になった瞬間だけ実行する（score/cat/serverSnapshot は stable）
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished])
 
   if (!cat || questions.length === 0) {
     return (
