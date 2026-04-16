@@ -12,6 +12,24 @@ body,
 :root {
   --color-brand: #7dd3fc;
   --color-brand-hover: #38bdf8;
+
+  /* ===== z-index レイヤートークン =====
+     ここ以外でz-indexの数値を直接書くことを禁止します。
+     必ずこのCSS変数を参照してください。
+     layer-base          : auto  (通常フロー)
+     layer-sticky        :  100  (スティッキーヘッダー等)
+     layer-dropdown      : 1000  (ユーザーメニュー・セレクト)
+     layer-floating-panel: 1100  (AI講師チャットパネル)
+     layer-modal         : 1200  (モーダル)
+     layer-toast         : 1300  (通知トースト)
+     layer-tooltip       : 1400  (ツールチップ)
+  ============================================= */
+  --z-sticky: 100;
+  --z-dropdown: 1000;
+  --z-floating-panel: 1100;
+  --z-modal: 1200;
+  --z-toast: 1300;
+  --z-tooltip: 1400;
 }
 
 body {

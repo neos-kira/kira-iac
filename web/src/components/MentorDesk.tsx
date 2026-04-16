@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { BASE_URL, buildAuthHeaders, forceLogout } from '../progressApi'
+import { Z } from '../zIndex'
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string; image?: string }
 
@@ -205,7 +206,7 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
   // ── サイドバーモード（PCのみ） ──
   if (sidebar) {
     return (
-      <aside style={embedded ? { flex: 1, display: 'flex', flexDirection: 'column' as const, minHeight: 0 } : { position: 'fixed' as const, top: 64, right: 0, bottom: 0, width: 280, zIndex: 100 }} className={`flex flex-col ${embedded ? '' : 'border-l border-slate-200'} bg-white`}>
+      <aside style={embedded ? { flex: 1, display: 'flex', flexDirection: 'column' as const, minHeight: 0 } : { position: 'fixed' as const, top: 64, right: 0, bottom: 0, width: 280, zIndex: Z.sticky }} className={`flex flex-col ${embedded ? '' : 'border-l border-slate-200'} bg-white`}>
         {chatHeader}
 
         <div ref={scrollRef} className="flex-1 min-h-0 space-y-3 overflow-y-auto p-4" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -262,7 +263,7 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
           <button
             type="button"
             onClick={() => setInternalOpen(true)}
-            className="md:hidden fixed bottom-6 right-6 z-[9999] flex items-center justify-center w-14 h-14 rounded-full bg-sky-500 text-white shadow-2xl hover:bg-sky-600 transition-all"
+            className={`md:hidden fixed bottom-6 right-6 flex items-center justify-center w-14 h-14 rounded-full bg-sky-500 text-white shadow-2xl hover:bg-sky-600 transition-all`} style={{ zIndex: Z.floatingPanel }}
             aria-label="AI講師に聞く"
           >
             <span className="text-2xl">🎓</span>
@@ -270,11 +271,11 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
         )}
 
         {/* オーバーレイ */}
-        {open && <div className="md:hidden fixed inset-0 z-[9998] bg-black/30" onClick={onClose} />}
+        {open && <div className="md:hidden fixed inset-0 bg-black/30" style={{ zIndex: Z.floatingPanelBehind }} onClick={onClose} />}
 
         {/* チャットパネル（画面75%高さ） */}
         {open && (
-          <div className="md:hidden fixed bottom-0 left-0 right-0 z-[9999] flex flex-col bg-white rounded-t-2xl shadow-xl" style={{ height: '75vh' }}>
+          <div className="md:hidden fixed bottom-0 left-0 right-0 flex flex-col bg-white rounded-t-2xl shadow-xl" style={{ height: '75vh', zIndex: Z.floatingPanel }}>
             <header className="flex items-center justify-between bg-sky-50 border-b border-sky-100 px-4 py-3 rounded-t-2xl">
               <p className="text-sm font-semibold text-slate-800">🎓 AI講師</p>
               <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg leading-none">✕</button>

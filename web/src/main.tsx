@@ -26,6 +26,7 @@ import { IntroPage } from './training/IntroPage'
 import { AdminPage } from './admin/AdminPage'
 import { MentorDesk, INITIAL_MESSAGE, type ChatMessage } from './components/MentorDesk'
 import { SharedHeader } from './components/SharedHeader'
+import { Z } from './zIndex'
 import { ITBasicsTopPage } from './training/itBasics/ITBasicsTopPage'
 import { ITBasicsStudyPage } from './training/itBasics/ITBasicsStudyPage'
 import { ITBasicsTestPage } from './training/itBasics/ITBasicsTestPage'
@@ -162,9 +163,22 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const showBottomBar = showChat && !isMobile && !isWide
   const showMobile = showChat && isMobile
 
+  // ESCキーでAI講師パネルを閉じる
+  useEffect(() => {
+    if (!isAiOpen && !isBottomBarOpen && !isChatOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setIsAiOpen(false); setIsBottomBarOpen(false); setIsChatOpen(false) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isAiOpen, isBottomBarOpen, isChatOpen])
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', flexDirection: 'column' }}>
-      <SharedHeader onLogout={handleGlobalLogout} />
+      <SharedHeader
+        onLogout={handleGlobalLogout}
+        onMenuOpen={() => { setIsAiOpen(false); setIsBottomBarOpen(false); setIsChatOpen(false) }}
+      />
       <div style={{ display: 'flex', flex: 1, paddingBottom: showBottomBar ? 48 : 0 }}>
         {/* メインコンテンツ */}
         <div style={{ flex: '1 1 0', minWidth: 0, wordBreak: 'break-word' as const, position: 'relative' }}>
@@ -184,7 +198,11 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
         {showSidePanel && (
           <button
             type="button"
-            onClick={() => setIsAiOpen((v) => !v)}
+            onClick={() => {
+              const next = !isAiOpen
+              setIsAiOpen(next)
+              if (next) window.dispatchEvent(new CustomEvent('nic:close-user-menu'))
+            }}
             title={isAiOpen ? 'AI講師を閉じる' : 'AI講師に質問する'}
             style={{
               position: 'fixed',
@@ -202,7 +220,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: '0 4px 14px rgba(125,211,252,0.5)',
-              zIndex: 9999,
+              zIndex: Z.floatingPanel,
               transition: 'transform 0.15s, box-shadow 0.15s',
             }}
             onMouseEnter={(e) => {
@@ -226,7 +244,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
         <>
           {/* 展開パネル */}
           {isBottomBarOpen && (
-            <div style={{ position: 'fixed', bottom: 48, left: 0, right: 0, height: panelHeight, display: 'flex', flexDirection: 'column', background: 'white', borderTop: '1px solid #e5e7eb', zIndex: 9998, boxShadow: '0 -4px 16px rgba(0,0,0,0.08)' }}>
+            <div style={{ position: 'fixed', bottom: 48, left: 0, right: 0, height: panelHeight, display: 'flex', flexDirection: 'column', background: 'white', borderTop: '1px solid #e5e7eb', zIndex: Z.floatingPanelBehind, boxShadow: '0 -4px 16px rgba(0,0,0,0.08)' }}>
               <div onMouseDown={startDragY} style={{ height: 4, cursor: 'row-resize', background: 'transparent', flexShrink: 0, transition: 'background 0.15s' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#7dd3fc' }} onMouseLeave={(e) => { if (!isDragging.current) (e.currentTarget as HTMLElement).style.background = 'transparent' }} />
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 <MentorDesk context={ctx} sidebar embedded onClose={() => setIsBottomBarOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
@@ -235,8 +253,12 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
           )}
           {/* 固定バー */}
           <div
-            onClick={() => setIsBottomBarOpen((v) => !v)}
-            style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 48, background: 'white', borderTop: '1px solid #e5e7eb', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#0f172a' }}
+            onClick={() => {
+              const next = !isBottomBarOpen
+              setIsBottomBarOpen(next)
+              if (next) window.dispatchEvent(new CustomEvent('nic:close-user-menu'))
+            }}
+            style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 48, background: 'white', borderTop: '1px solid #e5e7eb', zIndex: Z.floatingPanel, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#0f172a' }}
           >
             <span style={{ fontSize: 18 }}>🎓</span> AI講師 <span style={{ fontSize: 12, color: '#9ca3af' }}>{isBottomBarOpen ? '▼' : '▲'}</span>
           </div>
@@ -245,7 +267,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
       {/* モード3: モバイル 🎓ボタン */}
       {showMobile && !isChatOpen && (
-        <button type="button" onClick={() => setIsChatOpen(true)} style={{ position: 'fixed', bottom: 24, right: 24, width: 52, height: 52, borderRadius: '50%', background: '#7dd3fc', color: '#0f172a', border: 'none', cursor: 'pointer', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(125,211,252,0.5)', zIndex: 9999 }}>
+        <button type="button" onClick={() => { setIsChatOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }} style={{ position: 'fixed', bottom: 24, right: 24, width: 52, height: 52, borderRadius: '50%', background: '#7dd3fc', color: '#0f172a', border: 'none', cursor: 'pointer', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(125,211,252,0.5)', zIndex: Z.floatingPanel }}>
           🎓
         </button>
       )}
@@ -265,11 +287,11 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
               flex-direction: column;
               background: white;
               border-radius: 16px 16px 0 0;
-              z-index: 200;
+              z-index: ${Z.floatingPanel};
               box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
             }
           `}</style>
-          <div onClick={() => setIsChatOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 150 }} />
+          <div onClick={() => setIsChatOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: Z.floatingPanelBehind }} />
           <div className="mobile-chat-panel">
             <MentorDesk context={ctx} sidebar embedded onClose={() => setIsChatOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
           </div>

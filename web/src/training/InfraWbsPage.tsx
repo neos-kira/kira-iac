@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ZChart } from '../zIndex'
 import {
   getTaskProgressList,
   getTrainingStartDate,
@@ -232,7 +233,7 @@ function GanttChart({ rows, ganttStart, ganttEnd }: { rows: WBSRow[]; ganttStart
             ))}
             {/* 今日の縦線（ヘッダー） */}
             {todayPct >= 0 && todayPct <= 100 && (
-              <div style={{ position: 'absolute', left: `${todayPct}%`, top: 0, bottom: 0, width: 1, background: '#0d9488', zIndex: 10 }} />
+              <div style={{ position: 'absolute', left: `${todayPct}%`, top: 0, bottom: 0, width: 1, background: '#0d9488', zIndex: ZChart.todayLine }} />
             )}
           </div>
         </div>
@@ -259,7 +260,7 @@ function GanttChart({ rows, ganttStart, ganttEnd }: { rows: WBSRow[]; ganttStart
             <div style={{ flex: 1, position: 'relative', minHeight: 36 }}>
               {/* 今日の縦線 */}
               {todayPct >= 0 && todayPct <= 100 && (
-                <div style={{ position: 'absolute', left: `${todayPct}%`, top: 0, bottom: 0, width: 1, background: '#0d9488', opacity: 0.6, zIndex: 5 }} />
+                <div style={{ position: 'absolute', left: `${todayPct}%`, top: 0, bottom: 0, width: 1, background: '#0d9488', opacity: 0.6, zIndex: ZChart.todayLineSub }} />
               )}
               {row.plannedStart !== '—' && (
                 <>
@@ -274,7 +275,7 @@ function GanttChart({ rows, ganttStart, ganttEnd }: { rows: WBSRow[]; ganttStart
                       height: row.level === 0 ? 14 : 10,
                       background: '#e2e8f0',
                       borderRadius: 4,
-                      zIndex: 2,
+                      zIndex: ZChart.bar,
                     }}
                   />
                   {/* 進捗バー */}
@@ -289,7 +290,7 @@ function GanttChart({ rows, ganttStart, ganttEnd }: { rows: WBSRow[]; ganttStart
                         height: row.level === 0 ? 14 : 10,
                         background: BAR_COLORS[row.status],
                         borderRadius: 4,
-                        zIndex: 3,
+                        zIndex: ZChart.barProgress,
                       }}
                     />
                   )}

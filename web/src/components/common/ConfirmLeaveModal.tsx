@@ -1,3 +1,5 @@
+import { Z } from '../../zIndex'
+
 interface Props {
   isOpen: boolean
   onSave: () => void
@@ -8,7 +10,7 @@ interface Props {
 export function ConfirmLeaveModal({ isOpen, onSave, onLeave, onCancel }: Props) {
   if (!isOpen) return null
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: Z.modal, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ background: 'white', borderRadius: 12, padding: 32, maxWidth: 400, width: '90%', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
         <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>ページを離れますか？</p>
         <p style={{ fontSize: 14, color: '#666', marginBottom: 24 }}>入力内容が保存されていません。</p>

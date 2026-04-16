@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { BASE_URL, buildAuthHeaders, forceLogout } from '../progressApi'
+import { Z } from '../zIndex'
 
 type Msg = { role: 'user' | 'assistant'; content: string; image?: string }
 
@@ -139,7 +140,7 @@ export function MentorDeskMobileButton() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999 }}
+        style={{ position: 'fixed', bottom: 24, right: 24, zIndex: Z.floatingPanel }}
         className="flex h-14 w-14 items-center justify-center rounded-full bg-sky-500 text-2xl text-white shadow-lg hover:bg-sky-600"
         aria-label="AI講師に聞く"
       >
@@ -147,11 +148,11 @@ export function MentorDeskMobileButton() {
       </button>
 
       {isOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999 }} className="flex flex-col justify-end bg-black/20" onClick={() => setIsOpen(false)}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: Z.floatingPanel }} className="flex flex-col justify-end bg-black/20" onClick={() => setIsOpen(false)}>
           <div className="flex flex-col rounded-t-2xl bg-white" style={{ height: '60vh' }} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-sky-100 bg-sky-50 px-3 py-2 rounded-t-2xl shrink-0">
               <span className="text-sm font-semibold text-sky-800">🎓 AI講師</span>
-              <button type="button" onClick={(e) => { e.stopPropagation(); setIsOpen(false) }} style={{ zIndex: 10000 }} className="p-2 text-slate-500 hover:text-slate-800 text-lg">✕</button>
+              <button type="button" onClick={(e) => { e.stopPropagation(); setIsOpen(false) }} className="p-2 text-slate-500 hover:text-slate-800 text-lg">✕</button>
             </div>
 
             <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
