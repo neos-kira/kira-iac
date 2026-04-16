@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { INFRA_BASIC_1_CLEARED_KEY } from './infraBasic1Data'
 import { fetchMyProgress, postProgress, isProgressApiAvailable, buildAuthHeaders, BASE_URL } from '../progressApi'
 import { getCurrentDisplayName } from '../auth'
@@ -79,7 +79,7 @@ function CodeBlock({ code }: { code: string }) {
 }
 
 export function InfraBasic1Page() {
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
   const [isLoading, setIsLoading] = useState(true)
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const [gradeState, setGradeState] = useState<GradeState>({})

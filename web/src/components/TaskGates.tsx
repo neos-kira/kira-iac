@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { isTask1Cleared, isTask2Cleared } from '../training/trainingWbsData'
 import { getCurrentUsername } from '../auth'
 
@@ -19,7 +19,7 @@ function isBypassUser(): boolean {
  * IntroGate の内側で使用すること（はじめに完了が前提）。
  */
 export function Task1Gate({ children }: Props) {
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
 
   useEffect(() => {
     if (!isBypassUser() && !isTask1Cleared()) {
@@ -38,7 +38,7 @@ export function Task1Gate({ children }: Props) {
  * IntroGate + Task1Gate の内側で使用すること。
  */
 export function Task2Gate({ children }: Props) {
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
 
   useEffect(() => {
     if (!isBypassUser() && !isTask2Cleared()) {

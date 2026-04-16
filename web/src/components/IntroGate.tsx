@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { fetchMyProgress } from '../progressApi'
 import { getCurrentDisplayName } from '../auth'
 
@@ -11,7 +11,7 @@ type Props = { children: React.ReactNode }
  * serverSnapshotベースで判定する（localStorage非依存）。
  */
 export function IntroGate({ children }: Props) {
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
   const [status, setStatus] = useState<'loading' | 'allowed' | 'blocked'>('loading')
 
   useEffect(() => {

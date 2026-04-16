@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { useSafeNavigate } from '../../hooks/useSafeNavigate'
 import { IT_BASICS_CATEGORIES, type ITBasicsQuestion } from '../itBasicsData'
 
 function shuffle<T>(arr: T[]): T[] {
@@ -12,7 +13,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export function ITBasicsTestPage() {
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
   const { categoryId } = useParams<{ categoryId: string }>()
   const cat = IT_BASICS_CATEGORIES.find((c) => c.id === categoryId)
 

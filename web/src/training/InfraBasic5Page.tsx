@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import * as XLSX from 'xlsx'
 import { getProgressKey } from './trainingWbsData'
 import {
@@ -35,7 +35,7 @@ const RATING_STYLES: Record<Rating, { bg: string; label: string; icon: string }>
 }
 
 export function InfraBasic5Page() {
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)

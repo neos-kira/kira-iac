@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { getCurrentUsername } from '../auth'
 import { VI_STEPS, SHELL_QUESTIONS } from './InfraBasic4Data'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
@@ -27,7 +27,7 @@ const RATING_STYLES: Record<Rating, { bg: string; icon: string; label: string }>
 }
 
 export function InfraBasic4Page() {
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
   const username = getCurrentUsername()
   const isKiraTest = username === 'kira-test'
 

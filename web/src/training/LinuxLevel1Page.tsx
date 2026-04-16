@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { getProgressKey } from './trainingWbsData'
 import { LINUX_LEVEL1_QUESTIONS, L1_CLEARED_KEY, L1_PROGRESS_KEY } from './linuxLevel1Data'
 import type { QuizQuestion } from './linuxLevel1Data'
@@ -117,7 +117,7 @@ function getPartQuestions(partIdx: number): QuizQuestion[] {
 
 
 export function LinuxLevel1Page() {
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
   const storageKey = getProgressKey(L1_PROGRESS_KEY)
   const clearedKey = getProgressKey(L1_CLEARED_KEY)
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import type { QuizQuestion } from './linuxLevel1Data'
 
 type Props = {
@@ -72,7 +72,7 @@ export function TrainingQuizFrame({
   serverInitialIndex,
   onInterrupt,
 }: Props) {
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
   const total = questions.length
   const initial = typeof serverInitialIndex === 'number' && serverInitialIndex > 0 && serverInitialIndex < total
     ? { currentIndex: serverInitialIndex, answers: [] as number[] }

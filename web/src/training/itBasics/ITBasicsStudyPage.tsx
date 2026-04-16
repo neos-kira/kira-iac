@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { useSafeNavigate } from '../../hooks/useSafeNavigate'
 import { IT_BASICS_CATEGORIES } from '../itBasicsData'
 import { Server, Code2, ShieldCheck, Cloud, GitCommitHorizontal, RefreshCw, KanbanSquare, ClipboardCheck, MessageSquare, Mail, Clock, Users, Lock, AlertTriangle, FileSearch, Shield, Building2, FileText, UserCheck, Handshake, AlertOctagon, Settings, Search, Wrench, Bot, Sparkles, ShieldAlert, HelpCircle } from 'lucide-react'
 
@@ -44,7 +45,7 @@ const STUDY_ILLUSTRATIONS: Record<string, React.ReactNode[]> = {
 }
 
 export function ITBasicsStudyPage() {
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
   const { categoryId } = useParams<{ categoryId: string }>()
   const cat = IT_BASICS_CATEGORIES.find((c) => c.id === categoryId)
 

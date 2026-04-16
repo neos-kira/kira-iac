@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { getProgressKey } from './trainingWbsData'
 import {
   INFRA_BASIC_3_2_CLEARED_KEY,
@@ -149,7 +149,7 @@ const RATING_CONFIG: Record<Rating, {
 }
 
 export function InfraBasic32Page() {
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
   const stateKey = getProgressKey(INFRA_BASIC_3_2_STATE_KEY)
   const clearedKey = getProgressKey(INFRA_BASIC_3_2_CLEARED_KEY)
   const [isLoading, setIsLoading] = useState(true)

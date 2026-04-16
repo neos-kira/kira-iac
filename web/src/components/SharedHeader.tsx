@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
+import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { NeOSLogo } from './NeOSLogo'
 import { getCurrentDisplayName } from '../auth'
 import { fetchMe } from '../progressApi'
@@ -27,7 +28,7 @@ export function SharedHeader({ delayed, progressPct, completedCount, totalCount,
   const menuContainerRef = useRef<HTMLDivElement>(null)
   const wbsHelpContainerRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
   const [resolvedName, setResolvedName] = useState(() => {
     const cached = getCurrentDisplayName()
     if (cached) return cached

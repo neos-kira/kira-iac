@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { fetchAdminUsers, stopAllServers, deleteAdminUser, type AdminUser } from '../accountsApi'
 import { UserCreateModal } from '../components/UserCreateModal'
 import { ProgressDetailModal } from '../components/ProgressDetailModal'
@@ -42,7 +42,7 @@ function StatCard({ label, value, sub, danger }: { label: string; value: number 
 }
 
 export function AdminPage() {
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { setIntroConfirmed, setIntroConfirmedForUser, clearIntroForCurrentUser } from './introGate'
 import { getCurrentDisplayName } from '../auth'
 import { Confetti } from '../components/Confetti'
@@ -131,7 +131,7 @@ function StepProgress({ current }: { current: number }) {
 // ── メインコンポーネント ───────────────────────────────────────────────────────
 
 export function IntroPage() {
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
   const usernameAtMountRef = useRef<string | null>(null)
 
   // 現在表示するステップ（DynamoDBのintroStepが正）

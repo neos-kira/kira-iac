@@ -313,20 +313,36 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[ErrorBoundary]', error, info.componentStack)
+    // エラー情報をlocalStorageに保存（デバッグ用）
+    try {
+      localStorage.setItem('__nic_last_error', JSON.stringify({
+        message: error.message,
+        stack: error.stack ?? '',
+        componentStack: info.componentStack ?? '',
+        timestamp: new Date().toISOString(),
+        url: window.location.href,
+      }))
+    } catch {
+      // localStorage 書き込み失敗は無視
+    }
   }
   render() {
     if (this.state.hasError) {
+      // 完全静的フォールバック: setState / navigate は一切呼ばない
+      // "トップに戻る" は window.location.href でページ全体をリロード
       return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24, background: '#f8fafc' }}>
           <p style={{ fontSize: 16, fontWeight: 600, color: '#1e293b' }}>表示中にエラーが発生しました</p>
-          <p style={{ fontSize: 13, color: '#64748b', maxWidth: 400, textAlign: 'center' }}>{this.state.error?.message}</p>
-          <button
-            type="button"
-            onClick={() => { this.setState({ hasError: false, error: null }); window.location.hash = '#/' }}
-            style={{ background: '#0ea5e9', color: 'white', border: 'none', borderRadius: 8, padding: '10px 24px', fontSize: 14, cursor: 'pointer' }}
+          <details style={{ maxWidth: 400, textAlign: 'center' }}>
+            <summary style={{ fontSize: 13, color: '#64748b', cursor: 'pointer' }}>{this.state.error?.message ?? 'Unknown error'}</summary>
+            <pre style={{ fontSize: 11, color: '#94a3b8', textAlign: 'left', marginTop: 8, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{this.state.error?.stack}</pre>
+          </details>
+          <a
+            href="/"
+            style={{ background: '#0ea5e9', color: 'white', border: 'none', borderRadius: 8, padding: '10px 24px', fontSize: 14, cursor: 'pointer', textDecoration: 'none' }}
           >
             トップに戻る
-          </button>
+          </a>
         </div>
       )
     }

@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { flushSync } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
+import { useSafeNavigate } from './hooks/useSafeNavigate'
 import { OpenInNewTabButton } from './components/OpenInNewTabButton'
 import { NeOSLogo } from './components/NeOSLogo'
 import { SharedHeader } from './components/SharedHeader'
@@ -734,7 +734,7 @@ function App() {
     }
   }, [isAdminView])
 
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
 
   /** 演習サーバー作成（実EC2） */
   const handleCreateServer = async () => {
@@ -1978,7 +1978,7 @@ type PlaceholderProps = {
 }
 
 function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus, onTogglePin, onOpenInfraOrShowIntro, onOpenIntro, onOpenWbs }: PlaceholderProps) {
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
   if (resolution.feature === 'training') {
     const category = resolution.training.category
 

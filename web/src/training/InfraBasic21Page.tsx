@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { getProgressKey } from './trainingWbsData'
 import {
   INFRA_BASIC_21_DEFAULT_STATE,
@@ -13,7 +13,7 @@ import {
 } from './infraBasic21Data'
 
 export function InfraBasic21Page() {
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
   const storageKey = getProgressKey(INFRA_BASIC_21_STORAGE_KEY)
   const [state, setState] = useState<InfraBasic21StoredState>(() => loadInfraBasic21State(storageKey))
   const formRef = useRef<HTMLDivElement>(null)

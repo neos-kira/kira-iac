@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useSafeNavigate } from './hooks/useSafeNavigate'
 import { NeOSLogo } from './components/NeOSLogo'
 import { setLoggedIn, setCurrentRole } from './auth'
 import { useAuth } from './AuthContext'
@@ -15,7 +15,7 @@ let mountCount = 0
 
 export function LoginPage() {
   const instanceId = useRef(++mountCount)
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
   const { refreshAuth } = useAuth()
   console.log(`[LoginPage] render, instance=${instanceId.current}`)
 
