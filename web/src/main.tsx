@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useState, useRef, useCallback } from 'react'
+import { StrictMode, useEffect, useState, useRef, useCallback, Component, type ReactNode, type ErrorInfo } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { DeskOpenProvider } from './deskOpenContext'
@@ -303,6 +303,37 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
 import { IntroGate } from './components/IntroGate'
 import { Task1Gate, Task2Gate } from './components/TaskGates'
 
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('[ErrorBoundary]', error, info.componentStack)
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24, background: '#f8fafc' }}>
+          <p style={{ fontSize: 16, fontWeight: 600, color: '#1e293b' }}>表示中にエラーが発生しました</p>
+          <p style={{ fontSize: 13, color: '#64748b', maxWidth: 400, textAlign: 'center' }}>{this.state.error?.message}</p>
+          <button
+            type="button"
+            onClick={() => { this.setState({ hasError: false, error: null }); window.location.hash = '#/' }}
+            style={{ background: '#0ea5e9', color: 'white', border: 'none', borderRadius: 8, padding: '10px 24px', fontSize: 14, cursor: 'pointer' }}
+          >
+            トップに戻る
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
 function getDisplayName(): string {
   return getCurrentDisplayName()
 }
@@ -368,6 +399,7 @@ function ManagerRoute({ children }: { children: React.ReactNode }) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
+    <ErrorBoundary>
     <HashRouter>
       <AuthProvider>
         <DeskOpenProvider>
@@ -394,10 +426,13 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/it-basics" element={<ITBasicsTopPage />} />
             <Route path="/it-basics/:categoryId/study" element={<ITBasicsStudyPage />} />
             <Route path="/it-basics/:categoryId/test" element={<ITBasicsTestPage />} />
+            <Route path="/home" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </LayoutWrapper>
         </DeskOpenProvider>
       </AuthProvider>
     </HashRouter>
+    </ErrorBoundary>
   </StrictMode>,
 )

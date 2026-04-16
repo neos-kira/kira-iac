@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import * as XLSX from 'xlsx'
 import { getProgressKey } from './trainingWbsData'
 import {
@@ -34,6 +35,7 @@ const RATING_STYLES: Record<Rating, { bg: string; label: string; icon: string }>
 }
 
 export function InfraBasic5Page() {
+  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -133,7 +135,7 @@ export function InfraBasic5Page() {
       if (!ok) { setSaveError('保存に失敗しました'); setIsSaving(false); return }
     }
     setIsSaving(false)
-    window.location.hash = '#/'
+    navigate('/')
   }
 
   const handleReviewScore = useCallback(
@@ -267,7 +269,7 @@ export function InfraBasic5Page() {
             </p>
             <button
               type="button"
-              onClick={() => { window.location.hash = '#/' }}
+              onClick={() => { navigate('/') }}
               className="mt-4 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700"
             >
               トップに戻る

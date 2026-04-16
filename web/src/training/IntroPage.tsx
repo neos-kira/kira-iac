@@ -259,7 +259,7 @@ export function IntroPage() {
       }
     }
     setIsSaving(false)
-    window.location.hash = '#/'
+    navigate('/')
   }
 
   // ── Step 1（オリエンテーション）完了 ────────────────────────────────────

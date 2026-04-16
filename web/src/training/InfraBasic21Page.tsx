@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getProgressKey } from './trainingWbsData'
 import {
   INFRA_BASIC_21_DEFAULT_STATE,
@@ -12,6 +13,7 @@ import {
 } from './infraBasic21Data'
 
 export function InfraBasic21Page() {
+  const navigate = useNavigate()
   const storageKey = getProgressKey(INFRA_BASIC_21_STORAGE_KEY)
   const [state, setState] = useState<InfraBasic21StoredState>(() => loadInfraBasic21State(storageKey))
   const formRef = useRef<HTMLDivElement>(null)
@@ -216,7 +218,7 @@ export function InfraBasic21Page() {
         <div className="flex items-center justify-end">
           <button
             type="button"
-            onClick={() => { saveInfraBasic21State(state, storageKey); clearDirty(); window.location.hash = '#/' }}
+            onClick={() => { saveInfraBasic21State(state, storageKey); clearDirty(); navigate('/') }}
             className="rounded-lg border border-sky-500 px-4 py-2 text-xs font-medium text-sky-600 hover:bg-sky-50"
           >
             保存して中断
@@ -594,7 +596,7 @@ export function InfraBasic21Page() {
         <div className="flex justify-center">
           <button
             type="button"
-            onClick={() => { saveInfraBasic21State(state, storageKey); clearDirty(); window.location.hash = '#/' }}
+            onClick={() => { saveInfraBasic21State(state, storageKey); clearDirty(); navigate('/') }}
             className="rounded-lg border border-sky-500 px-6 py-2.5 text-sm font-medium text-sky-600 hover:bg-sky-50"
           >
             保存して中断

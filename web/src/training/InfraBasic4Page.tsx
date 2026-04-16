@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getCurrentUsername } from '../auth'
 import { VI_STEPS, SHELL_QUESTIONS } from './InfraBasic4Data'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
@@ -26,6 +27,7 @@ const RATING_STYLES: Record<Rating, { bg: string; icon: string; label: string }>
 }
 
 export function InfraBasic4Page() {
+  const navigate = useNavigate()
   const username = getCurrentUsername()
   const isKiraTest = username === 'kira-test'
 
@@ -201,7 +203,7 @@ export function InfraBasic4Page() {
       }
     }
     setIsSaving(false)
-    window.location.hash = '#/'
+    navigate('/')
   }
 
   return (
@@ -390,7 +392,7 @@ export function InfraBasic4Page() {
             </p>
             <button
               type="button"
-              onClick={() => { window.location.hash = '#/training/infra-basic-5' }}
+              onClick={() => navigate('/training/infra-basic-5')}
               className="mt-3 w-full rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-700"
             >
               課題5：サーバー構築へ進む →

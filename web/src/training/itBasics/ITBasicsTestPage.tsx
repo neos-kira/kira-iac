@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { IT_BASICS_CATEGORIES, type ITBasicsQuestion } from '../itBasicsData'
 
 function shuffle<T>(arr: T[]): T[] {
@@ -12,6 +12,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export function ITBasicsTestPage() {
+  const navigate = useNavigate()
   const { categoryId } = useParams<{ categoryId: string }>()
   const cat = IT_BASICS_CATEGORIES.find((c) => c.id === categoryId)
 
@@ -95,7 +96,7 @@ export function ITBasicsTestPage() {
                   もう一度
                 </button>
               )}
-              <button type="button" onClick={() => { window.location.hash = '#/it-basics' }} className="rounded-xl bg-white border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+              <button type="button" onClick={() => { navigate('/it-basics') }} className="rounded-xl bg-white border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
                 カテゴリ一覧へ
               </button>
             </div>

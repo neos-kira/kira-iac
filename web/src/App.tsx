@@ -284,7 +284,7 @@ function App() {
 
   function goToIntroAndClosePopup() {
     setShowIntroRequiredPopup(false)
-    window.location.hash = '#/training/intro'
+    navigate('/training/intro')
   }
 
   async function handleSubmit(event: React.FormEvent, valueOverride?: string) {
@@ -905,6 +905,13 @@ function App() {
         ].reduce((a, b) => a + b, 0)
         return { pct: Math.round(subCleared / 8 * 100), completed: subCleared, total: 8 }
       })()
+  if (!isSnapLoaded && !isAdminView) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-200 border-t-sky-500" />
+      </div>
+    )
+  }
   return (
     <div className="min-h-screen text-slate-800">
       {/* サーバー作成成功モーダル */}
@@ -960,10 +967,10 @@ function App() {
           progressPct={progressPct?.pct ?? null}
           completedCount={progressPct?.completed}
           totalCount={progressPct?.total}
-          onWbs={() => { window.location.hash = '#/training/infra-wbs' }}
+          onWbs={() => navigate('/training/infra-wbs')}
           onLogout={handleLogout}
           isAdmin={isAdminView}
-          onAdminMenu={() => (window.location.hash = '#/admin')}
+          onAdminMenu={() => navigate('/admin')}
           onAccountPanel={() => setShowAccountPanel(true)}
         />
 
@@ -1294,7 +1301,7 @@ function App() {
                   <div className="rounded-2xl border-2 border-sky-400 bg-white p-6 shadow-sm">
                     <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
                     <p className="mt-1 text-sm text-slate-700">{stepLabels[introStep]}</p>
-                    <button type="button" onClick={() => { window.location.hash = '#/training/intro' }} className="mt-4 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2.5 text-sm font-medium hover:bg-sky-100">つづきから →</button>
+                    <button type="button" onClick={() => navigate('/training/intro')} className="mt-4 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2.5 text-sm font-medium hover:bg-sky-100">つづきから →</button>
                   </div>
                 )
               }
@@ -1507,8 +1514,8 @@ function App() {
                       if (isIntroCompleted) window.open(url, '_blank')
                       else setShowIntroRequiredPopup(true)
                     }}
-                    onOpenIntro={() => { window.location.hash = '#/training/intro' }}
-                    onOpenWbs={() => { window.location.hash = '#/training/infra-wbs' }}
+                    onOpenIntro={() => navigate('/training/intro')}
+                    onOpenWbs={() => navigate('/training/infra-wbs')}
                   />
                 </div>
               </section>
@@ -1542,7 +1549,7 @@ function App() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => { window.location.hash = '#/training/intro' }}
+                      onClick={() => navigate('/training/intro')}
                       className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100"
                     >
                       開く
@@ -1821,7 +1828,7 @@ function App() {
 
               type TaskItem = { name: string; sub: string; status: 'done' | 'active' | 'todo'; action: () => void }
               const linuxTasks: TaskItem[] = [
-                { name: 'はじめに', sub: '行動基準・セキュリティ基礎', status: introOk ? 'done' : (Number(snap?.introStep ?? 0) >= 1 ? 'active' : 'todo'), action: () => { window.location.hash = '#/training/intro' } },
+                { name: 'はじめに', sub: '行動基準・セキュリティ基礎', status: introOk ? 'done' : (Number(snap?.introStep ?? 0) >= 1 ? 'active' : 'todo'), action: () => navigate('/training/intro') },
                 { name: 'Linux基本操作・コマンド', sub: 'ツール操作・Linuxコマンド30問', status: infra1Ok ? 'done' : ((snap?.infra1Checkboxes ?? []).some(Boolean) || (snap?.l1CurrentPart ?? 0) > 0 ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
                 { name: 'ネットワーク基礎', sub: 'ネットワーク実践・TCP/IP10問', status: infra2Ok ? 'done' : ((snap?.l2CurrentQuestion ?? 0) > 0 ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
                 { name: 'ファイル操作・viエディタ', sub: 'OS/仮想化/クラウド解説・記述チェック', status: infra3Ok ? 'done' : (Object.keys(snap?.infra32Answers ?? {}).length > 0 ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
@@ -1912,7 +1919,7 @@ function App() {
                         </div>
                         <button
                           type="button"
-                          onClick={() => { window.location.hash = '#/it-basics' }}
+                          onClick={() => navigate('/it-basics')}
                           className="flex-shrink-0 rounded-md bg-sky-50 text-sky-700 border border-sky-200 px-3 py-1.5 text-[11px] font-medium hover:bg-sky-100 transition-colors"
                         >開く</button>
                       </li>
@@ -1942,6 +1949,7 @@ type PlaceholderProps = {
 }
 
 function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus, onTogglePin, onOpenInfraOrShowIntro, onOpenIntro, onOpenWbs }: PlaceholderProps) {
+  const navigate = useNavigate()
   if (resolution.feature === 'training') {
     const category = resolution.training.category
 
@@ -2181,7 +2189,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
               </div>
               <button
                 type="button"
-                onClick={() => { window.location.hash = '#/it-basics' }}
+                onClick={() => navigate('/it-basics')}
                 className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100"
               >
                 開く

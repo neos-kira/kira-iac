@@ -2,6 +2,7 @@
  * NeOS IT College 正式ロゴ（指定画像を使用）
  * 全ページでこのコンポーネントに統一すること。ロゴを勝手に変えないこと。
  */
+import { useNavigate } from 'react-router-dom'
 
 type Props = {
   className?: string
@@ -14,6 +15,7 @@ type Props = {
 const LOGO_SRC = '/logo-neos-it-college.png'
 
 export function NeOSLogo({ className = '', height = 48, clipTop = false, noLink = false }: Props) {
+  const navigate = useNavigate()
   if (clipTop) {
     return (
       <div className={`flex justify-center overflow-hidden ${className}`} style={{ height: 36 }}>
@@ -31,7 +33,7 @@ export function NeOSLogo({ className = '', height = 48, clipTop = false, noLink 
   return (
     <div
       className={`inline-flex items-center ${noLink ? '' : 'cursor-pointer'} ${className}`}
-      onClick={noLink ? undefined : () => { window.location.hash = '#/' }}
+      onClick={noLink ? undefined : () => navigate('/')}
       title={noLink ? undefined : 'トップに戻る'}
       style={{ backgroundColor: 'transparent' }}
     >

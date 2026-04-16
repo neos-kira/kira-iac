@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getProgressKey } from './trainingWbsData'
 import { INFRA_BASIC_3_1_DONE_KEY } from './infraBasic3Data'
 import { getCurrentDisplayName } from '../auth'
@@ -6,6 +7,7 @@ import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progre
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 
 export function InfraBasic31Page() {
+  const navigate = useNavigate()
   const key = getProgressKey(INFRA_BASIC_3_1_DONE_KEY)
   const [ack, setAck] = useState(() => {
     if (typeof window === 'undefined') return false
@@ -314,7 +316,7 @@ export function InfraBasic31Page() {
             <button
               type="button"
               disabled={!ack}
-              onClick={() => (window.location.hash = '#/training/infra-basic-3-2')}
+              onClick={() => navigate('/training/infra-basic-3-2')}
               className="rounded-xl bg-sky-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
               理論を理解し、確認テストへ進む

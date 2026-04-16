@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { IT_BASICS_CATEGORIES } from '../itBasicsData'
 import { Server, Code2, ShieldCheck, Cloud, GitCommitHorizontal, RefreshCw, KanbanSquare, ClipboardCheck, MessageSquare, Mail, Clock, Users, Lock, AlertTriangle, FileSearch, Shield, Building2, FileText, UserCheck, Handshake, AlertOctagon, Settings, Search, Wrench, Bot, Sparkles, ShieldAlert, HelpCircle } from 'lucide-react'
 
@@ -44,6 +44,7 @@ const STUDY_ILLUSTRATIONS: Record<string, React.ReactNode[]> = {
 }
 
 export function ITBasicsStudyPage() {
+  const navigate = useNavigate()
   const { categoryId } = useParams<{ categoryId: string }>()
   const cat = IT_BASICS_CATEGORIES.find((c) => c.id === categoryId)
 
@@ -66,7 +67,7 @@ export function ITBasicsStudyPage() {
           
           <button
             type="button"
-            onClick={() => { window.location.hash = '#/it-basics' }}
+            onClick={() => { navigate('/it-basics') }}
             className="rounded-lg px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 shadow-sm hover:bg-slate-50"
           >
             カテゴリ一覧へ

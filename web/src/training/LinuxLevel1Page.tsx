@@ -365,7 +365,7 @@ export function LinuxLevel1Page() {
 
     // ③ 保存完了後に遷移
     setIsSaving(false)
-    window.location.hash = '#/'
+    navigate('/')
   }
 
   // ────────── 読み込み中 ──────────
