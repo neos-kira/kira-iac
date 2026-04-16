@@ -151,8 +151,6 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #eff6ff 50%, #e0f2fe 100%)' }}>
-      {/* アクセントバー */}
-      <div className="w-[80px] h-[4px] rounded-full mb-4" style={{ background: '#7dd3fc' }} />
       <div className="w-full bg-white" style={{ maxWidth: 440, borderRadius: 16, padding: '56px', border: '1px solid rgba(14,165,233,0.15)' }}>
           <div className="flex justify-center mb-10">
             <NeOSLogo height={160} noLink={true} />
