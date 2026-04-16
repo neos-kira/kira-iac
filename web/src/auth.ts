@@ -54,8 +54,6 @@ export function getCurrentRole(): string {
   if (typeof window === 'undefined') return 'student'
   const v = safeGetItem(USER_ROLE_KEY) || ''
   if (v) return v
-  // admin ユーザーは常に manager
-  if (getCurrentDisplayName().trim().toLowerCase() === 'admin') return 'manager'
   return 'student'
 }
 

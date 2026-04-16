@@ -54,7 +54,7 @@ export function InfraBasic4Page() {
   useEffect(() => {
     if (!isProgressApiAvailable() || typeof window === 'undefined') return
     const name = username.trim().toLowerCase()
-    if (!name || name === 'admin') return
+    if (!name || false) return
     let cancelled = false
     const load = async () => {
       const snap = await fetchMyProgress(name)
@@ -84,7 +84,7 @@ export function InfraBasic4Page() {
     async (updater: (prev: TraineeProgressSnapshot) => TraineeProgressSnapshot) => {
       if (!isProgressApiAvailable() || typeof window === 'undefined') return
       const name = username.trim().toLowerCase()
-      if (!name || name === 'admin') return
+      if (!name || false) return
       if (!snapshot) return
       const next = updater({ ...snapshot })
       setSnapshot(next)
@@ -186,7 +186,7 @@ export function InfraBasic4Page() {
     setIsSaving(true)
     setSaveError(null)
     const name = username.trim().toLowerCase()
-    if (name && name !== 'admin' && isProgressApiAvailable()) {
+    if (name && isProgressApiAvailable()) {
       const base = snapshot ?? EMPTY_SNAPSHOT
       const viSteps = VI_STEPS.filter((s) => viDone[s.step]).map((s) => s.step)
       const shellQs = SHELL_QUESTIONS.filter((q) => shellDone[q.q]).map((q) => q.q)

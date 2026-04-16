@@ -163,8 +163,8 @@ export function IntroPage() {
     const username = getCurrentDisplayName().trim().toLowerCase()
     if (usernameAtMountRef.current === null) usernameAtMountRef.current = username
 
-    if (!username || username === 'admin') {
-      // admin・未ログインはDynamoDB不使用、ステップ1から開始
+    if (!username || false) {
+      // 未ログインはDynamoDB不使用、ステップ1から開始
       setIsLoadingProgress(false)
       return
     }
@@ -237,7 +237,7 @@ export function IntroPage() {
     const uname = getCurrentDisplayName().trim().toLowerCase()
     console.log('[中断保存] username:', uname)
     console.log('[中断保存] serverSnapshot:', serverSnapshot)
-    if (uname && uname !== 'admin' && isProgressApiAvailable()) {
+    if (uname && isProgressApiAvailable()) {
       const payload: TraineeProgressSnapshot = {
         ...EMPTY_SNAPSHOT,
         ...(serverSnapshot ?? {}),
@@ -268,7 +268,7 @@ export function IntroPage() {
     setIsScoring(true)
     try {
       const username = getCurrentDisplayName().trim().toLowerCase()
-      if (username && username !== 'admin' && isProgressApiAvailable()) {
+      if (username && isProgressApiAvailable()) {
         const base = serverSnapshot ?? EMPTY_SNAPSHOT
         await postProgress(username, {
           ...base,
@@ -288,7 +288,7 @@ export function IntroPage() {
     setIsScoring(true)
     try {
       const username = getCurrentDisplayName().trim().toLowerCase()
-      if (username && username !== 'admin' && isProgressApiAvailable()) {
+      if (username && isProgressApiAvailable()) {
         const base = serverSnapshot ?? EMPTY_SNAPSHOT
         await postProgress(username, {
           ...base,
@@ -330,7 +330,7 @@ export function IntroPage() {
       const nextAnswers = { ...riskAnswers, [q.id]: 'PASS' }
       setRiskAnswers(nextAnswers)
       const username = getCurrentDisplayName().trim().toLowerCase()
-      if (username && username !== 'admin' && isProgressApiAvailable()) {
+      if (username && isProgressApiAvailable()) {
         const base = serverSnapshot ?? EMPTY_SNAPSHOT
         await postProgress(username, {
           ...base,
@@ -363,7 +363,7 @@ export function IntroPage() {
         const nextAnswers = { ...riskAnswers, [q.id]: currentInput }
         setRiskAnswers(nextAnswers)
         const username = getCurrentDisplayName().trim().toLowerCase()
-        if (username && username !== 'admin' && isProgressApiAvailable()) {
+        if (username && isProgressApiAvailable()) {
           const base = serverSnapshot ?? EMPTY_SNAPSHOT
           await postProgress(username, {
             ...base,
@@ -430,11 +430,11 @@ export function IntroPage() {
           const trainingStartDate = getTrainingStartDate() || null
           const introAt = new Date().toISOString()
           const who = usernameAtMountRef.current
-          if (who && who !== 'admin') setIntroConfirmedForUser(who)
+          if (who && true) setIntroConfirmedForUser(who)
           else setIntroConfirmed()
 
           const username = getCurrentDisplayName().trim().toLowerCase()
-          if (username && username !== 'admin' && isProgressApiAvailable()) {
+          if (username && isProgressApiAvailable()) {
             const base = serverSnapshot ?? EMPTY_SNAPSHOT
             await postProgress(username, {
               ...base,
@@ -450,7 +450,7 @@ export function IntroPage() {
         } else {
           // 次のセクション
           const username = getCurrentDisplayName().trim().toLowerCase()
-          if (username && username !== 'admin' && isProgressApiAvailable()) {
+          if (username && isProgressApiAvailable()) {
             const base = serverSnapshot ?? EMPTY_SNAPSHOT
             await postProgress(username, {
               ...base,
@@ -516,7 +516,7 @@ export function IntroPage() {
 
   // ── Render: ローディング ─────────────────────────────────────────────────
   const username = getCurrentDisplayName().trim().toLowerCase()
-  if (isLoadingProgress && username && username !== 'admin') {
+  if (isLoadingProgress && username) {
     return (
       <div className="min-h-screen bg-slate-100 text-slate-800 p-6 flex items-center justify-center">
         <p className="text-sm text-slate-500">読み込み中...</p>

@@ -175,7 +175,7 @@ export function InfraBasic32Page() {
   useEffect(() => {
     const load = async () => {
       const username = getCurrentDisplayName().trim().toLowerCase()
-      if (!username || username === 'admin') {
+      if (!username || false) {
         setIsLoading(false)
         return
       }
@@ -208,7 +208,7 @@ export function InfraBasic32Page() {
   const syncToDynamo = useCallback(
     async (answers: InfraBasic32Answers) => {
       const username = getCurrentDisplayName().trim().toLowerCase()
-      if (!username || username === 'admin' || !isProgressApiAvailable()) return
+      if (!username || false || !isProgressApiAvailable()) return
       const base = serverSnapshot ?? EMPTY_SNAPSHOT
       await postProgress(username, {
         ...base,
@@ -295,7 +295,7 @@ export function InfraBasic32Page() {
     setIsSaving(true)
     setSaveError(null)
     const username = getCurrentDisplayName().trim().toLowerCase()
-    if (username && username !== 'admin' && isProgressApiAvailable()) {
+    if (username && isProgressApiAvailable()) {
       const base = serverSnapshot ?? EMPTY_SNAPSHOT
       const answeredCount = Object.values(state.answers).filter((v) => v && v.trim()).length
       const ok = await postProgress(username, {

@@ -161,7 +161,7 @@ export function LinuxLevel1Page() {
   useEffect(() => {
     const restore = async () => {
       const username = getCurrentDisplayName().trim().toLowerCase()
-      if (!username || username === 'admin') {
+      if (!username || false) {
         setIsLoading(false)
         return
       }
@@ -288,7 +288,7 @@ export function LinuxLevel1Page() {
         window.localStorage.setItem(clearedKey, 'true')
         // DynamoDB即時同期：serverSnapshotをベースに変化した値だけ上書き
         const username = getCurrentDisplayName().trim().toLowerCase()
-        if (username && username !== 'admin' && isProgressApiAvailable()) {
+        if (username && isProgressApiAvailable()) {
           const base: TraineeProgressSnapshot = serverSnapshot ?? {
             introConfirmed: false, introAt: null, wbsPercent: 0, chapterProgress: [],
             currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
@@ -341,7 +341,7 @@ export function LinuxLevel1Page() {
 
     // ② DynamoDB に即時同期：serverSnapshotをベースに変化した値だけ上書き
     const username = getCurrentDisplayName().trim().toLowerCase()
-    if (username && username !== 'admin' && isProgressApiAvailable()) {
+    if (username && isProgressApiAvailable()) {
       const base: TraineeProgressSnapshot = serverSnapshot ?? {
         introConfirmed: false, introAt: null, wbsPercent: 0, chapterProgress: [],
         currentDay: 0, delayedIds: [], updatedAt: '', pins: [],

@@ -26,7 +26,7 @@ import { LOGIN_FLAG_KEY, getCurrentDisplayName, getCurrentRole, USER_ROLE_KEY } 
 import { restoreProgressToLocalStorage, type TraineeProgressSnapshot } from './traineeProgressStorage'
 import { isProgressApiAvailable, postProgress, fetchMyProgress, fetchProgressFromApi, buildAuthHeaders, BASE_URL } from './progressApi'
 import { createAccount, fetchAccounts, isAccountApiAvailable, deleteAccount, type Account } from './accountsApi'
-import { safeGetItem, safeSetItem, safeRemoveItem, safeSessionRemoveItem, clearCookieValue } from './utils/storage'
+import { safeGetItem, safeSetItem, safeRemoveItem, clearCookieValue } from './utils/storage'
 
 type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3' | 'infra-basic-4'
 type PinnableId = TrainingTaskId | 'intro'
@@ -55,8 +55,6 @@ function readTrainingStatus(): TrainingStatus {
 const TRAINING_PIN_KEY = 'kira-training-pins'
 const SEARCH_HISTORY_KEY = 'kira-search-history'
 const SEARCH_HISTORY_MAX = 10
-const ADMIN_SESSION_KEY = 'kira-admin-logged-in'
-const ADMIN_DELETE_PASSWORD = 'admin'
 
 function loadSearchHistory(): string[] {
   const raw = safeGetItem(SEARCH_HISTORY_KEY)
@@ -110,7 +108,6 @@ function getTrainingUrl(path: string) {
 
 function handleLogout() {
   if (typeof window === 'undefined') return
-  safeSessionRemoveItem(ADMIN_SESSION_KEY)
   safeRemoveItem(USER_DISPLAY_NAME_KEY)
   safeRemoveItem(LOGIN_FLAG_KEY)
   safeRemoveItem('kira-session-token')
@@ -187,7 +184,6 @@ function App() {
   const [accountMessage, setAccountMessage] = useState<string | null>(null)
   const [showAccountPanel, setShowAccountPanel] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
-  const [deletePassword, setDeletePassword] = useState('')
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [ec2Snapshots, setEc2Snapshots] = useState<Record<string, import('./progressApi').TraineeProgressFromApi>>({})
   const [ec2EditHost, setEc2EditHost] = useState<Record<string, string>>({})
@@ -435,7 +431,7 @@ function App() {
       const list = prev ?? []
       const exists = list.includes(id)
       const next = exists ? list.filter((p) => p !== id) : [...list, id]
-      if (name && name !== 'admin') guardedSavePins(name, next)
+      if (name) guardedSavePins(name, next)
       safeSetItem(TRAINING_PIN_KEY, JSON.stringify(next))
       return next
     })
@@ -505,15 +501,14 @@ function App() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showSearchHistory])
 
-  const displayName = getDisplayName()?.toLowerCase()
-  const isAdminView = displayName === 'admin' || getCurrentRole() === 'manager'
+  const isAdminView = getCurrentRole() === 'manager'
   const isKiraTest = isKiraTestUser()
 
   /** 初回のみ: サーバーから進捗を取得し pinnedTraining をセット。必要なら localStorage を 1 回だけサーバーにマージ。完了後に isDataReady を true にする。 */
   useEffect(() => {
     if (typeof window === 'undefined') return
     const name = getDisplayName().trim().toLowerCase()
-    if (isAdminView || !name || name === 'admin') {
+    if (isAdminView || !name) {
       setPinnedTraining([])
       isDataReady.current = true
       return
@@ -581,7 +576,7 @@ function App() {
       if (!cancelled) setEc2Snapshots(snaps)
       const baseIds = trainees
         .map((t) => (t.traineeId || '').trim().toLowerCase())
-        .filter((id) => id && id !== 'admin')
+        .filter((id) => !!id)
       const extraIds = ['j-terada']
       const allIds = Array.from(new Set([...baseIds, ...extraIds]))
       const existing = new Set(current.map((a) => a.username))
@@ -610,8 +605,8 @@ function App() {
     e.preventDefault()
     setAccountMessage(null)
     const name = newAccountName.trim().toLowerCase()
-    if (!name || name === 'admin') {
-      setAccountMessage('有効なユーザー名を入力してください。（admin は除外）')
+    if (!name) {
+      setAccountMessage('有効なユーザー名を入力してください。')
       return
     }
     if (!newAccountPassword) {
@@ -643,7 +638,7 @@ function App() {
     const trainees = await fetchProgressFromApi()
     const baseIds = trainees
       .map((t) => (t.traineeId || '').trim().toLowerCase())
-      .filter((id) => id && id !== 'admin')
+      .filter((id) => !!id)
     const extraIds = ['j-terada']
     const ids = Array.from(new Set([...baseIds, ...extraIds]))
     if (ids.length === 0) {
@@ -660,20 +655,14 @@ function App() {
     setAccountMessage(`既存の進捗から ${ids.length} 件のユーザーを取り込みました。（初期パスワードはユーザー名と同じです）`)
   }
 
-  async function handleConfirmDelete(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleConfirmDelete() {
     setDeleteError(null)
     if (!deleteTarget) return
-    if (deletePassword !== ADMIN_DELETE_PASSWORD) {
-      setDeleteError('パスワードが正しくありません。')
-      return
-    }
     const ok = await deleteAccount(deleteTarget)
     if (!ok) {
       setDeleteError('削除に失敗しました。時間をおいて再度お試しください。')
       return
     }
-    setDeletePassword('')
     setDeleteTarget(null)
     const list = await fetchAccounts()
     setAccounts(list)
@@ -704,7 +693,7 @@ function App() {
   useEffect(() => {
     if (isAdminView || !isProgressApiAvailable() || typeof window === 'undefined') return
     const name = getDisplayName().trim().toLowerCase()
-    if (!name || name === 'admin') return
+    if (!name) return
 
     let cancelled = false
     const load = async () => {
@@ -735,7 +724,7 @@ function App() {
   const handleCreateServer = async () => {
     if (isCreatingServer) return
     const username = getDisplayName().trim().toLowerCase()
-    if (!username || username === 'admin') return
+    if (!username) return
     setIsCreatingServer(true)
     setServerCreateProgress(5)
 
@@ -1061,7 +1050,6 @@ function App() {
                           setShowAccountPanel(false)
                           setAccountMessage(null)
                           setDeleteTarget(null)
-                          setDeletePassword('')
                           setDeleteError(null)
                         }}
                         className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600 hover:bg-slate-200"
@@ -1070,7 +1058,7 @@ function App() {
                       </button>
                     </div>
                     <p className="mt-1 text-xs text-slate-600">
-                      admin で作成したアカウントのみ、受講生画面からログインできます。
+                      管理者が作成したアカウントのみ、受講生画面からログインできます。
                     </p>
 
                     <form onSubmit={handleCreateAccount} className="mt-3 flex flex-wrap items-center gap-2">
@@ -1118,7 +1106,6 @@ function App() {
                                 type="button"
                                 onClick={() => {
                                   setDeleteTarget(a.username)
-                                  setDeletePassword('')
                                   setDeleteError(null)
                                 }}
                                 className="rounded-lg bg-rose-100 px-2 py-1 text-[10px] font-semibold text-rose-700 hover:bg-rose-200"
@@ -1135,37 +1122,28 @@ function App() {
                       <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-3">
                         <p className="text-xs font-semibold text-rose-800">ファイナルアンサー？</p>
                         <p className="mt-1 text-[11px] text-rose-700">
-                          ユーザー「{deleteTarget}」を削除します。admin のパスワードを再入力してください。
+                          ユーザー「{deleteTarget}」を削除します。この操作は取り消せません。
                         </p>
-                        <form onSubmit={handleConfirmDelete} className="mt-2 flex flex-col gap-2">
-                          <input
-                            type="password"
-                            value={deletePassword}
-                            onChange={(e) => setDeletePassword(e.target.value)}
-                            placeholder="admin パスワード"
-                            className="w-full rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-rose-300 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500"
-                          />
-                          {deleteError && <p className="text-[11px] text-rose-700">{deleteError}</p>}
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setDeleteTarget(null)
-                                setDeletePassword('')
-                                setDeleteError(null)
-                              }}
-                              className="rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
-                            >
-                              やめる
-                            </button>
-                            <button
-                              type="submit"
-                              className="rounded-lg bg-rose-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-rose-700"
-                            >
-                              削除する
-                            </button>
-                          </div>
-                        </form>
+                        {deleteError && <p className="mt-1 text-[11px] text-rose-700">{deleteError}</p>}
+                        <div className="mt-2 flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDeleteTarget(null)
+                              setDeleteError(null)
+                            }}
+                            className="rounded-lg bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
+                          >
+                            やめる
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { void handleConfirmDelete() }}
+                            className="rounded-lg bg-rose-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-rose-700"
+                          >
+                            削除する
+                          </button>
+                        </div>
                       </div>
                     )}
                     <div className="mt-5">

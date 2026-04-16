@@ -53,7 +53,7 @@ export function InfraBasic5Page() {
   useEffect(() => {
     const load = async () => {
       const username = getCurrentDisplayName().trim().toLowerCase()
-      if (!username || username === 'admin') { setIsLoading(false); return }
+      if (!username || false) { setIsLoading(false); return }
       const snap = await fetchMyProgress(username)
       if (snap) {
         setServerSnapshot(snap)
@@ -86,7 +86,7 @@ export function InfraBasic5Page() {
       nextReviewAnswers: Record<string, string>,
     ) => {
       const username = getCurrentDisplayName().trim().toLowerCase()
-      if (!username || username === 'admin' || !isProgressApiAvailable()) return
+      if (!username || false || !isProgressApiAvailable()) return
       const base = serverSnapshot ?? EMPTY_SNAPSHOT
       const allDone = INFRA5_SECTIONS.every((s) => nextSectionDone[s.id])
       await postProgress(username, {
@@ -123,7 +123,7 @@ export function InfraBasic5Page() {
     setIsSaving(true)
     setSaveError(null)
     const username = getCurrentDisplayName().trim().toLowerCase()
-    if (username && username !== 'admin' && isProgressApiAvailable()) {
+    if (username && isProgressApiAvailable()) {
       const base = serverSnapshot ?? EMPTY_SNAPSHOT
       const ok = await postProgress(username, {
         ...base,

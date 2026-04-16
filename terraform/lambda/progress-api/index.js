@@ -14,8 +14,8 @@ const client = new DynamoDBClient({})
 const TableName = process.env.TABLE_NAME
 const AccountsTableName = process.env.ACCOUNTS_TABLE_NAME
 const SessionsTableName = process.env.SESSIONS_TABLE_NAME || ''
-const AdminPassword = process.env.ADMIN_PASSWORD || ''
 const ScreenshotsBucket = process.env.SCREENSHOTS_BUCKET || 'kira-project-dev-screenshots'
+const RESERVED_USERNAMES = ['admin', 'root', 'system']
 
 /** Bedrock InvokeModel をリトライ付きで実行（ServiceUnavailableException 対策） */
 async function invokeModelWithRetry(command, maxRetries = 5) {
@@ -121,10 +121,9 @@ function inferIntroStep(item) {
   return 0
 }
 
-/** セッションユーザーのロールを取得（admin は常に 'manager'） */
+/** セッションユーザーのロールを取得 */
 async function getSessionRole(session) {
   if (!session) return null
-  if (session.username === 'admin') return 'manager'
   if (session.role) return session.role
   try {
     const res = await client.send(new GetItemCommand({
@@ -182,11 +181,10 @@ async function handler(event) {
 
       const body = JSON.parse(event.body || '{}')
       const traineeId = (body.traineeId || '').trim().toLowerCase()
-      if (!traineeId || traineeId === 'admin') {
+      if (!traineeId || RESERVED_USERNAMES.includes(traineeId)) {
         return json({ error: 'invalid traineeId' }, 400)
       }
-      // admin以外は自分のデータのみ更新可能
-      if (session.username !== 'admin' && traineeId !== session.username) {
+      if (traineeId !== session.username) {
         return json({ error: 'forbidden' }, 403)
       }
       const Item = {
@@ -514,8 +512,9 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       if (tenantId) {
         trainees = trainees.filter((t) => (t.tenantId || 'default') === tenantId)
       }
-      // admin以外は自分のデータのみ返す
-      if (session.username !== 'admin') {
+      // manager以外は自分のデータのみ返す
+      const sessionRole = await getSessionRole(session)
+      if (sessionRole !== 'manager') {
         trainees = trainees.filter((t) => (t.traineeId || '').toLowerCase() === session.username.toLowerCase())
       }
       // introStep / introConfirmed が未設定のレコードに対して他フィールドから推定して補完する
@@ -542,8 +541,8 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       }
       const body = JSON.parse(event.body || '{}')
       const username = (body.username || '').trim().toLowerCase()
-      if (!username || username === 'admin') {
-        return json({ error: 'invalid username' }, 400)
+      if (!username || RESERVED_USERNAMES.includes(username)) {
+        return json({ error: 'reserved username' }, 400)
       }
       const password = typeof body.password === 'string' ? body.password : ''
       if (!password) {
@@ -602,7 +601,7 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       const body = JSON.parse(event.body || '{}')
       const username = (body.username || '').trim().toLowerCase()
       const newPassword = typeof body.newPassword === 'string' ? body.newPassword : ''
-      if (!username || username === 'admin' || !newPassword) {
+      if (!username || RESERVED_USERNAMES.includes(username) || !newPassword) {
         return json({ error: 'invalid username or password' }, 400)
       }
       console.log(JSON.stringify({ level: 'info', event: 'legacy_accounts_call', endpoint: 'PUT /accounts/password', operator: session.username, operator_role: sessionRole, target_username: username, source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
@@ -643,8 +642,8 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       }
       const body = JSON.parse(event.body || '{}')
       const username = (body.username || '').trim().toLowerCase()
-      if (!username || username === 'admin') {
-        return json({ error: 'invalid username' }, 400)
+      if (!username || RESERVED_USERNAMES.includes(username)) {
+        return json({ error: 'reserved username' }, 400)
       }
       console.log(JSON.stringify({ level: 'info', event: 'legacy_accounts_call', endpoint: 'DELETE /accounts', operator: session.username, operator_role: sessionRole, target_username: username, source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
       await client.send(
@@ -666,24 +665,18 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       }
       let ok = false
       let loginRole = 'student'
-      if (username === 'admin' && AdminPassword) {
-        ok = password === AdminPassword
-        if (ok) loginRole = 'manager'
-      } else {
-        const res = await client.send(
-          new GetItemCommand({
-            TableName: AccountsTableName,
-            Key: marshall({ username }),
-          }),
-        )
-        if (res.Item) {
-          const account = unmarshall(res.Item)
-          const expected = typeof account.passwordHash === 'string' ? account.passwordHash : ''
-          const actual = crypto.createHash('sha256').update(password).digest('hex')
-          ok = expected && expected === actual
-          // adminユーザー名は常にmanager（ADMIN_PASSWORDなしでaccountsテーブルで認証した場合も同様）
-          if (ok) loginRole = username === 'admin' ? 'manager' : (account.role || 'student')
-        }
+      const res = await client.send(
+        new GetItemCommand({
+          TableName: AccountsTableName,
+          Key: marshall({ username }),
+        }),
+      )
+      if (res.Item) {
+        const account = unmarshall(res.Item)
+        const expected = typeof account.passwordHash === 'string' ? account.passwordHash : ''
+        const actual = crypto.createHash('sha256').update(password).digest('hex')
+        ok = expected && expected === actual
+        if (ok) loginRole = account.role || 'student'
       }
       if (!ok) {
         return json({ error: 'unauthorized' }, 401)
@@ -706,17 +699,15 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         }),
       )
       // progressテーブルのlastLoginAtを更新（GetItem+PutItemでUpdateItem権限不要）
-      if (username !== 'admin') {
-        try {
-          const progRes = await client.send(new GetItemCommand({ TableName, Key: marshall({ traineeId: username }) }))
-          const existing = progRes.Item ? unmarshall(progRes.Item) : { traineeId: username }
-          await client.send(new PutItemCommand({
-            TableName,
-            Item: marshall({ ...existing, lastLoginAt: loginAt }, { removeUndefinedValues: true }),
-          }))
-        } catch (e) {
-          console.warn('[login] lastLoginAt更新失敗:', e.message)
-        }
+      try {
+        const progRes = await client.send(new GetItemCommand({ TableName, Key: marshall({ traineeId: username }) }))
+        const existing = progRes.Item ? unmarshall(progRes.Item) : { traineeId: username }
+        await client.send(new PutItemCommand({
+          TableName,
+          Item: marshall({ ...existing, lastLoginAt: loginAt }, { removeUndefinedValues: true }),
+        }))
+      } catch (e) {
+        console.warn('[login] lastLoginAt更新失敗:', e.message)
       }
       return json({ ok: true, username, token: sessionId, role: loginRole })
     }
@@ -955,7 +946,6 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       }
       const users = (accountItems || [])
         .map((item) => unmarshall(item))
-        .filter((a) => a.username !== 'admin')
         .map((a) => {
           const p = progressMap[a.username] || null
           return {
@@ -991,7 +981,7 @@ fail: 意味不明・設問と無関係・空欄に近い内容
 
       const body = JSON.parse(event.body || '{}')
       const username = (body.username || '').trim().toLowerCase()
-      if (!username || username === 'admin') return json({ error: 'invalid username' }, 400)
+      if (!username || RESERVED_USERNAMES.includes(username)) return json({ error: 'reserved username' }, 400)
       if (!/^[a-z0-9-]+$/.test(username)) return json({ error: 'username must be alphanumeric or hyphen' }, 400)
       const password = typeof body.password === 'string' ? body.password : ''
       if (!password || password.length < 8) return json({ error: 'password_too_short' }, 400)
@@ -1040,7 +1030,7 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       if (role !== 'manager') return json({ error: 'forbidden' }, 403)
 
       const targetUsername = decodeURIComponent(path.replace('/admin/users/', '')).trim().toLowerCase()
-      if (!targetUsername || targetUsername === 'admin') return json({ error: 'invalid username' }, 400)
+      if (!targetUsername || RESERVED_USERNAMES.includes(targetUsername)) return json({ error: 'reserved username' }, 400)
 
       const targetRes = await client.send(new GetItemCommand({
         TableName: AccountsTableName,

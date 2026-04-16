@@ -163,7 +163,7 @@ export function getProgressKey(baseKey: string, username?: string): string {
   if (typeof window === 'undefined') return baseKey
   const raw = username !== undefined ? username : getCurrentUsername()
   const user = String(raw).trim().toLowerCase()
-  if (!user || user === 'admin') return baseKey
+  if (!user) return baseKey
   return `${baseKey}_${user}`
 }
 

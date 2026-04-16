@@ -142,16 +142,13 @@ resource "aws_lambda_function" "progress_api" {
   timeout       = 60
 
   environment {
-    variables = merge(
-      {
-        TABLE_NAME          = aws_dynamodb_table.progress.name
-        ACCOUNTS_TABLE_NAME = aws_dynamodb_table.accounts.name
-        SESSIONS_TABLE_NAME = aws_dynamodb_table.sessions.name
-        ALLOWED_ORIGIN      = "https://training-org.neos-nic.jp"
-        KEYS_BUCKET         = "kira-project-dev-keys"
-      },
-      var.admin_password != null && var.admin_password != "" ? { ADMIN_PASSWORD = var.admin_password } : {}
-    )
+    variables = {
+      TABLE_NAME          = aws_dynamodb_table.progress.name
+      ACCOUNTS_TABLE_NAME = aws_dynamodb_table.accounts.name
+      SESSIONS_TABLE_NAME = aws_dynamodb_table.sessions.name
+      ALLOWED_ORIGIN      = "https://training-org.neos-nic.jp"
+      KEYS_BUCKET         = "kira-project-dev-keys"
+    }
   }
   tags = local.tags
 }

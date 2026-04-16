@@ -71,7 +71,7 @@ export async function fetchMe(): Promise<string | null> {
 export async function postProgress(traineeId: string, snapshot: TraineeProgressSnapshot): Promise<boolean> {
   if (!BASE_URL) return false
   const id = traineeId.trim().toLowerCase()
-  if (!id || id === 'admin') return false
+  if (!id) return false
   const token = getSessionToken()
   console.log('[Sync] postProgress 開始:', { traineeId: id, hasToken: !!token })
   try {
@@ -232,7 +232,7 @@ export async function scoreAnswerV2(params: {
 export async function fetchMyProgress(traineeId: string): Promise<TraineeProgressSnapshot | null> {
   if (!BASE_URL) return null
   const id = traineeId.trim().toLowerCase()
-  if (!id || id === 'admin') return null
+  if (!id) return null
   const all = await fetchProgressFromApi()
   const me = all.find((t) => (t.traineeId || '').trim().toLowerCase() === id)
   if (!me) return null

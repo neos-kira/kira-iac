@@ -348,7 +348,7 @@ export function InfraWbsPage() {
   useEffect(() => {
     if (!isProgressApiAvailable() || typeof window === 'undefined') return
     const name = getCurrentUsername().trim().toLowerCase()
-    if (!name || name === 'admin') return
+    if (!name) return
     let cancelled = false
     const load = async () => {
       const snap = await fetchMyProgress(name)

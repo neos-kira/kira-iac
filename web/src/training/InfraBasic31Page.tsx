@@ -21,7 +21,7 @@ export function InfraBasic31Page() {
 
   useEffect(() => {
     const username = getCurrentDisplayName().trim().toLowerCase()
-    if (!username || username === 'admin') return
+    if (!username || false) return
     fetchMyProgress(username).then(snap => { if (snap) setServerSnapshot(snap) })
   }, [])
 
@@ -33,7 +33,7 @@ export function InfraBasic31Page() {
     }
     // ① localStorage書き込み完了後にDynamoDB即時同期
     const username = getCurrentDisplayName().trim().toLowerCase()
-    if (username && username !== 'admin' && isProgressApiAvailable()) {
+    if (username && isProgressApiAvailable()) {
       const base: TraineeProgressSnapshot = serverSnapshot ?? {
         introConfirmed: false, introAt: null, wbsPercent: 0, chapterProgress: [],
         currentDay: 0, delayedIds: [], updatedAt: '', pins: [],

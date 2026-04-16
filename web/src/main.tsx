@@ -427,7 +427,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function ManagerRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, role } = useAuth()
   if (!isAuthenticated) return <Navigate to="/login" replace />
-  const isManager = role === 'manager' || getCurrentDisplayName().trim().toLowerCase() === 'admin'
+  const isManager = role === 'manager'
   if (!isManager) return <Navigate to="/" replace />
   return <>{children}</>
 }

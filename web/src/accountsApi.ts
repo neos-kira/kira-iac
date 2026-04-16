@@ -56,7 +56,7 @@ export function isAccountApiAvailable(): boolean {
 export async function createAccount(username: string, password: string, role = 'student'): Promise<boolean> {
   if (!BASE_URL) return false
   const name = username.trim().toLowerCase()
-  if (!name || name === 'admin') return false
+  if (!name) return false
   if (!password) return false
   try {
     const res = await fetch(`${BASE_URL}/accounts`, {
@@ -82,7 +82,7 @@ export async function fetchAccounts(): Promise<Account[]> {
         username: (a.username || '').trim().toLowerCase(),
         createdAt: a.createdAt,
       }))
-      .filter((a) => a.username && a.username !== 'admin')
+      .filter((a) => !!a.username)
   } catch {
     return []
   }
@@ -121,8 +121,7 @@ export async function checkAccount(username: string, password: string): Promise<
     }
     if (res.ok && (data.ok === true || 'username' in data)) {
       if (typeof data.token === 'string' && data.token) await saveSessionToken(data.token)
-      // admin ユーザーは常に manager
-      const role = data.role || (name === 'admin' ? 'manager' : 'student')
+      const role = data.role || 'student'
       return { ok: true, role }
     }
     if (res.status === 401) {
@@ -149,7 +148,7 @@ async function checkAccountAuthCheck(username: string, password: string): Promis
     })
     if (!res.ok) return { ok: false, role: 'student' }
     const data = (await res.json()) as { ok?: boolean }
-    return { ok: !!data.ok, role: username === 'admin' ? 'manager' : 'student' }
+    return { ok: !!data.ok, role: 'student' }
   } catch {
     return { ok: false, role: 'student' }
   }
@@ -158,7 +157,7 @@ async function checkAccountAuthCheck(username: string, password: string): Promis
 export async function resetPassword(username: string, newPassword: string): Promise<boolean> {
   if (!BASE_URL) return false
   const name = username.trim().toLowerCase()
-  if (!name || name === 'admin' || !newPassword) return false
+  if (!name || !newPassword) return false
   try {
     const res = await fetch(`${BASE_URL}/accounts/password`, {
       method: 'PUT',
@@ -174,7 +173,7 @@ export async function resetPassword(username: string, newPassword: string): Prom
 export async function deleteAccount(username: string): Promise<boolean> {
   if (!BASE_URL) return false
   const name = username.trim().toLowerCase()
-  if (!name || name === 'admin') return false
+  if (!name) return false
   try {
     const res = await fetch(`${BASE_URL}/accounts`, {
       method: 'DELETE',

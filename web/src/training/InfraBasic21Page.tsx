@@ -39,7 +39,7 @@ export function InfraBasic21Page() {
   // 研修生の演習EC2 IPをDynamoDBから取得（マルチテナント対応）
   useEffect(() => {
     const username = getCurrentDisplayName().trim().toLowerCase()
-    if (!username || username === 'admin') return
+    if (!username || false) return
     fetchMyProgress(username).then((snap) => {
       if (snap) {
         setEc2Ip(snap.ec2PublicIp || snap.ec2Host || null)

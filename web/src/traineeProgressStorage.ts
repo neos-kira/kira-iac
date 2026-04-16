@@ -140,7 +140,7 @@ function loadTraineeList(): string[] {
       .filter((x): x is string => typeof x === 'string')
       .map((x) => x.trim().toLowerCase())
     const list = [...new Set([...DEFAULT_TRAINEE_IDS, ...normalized])]
-    return list.filter((id) => id !== 'admin')
+    return list
   } catch {
     return [...DEFAULT_TRAINEE_IDS]
   }
@@ -164,7 +164,7 @@ export function getTraineeList(): string[] {
 export function addTrainee(username: string): void {
   if (typeof window === 'undefined') return
   const id = username.trim().toLowerCase()
-  if (!id || id === 'admin') return
+  if (!id) return
   const list = loadTraineeList()
   if (list.includes(id)) return
   saveTraineeList([...list, id])
@@ -272,7 +272,7 @@ export function getCurrentProgressSnapshot(pinsOverride?: string[]): TraineeProg
 export function saveProgressSnapshot(username: string, data: TraineeProgressSnapshot): void {
   if (typeof window === 'undefined') return
   const id = username.trim().toLowerCase()
-  if (!id || id === 'admin') return
+  if (!id) return
   try {
     window.localStorage.setItem(PROGRESS_SNAPSHOT_PREFIX + id, JSON.stringify(data))
   } catch {
@@ -334,7 +334,7 @@ export function getProgressSnapshotLive(username: string): TraineeProgressSnapsh
     }
   }
   const id = username.trim().toLowerCase()
-  if (!id || id === 'admin') {
+  if (!id) {
     return {
       introConfirmed: false,
       introAt: null,
@@ -375,7 +375,7 @@ export function getProgressSnapshotLive(username: string): TraineeProgressSnapsh
  * 既に値がある場合は上書きしない（端末上での新しい操作を優先）。
  */
 export function restoreProgressToLocalStorage(username: string, snap: TraineeProgressSnapshot): void {
-  if (typeof window === 'undefined' || !username || username.toLowerCase() === 'admin') return
+  if (typeof window === 'undefined' || !username) return
   const id = username.trim().toLowerCase()
 
   // はじめに完了状態（元のタイムスタンプを保持）

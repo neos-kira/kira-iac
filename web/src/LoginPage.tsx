@@ -92,9 +92,7 @@ export function LoginPage() {
       setLoggedIn()
       setCurrentRole(result.role)
       safeSessionRemoveItem('kira-login-reload-tried')
-      if (normalized !== 'admin') {
-        addTrainee(name)
-      }
+      addTrainee(name)
 
       // ストレージ書き込みを待機
       await new Promise((resolve) => setTimeout(resolve, 50))

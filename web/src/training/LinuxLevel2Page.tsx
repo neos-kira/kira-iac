@@ -22,7 +22,7 @@ export function LinuxLevel2Page() {
   useEffect(() => {
     const load = async () => {
       const username = getCurrentDisplayName().trim().toLowerCase()
-      if (!username || username === 'admin') {
+      if (!username || false) {
         setIsLoading(false)
         return
       }
@@ -59,7 +59,7 @@ export function LinuxLevel2Page() {
         }
         // DynamoDB即時同期：serverSnapshotをベースに変化した値だけ上書き
         const username = getCurrentDisplayName().trim().toLowerCase()
-        if (username && username !== 'admin' && isProgressApiAvailable()) {
+        if (username && isProgressApiAvailable()) {
           const base: TraineeProgressSnapshot = serverSnapshot ?? EMPTY_SNAPSHOT
           await postProgress(username, {
             ...base,
@@ -72,7 +72,7 @@ export function LinuxLevel2Page() {
       }}
       onInterrupt={async (currentIndex, answers) => {
         const username = getCurrentDisplayName().trim().toLowerCase()
-        if (!username || username === 'admin' || !isProgressApiAvailable()) return true
+        if (!username || false || !isProgressApiAvailable()) return true
         const base: TraineeProgressSnapshot = serverSnapshot ?? EMPTY_SNAPSHOT
         // 回答済み問題の中で不正解だったIDを算出
         const wrongIds = answers

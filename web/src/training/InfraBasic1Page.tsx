@@ -94,7 +94,7 @@ export function InfraBasic1Page() {
   useEffect(() => {
     document.title = 'インフラ基礎演習1'
     const load = async () => {
-      if (!username || username === 'admin') { setIsLoading(false); return }
+      if (!username || false) { setIsLoading(false); return }
       const snap = await fetchMyProgress(username)
       if (snap) {
         setServerSnapshot(snap)
@@ -117,7 +117,7 @@ export function InfraBasic1Page() {
       else window.localStorage.removeItem(clearedKey)
     } catch { /* ignore */ }
 
-    if (username && username !== 'admin' && isProgressApiAvailable()) {
+    if (username && isProgressApiAvailable()) {
       const base: TraineeProgressSnapshot = serverSnapshot ?? EMPTY_SNAPSHOT
       await postProgress(username, {
         ...base,

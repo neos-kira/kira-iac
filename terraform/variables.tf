@@ -48,10 +48,3 @@ variable "acm_certificate_arn" {
   default     = null
 }
 
-variable "admin_password" {
-  description = "Admin user password (for Lambda session auth). Set via TF_VAR_admin_password or GitHub secret."
-  type        = string
-  default     = null
-  sensitive   = true
-}
-

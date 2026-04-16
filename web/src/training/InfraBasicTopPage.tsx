@@ -56,7 +56,7 @@ export function InfraBasicTopPage() {
   useEffect(() => {
     const load = async () => {
       const username = getCurrentDisplayName()
-      if (!username || username.toLowerCase() === 'admin') return
+      if (!username) return
       const snap = await fetchMyProgress(username)
       if (snap) {
         restoreProgressToLocalStorage(username, snap)
