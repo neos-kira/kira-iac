@@ -1165,10 +1165,15 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       try {
         await s3Client.send(new HeadObjectCommand({ Bucket: KeysBucket, Key: s3Key }))
       } catch (headErr) {
-        const is404 = headErr.$metadata?.httpStatusCode === 404 || headErr.name === 'NotFound' || headErr.name === 'NoSuchKey'
-        console.log(JSON.stringify({ event: 'download-key', step: 'head_check', result: is404 ? 'not_found' : 'error', user_id: username, s3_key: s3Key, error: headErr.message, requested_at: new Date().toISOString() }))
+        const httpStatus = headErr.$metadata?.httpStatusCode
+        // 404: 対象キーが存在しない（s3:ListBucket があれば確実に404が返る）
+        // 403: s3:ListBucket なしの場合、存在しないキーでも403が返ることがある
+        // UnknownError: 上記いずれかのケースでSDKがエラー種別を特定できない場合
+        const is404 = httpStatus === 404 || httpStatus === 403 || headErr.name === 'NotFound' || headErr.name === 'NoSuchKey'
+        console.log(JSON.stringify({ event: 'download-key', step: 'head_check', result: is404 ? 'not_found' : 'error', user_id: username, s3_key: s3Key, http_status: httpStatus, error_name: headErr.name, error: headErr.message, requested_at: new Date().toISOString() }))
         if (is404) {
-          return json({ error: 'not_found', message: '秘密鍵ファイルが見つかりません。サーバーを再作成してください' }, 404)
+          console.log(JSON.stringify({ level: 'info', event: 'pem_download', username, result: 'not_found', s3_key: s3Key, timestamp: new Date().toISOString() }))
+          return json({ error: 'pem_not_found', message: 'PEMファイルが見つかりません。サーバーを再作成してください。' }, 404)
         }
         return json({ error: 'server_error', message: 'ダウンロードの準備に失敗しました。サーバー管理者にお問い合わせください' }, 500)
       }
@@ -1182,8 +1187,8 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         })
         // presigned URL: 有効期限5分（300秒）
         const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 })
-        console.log(JSON.stringify({ event: 'download-key', step: 'presign', result: 'ok', user_id: username, instance_id: instanceId, filename: downloadFilename, requested_at: new Date().toISOString() }))
-        return json({ ok: true, presignedUrl, filename: downloadFilename, keyPairName })
+        console.log(JSON.stringify({ level: 'info', event: 'pem_download', username, result: 'success', filename: downloadFilename, timestamp: new Date().toISOString() }))
+        return json({ ok: true, presignedUrl, filename: downloadFilename, keyPairName, expiresIn: 300 })
       } catch (e) {
         console.log(JSON.stringify({ event: 'download-key', step: 'presign', result: 'error', user_id: username, error: e.message, requested_at: new Date().toISOString() }))
         return json({ error: 'server_error', message: 'ダウンロードの準備に失敗しました。サーバー管理者にお問い合わせください' }, 500)

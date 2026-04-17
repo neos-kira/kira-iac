@@ -813,13 +813,13 @@ function App() {
       if (!res.ok || !data.presignedUrl) {
         // HTTPステータス別エラーメッセージ
         if (res.status === 401 || res.status === 403) {
-          setRedownloadError(data.message ?? '認証エラーです。再ログインしてください')
+          setRedownloadError(data.message ?? 'セッションが切れました。再ログインしてください。')
         } else if (res.status === 404) {
-          setRedownloadError(data.message ?? '秘密鍵ファイルが見つかりません。サーバーを再作成してください')
+          setRedownloadError(data.message ?? 'PEMファイルが見つかりません。サーバーを再作成してください。')
         } else if (res.status >= 500) {
-          setRedownloadError(data.message ?? 'ダウンロードに失敗しました。サーバー管理者にお問い合わせください')
+          setRedownloadError(data.message ?? 'サーバーエラーが発生しました。時間をおいて再試行してください。')
         } else {
-          setRedownloadError(data.message ?? 'ダウンロードに失敗しました。しばらくして再試行してください')
+          setRedownloadError(data.message ?? 'ダウンロードに失敗しました。')
         }
         return
       }
