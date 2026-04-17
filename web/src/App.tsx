@@ -25,7 +25,7 @@ import { clearIntroForCurrentUser } from './training/introGate'
 import { LOGIN_FLAG_KEY, getCurrentDisplayName, getCurrentRole, USER_ROLE_KEY } from './auth'
 import { restoreProgressToLocalStorage, type TraineeProgressSnapshot } from './traineeProgressStorage'
 import { isProgressApiAvailable, postProgress, fetchMyProgress, fetchProgressFromApi, buildAuthHeaders, BASE_URL } from './progressApi'
-import { createAccount, fetchAccounts, isAccountApiAvailable, deleteAccount, type Account } from './accountsApi'
+import { fetchAdminUsers, createAdminUser, deleteAdminUser, type AdminUser } from './accountsApi'
 import { safeGetItem, safeSetItem, safeRemoveItem, clearCookieValue } from './utils/storage'
 
 type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3' | 'infra-basic-4'
@@ -178,7 +178,7 @@ function App() {
   const [showSearchHistory, setShowSearchHistory] = useState(false)
   const [searchHistoryHighlightIndex, setSearchHistoryHighlightIndex] = useState(-1)
   const [isListening, setIsListening] = useState(false)
-  const [accounts, setAccounts] = useState<Account[]>([])
+  const [accounts, setAccounts] = useState<AdminUser[]>([])
   const [newAccountName, setNewAccountName] = useState('')
   const [newAccountPassword, setNewAccountPassword] = useState('')
   const [accountMessage, setAccountMessage] = useState<string | null>(null)
@@ -558,16 +558,15 @@ function App() {
 
   // admin 用: アカウント一覧を定期取得し、既存の進捗から自動的に取り込む
   useEffect(() => {
-    if (!isAdminView || !isAccountApiAvailable()) return
+    if (!isAdminView || !isProgressApiAvailable()) return
     let cancelled = false
     const load = async () => {
-      if (!isAccountApiAvailable()) return
-      const current = await fetchAccounts()
+      if (!isProgressApiAvailable()) return
+      const current = await fetchAdminUsers()
       if (!cancelled) {
         setAccounts(current)
       }
-      // 進捗APIが利用可能なら、既存の進捗 + j-terada から不足分を自動登録
-      if (!isProgressApiAvailable()) return
+      // 既存の進捗 + j-terada から不足分を自動登録
       const trainees = await fetchProgressFromApi()
       const snaps: Record<string, import('./progressApi').TraineeProgressFromApi> = {}
       for (const t of trainees) {
@@ -582,19 +581,20 @@ function App() {
       const existing = new Set(current.map((a) => a.username))
       const missing = allIds.filter((id) => !existing.has(id))
       for (const id of missing) {
-        // 既に存在する場合も含めて上書き Put。デフォルトパスワードは「ユーザー名」と同じ。
+        // 初期パスワードはユーザー名と同じ（8文字未満の場合は0埋め）
+        const autoPass = id.length >= 8 ? id : id + '0'.repeat(8 - id.length)
         // eslint-disable-next-line no-await-in-loop
-        await createAccount(id, id)
+        await createAdminUser(id, autoPass, 'student')
       }
       if (missing.length > 0 && !cancelled) {
-        const refreshed = await fetchAccounts()
+        const refreshed = await fetchAdminUsers()
         setAccounts(refreshed)
       }
     }
     void load()
     const id = window.setInterval(() => {
       void load()
-    }, 5000)
+    }, 10000)
     return () => {
       cancelled = true
       window.clearInterval(id)
@@ -613,25 +613,25 @@ function App() {
       setAccountMessage('パスワードを入力してください。')
       return
     }
-    if (!isAccountApiAvailable()) {
+    if (!isProgressApiAvailable()) {
       setAccountMessage('アカウントAPIが未設定です。VITE_PROGRESS_API_URL を確認してください。')
       return
     }
-    const ok = await createAccount(name, newAccountPassword)
-    if (!ok) {
-      setAccountMessage('アカウント作成に失敗しました。ネットワークやAPI設定を確認してください。')
+    const result = await createAdminUser(name, newAccountPassword, 'student')
+    if (!result.ok) {
+      setAccountMessage(result.error ?? 'アカウント作成に失敗しました。ネットワークやAPI設定を確認してください。')
       return
     }
     setNewAccountName('')
     setNewAccountPassword('')
     setAccountMessage('アカウントを作成しました。')
-    const list = await fetchAccounts()
+    const list = await fetchAdminUsers()
     setAccounts(list)
   }
 
   async function handleImportFromProgress() {
     setAccountMessage(null)
-    if (!isAccountApiAvailable() || !isProgressApiAvailable()) {
+    if (!isProgressApiAvailable()) {
       setAccountMessage('API が未設定のため取り込みできません。VITE_PROGRESS_API_URL を確認してください。')
       return
     }
@@ -646,11 +646,12 @@ function App() {
       return
     }
     for (const id of ids) {
-      // 既に存在する場合も含めて上書き Put。デフォルトパスワードは「ユーザー名」と同じ。
+      // 初期パスワードはユーザー名と同じ（8文字未満の場合は0埋め）。既存ユーザーはスキップ。
+      const autoPass = id.length >= 8 ? id : id + '0'.repeat(8 - id.length)
       // eslint-disable-next-line no-await-in-loop
-      await createAccount(id, id)
+      await createAdminUser(id, autoPass, 'student')
     }
-    const list = await fetchAccounts()
+    const list = await fetchAdminUsers()
     setAccounts(list)
     setAccountMessage(`既存の進捗から ${ids.length} 件のユーザーを取り込みました。（初期パスワードはユーザー名と同じです）`)
   }
@@ -658,13 +659,13 @@ function App() {
   async function handleConfirmDelete() {
     setDeleteError(null)
     if (!deleteTarget) return
-    const ok = await deleteAccount(deleteTarget)
-    if (!ok) {
-      setDeleteError('削除に失敗しました。時間をおいて再度お試しください。')
+    const result = await deleteAdminUser(deleteTarget)
+    if (!result.ok) {
+      setDeleteError(result.error ?? '削除に失敗しました。時間をおいて再度お試しください。')
       return
     }
     setDeleteTarget(null)
-    const list = await fetchAccounts()
+    const list = await fetchAdminUsers()
     setAccounts(list)
   }
 

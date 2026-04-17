@@ -22,12 +22,6 @@ async function saveSessionToken(token: string | null) {
   await Promise.resolve()
 }
 
-export type Account = {
-  username: string
-  role?: string
-  createdAt?: string
-}
-
 export type AdminUser = {
   username: string
   role: string
@@ -51,41 +45,6 @@ export type AdminUser = {
 
 export function isAccountApiAvailable(): boolean {
   return isProgressApiAvailable()
-}
-
-export async function createAccount(username: string, password: string, role = 'student'): Promise<boolean> {
-  if (!BASE_URL) return false
-  const name = username.trim().toLowerCase()
-  if (!name) return false
-  if (!password) return false
-  try {
-    const res = await fetch(`${BASE_URL}/accounts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: name, password, role }),
-    })
-    return res.ok
-  } catch {
-    return false
-  }
-}
-
-export async function fetchAccounts(): Promise<Account[]> {
-  if (!BASE_URL) return []
-  try {
-    const res = await fetch(`${BASE_URL}/accounts`)
-    if (!res.ok) return []
-    const data = (await res.json()) as { accounts?: Account[] }
-    if (!Array.isArray(data.accounts)) return []
-    return data.accounts
-      .map((a) => ({
-        username: (a.username || '').trim().toLowerCase(),
-        createdAt: a.createdAt,
-      }))
-      .filter((a) => !!a.username)
-  } catch {
-    return []
-  }
 }
 
 /** サーバーへ送るボディ: バックエンドは username / password（平文。ハッシュはサーバー側で実施）を期待 */
@@ -163,22 +122,6 @@ export async function resetPassword(username: string, newPassword: string): Prom
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: name, newPassword }),
-    })
-    return res.ok
-  } catch {
-    return false
-  }
-}
-
-export async function deleteAccount(username: string): Promise<boolean> {
-  if (!BASE_URL) return false
-  const name = username.trim().toLowerCase()
-  if (!name) return false
-  try {
-    const res = await fetch(`${BASE_URL}/accounts`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: name }),
     })
     return res.ok
   } catch {
