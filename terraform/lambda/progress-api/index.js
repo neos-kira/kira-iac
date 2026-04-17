@@ -526,170 +526,6 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       return json({ trainees })
     }
 
-    // アカウント作成（admin 画面用）
-    if (method === 'POST' && (path === '/accounts' || path === '/accounts/')) {
-      // manager 認証必須
-      const session = await verifySession(event)
-      if (!session) {
-        console.log(JSON.stringify({ level: 'warn', event: 'legacy_accounts_unauthenticated', endpoint: 'POST /accounts', source_ip: event.requestContext?.http?.sourceIp, user_agent: event.headers?.['user-agent'], timestamp: new Date().toISOString() }))
-        return json({ error: 'unauthorized' }, 401)
-      }
-      const sessionRole = await getSessionRole(session)
-      if (sessionRole !== 'manager') {
-        console.log(JSON.stringify({ level: 'warn', event: 'legacy_accounts_forbidden', endpoint: 'POST /accounts', username: session.username, role: sessionRole, source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
-        return json({ error: 'forbidden' }, 403)
-      }
-      const body = JSON.parse(event.body || '{}')
-      const username = (body.username || '').trim().toLowerCase()
-      if (!username || RESERVED_USERNAMES.includes(username)) {
-        return json({ error: 'reserved username' }, 400)
-      }
-      const password = typeof body.password === 'string' ? body.password : ''
-      if (!password) {
-        return json({ error: 'invalid password' }, 400)
-      }
-      console.log(JSON.stringify({ level: 'info', event: 'legacy_accounts_call', endpoint: 'POST /accounts', operator: session.username, operator_role: sessionRole, target_username: username, source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
-      const userRole = ['student', 'manager'].includes(body.role) ? body.role : 'student'
-      const passwordHash = crypto.createHash('sha256').update(password).digest('hex')
-      const legacyTenantId = (typeof body.tenantId === 'string' && body.tenantId.trim()) ? body.tenantId.trim() : 'default'
-      const Item = {
-        username,
-        passwordHash,
-        role: userRole,
-        tenantId: legacyTenantId,
-        createdAt: new Date().toISOString(),
-      }
-      await client.send(
-        new PutItemCommand({
-          TableName: AccountsTableName,
-          Item: marshall(Item, { removeUndefinedValues: true }),
-        }),
-      )
-      return json({ ok: true })
-    }
-
-    // アカウント一覧取得（admin 画面用）
-    if (method === 'GET' && (path === '/accounts' || path === '/accounts/')) {
-      // manager 認証必須
-      const session = await verifySession(event)
-      if (!session) {
-        console.log(JSON.stringify({ level: 'warn', event: 'legacy_accounts_unauthenticated', endpoint: 'GET /accounts', source_ip: event.requestContext?.http?.sourceIp, user_agent: event.headers?.['user-agent'], timestamp: new Date().toISOString() }))
-        return json({ error: 'unauthorized' }, 401)
-      }
-      const sessionRole = await getSessionRole(session)
-      if (sessionRole !== 'manager') {
-        console.log(JSON.stringify({ level: 'warn', event: 'legacy_accounts_forbidden', endpoint: 'GET /accounts', username: session.username, role: sessionRole, source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
-        return json({ error: 'forbidden' }, 403)
-      }
-      console.log(JSON.stringify({ level: 'info', event: 'legacy_accounts_call', endpoint: 'GET /accounts', operator: session.username, operator_role: sessionRole, target_username: 'N/A', source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
-      const { Items } = await client.send(new ScanCommand({ TableName: AccountsTableName }))
-      const accounts = (Items || []).map((item) => unmarshall(item))
-      return json({ accounts })
-    }
-
-    // パスワードリセット（admin 用）
-    if (method === 'PUT' && (path === '/accounts/password' || path === '/accounts/password/')) {
-      // manager 認証必須
-      const session = await verifySession(event)
-      if (!session) {
-        console.log(JSON.stringify({ level: 'warn', event: 'legacy_accounts_unauthenticated', endpoint: 'PUT /accounts/password', source_ip: event.requestContext?.http?.sourceIp, user_agent: event.headers?.['user-agent'], timestamp: new Date().toISOString() }))
-        return json({ error: 'unauthorized' }, 401)
-      }
-      const sessionRole = await getSessionRole(session)
-      if (sessionRole !== 'manager') {
-        console.log(JSON.stringify({ level: 'warn', event: 'legacy_accounts_forbidden', endpoint: 'PUT /accounts/password', username: session.username, role: sessionRole, source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
-        return json({ error: 'forbidden' }, 403)
-      }
-      const body = JSON.parse(event.body || '{}')
-      const username = (body.username || '').trim().toLowerCase()
-      const newPassword = typeof body.newPassword === 'string' ? body.newPassword : ''
-      if (!username || RESERVED_USERNAMES.includes(username) || !newPassword) {
-        return json({ error: 'invalid username or password' }, 400)
-      }
-      console.log(JSON.stringify({ level: 'info', event: 'legacy_accounts_call', endpoint: 'PUT /accounts/password', operator: session.username, operator_role: sessionRole, target_username: username, source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
-      const existing = await client.send(
-        new GetItemCommand({
-          TableName: AccountsTableName,
-          Key: marshall({ username }),
-        }),
-      )
-      if (!existing.Item) {
-        return json({ error: 'user not found' }, 404)
-      }
-      const passwordHash = crypto.createHash('sha256').update(newPassword).digest('hex')
-      await client.send(
-        new PutItemCommand({
-          TableName: AccountsTableName,
-          Item: marshall(
-            { ...unmarshall(existing.Item), passwordHash },
-            { removeUndefinedValues: true },
-          ),
-        }),
-      )
-      return json({ ok: true })
-    }
-
-    // アカウント削除（admin 用）
-    if (method === 'DELETE' && (path === '/accounts' || path === '/accounts/')) {
-      // manager 認証必須
-      const session = await verifySession(event)
-      if (!session) {
-        console.log(JSON.stringify({ level: 'warn', event: 'legacy_accounts_unauthenticated', endpoint: 'DELETE /accounts', source_ip: event.requestContext?.http?.sourceIp, user_agent: event.headers?.['user-agent'], timestamp: new Date().toISOString() }))
-        return json({ error: 'unauthorized' }, 401)
-      }
-      const sessionRole = await getSessionRole(session)
-      if (sessionRole !== 'manager') {
-        console.log(JSON.stringify({ level: 'warn', event: 'legacy_accounts_forbidden', endpoint: 'DELETE /accounts', username: session.username, role: sessionRole, source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
-        return json({ error: 'forbidden' }, 403)
-      }
-      const body = JSON.parse(event.body || '{}')
-      const username = (body.username || '').trim().toLowerCase()
-      if (!username || RESERVED_USERNAMES.includes(username)) {
-        return json({ error: 'reserved username' }, 400)
-      }
-      console.log(JSON.stringify({ level: 'info', event: 'legacy_accounts_call', endpoint: 'DELETE /accounts', operator: session.username, operator_role: sessionRole, target_username: username, source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
-      await Promise.allSettled([
-        client.send(new DeleteItemCommand({ TableName: AccountsTableName, Key: marshall({ username }) })),
-        client.send(new DeleteItemCommand({ TableName, Key: marshall({ traineeId: username }) })),
-      ])
-
-      // sessions テーブルから該当ユーザーのセッションを全削除
-      let legacySessionsDeleted = 0
-      if (SessionsTableName) {
-        try {
-          const { Items: legacySessionItems } = await client.send(new ScanCommand({
-            TableName: SessionsTableName,
-            FilterExpression: '#u = :u',
-            ExpressionAttributeNames: { '#u': 'username' },
-            ExpressionAttributeValues: marshall({ ':u': username }),
-          }))
-          const toDelete = legacySessionItems || []
-          await Promise.allSettled(
-            toDelete.map((item) => {
-              const s = unmarshall(item)
-              return client.send(new DeleteItemCommand({
-                TableName: SessionsTableName,
-                Key: marshall({ sessionId: s.sessionId }),
-              }))
-            })
-          )
-          legacySessionsDeleted = toDelete.length
-        } catch (e) {
-          console.warn('[accounts DELETE] session cleanup失敗（続行）:', e.message)
-        }
-      }
-
-      console.log(JSON.stringify({
-        level: 'info',
-        event: 'user_deleted_with_session_cleanup',
-        operator: session.username,
-        deleted_username: username,
-        sessions_deleted: legacySessionsDeleted,
-        timestamp: new Date().toISOString(),
-      }))
-      return json({ ok: true })
-    }
-
     // セッションログイン（トークン発行）
     if (method === 'POST' && (path === '/auth/login' || path === '/auth/login/')) {
       const body = JSON.parse(event.body || '{}')
@@ -1123,6 +959,32 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         timestamp: new Date().toISOString(),
       }))
       return json({ ok: true, success: true, message: `ユーザー ${targetUsername} を削除しました` })
+    }
+
+    // パスワード変更（PUT /admin/users/:username/password）- managerのみ
+    if (method === 'PUT' && path.startsWith('/admin/users/') && path.endsWith('/password')) {
+      const session = await verifySession(event)
+      if (!session) return json({ error: 'unauthorized' }, 401)
+      const sessionRole = await getSessionRole(session)
+      if (sessionRole !== 'manager') return json({ error: 'forbidden' }, 403)
+      const targetUsername = decodeURIComponent(
+        path.replace(/^\/admin\/users\//, '').replace(/\/password$/, '')
+      ).trim().toLowerCase()
+      if (!targetUsername || RESERVED_USERNAMES.includes(targetUsername)) return json({ error: 'reserved username' }, 400)
+      const body = JSON.parse(event.body || '{}')
+      const newPassword = typeof body.newPassword === 'string' ? body.newPassword : ''
+      if (!newPassword || newPassword.length < 8) return json({ error: 'password_too_short' }, 400)
+      const existing = await client.send(new GetItemCommand({
+        TableName: AccountsTableName,
+        Key: marshall({ username: targetUsername }),
+      }))
+      if (!existing.Item) return json({ error: 'user not found' }, 404)
+      const passwordHash = crypto.createHash('sha256').update(newPassword).digest('hex')
+      await client.send(new PutItemCommand({
+        TableName: AccountsTableName,
+        Item: marshall({ ...unmarshall(existing.Item), passwordHash }, { removeUndefinedValues: true }),
+      }))
+      return json({ ok: true })
     }
 
     // EC2サーバー作成（POST /server/create）

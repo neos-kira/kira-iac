@@ -118,10 +118,11 @@ export async function resetPassword(username: string, newPassword: string): Prom
   const name = username.trim().toLowerCase()
   if (!name || !newPassword) return false
   try {
-    const res = await fetch(`${BASE_URL}/accounts/password`, {
+    const res = await fetch(`${BASE_URL}/admin/users/${encodeURIComponent(name)}/password`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: name, newPassword }),
+      headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
+      credentials: 'omit',
+      body: JSON.stringify({ newPassword }),
     })
     return res.ok
   } catch {

@@ -184,31 +184,13 @@ resource "aws_apigatewayv2_route" "progress_get" {
   target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
 }
 
-# アカウント作成・一覧・認証チェック用のルート
-resource "aws_apigatewayv2_route" "accounts_post" {
+resource "aws_apigatewayv2_route" "admin_users_password_put" {
   api_id    = aws_apigatewayv2_api.progress.id
-  route_key = "POST /accounts"
+  route_key = "PUT /admin/users/{username}/password"
   target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
 }
 
-resource "aws_apigatewayv2_route" "accounts_get" {
-  api_id    = aws_apigatewayv2_api.progress.id
-  route_key = "GET /accounts"
-  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
-}
-
-resource "aws_apigatewayv2_route" "accounts_delete" {
-  api_id    = aws_apigatewayv2_api.progress.id
-  route_key = "DELETE /accounts"
-  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
-}
-
-resource "aws_apigatewayv2_route" "accounts_password_put" {
-  api_id    = aws_apigatewayv2_api.progress.id
-  route_key = "PUT /accounts/password"
-  target    = "integrations/${aws_apigatewayv2_integration.progress.id}"
-}
-
+# 認証チェック用のルート
 resource "aws_apigatewayv2_route" "auth_check_post" {
   api_id    = aws_apigatewayv2_api.progress.id
   route_key = "POST /auth/check"
