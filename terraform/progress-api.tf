@@ -44,7 +44,8 @@ resource "aws_iam_role_policy" "progress_api_dynamodb" {
         "dynamodb:PutItem",
         "dynamodb:GetItem",
         "dynamodb:Scan",
-        "dynamodb:DeleteItem"
+        "dynamodb:DeleteItem",
+        "dynamodb:UpdateItem"
       ]
       Resource = [
         aws_dynamodb_table.progress.arn,
@@ -253,4 +254,37 @@ resource "aws_lambda_permission" "progress_apigw" {
   function_name = aws_lambda_function.progress_api.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.progress.execution_arn}/*/*"
+}
+
+# ============================================================
+# EventBridge: EC2 state-change → Lambda で DynamoDB 自動更新
+# ============================================================
+
+resource "aws_cloudwatch_event_rule" "ec2_state_change" {
+  name        = "${local.app_name}-ec2-state-change"
+  description = "EC2 state change (running/stopped) - auto-update DynamoDB IP"
+
+  event_pattern = jsonencode({
+    source      = ["aws.ec2"]
+    "detail-type" = ["EC2 Instance State-change Notification"]
+    detail = {
+      state = ["running", "stopped"]
+    }
+  })
+
+  tags = local.tags
+}
+
+resource "aws_cloudwatch_event_target" "ec2_state_change_target" {
+  rule      = aws_cloudwatch_event_rule.ec2_state_change.name
+  target_id = "update-ec2-ip-in-dynamodb"
+  arn       = aws_lambda_function.progress_api.arn
+}
+
+resource "aws_lambda_permission" "eventbridge_ec2_state_change" {
+  statement_id  = "AllowEventBridgeEC2StateChange"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.progress_api.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.ec2_state_change.arn
 }

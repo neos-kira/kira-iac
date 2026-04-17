@@ -1,4 +1,4 @@
-const { DynamoDBClient, PutItemCommand, ScanCommand, GetItemCommand, DeleteItemCommand } = require('@aws-sdk/client-dynamodb')
+const { DynamoDBClient, PutItemCommand, ScanCommand, GetItemCommand, DeleteItemCommand, UpdateItemCommand } = require('@aws-sdk/client-dynamodb')
 const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime')
 const bedrockClient = new BedrockRuntimeClient({ region: 'ap-northeast-1' })
 const { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3')
@@ -167,6 +167,102 @@ async function verifySession(event) {
 }
 
 async function handler(event) {
+  // ============================================================
+  // EventBridge: EC2 state-change イベント処理
+  // ============================================================
+  if (event.source === 'aws.ec2' && event['detail-type'] === 'EC2 Instance State-change Notification') {
+    const instanceId = event.detail?.['instance-id']
+    const state = event.detail?.state
+
+    if (!instanceId || !state) {
+      console.log(JSON.stringify({ level: 'warn', event: 'ec2_state_change_invalid', detail: event.detail, timestamp: new Date().toISOString() }))
+      return { statusCode: 200, body: 'invalid event' }
+    }
+
+    console.log(JSON.stringify({ level: 'info', event: 'ec2_state_change_received', instanceId, state, timestamp: new Date().toISOString() }))
+
+    // インスタンス情報とタグを取得
+    const descRes = await ec2Client.send(new DescribeInstancesCommand({ InstanceIds: [instanceId] }))
+    const inst = descRes.Reservations?.[0]?.Instances?.[0]
+
+    if (!inst) {
+      console.log(JSON.stringify({ level: 'warn', event: 'ec2_state_change_not_found', instanceId, timestamp: new Date().toISOString() }))
+      return { statusCode: 200, body: 'instance not found' }
+    }
+
+    // NIC管理のEC2か確認（Project=kira-project タグ）
+    const tags = inst.Tags || []
+    const isNicManaged = tags.some(t => t.Key === 'Project' && t.Value === 'kira-project')
+    if (!isNicManaged) {
+      console.log(JSON.stringify({ level: 'info', event: 'ec2_state_change_skipped', instanceId, state, reason: 'not_nic_managed', timestamp: new Date().toISOString() }))
+      return { statusCode: 200, body: 'not nic managed' }
+    }
+
+    // DynamoDB で該当ユーザーを検索（ec2InstanceId で照合）
+    const scanRes = await client.send(new ScanCommand({
+      TableName,
+      FilterExpression: 'ec2InstanceId = :iid',
+      ExpressionAttributeValues: marshall({ ':iid': instanceId }),
+    }))
+
+    if (!scanRes.Items || scanRes.Items.length === 0) {
+      console.log(JSON.stringify({ level: 'warn', event: 'ec2_state_change_no_user', instanceId, state, timestamp: new Date().toISOString() }))
+      return { statusCode: 200, body: 'no user found in dynamo' }
+    }
+
+    for (const item of scanRes.Items) {
+      const record = unmarshall(item)
+
+      if (state === 'running') {
+        // 起動時: 新IPを取得してec2PublicIp/ec2Host/ec2Stateを更新
+        let newIp = inst.PublicIpAddress || null
+        // running直後はIPが未割り当ての場合があるため最大2回リトライ（3秒間隔）
+        if (!newIp) {
+          for (let i = 0; i < 2; i++) {
+            await new Promise(r => setTimeout(r, 3000))
+            const retryRes = await ec2Client.send(new DescribeInstancesCommand({ InstanceIds: [instanceId] }))
+            newIp = retryRes.Reservations?.[0]?.Instances?.[0]?.PublicIpAddress || null
+            if (newIp) break
+          }
+        }
+
+        if (!newIp) {
+          console.log(JSON.stringify({ level: 'warn', event: 'ec2_ip_update_no_ip', instanceId, traineeId: record.traineeId, timestamp: new Date().toISOString() }))
+          // IPなしでもstateだけ更新
+          await client.send(new UpdateItemCommand({
+            TableName,
+            Key: marshall({ traineeId: record.traineeId }),
+            UpdateExpression: 'SET ec2State = :state, updatedAt = :ts',
+            ExpressionAttributeValues: marshall({ ':state': 'running', ':ts': new Date().toISOString() }),
+          }))
+          continue
+        }
+
+        await client.send(new UpdateItemCommand({
+          TableName,
+          Key: marshall({ traineeId: record.traineeId }),
+          UpdateExpression: 'SET ec2PublicIp = :ip, ec2Host = :ip, ec2State = :state, updatedAt = :ts',
+          ExpressionAttributeValues: marshall({ ':ip': newIp, ':state': 'running', ':ts': new Date().toISOString() }),
+        }))
+        console.log(JSON.stringify({ level: 'info', event: 'ec2_ip_auto_updated', traineeId: record.traineeId, instanceId, newIp, timestamp: new Date().toISOString() }))
+      }
+
+      if (state === 'stopped') {
+        // 停止時: ec2Stateをstoppedに更新（IPは保持 — UIで停止中バッジが出るため混乱なし）
+        await client.send(new UpdateItemCommand({
+          TableName,
+          Key: marshall({ traineeId: record.traineeId }),
+          UpdateExpression: 'SET ec2State = :state, updatedAt = :ts',
+          ExpressionAttributeValues: marshall({ ':state': 'stopped', ':ts': new Date().toISOString() }),
+        }))
+        console.log(JSON.stringify({ level: 'info', event: 'ec2_state_auto_updated', traineeId: record.traineeId, instanceId, state: 'stopped', timestamp: new Date().toISOString() }))
+      }
+    }
+
+    return { statusCode: 200, body: 'ok' }
+  }
+
+  // HTTP API Gateway リクエスト処理
   if (event.requestContext?.http?.method === 'OPTIONS') {
     return { statusCode: 204, headers: corsHeaders, body: '' }
   }
