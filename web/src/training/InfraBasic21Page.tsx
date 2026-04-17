@@ -14,7 +14,7 @@ import {
   type KnowledgeQuestionConfig,
 } from './infraBasic21Data'
 
-/** 研修時間帯ガイダンス（将来テナント毎に変更可能な定数） */
+/** TODO: テナント設定から取得（現在はハードコード。テナント毎の運用時間が確定したら設定値化すること） */
 const TRAINING_HOURS_GUIDANCE = '平日9:40〜19:00が目安です'
 
 export function InfraBasic21Page() {
