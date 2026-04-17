@@ -139,9 +139,40 @@ async function getSessionRole(session) {
   }
 }
 
-/** 現在進行中の課題ラベルを返す（lastActive.label 優先） */
+/** wbsPercent を progress フィールドから算出（student側と同じロジック） */
+function calcWbsPercent(p) {
+  if (!p) return 0
+  const ch = Array.isArray(p.chapterProgress) ? p.chapterProgress : []
+  const subCleared = [
+    Number(p.introStep ?? 0) >= 5 && p.introConfirmed ? 1 : 0,
+    p.infra1Cleared ? 1 : 0,
+    p.l1Cleared ? 1 : 0,
+    ch[1]?.cleared ? 1 : 0,
+    ch[2]?.cleared ? 1 : 0,
+    ch[3]?.cleared ? 1 : 0,
+  ].reduce((a, b) => a + b, 0)
+  return Math.round(subCleared / 8 * 100)
+}
+
+/** 現在進行中の課題ラベルを返す（lastActive.label 優先、student側と同じフォールバック） */
 function getCurrentChapterLabel(progress) {
-  if (progress?.lastActive?.label) return progress.lastActive.label
+  if (!progress) return 'はじめに'
+  if (progress.lastActive?.label) return progress.lastActive.label
+  // フォールバック: l1CurrentPart/l1CurrentQuestion から判定
+  const l1Part = Number(progress.l1CurrentPart ?? 0)
+  const l1Q = Number(progress.l1CurrentQuestion ?? 0)
+  if ((l1Part > 0 || l1Q > 0) && !progress.l1Cleared) {
+    const partLabels = ['基本操作', 'サーバー構築', '実践問題']
+    return `課題1-2 · ${partLabels[l1Part] ?? '基本操作'} ${l1Q + 1}/10問`
+  }
+  // infra1途中
+  const infra1Checkboxes = Array.isArray(progress.infra1Checkboxes) ? progress.infra1Checkboxes : []
+  if (infra1Checkboxes.some(Boolean) && !progress.infra1Cleared) {
+    return '課題1-1 · ツール演習（途中から再開）'
+  }
+  // l2途中
+  const l2Q = Number(progress.l2CurrentQuestion ?? 0)
+  if (l2Q > 0) return `課題2-2 · TCP/IP ${l2Q + 1}/10問`
   return 'はじめに'
 }
 
@@ -936,7 +967,7 @@ fail: 意味不明・設問と無関係・空欄に近い内容
             role: a.role || 'student',
             tenantId: a.tenantId || 'default',
             createdAt: a.createdAt || null,
-            wbsPercent: p?.wbsPercent || 0,
+            wbsPercent: calcWbsPercent(p),
             currentChapter: getCurrentChapterLabel(p),
             lastActive: p?.lastActive || null,
             lastLogin: p?.lastLoginAt || null,

@@ -302,11 +302,19 @@ export function AdminPage() {
                         <td className="px-4 py-3">
                           {u.ec2State === 'running' ? (
                             <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
-                              <span aria-hidden>🟢</span> 起動中
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" /> 実行中
+                            </span>
+                          ) : u.ec2State === 'pending' ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600">
+                              <span className="h-1.5 w-1.5 rounded-full bg-amber-400 inline-block animate-pulse" /> 起動中...
+                            </span>
+                          ) : u.ec2State === 'stopping' ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600">
+                              <span className="h-1.5 w-1.5 rounded-full bg-amber-400 inline-block animate-pulse" /> 停止中...
                             </span>
                           ) : u.ec2State === 'stopped' ? (
                             <span className="inline-flex items-center gap-1 text-xs text-slate-500">
-                              <span aria-hidden>⚫</span> 停止中
+                              <span className="h-1.5 w-1.5 rounded-full bg-slate-400 inline-block" /> 停止中
                             </span>
                           ) : (
                             <span className="text-xs text-slate-400">—</span>
