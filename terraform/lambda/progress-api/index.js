@@ -139,15 +139,10 @@ async function getSessionRole(session) {
   }
 }
 
-/** 現在進行中の課題ラベルを返す */
+/** 現在進行中の課題ラベルを返す（lastActive.label 優先） */
 function getCurrentChapterLabel(progress) {
-  if (!progress || !Array.isArray(progress.chapterProgress) || progress.chapterProgress.length === 0) {
-    return Number(progress?.introStep ?? 0) >= 5 && progress?.introConfirmed ? '課題1' : 'はじめに'
-  }
-  for (const ch of progress.chapterProgress) {
-    if (!ch.cleared) return ch.label || `課題${ch.chapter}`
-  }
-  return '全完了'
+  if (progress?.lastActive?.label) return progress.lastActive.label
+  return 'はじめに'
 }
 
 /** セッション検証：有効なセッションオブジェクトを返す。無効なら null。 */
@@ -943,6 +938,7 @@ fail: 意味不明・設問と無関係・空欄に近い内容
             createdAt: a.createdAt || null,
             wbsPercent: p?.wbsPercent || 0,
             currentChapter: getCurrentChapterLabel(p),
+            lastActive: p?.lastActive || null,
             lastLogin: p?.lastLoginAt || null,
             ec2State: p?.ec2State || null,
             ec2PublicIp: p?.ec2PublicIp || null,

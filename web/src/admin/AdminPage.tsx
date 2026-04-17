@@ -81,7 +81,7 @@ export function AdminPage() {
 
   // フィルタ・検索・ソート
   const filtered = useMemo(() => {
-    let list = [...users]
+    let list = users.filter((u) => u.role !== 'manager')
     if (search.trim()) {
       const q = search.trim().toLowerCase()
       list = list.filter((u) => u.username.toLowerCase().includes(q))

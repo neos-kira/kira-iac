@@ -28,6 +28,7 @@ export type AdminUser = {
   createdAt: string | null
   wbsPercent: number
   currentChapter: string
+  lastActive: { label: string } | null
   lastLogin: string | null
   ec2State: 'running' | 'stopped' | null
   ec2PublicIp: string | null
