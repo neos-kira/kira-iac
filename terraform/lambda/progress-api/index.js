@@ -551,10 +551,12 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       console.log(JSON.stringify({ level: 'info', event: 'legacy_accounts_call', endpoint: 'POST /accounts', operator: session.username, operator_role: sessionRole, target_username: username, source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
       const userRole = ['student', 'manager'].includes(body.role) ? body.role : 'student'
       const passwordHash = crypto.createHash('sha256').update(password).digest('hex')
+      const legacyTenantId = (typeof body.tenantId === 'string' && body.tenantId.trim()) ? body.tenantId.trim() : 'default'
       const Item = {
         username,
         passwordHash,
         role: userRole,
+        tenantId: legacyTenantId,
         createdAt: new Date().toISOString(),
       }
       await client.send(
@@ -646,12 +648,45 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         return json({ error: 'reserved username' }, 400)
       }
       console.log(JSON.stringify({ level: 'info', event: 'legacy_accounts_call', endpoint: 'DELETE /accounts', operator: session.username, operator_role: sessionRole, target_username: username, source_ip: event.requestContext?.http?.sourceIp, timestamp: new Date().toISOString() }))
-      await client.send(
-        new DeleteItemCommand({
-          TableName: AccountsTableName,
-          Key: marshall({ username }),
-        }),
-      )
+      await Promise.allSettled([
+        client.send(new DeleteItemCommand({ TableName: AccountsTableName, Key: marshall({ username }) })),
+        client.send(new DeleteItemCommand({ TableName, Key: marshall({ traineeId: username }) })),
+      ])
+
+      // sessions テーブルから該当ユーザーのセッションを全削除
+      let legacySessionsDeleted = 0
+      if (SessionsTableName) {
+        try {
+          const { Items: legacySessionItems } = await client.send(new ScanCommand({
+            TableName: SessionsTableName,
+            FilterExpression: '#u = :u',
+            ExpressionAttributeNames: { '#u': 'username' },
+            ExpressionAttributeValues: marshall({ ':u': username }),
+          }))
+          const toDelete = legacySessionItems || []
+          await Promise.allSettled(
+            toDelete.map((item) => {
+              const s = unmarshall(item)
+              return client.send(new DeleteItemCommand({
+                TableName: SessionsTableName,
+                Key: marshall({ sessionId: s.sessionId }),
+              }))
+            })
+          )
+          legacySessionsDeleted = toDelete.length
+        } catch (e) {
+          console.warn('[accounts DELETE] session cleanup失敗（続行）:', e.message)
+        }
+      }
+
+      console.log(JSON.stringify({
+        level: 'info',
+        event: 'user_deleted_with_session_cleanup',
+        operator: session.username,
+        deleted_username: username,
+        sessions_deleted: legacySessionsDeleted,
+        timestamp: new Date().toISOString(),
+      }))
       return json({ ok: true })
     }
 
@@ -951,6 +986,7 @@ fail: 意味不明・設問と無関係・空欄に近い内容
           return {
             username: a.username,
             role: a.role || 'student',
+            tenantId: a.tenantId || 'default',
             createdAt: a.createdAt || null,
             wbsPercent: p?.wbsPercent || 0,
             currentChapter: getCurrentChapterLabel(p),
@@ -995,10 +1031,11 @@ fail: 意味不明・設問と無関係・空欄に近い内容
 
       const passwordHash = crypto.createHash('sha256').update(password).digest('hex')
       const now = new Date().toISOString()
+      const tenantId = (typeof body.tenantId === 'string' && body.tenantId.trim()) ? body.tenantId.trim() : 'default'
       // accountsテーブルに保存
       await client.send(new PutItemCommand({
         TableName: AccountsTableName,
-        Item: marshall({ username, passwordHash, role: userRole, createdAt: now }, { removeUndefinedValues: true }),
+        Item: marshall({ username, passwordHash, role: userRole, tenantId, createdAt: now }, { removeUndefinedValues: true }),
       }))
       // progressテーブルに初期レコード作成
       try {
@@ -1050,6 +1087,41 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         client.send(new DeleteItemCommand({ TableName: AccountsTableName, Key: marshall({ username: targetUsername }) })),
         client.send(new DeleteItemCommand({ TableName, Key: marshall({ traineeId: targetUsername }) })),
       ])
+
+      // sessions テーブルから該当ユーザーのセッションを全削除（Scan: PK=sessionId, username はフィールド）
+      let sessionsDeleted = 0
+      if (SessionsTableName) {
+        try {
+          const { Items: sessionItems } = await client.send(new ScanCommand({
+            TableName: SessionsTableName,
+            FilterExpression: '#u = :u',
+            ExpressionAttributeNames: { '#u': 'username' },
+            ExpressionAttributeValues: marshall({ ':u': targetUsername }),
+          }))
+          const toDelete = sessionItems || []
+          await Promise.allSettled(
+            toDelete.map((item) => {
+              const s = unmarshall(item)
+              return client.send(new DeleteItemCommand({
+                TableName: SessionsTableName,
+                Key: marshall({ sessionId: s.sessionId }),
+              }))
+            })
+          )
+          sessionsDeleted = toDelete.length
+        } catch (e) {
+          console.warn('[admin/users DELETE] session cleanup失敗（続行）:', e.message)
+        }
+      }
+
+      console.log(JSON.stringify({
+        level: 'info',
+        event: 'user_deleted_with_session_cleanup',
+        operator: session.username,
+        deleted_username: targetUsername,
+        sessions_deleted: sessionsDeleted,
+        timestamp: new Date().toISOString(),
+      }))
       return json({ ok: true, success: true, message: `ユーザー ${targetUsername} を削除しました` })
     }
 
