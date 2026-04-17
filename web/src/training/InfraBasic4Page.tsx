@@ -311,7 +311,16 @@ export function InfraBasic4Page() {
                     </div>
                   )}
                   {score?.status === 'error' && (
-                    <p className="mt-2 text-[11px] text-red-600">{score.error}</p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <p className="text-[11px] text-red-600">{score.error}</p>
+                      <button
+                        type="button"
+                        onClick={() => { void scoreVi(s.step) }}
+                        className="shrink-0 rounded-lg bg-sky-600 px-3 py-1 text-[11px] font-medium text-white hover:bg-sky-700"
+                      >
+                        再試行
+                      </button>
+                    </div>
                   )}
                 </div>
               )
@@ -382,7 +391,16 @@ export function InfraBasic4Page() {
                     </div>
                   )}
                   {score?.status === 'error' && (
-                    <p className="mt-2 text-[11px] text-red-600">{score.error}</p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <p className="text-[11px] text-red-600">{score.error}</p>
+                      <button
+                        type="button"
+                        onClick={() => { void scoreShell(q.q) }}
+                        className="shrink-0 rounded-lg bg-sky-600 px-3 py-1 text-[11px] font-medium text-white hover:bg-sky-700"
+                      >
+                        再試行
+                      </button>
+                    </div>
                   )}
                 </div>
               )

@@ -437,8 +437,15 @@ export function InfraBasic32Page() {
 
               {/* エラー */}
               {qs.status === 'error' && (
-                <div className="rounded-xl p-4" style={{ backgroundColor: '#f9fafb' }}>
+                <div className="rounded-xl p-4 space-y-2" style={{ backgroundColor: '#f9fafb' }}>
                   <p style={{ fontSize: '14px', color: '#6b7280' }}>{qs.error}</p>
+                  <button
+                    type="button"
+                    onClick={() => { void handleScoreOne(q) }}
+                    className="rounded-lg bg-sky-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-sky-700"
+                  >
+                    再試行
+                  </button>
                 </div>
               )}
             </div>

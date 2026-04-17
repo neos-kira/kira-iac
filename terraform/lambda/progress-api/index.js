@@ -18,7 +18,7 @@ const ScreenshotsBucket = process.env.SCREENSHOTS_BUCKET || 'kira-project-dev-sc
 const RESERVED_USERNAMES = ['admin', 'root', 'system']
 
 /** Bedrock InvokeModel をリトライ付きで実行（ServiceUnavailableException 対策） */
-async function invokeModelWithRetry(command, maxRetries = 5) {
+async function invokeModelWithRetry(command, maxRetries = 3) {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await bedrockClient.send(command)
@@ -29,8 +29,9 @@ async function invokeModelWithRetry(command, maxRetries = 5) {
       }
       const retryable = err.name === 'ServiceUnavailableException' || err.name === 'ThrottlingException' || err.name === 'ModelNotReadyException' || err.$metadata?.httpStatusCode === 503 || err.$metadata?.httpStatusCode === 429
       if (retryable && attempt < maxRetries) {
-        const delay = 500 * Math.pow(2, attempt)
-        console.log(`[Bedrock] Retry ${attempt + 1}/${maxRetries} after ${delay}ms: ${err.name}`)
+        // 初回1秒、2倍バックオフ、最大30秒でキャップ
+        const delay = Math.min(1000 * Math.pow(2, attempt), 30000)
+        console.log(JSON.stringify({ level: 'warn', event: 'bedrock_retry', attempt: attempt + 1, max_retries: maxRetries, delay_ms: delay, error_name: err.name, timestamp: new Date().toISOString() }))
         await new Promise((r) => setTimeout(r, delay))
         continue
       }
@@ -372,8 +373,18 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         // 後方互換: pass/feedback も返す（IntroPage等で使用）
         return json({ rating, comment, advice, pass: rating === 'pass', feedback: comment, ...(details ? { details } : {}) })
       } catch (err) {
-        console.error('[ai/score] Bedrock error:', err.name, err.message)
         const retryable = err.name === 'ServiceUnavailableException' || err.name === 'ThrottlingException' || err.name === 'ModelNotReadyException' || err.$metadata?.httpStatusCode === 503 || err.$metadata?.httpStatusCode === 429
+        console.log(JSON.stringify({
+          level: 'error',
+          event: 'ai_score_error',
+          username: session.username,
+          error_name: err.name,
+          error_message: err.message,
+          model_id: 'apac.anthropic.claude-sonnet-4-20250514-v1:0',
+          http_status: err.$metadata?.httpStatusCode,
+          retryable,
+          timestamp: new Date().toISOString(),
+        }))
         if (retryable) {
           return json({ error: 'AIサービスが混雑しています。しばらく待ってから再試行してください。' }, 503)
         }
@@ -492,8 +503,18 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         const reply = (result.content?.[0]?.text ?? '').trim()
         return json({ reply })
       } catch (err) {
-        console.error('[ai/chat] Final error after retries:', err.name, err.message)
         const retryable = err.name === 'ServiceUnavailableException' || err.name === 'ThrottlingException' || err.name === 'ModelNotReadyException' || err.$metadata?.httpStatusCode === 503 || err.$metadata?.httpStatusCode === 429
+        console.log(JSON.stringify({
+          level: 'error',
+          event: 'ai_chat_error',
+          username: session.username,
+          error_name: err.name,
+          error_message: err.message,
+          model_id: 'apac.anthropic.claude-sonnet-4-20250514-v1:0',
+          http_status: err.$metadata?.httpStatusCode,
+          retryable,
+          timestamp: new Date().toISOString(),
+        }))
         if (retryable) {
           return json({ error: 'AIサービスが混雑しています。しばらく待ってから再試行してください。', reply: 'AIが混雑しています。少し待ってから再試行してください。' }, 503)
         }
