@@ -232,7 +232,7 @@ function App() {
         credentials: 'omit',
       })
       if (!res.ok) { setEc2StatusError(true); return }
-      const data = (await res.json()) as { ok: boolean; status?: string; publicIp?: string | null }
+      const data = (await res.json()) as { ok: boolean; status?: string; publicIp?: string | null; instanceId?: string | null }
       if (!data.status) return
       setEc2StatusError(false)
       setServerSnapshot((prev) => {
@@ -242,6 +242,8 @@ function App() {
           ec2State: data.status as NonNullable<typeof prev.ec2State>,
           ec2PublicIp: data.publicIp ?? prev.ec2PublicIp,
           ec2Host: data.publicIp ?? prev.ec2Host,
+          // バックエンドがIPからインスタンスIDを自動解決した場合はフロントにも反映する
+          ...(data.instanceId ? { ec2InstanceId: data.instanceId } : {}),
         }
       })
     } catch { setEc2StatusError(true) }
@@ -265,15 +267,16 @@ function App() {
     }
   }, [serverSnapshot?.ec2State, serverSnapshot?.ec2InstanceId, isSnapLoaded, doFetchEc2Status])
 
-  /** 初回ロード時のみ実際の EC2 状態を取得 */
+  /** 初回ロード時のみ実際の EC2 状態を取得
+   * ec2InstanceId が NULL でも ec2PublicIp があれば呼ぶ（バックエンドがIPからIDを自動解決する） */
   const ec2StatusFetchedRef = useRef(false)
   useEffect(() => {
     if (!isSnapLoaded) return
-    if (!serverSnapshot?.ec2InstanceId) return
+    if (!serverSnapshot?.ec2InstanceId && !serverSnapshot?.ec2PublicIp) return
     if (ec2StatusFetchedRef.current) return
     ec2StatusFetchedRef.current = true
     void doFetchEc2Status()
-  }, [isSnapLoaded, serverSnapshot?.ec2InstanceId, doFetchEc2Status])
+  }, [isSnapLoaded, serverSnapshot?.ec2InstanceId, serverSnapshot?.ec2PublicIp, doFetchEc2Status])
 
   function goToIntroAndClosePopup() {
     setShowIntroRequiredPopup(false)

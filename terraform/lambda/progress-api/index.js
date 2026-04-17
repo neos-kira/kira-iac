@@ -987,6 +987,30 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       return json({ ok: true })
     }
 
+    // EC2インスタンスIDをIPアドレスから自動解決し、DynamoDBに書き戻す（自己修復）
+    async function resolveEc2InstanceId(prog) {
+      if (prog.ec2InstanceId) return prog   // 既知なので何もしない
+      if (!prog.ec2PublicIp) return prog     // IPもなければ検索不可
+      try {
+        const searchRes = await ec2Client.send(new DescribeInstancesCommand({
+          Filters: [{ Name: 'ip-address', Values: [prog.ec2PublicIp] }],
+        }))
+        const inst = searchRes.Reservations?.[0]?.Instances?.[0]
+        if (inst?.InstanceId) {
+          const updated = { ...prog, ec2InstanceId: inst.InstanceId, updatedAt: new Date().toISOString() }
+          await client.send(new PutItemCommand({
+            TableName,
+            Item: marshall(updated, { removeUndefinedValues: true }),
+          })).catch(() => {})
+          console.log(JSON.stringify({ level: 'info', event: 'ec2_instance_id_recovered', traineeId: prog.traineeId, instanceId: inst.InstanceId, ip: prog.ec2PublicIp, timestamp: new Date().toISOString() }))
+          return updated
+        }
+      } catch (e) {
+        console.warn('[resolveEc2InstanceId] DescribeInstances(filter)失敗:', e.message)
+      }
+      return prog
+    }
+
     // EC2サーバー作成（POST /server/create）
     if (method === 'POST' && (path === '/server/create' || path === '/server/create/')) {
       const session = await verifySession(event)
@@ -1173,7 +1197,11 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       const { username } = session
 
       const progRes = await client.send(new GetItemCommand({ TableName, Key: marshall({ traineeId: username }) }))
-      const prog = progRes.Item ? unmarshall(progRes.Item) : null
+      let prog = progRes.Item ? unmarshall(progRes.Item) : null
+      // ec2InstanceIdが未設定でもIPがあれば自動解決を試みる
+      if (prog && !prog.ec2InstanceId && prog.ec2PublicIp) {
+        prog = await resolveEc2InstanceId(prog)
+      }
       if (!prog?.ec2InstanceId) return json({ error: 'no_instance', message: 'インスタンスが見つかりません' }, 404)
 
       // EC2の実際の状態をDescribeInstancesで取得
@@ -1196,7 +1224,7 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         await client.send(new PutItemCommand({ TableName, Item: marshall(updated, { removeUndefinedValues: true }) })).catch(() => {})
       }
 
-      return json({ ok: true, status: realState, publicIp })
+      return json({ ok: true, status: realState, publicIp, instanceId: prog.ec2InstanceId })
     }
 
     // EC2停止（POST /server/stop）
@@ -1206,7 +1234,8 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       const { username } = session
 
       const progRes = await client.send(new GetItemCommand({ TableName, Key: marshall({ traineeId: username }) }))
-      const prog = progRes.Item ? unmarshall(progRes.Item) : null
+      let prog = progRes.Item ? unmarshall(progRes.Item) : null
+      if (prog && !prog.ec2InstanceId && prog.ec2PublicIp) prog = await resolveEc2InstanceId(prog)
       if (!prog?.ec2InstanceId) return json({ error: 'no_instance', message: 'インスタンスが見つかりません' }, 404)
 
       // 実際のEC2状態を取得して冪等性チェック
@@ -1239,7 +1268,8 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       const { username } = session
 
       const progRes = await client.send(new GetItemCommand({ TableName, Key: marshall({ traineeId: username }) }))
-      const prog = progRes.Item ? unmarshall(progRes.Item) : null
+      let prog = progRes.Item ? unmarshall(progRes.Item) : null
+      if (prog && !prog.ec2InstanceId && prog.ec2PublicIp) prog = await resolveEc2InstanceId(prog)
       if (!prog?.ec2InstanceId) return json({ error: 'no_instance', message: 'インスタンスが見つかりません' }, 404)
 
       // 実際のEC2状態を取得して冪等性チェック
