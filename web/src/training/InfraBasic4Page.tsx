@@ -280,7 +280,16 @@ export function InfraBasic4Page() {
                   <p className="mt-1.5 text-[11px] text-slate-600">{s.task}</p>
                   <p className="mt-1 text-[11px] font-medium text-slate-700">{s.verify}</p>
 
-                  {!done && (
+                  {done ? (
+                    <textarea
+                      value={viAnswers[s.step] ?? ''}
+                      disabled
+                      readOnly
+                      rows={3}
+                      className="mt-2 w-full resize-none rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1.5 font-mono text-[12px] text-slate-400 cursor-not-allowed"
+                      placeholder="（回答済み）"
+                    />
+                  ) : (
                     <>
                       <textarea
                         value={viAnswers[s.step] ?? ''}
@@ -360,7 +369,16 @@ export function InfraBasic4Page() {
                   <p className="mt-1.5 text-[11px] text-slate-600">{q.task}</p>
                   <p className="mt-1 text-[11px] font-medium text-slate-700">{q.verify}</p>
 
-                  {!done && (
+                  {done ? (
+                    <textarea
+                      value={shellAnswers[q.q] ?? ''}
+                      disabled
+                      readOnly
+                      rows={3}
+                      className="mt-2 w-full resize-none rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1.5 font-mono text-[12px] text-slate-400 cursor-not-allowed"
+                      placeholder="（回答済み）"
+                    />
+                  ) : (
                     <>
                       <textarea
                         value={shellAnswers[q.q] ?? ''}

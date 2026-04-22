@@ -401,16 +401,44 @@ function TaskRow({
   onReviewScore: () => void
 }) {
   const [showHint, setShowHint] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
 
   // ── 完了済み ──
   if (checked) {
     return (
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 flex items-center gap-2">
-        <span className="text-emerald-600 text-sm">✓</span>
-        <span className="text-xs font-medium text-emerald-800">
-          <span className="text-[11px] text-emerald-500 mr-1">{task.number}</span>
-          {task.title}
-        </span>
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 overflow-hidden">
+        <button
+          type="button"
+          className="w-full flex items-center justify-between px-3 py-2 text-left"
+          onClick={() => setIsExpanded((v) => !v)}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-emerald-600 text-sm flex-shrink-0">✓</span>
+            <span className="text-xs font-medium text-emerald-800 truncate">
+              <span className="text-[11px] text-emerald-500 mr-1">{task.number}</span>
+              {task.title}
+            </span>
+            <span className="flex-shrink-0 rounded-full bg-emerald-200 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">完了</span>
+          </div>
+          <span className="text-emerald-500 text-[10px] flex-shrink-0 ml-2">{isExpanded ? '▲' : '▼'}</span>
+        </button>
+        {isExpanded && (
+          <div className="px-3 pb-3 border-t border-emerald-200 pt-2 space-y-2">
+            <p className="text-xs text-slate-600">{task.objective}</p>
+            {reviewAnswer && (
+              <div>
+                <p className="text-[11px] font-medium text-slate-500 mb-1">提出した回答:</p>
+                <textarea
+                  value={reviewAnswer}
+                  disabled
+                  readOnly
+                  rows={4}
+                  className="w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs text-slate-600 resize-none font-mono cursor-not-allowed opacity-75"
+                />
+              </div>
+            )}
+          </div>
+        )}
       </div>
     )
   }
