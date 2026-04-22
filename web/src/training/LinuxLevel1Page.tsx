@@ -243,10 +243,16 @@ export function LinuxLevel1Page() {
 
   function handleExecute() {
     if (!current || lastResult !== null) return
-    const normalize = (s: string) => s.trim().replace(/\u3000/g, ' ').replace(/\s+/g, ' ')
+    const normalize = (s: string) => {
+      let r = s.trim().replace(/\u3000/g, ' ').replace(/\s+/g, ' ').toLowerCase()
+      r = r.replace(/^sudo\s+/, '')                        // 先頭の sudo を除去
+      r = r.split(' ').filter((t) => t !== '-y').join(' ').trim()  // -y トークンを除去
+      return r
+    }
     const trimmed = normalize(inputValue)
     const correctAnswer = normalize(current.choices[current.correctIndex] ?? '')
-    const correct = trimmed === correctAnswer
+    const altAnswers = (current.alternatives ?? []).map(normalize)
+    const correct = trimmed === correctAnswer || altAnswers.includes(trimmed)
     const isFirstAttempt = !(current.id in firstAttemptCorrect)
 
     if (isFirstAttempt) {

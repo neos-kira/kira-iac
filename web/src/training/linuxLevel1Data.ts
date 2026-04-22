@@ -3,6 +3,7 @@ export type QuizQuestion = {
   prompt: string
   choices: string[]   // choices[correctIndex] が正解コマンド
   correctIndex: number
+  alternatives?: string[]  // 追加の正解パターン（採点時にいずれかにマッチすれば正解）
 }
 
 export const LINUX_LEVEL1_QUESTIONS: QuizQuestion[] = [
@@ -19,7 +20,7 @@ export const LINUX_LEVEL1_QUESTIONS: QuizQuestion[] = [
   { id: 'q10', prompt: '定期実行の設定を編集するには？', choices: ['crontab -e'], correctIndex: 0 },
 
   // 第2部: サーバ構築必須 (q11–q20)
-  { id: 'q11', prompt: 'httpdをインストールするには？（Amazon Linux 2023）', choices: ['dnf install httpd -y'], correctIndex: 0 },
+  { id: 'q11', prompt: 'httpdをインストールするには？（Amazon Linux 2023）', choices: ['dnf install httpd -y'], correctIndex: 0, alternatives: ['yum install httpd', 'yum install httpd -y'] },
   { id: 'q12', prompt: 'httpdを今すぐ起動するには？', choices: ['systemctl start httpd'], correctIndex: 0 },
   { id: 'q13', prompt: 'httpdをOS再起動後も自動起動するよう設定するには？', choices: ['systemctl enable httpd'], correctIndex: 0 },
   { id: 'q14', prompt: 'httpdが動いているか確認するには？', choices: ['systemctl status httpd'], correctIndex: 0 },
