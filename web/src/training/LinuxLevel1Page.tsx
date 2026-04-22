@@ -222,10 +222,12 @@ export function LinuxLevel1Page() {
     void restore()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // フォーカス
+  // フォーカス（復習モード・回答済みの場合はフォーカスしない）
   useEffect(() => {
-    if (lastResult === null && !(queueIdx in answeredCommands) && inputRef.current) inputRef.current.focus()
-  }, [lastResult, queueIdx, answeredCommands])
+    const q = queue[queueIdx]
+    const cleared = q ? firstAttemptCorrect[q.id] === true : false
+    if (lastResult === null && !cleared && !(queueIdx in answeredCommands) && inputRef.current) inputRef.current.focus()
+  }, [lastResult, queueIdx, answeredCommands, queue, firstAttemptCorrect])
 
   // フィードバック中は Enter → 次へ
   useEffect(() => {
@@ -477,6 +479,11 @@ export function LinuxLevel1Page() {
   const showRetryBadge = isRetry && lastResult !== 'correct'
   const showFeedback = lastResult !== null
 
+  // クリア済み = 初回正解済み（firstAttemptCorrectで判定、answeredCommandsがなくても機能する）
+  const isCleared = current ? firstAttemptCorrect[current.id] === true : false
+  // 復習モード = クリア済みかつフィードバック非表示（「前の問題」で戻ってきた状態）
+  const isReviewMode = isCleared && !showFeedback
+
   const progressLabel = isRetrying
     ? `${PART_LABELS[activePart]} 復習中`
     : `${PART_LABELS[activePart]} ${firstAttemptCount + 1}/${PART_SIZE}問`
@@ -535,8 +542,8 @@ export function LinuxLevel1Page() {
 
         <p style={{ fontSize: '20px', fontWeight: 600, color: '#111827', marginBottom: '32px', lineHeight: '1.7', marginTop: '16px' }}>{current?.prompt}</p>
 
-        {/* 回答済みバナー */}
-        {queueIdx in answeredCommands && !showFeedback && (
+        {/* 回答済みバナー（クリア済み復習モード以外のみ表示） */}
+        {queueIdx in answeredCommands && !showFeedback && !isReviewMode && (
           <div style={{ background: '#f0fdf9', border: '1px solid #d1fae5', borderRadius: '8px', padding: '8px 14px', marginBottom: '12px', fontSize: '13px', color: '#0d9488' }}>
             ✓ 回答済みです（変更できません）
           </div>
@@ -554,21 +561,39 @@ export function LinuxLevel1Page() {
               ref={inputRef}
               id="cmd-input"
               type="text"
-              value={queueIdx in answeredCommands && !showFeedback ? (answeredCommands[queueIdx] ?? '') : inputValue}
-              onChange={(e) => !showFeedback && !(queueIdx in answeredCommands) && setInputValue(e.target.value)}
+              value={
+                isReviewMode || (queueIdx in answeredCommands && !showFeedback)
+                  ? (answeredCommands[queueIdx] ?? '')
+                  : inputValue
+              }
+              onChange={(e) => !showFeedback && !isReviewMode && !(queueIdx in answeredCommands) && setInputValue(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key !== 'Enter') return
                 e.preventDefault()
                 e.stopPropagation()
-                if (showFeedback) goNext()
+                if (showFeedback || isReviewMode) { void goNext() }
                 else if (!(queueIdx in answeredCommands) && inputValue.trim() !== '') handleExecute()
               }}
-              disabled={showFeedback || queueIdx in answeredCommands}
-              className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50 disabled:opacity-70"
+              disabled={showFeedback || isReviewMode || queueIdx in answeredCommands}
+              className={`flex-1 rounded-xl border px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none disabled:opacity-70 ${
+                isReviewMode
+                  ? 'border-emerald-200 bg-emerald-50 focus:border-emerald-300 focus:ring-1 focus:ring-emerald-300/50'
+                  : 'border-slate-300 bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500/50'
+              }`}
               autoComplete="off"
               spellCheck={false}
             />
-            {queueIdx in answeredCommands && !showFeedback ? (
+            {isReviewMode ? (
+              // クリア済み復習モード: 「次へ」ボタンを表示（実行ボタンは非表示）
+              <button
+                type="button"
+                onClick={() => { void goNext() }}
+                style={{ background: '#0ea5e9', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500 }}
+                className="shrink-0"
+              >
+                {queueIdx < queue.length - 1 ? '次へ' : '採点する'}
+              </button>
+            ) : queueIdx in answeredCommands && !showFeedback ? (
               <div />
             ) : !showFeedback ? (
               <button
@@ -586,7 +611,7 @@ export function LinuxLevel1Page() {
             ) : (
               <button
                 type="button"
-                onClick={goNext}
+                onClick={() => { void goNext() }}
                 style={{ background: '#0ea5e9', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500 }}
                 className="shrink-0"
               >
@@ -595,6 +620,16 @@ export function LinuxLevel1Page() {
             )}
           </div>
         </form>
+
+        {/* 正解バッジ（クリア済み復習モード） */}
+        {isReviewMode && (
+          <div
+            className="mt-4 rounded-xl border border-emerald-500/50 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+            role="status"
+          >
+            <span className="font-medium">✓ 正解</span>
+          </div>
+        )}
 
         {showFeedback && (
           <div
