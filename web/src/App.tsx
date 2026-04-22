@@ -193,7 +193,7 @@ function App() {
   const [ec2SaveMsg, setEc2SaveMsg] = useState<string | null>(null)
   const [isCreatingServer, setIsCreatingServer] = useState(false)
   const [serverCreateProgress, setServerCreateProgress] = useState(0)
-  const [serverCreatedModal, setServerCreatedModal] = useState<{ publicIp: string; keyPairName: string; pemFilename: string } | null>(null)
+  const [serverCreatedModal, setServerCreatedModal] = useState<{ publicIp: string; keyPairName: string; pemFilename: string; ec2Username: string } | null>(null)
   const [showStopConfirm, setShowStopConfirm] = useState(false)
   const [isServerActionLoading, setIsServerActionLoading] = useState(false)
   const [isRedownloading, setIsRedownloading] = useState(false)
@@ -788,7 +788,7 @@ function App() {
       setServerSnapshot(updated)
 
       // 成功モーダルを表示
-      setServerCreatedModal({ publicIp: data.publicIp ?? '', keyPairName, pemFilename })
+      setServerCreatedModal({ publicIp: data.publicIp ?? '', keyPairName, pemFilename, ec2Username: data.ec2Username ?? username })
     } catch {
       window.clearInterval(progressInterval)
       setServerCreateProgress(0)
@@ -960,7 +960,7 @@ function App() {
               </div>
               <div>
                 <p className="text-xs text-slate-400 mb-0.5">接続ユーザー名</p>
-                <p className="font-semibold font-mono text-slate-700">ubuntu</p>
+                <p className="font-semibold font-mono text-slate-700">{serverCreatedModal.ec2Username}</p>
               </div>
               <div>
                 <p className="text-xs text-slate-400 mb-0.5">秘密鍵ファイル（ダウンロード済み）</p>
