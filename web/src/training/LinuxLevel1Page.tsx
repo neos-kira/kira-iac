@@ -222,11 +222,15 @@ export function LinuxLevel1Page() {
     void restore()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // フォーカス（復習モード・回答済みの場合はフォーカスしない）
+  // フォーカス（復習モード・変更不可の回答済みの場合はフォーカスしない）
   useEffect(() => {
     const q = queue[queueIdx]
     const cleared = q ? firstAttemptCorrect[q.id] === true : false
-    if (lastResult === null && !cleared && !(queueIdx in answeredCommands) && inputRef.current) inputRef.current.focus()
+    const retry = q ? (q.id in firstAttemptCorrect) : false
+    const retryUnanswered = retry && !cleared && lastResult === null
+    // 入力可能（未回答 or 再出題問題）のみフォーカス
+    const canInput = lastResult === null && (retryUnanswered || !(queueIdx in answeredCommands)) && !cleared
+    if (canInput && inputRef.current) inputRef.current.focus()
   }, [lastResult, queueIdx, answeredCommands, queue, firstAttemptCorrect])
 
   // フィードバック中は Enter → 次へ
@@ -483,6 +487,9 @@ export function LinuxLevel1Page() {
   const isCleared = current ? firstAttemptCorrect[current.id] === true : false
   // 復習モード = クリア済みかつフィードバック非表示（「前の問題」で戻ってきた状態）
   const isReviewMode = isCleared && !showFeedback
+  // 再出題問題・未正解・フィードバック非表示 = 「前の問題」で不正解問題に戻った状態 or 再出題待ち
+  // answeredCommandsに古い不正解回答があっても空入力欄・実行ボタンを表示する
+  const isRetryUnanswered = isRetry && !isCleared && !showFeedback
 
   const progressLabel = isRetrying
     ? `${PART_LABELS[activePart]} 復習中`
@@ -562,19 +569,21 @@ export function LinuxLevel1Page() {
               id="cmd-input"
               type="text"
               value={
-                isReviewMode || (queueIdx in answeredCommands && !showFeedback)
+                // クリア済み復習モード: 保存済み回答を表示
+                // 再出題問題(不正解戻り): answeredCommandsに古い回答があっても inputValue(空) を優先
+                isReviewMode || (!isRetryUnanswered && queueIdx in answeredCommands && !showFeedback)
                   ? (answeredCommands[queueIdx] ?? '')
                   : inputValue
               }
-              onChange={(e) => !showFeedback && !isReviewMode && !(queueIdx in answeredCommands) && setInputValue(e.target.value)}
+              onChange={(e) => !showFeedback && !isReviewMode && (isRetryUnanswered || !(queueIdx in answeredCommands)) && setInputValue(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key !== 'Enter') return
                 e.preventDefault()
                 e.stopPropagation()
                 if (showFeedback || isReviewMode) { void goNext() }
-                else if (!(queueIdx in answeredCommands) && inputValue.trim() !== '') handleExecute()
+                else if ((isRetryUnanswered || !(queueIdx in answeredCommands)) && inputValue.trim() !== '') handleExecute()
               }}
-              disabled={showFeedback || isReviewMode || queueIdx in answeredCommands}
+              disabled={showFeedback || isReviewMode || (!isRetryUnanswered && queueIdx in answeredCommands)}
               className={`flex-1 rounded-xl border px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none disabled:opacity-70 ${
                 isReviewMode
                   ? 'border-emerald-200 bg-emerald-50 focus:border-emerald-300 focus:ring-1 focus:ring-emerald-300/50'
@@ -593,9 +602,11 @@ export function LinuxLevel1Page() {
               >
                 {queueIdx < queue.length - 1 ? '次へ' : '採点する'}
               </button>
-            ) : queueIdx in answeredCommands && !showFeedback ? (
+            ) : !isRetryUnanswered && queueIdx in answeredCommands && !showFeedback ? (
+              // 回答済みで変更不可（クリア済み以外の特殊ケース）
               <div />
             ) : !showFeedback ? (
+              // 未回答 or 再出題問題: 実行ボタン表示
               <button
                 type="button"
                 onClick={handleExecute}
@@ -609,6 +620,7 @@ export function LinuxLevel1Page() {
                 実行
               </button>
             ) : (
+              // フィードバック後: 次へ/採点するボタン
               <button
                 type="button"
                 onClick={() => { void goNext() }}
