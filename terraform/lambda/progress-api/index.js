@@ -1202,16 +1202,20 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       }
 
       // EC2インスタンス起動
-      // cloud-init: 受講生ユーザーを作成しubuntuのSSH公開鍵をコピー
+      // cloud-init: 受講生ユーザーを作成しrockyのSSH公開鍵をコピー
       const sanitizedUsername = username.replace(/[^a-z0-9_-]/g, '_')
       const userDataScript = [
         '#!/bin/bash',
         `TRAINEE_USER="${sanitizedUsername}"`,
+        // カリキュラム必須パッケージをインストール
+        'dnf install -y firewalld bind-utils lvm2',
+        'systemctl enable --now firewalld',
+        // 受講生ユーザー作成
         'useradd -m -s /bin/bash "$TRAINEE_USER"',
-        'usermod -aG sudo "$TRAINEE_USER"',
+        'usermod -aG wheel "$TRAINEE_USER"',
         `echo "$TRAINEE_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$TRAINEE_USER`,
         'mkdir -p /home/$TRAINEE_USER/.ssh',
-        '[ -f /home/ubuntu/.ssh/authorized_keys ] && cp /home/ubuntu/.ssh/authorized_keys /home/$TRAINEE_USER/.ssh/authorized_keys',
+        '[ -f /home/rocky/.ssh/authorized_keys ] && cp /home/rocky/.ssh/authorized_keys /home/$TRAINEE_USER/.ssh/authorized_keys',
         'chown -R $TRAINEE_USER:$TRAINEE_USER /home/$TRAINEE_USER/.ssh',
         'chmod 700 /home/$TRAINEE_USER/.ssh',
         '[ -f /home/$TRAINEE_USER/.ssh/authorized_keys ] && chmod 600 /home/$TRAINEE_USER/.ssh/authorized_keys',
@@ -1221,7 +1225,7 @@ fail: 意味不明・設問と無関係・空欄に近い内容
       let instanceId
       try {
         const runRes = await ec2Client.send(new RunInstancesCommand({
-          ImageId: 'ami-0caa0c30aa31d3dad', // Ubuntu 24.04 LTS ARM64 (ap-northeast-1)
+          ImageId: 'ami-0a0ead2644215f4fe', // Rocky Linux 9.7 ARM64 (ap-northeast-1) 2025-12-04
           InstanceType: 't4g.nano',
           MinCount: 1,
           MaxCount: 1,

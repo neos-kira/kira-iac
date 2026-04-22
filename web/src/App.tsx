@@ -779,7 +779,7 @@ function App() {
         ec2PublicIp: data.publicIp ?? null,
         ec2State: 'running',
         keyPairName,
-        ec2Username: data.ec2Username ?? 'ubuntu',
+        ec2Username: data.ec2Username ?? 'rocky',
         ec2CreatedAt: data.ec2CreatedAt ?? null,
         ec2StartTime: data.ec2StartTime ?? null,
         ec2Host: data.publicIp ?? null,
@@ -1729,7 +1729,7 @@ function App() {
               ) : (
                 /* 作成済み: コンパクト横並び */
                 (() => {
-                  const displayUser = (serverSnapshot.ec2Username && serverSnapshot.ec2Username !== 'ubuntu')
+                  const displayUser = (serverSnapshot.ec2Username && serverSnapshot.ec2Username !== 'rocky')
                     ? serverSnapshot.ec2Username
                     : getDisplayName().trim().toLowerCase()
                   const CopyBtn = ({ text }: { text: string }) => (

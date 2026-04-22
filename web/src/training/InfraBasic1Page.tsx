@@ -140,7 +140,7 @@ export function InfraBasic1Page() {
   const isGrading = gradingSection === 'ssh'
 
   const ip = serverSnapshot?.ec2PublicIp || serverSnapshot?.ec2Host || '自分のサーバーIP'
-  const user = (serverSnapshot?.ec2Username && serverSnapshot.ec2Username !== 'ubuntu')
+  const user = (serverSnapshot?.ec2Username && serverSnapshot.ec2Username !== 'rocky')
     ? serverSnapshot.ec2Username
     : username || '自分のユーザー名'
   const pemFile = serverSnapshot?.keyPairName ? `${serverSnapshot.keyPairName}.pem` : '秘密鍵ファイル.pem'

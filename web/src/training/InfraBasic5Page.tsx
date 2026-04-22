@@ -234,7 +234,7 @@ export function InfraBasic5Page() {
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">概要</p>
           <p className="mt-2 text-sm text-slate-700">
-            Rocky Linux 8 サーバーを実際に構築します。各セクションを順番に進め、すべてのタスクを完了してください。
+            Rocky Linux 9 サーバーを実際に構築します。各セクションを順番に進め、すべてのタスクを完了してください。
           </p>
           <ul className="mt-2 space-y-1 text-xs text-slate-600 list-disc list-inside">
             <li>各タスクを完了したらチェックを入れてください</li>
