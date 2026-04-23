@@ -574,7 +574,7 @@ export function IntroPage() {
       <>
         {isReviewMode && (
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700">
-            ✓ 確認済み — 振り返り閲覧モード（ステッパーで各ステップを確認できます）
+            ✓ 完了済み — 上の丸いボタンで各ステップの内容を見返せます
           </div>
         )}
         {headerBlock}
@@ -608,7 +608,7 @@ export function IntroPage() {
       <>
         {isReviewMode && (
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700">
-            ✓ 確認済み — 振り返り閲覧モード（ステッパーで各ステップを確認できます）
+            ✓ 完了済み — 上の丸いボタンで各ステップの内容を見返せます
           </div>
         )}
         {headerBlock}
@@ -712,7 +712,7 @@ export function IntroPage() {
       <>
         {isReviewMode && (
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700">
-            ✓ 確認済み — 振り返り閲覧モード（ステッパーで各ステップを確認できます）
+            ✓ 完了済み — 上の丸いボタンで各ステップの内容を見返せます
           </div>
         )}
         {headerBlock}
@@ -798,7 +798,7 @@ export function IntroPage() {
       <>
         {isReviewMode && (
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700">
-            ✓ 確認済み — 振り返り閲覧モード（ステッパーで各ステップを確認できます）
+            ✓ 完了済み — 上の丸いボタンで各ステップの内容を見返せます
           </div>
         )}
         {headerBlock}
@@ -936,7 +936,7 @@ export function IntroPage() {
     <>
       {isReviewMode && (
         <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700">
-          ✓ 確認済み — 振り返り閲覧モード（ステッパーで各ステップを確認できます）
+          ✓ 完了済み — 上の丸いボタンで各ステップの内容を見返せます
         </div>
       )}
       {headerBlock}
