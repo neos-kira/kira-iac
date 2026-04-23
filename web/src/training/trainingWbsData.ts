@@ -88,7 +88,7 @@ export const TRAINING_TASKS: TrainingTaskDef[] = [
     clearedKey: INFRA_BASIC_1_CLEARED_KEY,
     clearedKeys: [INFRA_BASIC_1_CLEARED_KEY, L1_CLEARED_KEY],
     subTasks: [
-      { label: '1-1 使用ツール（TeraTerm / WinSCP 等）', clearedKey: INFRA_BASIC_1_CLEARED_KEY },
+      { label: '1-1 SSHターミナル接続', clearedKey: INFRA_BASIC_1_CLEARED_KEY },
       { label: '1-2 Linuxコマンド30問', clearedKey: L1_CLEARED_KEY },
     ],
   },
@@ -498,8 +498,8 @@ export const INSTRUCTOR_REFERENCE = {
   chapter1: {
     title: 'Chapter 1 設計書サンプル',
     content: `# ツール演習チェックリスト
-- TeraTerm: 接続・ログ取得
-- WinSCP: ファイル転送
+- ターミナル(macOS/Windows): SSH接続・ログ取得
+- SCP/SFTP: ファイル転送
 - 設定変更前のバックアップ: cp -p で .org を作成`,
   },
   chapter2: {

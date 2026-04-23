@@ -215,6 +215,9 @@ export function InfraBasic4Page() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-2xl space-y-6">
+        <button type="button" onClick={() => navigate('/')} className="inline-flex items-center gap-1 text-sm text-sky-700 hover:text-sky-800">
+          ← 課題一覧に戻る
+        </button>
         <div>
           <p className="text-xs text-slate-500">課題4 · 実践演習</p>
           <h1 className="text-xl font-bold text-slate-800">vi & シェルスクリプト演習</h1>

@@ -351,6 +351,9 @@ export function InfraBasic32Page() {
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-3xl space-y-6">
         {/* パンくず・タイトル */}
+        <button type="button" onClick={() => navigate('/training/infra-basic-3-top')} className="inline-flex items-center gap-1 text-sm text-sky-700 hover:text-sky-800">
+          ← 課題一覧に戻る
+        </button>
         <div>
           <p className="text-xs text-slate-500">課題3-2 · 理解度チェック</p>
           <h1 className="text-xl font-bold text-slate-800">OS・仮想化・クラウド 記述式チェック</h1>

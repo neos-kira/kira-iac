@@ -234,7 +234,10 @@ export function InfraBasic21Page() {
     <div ref={formRef} className="min-h-screen bg-slate-50 text-slate-800 p-6" data-form-scope="task" data-form-dirty="false">
       <div className="mx-auto max-w-3xl space-y-6">
         {/* ヘッダー */}
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-between">
+          <button type="button" onClick={() => navigate('/training/infra-basic-2-top')} className="inline-flex items-center gap-1 text-sm text-sky-700 hover:text-sky-800">
+            ← 課題一覧に戻る
+          </button>
           <button
             type="button"
             onClick={() => { saveInfraBasic21State(state, storageKey); clearDirty(); navigate('/') }}

@@ -507,6 +507,9 @@ export function LinuxLevel1Page() {
   return (
     <div style={{ minHeight: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }} className="bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-xl w-full">
+        <button type="button" onClick={() => navigate('/training/infra-basic-top')} className="mb-3 inline-flex items-center gap-1 text-sm text-sky-700 hover:text-sky-800">
+          ← 課題一覧に戻る
+        </button>
         <div className="flex items-center justify-end mb-4">
           <div className="flex flex-col items-end gap-1">
             <button

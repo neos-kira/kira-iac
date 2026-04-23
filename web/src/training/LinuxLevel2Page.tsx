@@ -43,6 +43,7 @@ export function LinuxLevel2Page() {
 
   return (
     <TrainingQuizFrame
+      backPath="/training/infra-basic-2-top"
       title="インフラ基礎課題2-2 — TCP/IP 理解度チェック10問"
       subtitle="TRAINING · INFRA · 2-2 TCP/IP"
       questions={TCPIP_LEVEL2_QUESTIONS}

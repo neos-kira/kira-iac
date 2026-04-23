@@ -13,7 +13,7 @@ const TASKS = [
   {
     category: '課題1-1 · 使用ツール',
     title: 'インフラ基礎演習1',
-    description: 'TeraTerm / sakuraエディタ / WinMerge / WinSCP を使った接続・ファイル作成・差分・転送の演習です。',
+    description: 'ターミナルからSSHで演習サーバーに接続する演習です。macOS / Windows 両対応。',
     path: '/training/infra-basic-1',
   },
   {
