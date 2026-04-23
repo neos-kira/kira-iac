@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useSafeNavigate } from '../../hooks/useSafeNavigate'
 import { IT_BASICS_CATEGORIES, type ITBasicsQuestion } from '../itBasicsData'
+import { postProgress, fetchMyProgress, isProgressApiAvailable } from '../../progressApi'
+import { getCurrentDisplayName } from '../../auth'
+import type { TraineeProgressSnapshot } from '../../traineeProgressStorage'
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
@@ -28,6 +31,18 @@ export function ITBasicsTestPage() {
   const [answered, setAnswered] = useState(false)
   const [score, setScore] = useState(0)
   const [finished, setFinished] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
+
+  useEffect(() => {
+    const load = async () => {
+      const username = getCurrentDisplayName().trim().toLowerCase()
+      if (!username) return
+      const snap = await fetchMyProgress(username)
+      if (snap) setServerSnapshot(snap)
+    }
+    void load()
+  }, [])
 
   useEffect(() => {
     document.title = cat ? `${cat.title} — テスト` : 'IT業界の歩き方'
@@ -58,8 +73,32 @@ export function ITBasicsTestPage() {
     }
   }
 
-  function handleNext() {
+  async function handleNext() {
     if (currentIndex + 1 >= questions.length) {
+      const isPassed = cat ? score >= cat.passingScore : false
+      if (isPassed && categoryId && isProgressApiAvailable()) {
+        const username = getCurrentDisplayName().trim().toLowerCase()
+        if (username) {
+          setIsSaving(true)
+          const base: TraineeProgressSnapshot = serverSnapshot ?? {
+            introConfirmed: false, introAt: null, wbsPercent: 0, chapterProgress: [],
+            currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
+          }
+          try {
+            await postProgress(username, {
+              ...base,
+              itBasicsProgress: {
+                ...(base.itBasicsProgress ?? {}),
+                [categoryId]: { cleared: true, clearedAt: new Date().toISOString() },
+              },
+              updatedAt: new Date().toISOString(),
+            })
+          } catch (err) {
+            console.error('[ITBasics] postProgress failed:', err)
+          }
+          setIsSaving(false)
+        }
+      }
       setFinished(true)
     } else {
       setCurrentIndex((i) => i + 1)
@@ -181,7 +220,8 @@ export function ITBasicsTestPage() {
               <p className="mt-2 text-xs text-slate-700 leading-relaxed">{q.explanation}</p>
               <button
                 type="button"
-                onClick={handleNext}
+                onClick={() => { void handleNext() }}
+                disabled={isSaving}
                 className="mt-4 rounded-xl bg-slate-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-900"
               >
                 {currentIndex + 1 >= questions.length ? '結果を見る' : '次の問題 →'}

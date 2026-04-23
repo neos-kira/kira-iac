@@ -370,6 +370,8 @@ async function handler(event) {
         infra5Checkboxes: Array.isArray(body.infra5Checkboxes) ? body.infra5Checkboxes : undefined,
         infra5SectionDone: body.infra5SectionDone && typeof body.infra5SectionDone === 'object' ? body.infra5SectionDone : undefined,
         infra5ReviewAnswers: body.infra5ReviewAnswers && typeof body.infra5ReviewAnswers === 'object' ? body.infra5ReviewAnswers : undefined,
+        // IT業界の歩き方: カテゴリIDごとのテスト合格状態
+        itBasicsProgress: (body.itBasicsProgress && typeof body.itBasicsProgress === 'object' && !Array.isArray(body.itBasicsProgress)) ? body.itBasicsProgress : undefined,
       }
       await client.send(new PutItemCommand({ TableName, Item: marshall(Item, { removeUndefinedValues: true }) }))
       return json({ ok: true })

@@ -116,6 +116,8 @@ export type TraineeProgressSnapshot = {
   infra5ReviewAnswers?: Record<string, string>
   /** 課題1-1: AI採点結果 */
   infra1GradeState?: Record<string, { passed: boolean; message: string; gradedAt: string }>
+  /** IT業界の歩き方: カテゴリIDごとのテスト合格状態 */
+  itBasicsProgress?: Record<string, { cleared: boolean; clearedAt: string }>
   /**
    * 最後に「中断して保存」したモジュール情報。
    * ダッシュボードの「つづきから」はこのフィールドを最優先で表示する。
