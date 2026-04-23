@@ -8,6 +8,7 @@ import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 import { postProgress, isProgressApiAvailable } from '../progressApi'
 import { getCurrentDisplayName } from '../auth'
 import { fetchMyProgress } from '../progressApi'
+import { Toast } from '../components/Toast'
 
 const PART_SIZE = 10
 const PASS_SCORE = 8
@@ -156,6 +157,8 @@ export function LinuxLevel1Page() {
   const [partScore, setPartScore] = useState(0)
   const [isExecuting, setIsExecuting] = useState(false)
   const [shakeKey, setShakeKey] = useState(0)
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'warning' } | null>(null)
+  const allClearSavedRef = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -259,6 +262,42 @@ export function LinuxLevel1Page() {
     return () => document.removeEventListener('keydown', onKey)
   }, [lastResult, queue, queueIdx, firstAttemptCorrect, activePart, partsCleared])
 
+  // 全クリア時にDynamoDB保存 + トースト表示
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (phase !== 'all_clear' || allClearSavedRef.current) return
+    allClearSavedRef.current = true
+    const save = async () => {
+      const username = getCurrentDisplayName().trim().toLowerCase()
+      if (!username || !isProgressApiAvailable()) {
+        setToast({ message: '⚠ 保存に失敗しました', type: 'warning' })
+        return
+      }
+      const base: TraineeProgressSnapshot = serverSnapshot ?? {
+        introConfirmed: false, introAt: null, wbsPercent: 0, chapterProgress: [],
+        currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
+      }
+      try {
+        const ok = await postProgress(username, {
+          ...base,
+          l1Cleared: true,
+          l1CurrentPart: activePart,
+          l1CurrentQuestion: PART_SIZE,
+          l1WrongIds: [],
+          l1AnsweredCommands: {},
+          updatedAt: new Date().toISOString(),
+        })
+        setToast(ok
+          ? { message: '✓ 進捗を保存しました', type: 'success' }
+          : { message: '⚠ 保存に失敗しました', type: 'warning' }
+        )
+      } catch {
+        setToast({ message: '⚠ 保存に失敗しました', type: 'warning' })
+      }
+    }
+    void save()
+  }, [phase, activePart, serverSnapshot])
+
   const firstAttemptCount = Object.keys(firstAttemptCorrect).length
 
   function handleExecute() {
@@ -335,23 +374,6 @@ export function LinuxLevel1Page() {
 
       if (pass && newPartsCleared.every(Boolean)) {
         window.localStorage.setItem(clearedKey, 'true')
-        // DynamoDB即時同期：serverSnapshotをベースに変化した値だけ上書き
-        const username = getCurrentDisplayName().trim().toLowerCase()
-        if (username && isProgressApiAvailable()) {
-          const base: TraineeProgressSnapshot = serverSnapshot ?? {
-            introConfirmed: false, introAt: null, wbsPercent: 0, chapterProgress: [],
-            currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
-          }
-          await postProgress(username, {
-            ...base,
-            l1Cleared: true,
-            l1CurrentPart: activePart,
-            l1CurrentQuestion: PART_SIZE,
-            l1WrongIds: [],
-            l1AnsweredCommands: {},
-            updatedAt: new Date().toISOString(),
-          })
-        }
         setPhase('all_clear')
       } else {
         setPhase('part_result')
@@ -457,6 +479,7 @@ export function LinuxLevel1Page() {
             クリアを記録する
           </button>
         </div>
+        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       </div>
     )
   }

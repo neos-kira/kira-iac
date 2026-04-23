@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useSafeNavigate } from '../../hooks/useSafeNavigate'
 import { IT_BASICS_CATEGORIES, type ITBasicsQuestion } from '../itBasicsData'
 import { postProgress, fetchMyProgress, isProgressApiAvailable } from '../../progressApi'
 import { getCurrentDisplayName } from '../../auth'
 import type { TraineeProgressSnapshot } from '../../traineeProgressStorage'
+import { Toast } from '../../components/Toast'
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
@@ -31,8 +32,9 @@ export function ITBasicsTestPage() {
   const [answered, setAnswered] = useState(false)
   const [score, setScore] = useState(0)
   const [finished, setFinished] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'warning' } | null>(null)
+  const itBasicsSavedRef = useRef(false)
 
   useEffect(() => {
     const load = async () => {
@@ -43,6 +45,45 @@ export function ITBasicsTestPage() {
     }
     void load()
   }, [])
+
+  // 合格時にDynamoDB保存 + トースト表示
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!finished || !cat || score < cat.passingScore || itBasicsSavedRef.current) return
+    itBasicsSavedRef.current = true
+    const save = async () => {
+      if (!categoryId || !isProgressApiAvailable()) {
+        setToast({ message: '⚠ 保存に失敗しました', type: 'warning' })
+        return
+      }
+      const username = getCurrentDisplayName().trim().toLowerCase()
+      if (!username) {
+        setToast({ message: '⚠ 保存に失敗しました', type: 'warning' })
+        return
+      }
+      const base: TraineeProgressSnapshot = serverSnapshot ?? {
+        introConfirmed: false, introAt: null, wbsPercent: 0, chapterProgress: [],
+        currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
+      }
+      try {
+        const ok = await postProgress(username, {
+          ...base,
+          itBasicsProgress: {
+            ...(base.itBasicsProgress ?? {}),
+            [categoryId]: { cleared: true, clearedAt: new Date().toISOString() },
+          },
+          updatedAt: new Date().toISOString(),
+        })
+        setToast(ok
+          ? { message: '✓ 進捗を保存しました', type: 'success' }
+          : { message: '⚠ 保存に失敗しました', type: 'warning' }
+        )
+      } catch {
+        setToast({ message: '⚠ 保存に失敗しました', type: 'warning' })
+      }
+    }
+    void save()
+  }, [finished, score, cat, categoryId, serverSnapshot])
 
   useEffect(() => {
     document.title = cat ? `${cat.title} — テスト` : 'IT業界の歩き方'
@@ -73,32 +114,8 @@ export function ITBasicsTestPage() {
     }
   }
 
-  async function handleNext() {
+  function handleNext() {
     if (currentIndex + 1 >= questions.length) {
-      const isPassed = cat ? score >= cat.passingScore : false
-      if (isPassed && categoryId && isProgressApiAvailable()) {
-        const username = getCurrentDisplayName().trim().toLowerCase()
-        if (username) {
-          setIsSaving(true)
-          const base: TraineeProgressSnapshot = serverSnapshot ?? {
-            introConfirmed: false, introAt: null, wbsPercent: 0, chapterProgress: [],
-            currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
-          }
-          try {
-            await postProgress(username, {
-              ...base,
-              itBasicsProgress: {
-                ...(base.itBasicsProgress ?? {}),
-                [categoryId]: { cleared: true, clearedAt: new Date().toISOString() },
-              },
-              updatedAt: new Date().toISOString(),
-            })
-          } catch (err) {
-            console.error('[ITBasics] postProgress failed:', err)
-          }
-          setIsSaving(false)
-        }
-      }
       setFinished(true)
     } else {
       setCurrentIndex((i) => i + 1)
@@ -142,6 +159,7 @@ export function ITBasicsTestPage() {
             </div>
           </div>
         </div>
+        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       </div>
     )
   }
@@ -220,8 +238,7 @@ export function ITBasicsTestPage() {
               <p className="mt-2 text-xs text-slate-700 leading-relaxed">{q.explanation}</p>
               <button
                 type="button"
-                onClick={() => { void handleNext() }}
-                disabled={isSaving}
+                onClick={handleNext}
                 className="mt-4 rounded-xl bg-slate-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-900"
               >
                 {currentIndex + 1 >= questions.length ? '結果を見る' : '次の問題 →'}
