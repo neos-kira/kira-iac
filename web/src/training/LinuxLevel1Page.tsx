@@ -154,6 +154,7 @@ export function LinuxLevel1Page() {
   const [answeredCommands, setAnsweredCommands] = useState<Record<number, string>>({})
   const [phase, setPhase] = useState<'quiz' | 'part_result' | 'all_clear'>('quiz')
   const [partScore, setPartScore] = useState(0)
+  const [isExecuting, setIsExecuting] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -259,8 +260,10 @@ export function LinuxLevel1Page() {
 
   const firstAttemptCount = Object.keys(firstAttemptCorrect).length
 
-  function handleExecute() {
-    if (!current || lastResult !== null) return
+  async function handleExecute() {
+    if (!current || lastResult !== null || isExecuting) return
+    setIsExecuting(true)
+    await Promise.resolve() // 1レンダリング分待ち、loading stateを表示する
     const normalize = (s: string) => {
       let r = s.trim().replace(/\u3000/g, ' ').replace(/\s+/g, ' ').toLowerCase()
       r = r.replace(/^sudo(\s+-\S+\s+\S+)*\s+/, '')       // sudo (sudo -u root 等も) 除去
@@ -292,6 +295,7 @@ export function LinuxLevel1Page() {
       setWrongFeedback(true)
       // lastResult は null のまま → 入力欄は enabled・実行ボタン継続表示
     }
+    setIsExecuting(false)
   }
 
   function handlePrevQuestion() {
@@ -600,7 +604,7 @@ export function LinuxLevel1Page() {
                 e.preventDefault()
                 e.stopPropagation()
                 if (showFeedback || isReviewMode) { void goNext() }
-                else if ((isRetryUnanswered || !(queueIdx in answeredCommands)) && inputValue.trim() !== '') handleExecute()
+                else if ((isRetryUnanswered || !(queueIdx in answeredCommands)) && inputValue.trim() !== '' && !isExecuting) void handleExecute()
               }}
               disabled={showFeedback || isReviewMode || (!isRetryUnanswered && queueIdx in answeredCommands)}
               className={`flex-1 rounded-xl border px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none disabled:opacity-80 ${
@@ -628,15 +632,15 @@ export function LinuxLevel1Page() {
               // 未回答 or 再出題問題: 実行ボタン表示
               <button
                 type="button"
-                onClick={handleExecute}
-                disabled={inputValue.trim() === ''}
-                style={inputValue.trim() === ''
+                onClick={() => { void handleExecute() }}
+                disabled={inputValue.trim() === '' || isExecuting}
+                style={inputValue.trim() === '' || isExecuting
                   ? { background: '#e5e7eb', color: '#9ca3af', cursor: 'not-allowed', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500, pointerEvents: 'none' as const }
                   : { background: '#0ea5e9', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500 }
                 }
                 className="shrink-0"
               >
-                実行
+                {isExecuting ? '採点中...' : '実行'}
               </button>
             ) : (
               // フィードバック後: 次へ/採点するボタン
@@ -668,7 +672,7 @@ export function LinuxLevel1Page() {
             role="status"
           >
             <span className="font-medium">✗ 不正解</span>
-            <p className="mt-1 text-rose-700">惜しい！もう一度試してみましょう。</p>
+            <p className="mt-1 text-rose-700">入力したコマンドを見直してみましょう。AI講師に質問することもできます。</p>
           </div>
         )}
 
