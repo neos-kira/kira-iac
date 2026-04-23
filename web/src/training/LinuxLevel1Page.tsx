@@ -147,7 +147,8 @@ export function LinuxLevel1Page() {
   // firstAttemptCorrect: questionId → true/false (初回回答結果)
   const [firstAttemptCorrect, setFirstAttemptCorrect] = useState<Record<string, boolean>>(initRestored.firstAttemptCorrect)
   const [inputValue, setInputValue] = useState('')
-  const [lastResult, setLastResult] = useState<'correct' | 'wrong' | null>(null)
+  const [lastResult, setLastResult] = useState<'correct' | null>(null)
+  const [wrongFeedback, setWrongFeedback] = useState(false)
   const [answeredCommands, setAnsweredCommands] = useState<Record<number, string>>({})
   const [phase, setPhase] = useState<'quiz' | 'part_result' | 'all_clear'>('quiz')
   const [partScore, setPartScore] = useState(0)
@@ -204,6 +205,7 @@ export function LinuxLevel1Page() {
       setFirstAttemptCorrect(serverRestored.firstAttemptCorrect)
       setInputValue('')
       setLastResult(null)
+      setWrongFeedback(false)
       setPhase('quiz')
       setPartScore(0)
 
@@ -245,7 +247,6 @@ export function LinuxLevel1Page() {
 
   const current = queue[queueIdx]
   const firstAttemptCount = Object.keys(firstAttemptCorrect).length
-  const isRetrying = firstAttemptCount >= PART_SIZE
 
   function handleExecute() {
     if (!current || lastResult !== null) return
@@ -266,21 +267,26 @@ export function LinuxLevel1Page() {
     const correct = trimmed === correctAnswer || altAnswers.includes(trimmed)
     const isFirstAttempt = !(current.id in firstAttemptCorrect)
 
-    if (isFirstAttempt) {
-      setFirstAttemptCorrect((prev) => ({ ...prev, [current.id]: correct }))
-      // 不正解の場合、キューの末尾に再追加（初回のみ）
-      if (!correct) {
-        setQueue((prev) => [...prev, current])
+    if (correct) {
+      // 正解: リトライでも firstAttemptCorrect を true に更新（スコアに反映・復習モード化）
+      setFirstAttemptCorrect((prev) => ({ ...prev, [current.id]: true }))
+      setLastResult('correct')
+      setWrongFeedback(false)
+      setAnsweredCommands((prev) => ({ ...prev, [queueIdx]: trimmed }))
+    } else {
+      // 不正解: 初回のみ firstAttemptCorrect に記録（キューへの追加は廃止）
+      if (isFirstAttempt) {
+        setFirstAttemptCorrect((prev) => ({ ...prev, [current.id]: false }))
       }
+      setWrongFeedback(true)
+      // lastResult は null のまま → 入力欄は enabled・実行ボタン継続表示
     }
-
-    setLastResult(correct ? 'correct' : 'wrong')
-    setAnsweredCommands((prev) => ({ ...prev, [queueIdx]: trimmed }))
   }
 
   function handlePrevQuestion() {
     if (queueIdx > 0) {
       setLastResult(null)
+      setWrongFeedback(false)
       setInputValue('')
       setQueueIdx((i) => i - 1)
     }
@@ -327,6 +333,7 @@ export function LinuxLevel1Page() {
     } else {
       setQueueIdx((i) => i + 1)
       setLastResult(null)
+      setWrongFeedback(false)
       setInputValue('')
     }
   }
@@ -338,6 +345,7 @@ export function LinuxLevel1Page() {
     setFirstAttemptCorrect({})
     setInputValue('')
     setLastResult(null)
+    setWrongFeedback(false)
     setPhase('quiz')
     setPartScore(0)
     setAnsweredCommands({})
@@ -484,8 +492,6 @@ export function LinuxLevel1Page() {
 
   // ────────── クイズ画面 ──────────
   const isRetry = current ? (current.id in firstAttemptCorrect) : false
-  // 再出題バッジは「再出題問題に回答中かつまだ正解していない」ときだけ表示
-  const showRetryBadge = isRetry && lastResult !== 'correct'
   const showFeedback = lastResult !== null
 
   // クリア済み = 初回正解済み（firstAttemptCorrectで判定、answeredCommandsがなくても機能する）
@@ -496,9 +502,7 @@ export function LinuxLevel1Page() {
   // answeredCommandsに古い不正解回答があっても空入力欄・実行ボタンを表示する
   const isRetryUnanswered = isRetry && !isCleared && !showFeedback
 
-  const progressLabel = isRetrying
-    ? `${PART_LABELS[activePart]} 復習中`
-    : `${PART_LABELS[activePart]} ${firstAttemptCount + 1}/${PART_SIZE}問`
+  const progressLabel = `${PART_LABELS[activePart]} ${queueIdx + 1}/${queue.length}問`
 
   return (
     <div style={{ minHeight: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }} className="bg-slate-50 text-slate-800 p-6">
@@ -544,13 +548,7 @@ export function LinuxLevel1Page() {
         <h1 className="mt-2 text-xl font-semibold text-slate-800">
           インフラ研修1 — Linuxコマンド30問
         </h1>
-        <div className="mt-1 flex items-center gap-2">
-          {showRetryBadge && (
-            <span style={{ fontSize: '11px', fontWeight: 600, color: '#0d9488', background: '#ccfbf1', borderRadius: '4px', padding: '2px 8px', marginLeft: '8px' }}>
-              再出題
-            </span>
-          )}
-        </div>
+        <div className="mt-1 flex items-center gap-2" />
 
         <p style={{ fontSize: '20px', fontWeight: 600, color: '#111827', marginBottom: '32px', lineHeight: '1.7', marginTop: '16px' }}>{current?.prompt}</p>
 
@@ -648,20 +646,22 @@ export function LinuxLevel1Page() {
           </div>
         )}
 
-        {showFeedback && (
+        {wrongFeedback && (
           <div
-            className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
-              lastResult === 'correct'
-                ? 'border-emerald-500/50 bg-emerald-50 text-emerald-800'
-                : 'border-rose-500/50 bg-rose-50 text-rose-800'
-            }`}
+            className="mt-4 rounded-xl border border-rose-500/50 bg-rose-50 px-4 py-3 text-sm text-rose-800"
             role="status"
           >
-            {lastResult === 'correct' ? (
-              <span className="font-medium">✓ 正解</span>
-            ) : (
-              <span className="font-medium">✗ 不正解</span>
-            )}
+            <span className="font-medium">✗ 不正解</span>
+            <p className="mt-1 text-rose-700">惜しい！もう一度試してみましょう。</p>
+          </div>
+        )}
+
+        {showFeedback && (
+          <div
+            className="mt-4 rounded-xl border border-emerald-500/50 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+            role="status"
+          >
+            <span className="font-medium">✓ 正解</span>
           </div>
         )}
 
