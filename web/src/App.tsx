@@ -1296,7 +1296,7 @@ function App() {
               }
 
               // 以下は lastActive が null の場合のフォールバック（旧ロジック）
-              // 課題1-2途中（最優先）
+              // Linuxコマンド30問途中（最優先）
               const l1Part = snap.l1CurrentPart ?? 0
               const l1Q = snap.l1CurrentQuestion ?? 0
               const l1InProgress = (l1Part > 0 || l1Q > 0) && !(snap.l1Cleared ?? false)
@@ -2051,7 +2051,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
     if (category === 'linuxLevel1') {
       return (
         <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">課題1-2 · LINUX コマンド</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Linuxコマンド30問</p>
           <h2 className="mt-2 text-base font-semibold text-slate-800">Linuxコマンド30問</h2>
           <p className="mt-1 text-xs text-slate-600">別タブで問題を開きました。タブを確認してください。</p>
           <p className="mt-2 text-[11px] text-slate-500">問題中は正誤を表示せず、30問終了後に得点を表示します。満点でクリアです。</p>
