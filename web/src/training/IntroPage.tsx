@@ -101,7 +101,7 @@ const EMPTY_SNAPSHOT: TraineeProgressSnapshot = {
 
 // ── プログレスバー ─────────────────────────────────────────────────────────────
 
-function StepProgress({ current }: { current: number }) {
+function StepProgress({ current, onStepClick }: { current: number; onStepClick?: (stepNum: number) => void }) {
   return (
     <div className="flex items-center gap-1.5 mb-6" aria-label="進捗">
       {STEP_LABELS.map((label, i) => {
@@ -112,7 +112,9 @@ function StepProgress({ current }: { current: number }) {
           <div key={i} className="flex items-center gap-1.5">
             <div
               title={label}
+              onClick={onStepClick ? () => onStepClick(stepNum) : undefined}
               className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold
+                ${onStepClick ? 'cursor-pointer hover:opacity-75' : ''}
                 ${done ? 'bg-emerald-500 text-white' : active ? 'text-white' : 'bg-slate-200 text-slate-500'}`}
               style={active ? { background: '#7dd3fc' } : undefined}
             >
@@ -156,6 +158,8 @@ export function IntroPage() {
   // 中断保存ボタンの状態
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  // クリア済みで再アクセス時の振り返り閲覧モード
+  const [isReviewMode, setIsReviewMode] = useState(false)
 
   // ── マウント: DynamoDB復元 ────────────────────────────────────────────────
   useEffect(() => {
@@ -198,6 +202,7 @@ export function IntroPage() {
       // introStep に応じてステップを復元（1〜6 すべて対応）
       const savedStep = snap.introStep
       const isReallyComplete = savedStep === 6 && snap.introConfirmed === true
+      if (isReallyComplete) setIsReviewMode(true)
       const resolvedStep = (savedStep === 6 && !isReallyComplete) ? 1 : savedStep
 
       if (typeof resolvedStep === 'number' && resolvedStep >= 1 && resolvedStep <= 6) {
@@ -388,6 +393,16 @@ export function IntroPage() {
     setCurrentInput('')
   }
 
+  // ── 振り返りモード: ステッパークリックで自由にステップ切替 ──────────────
+  const handleReviewStepClick = (targetStep: number) => {
+    setStep(targetStep)
+    setSectionQIdx(0)
+    setMcSelected([])
+    setMcResult(null)
+    setCurrentInput('')
+    setCurrentResult(null)
+  }
+
   // ── 前のステップ / 前の問題へ（進捗データは変更しない） ──────────────────
   const handleBack = () => {
     setMcSelected([])
@@ -473,7 +488,7 @@ export function IntroPage() {
   // ── レイアウトヘルパー ────────────────────────────────────────────────────
   const topBar = (
     <div className="flex items-center justify-end mb-6">
-      {step >= 1 && step <= 5 ? (
+      {!isReviewMode && step >= 1 && step <= 5 ? (
         <div className="flex flex-col items-end gap-1">
           <button
             type="button"
@@ -557,8 +572,13 @@ export function IntroPage() {
   if (step === 6) {
     return pageLayout(
       <>
+        {isReviewMode && (
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700">
+            ✓ 確認済み — 振り返り閲覧モード（ステッパーで各ステップを確認できます）
+          </div>
+        )}
         {headerBlock}
-        <StepProgress current={6} />
+        <StepProgress current={6} onStepClick={isReviewMode ? handleReviewStepClick : undefined} />
         <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-6 space-y-3">
           <p className="text-base font-semibold text-emerald-700">✓ 確認済みです。</p>
           <p className="text-sm text-slate-600">インフラ基礎課題へアクセスできます。</p>
@@ -586,8 +606,13 @@ export function IntroPage() {
     ]
     return pageLayout(
       <>
+        {isReviewMode && (
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700">
+            ✓ 確認済み — 振り返り閲覧モード（ステッパーで各ステップを確認できます）
+          </div>
+        )}
         {headerBlock}
-        <StepProgress current={1} />
+        <StepProgress current={1} onStepClick={isReviewMode ? handleReviewStepClick : undefined} />
 
         {/* ヒーローセクション */}
         <section
@@ -670,7 +695,7 @@ export function IntroPage() {
           <button
             type="button"
             onClick={handleOrientationComplete}
-            disabled={isScoring}
+            disabled={isScoring || isReviewMode}
             className="w-full rounded-lg py-3.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: '#0ea5e9' }}
           >
@@ -685,8 +710,13 @@ export function IntroPage() {
   if (step === 2) {
     return pageLayout(
       <>
+        {isReviewMode && (
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700">
+            ✓ 確認済み — 振り返り閲覧モード（ステッパーで各ステップを確認できます）
+          </div>
+        )}
         {headerBlock}
-        <StepProgress current={2} />
+        <StepProgress current={2} onStepClick={isReviewMode ? handleReviewStepClick : undefined} />
 
         <div className="flex items-center gap-3 mb-2">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-base" aria-hidden>🖥️</span>
@@ -738,7 +768,7 @@ export function IntroPage() {
           <button
             type="button"
             onClick={handleBack}
-            disabled={isScoring}
+            disabled={isScoring || isReviewMode}
             className="rounded-lg border border-slate-200 px-5 py-3.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             ← 前へ
@@ -746,7 +776,7 @@ export function IntroPage() {
           <button
             type="button"
             onClick={handleStep2Complete}
-            disabled={isScoring}
+            disabled={isScoring || isReviewMode}
             className="flex-1 rounded-lg bg-[#7dd3fc] py-3.5 text-sm font-semibold text-slate-900 hover:bg-[#38bdf8] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isScoring ? '保存中...' : '確認しました・次へ →'}
@@ -766,8 +796,13 @@ export function IntroPage() {
     const q = currentQuestion as MCQuestion
     return pageLayout(
       <>
+        {isReviewMode && (
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700">
+            ✓ 確認済み — 振り返り閲覧モード（ステッパーで各ステップを確認できます）
+          </div>
+        )}
         {headerBlock}
-        <StepProgress current={step} />
+        <StepProgress current={step} onStepClick={isReviewMode ? handleReviewStepClick : undefined} />
 
         <div className="mb-5">
           <h2 className="text-lg font-bold text-slate-800">{sectionName}</h2>
@@ -838,14 +873,14 @@ export function IntroPage() {
             <button
               type="button"
               onClick={handleBack}
-              disabled={isScoring}
+              disabled={isScoring || isReviewMode}
               className="rounded-lg border border-slate-200 px-5 py-3.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               ← 前へ
             </button>
             <button
               type="button"
-              disabled={mcSelected.length === 0}
+              disabled={mcSelected.length === 0 || isReviewMode}
               onClick={handleCheckMC}
               className="flex-1 rounded-xl bg-[#7dd3fc] py-3.5 text-sm font-medium text-slate-900 hover:bg-[#38bdf8] disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -899,8 +934,13 @@ export function IntroPage() {
   const eq = currentQuestion as EssayQuestion | null
   return pageLayout(
     <>
+      {isReviewMode && (
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700">
+          ✓ 確認済み — 振り返り閲覧モード（ステッパーで各ステップを確認できます）
+        </div>
+      )}
       {headerBlock}
-      <StepProgress current={step} />
+      <StepProgress current={step} onStepClick={isReviewMode ? handleReviewStepClick : undefined} />
 
       <div className="mb-5">
         <h2 className="text-lg font-bold text-slate-800">{sectionName}</h2>
@@ -920,7 +960,7 @@ export function IntroPage() {
           rows={6}
           placeholder="回答を入力してください..."
           value={currentInput}
-          disabled={isScoring || currentResult !== null}
+          disabled={isScoring || currentResult !== null || isReviewMode}
           onChange={(e) => setCurrentInput(e.target.value)}
         />
         {isScoring && (
@@ -936,14 +976,14 @@ export function IntroPage() {
           <button
             type="button"
             onClick={handleBack}
-            disabled={isScoring}
+            disabled={isScoring || isReviewMode}
             className="rounded-lg border border-slate-200 px-5 py-3.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             ← 前へ
           </button>
           <button
             type="button"
-            disabled={!currentInput.trim()}
+            disabled={!currentInput.trim() || isReviewMode}
             onClick={handleScore}
             className="flex-1 rounded-xl bg-[#7dd3fc] py-3.5 text-sm font-medium text-slate-900 hover:bg-[#38bdf8] disabled:cursor-not-allowed disabled:opacity-50"
           >
