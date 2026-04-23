@@ -199,6 +199,7 @@ function App() {
   const [isRedownloading, setIsRedownloading] = useState(false)
   const [redownloadError, setRedownloadError] = useState<string | null>(null)
   const [ec2StatusError, setEc2StatusError] = useState(false)
+  const [copiedField, setCopiedField] = useState<'ip' | 'user' | null>(null)
   const ec2PollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const openedRef = useRef<string | null>(null)
   const searchContainerRef = useRef<HTMLDivElement | null>(null)
@@ -1732,13 +1733,28 @@ function App() {
                   const displayUser = (serverSnapshot.ec2Username && serverSnapshot.ec2Username !== 'rocky')
                     ? serverSnapshot.ec2Username
                     : getDisplayName().trim().toLowerCase()
-                  const CopyBtn = ({ text }: { text: string }) => (
-                    <button type="button" onClick={() => { void navigator.clipboard.writeText(text) }} className="text-slate-300 hover:text-slate-500 transition-colors shrink-0" title="コピー">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                    </button>
-                  )
+                  const handleFieldCopy = (text: string, field: 'ip' | 'user') => {
+                    void navigator.clipboard.writeText(text).then(() => {
+                      setCopiedField(field)
+                      setTimeout(() => setCopiedField(null), 1500)
+                    })
+                  }
+                  const CopyBtn = ({ text, field }: { text: string; field: 'ip' | 'user' }) => {
+                    const isCopied = copiedField === field
+                    return (
+                      <button type="button" onClick={() => handleFieldCopy(text, field)} className={`transition-colors shrink-0 ${isCopied ? 'text-emerald-500' : 'text-slate-300 hover:text-slate-500'}`} title="コピー">
+                        {isCopied ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        )}
+                      </button>
+                    )
+                  }
                   return (
                     <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                       <div className="flex items-center justify-between gap-2 mb-2">
@@ -1764,7 +1780,7 @@ function App() {
                           <p className="text-[10px] text-slate-400 mb-0.5">IPアドレス</p>
                           <div className="flex items-center gap-1.5">
                             <span className="text-xl font-bold font-mono text-slate-800 tracking-wide leading-none">{serverSnapshot.ec2PublicIp}</span>
-                            <CopyBtn text={serverSnapshot.ec2PublicIp ?? ''} />
+                            <CopyBtn text={serverSnapshot.ec2PublicIp ?? ''} field="ip" />
                           </div>
                         </div>
                         {/* ユーザー名 */}
@@ -1772,7 +1788,7 @@ function App() {
                           <p className="text-[10px] text-slate-400 mb-0.5">ユーザー名</p>
                           <div className="flex items-center gap-1.5">
                             <span className="text-sm font-semibold font-mono text-slate-700 leading-none">{displayUser}</span>
-                            <CopyBtn text={displayUser} />
+                            <CopyBtn text={displayUser} field="user" />
                           </div>
                         </div>
                         {/* 秘密鍵 */}
