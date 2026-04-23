@@ -1325,7 +1325,7 @@ function App() {
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                     <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800">課題1-1 · ツール演習</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800">課題1-1 · SSH接続確認</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-1'), '_blank')
                       else setShowIntroRequiredPopup(true)
@@ -1834,8 +1834,8 @@ function App() {
                             className="text-[10px] text-blue-500 underline hover:text-blue-700">再試行</button>
                         </div>
                       ) : (
-                        <p className="mt-2 text-[10px] text-slate-400">
-                          {serverSnapshot.ec2State === 'running' ? '※ 使用後は必ず停止してください' :
+                        <p className="mt-2 text-[10px]">
+                          {serverSnapshot.ec2State === 'running' ? <span className="text-amber-600 font-medium">※ 使用後は必ず停止してください</span> :
                            serverSnapshot.ec2State === 'pending' ? '※ 起動完了まで少々お待ちください' :
                            serverSnapshot.ec2State === 'stopping' ? '※ 停止完了まで少々お待ちください' :
                            '※ 起動後、演習を開始してください'}
@@ -2051,8 +2051,8 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
     if (category === 'linuxLevel1') {
       return (
         <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">TRAINING · LINUX · LEVEL 1</p>
-          <h2 className="mt-2 text-base font-semibold text-slate-800">インフラ研修1 — Linuxコマンド30問</h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">課題1-2 · LINUX コマンド</p>
+          <h2 className="mt-2 text-base font-semibold text-slate-800">Linuxコマンド30問</h2>
           <p className="mt-1 text-xs text-slate-600">別タブで問題を開きました。タブを確認してください。</p>
           <p className="mt-2 text-[11px] text-slate-500">問題中は正誤を表示せず、30問終了後に得点を表示します。満点でクリアです。</p>
         </div>

@@ -48,7 +48,7 @@ export function InfraBasic4Page() {
   const shellUnlocked = isKiraTest || viAll
 
   useEffect(() => {
-    document.title = 'インフラ基礎課題4 - vi & シェルスクリプト'
+    document.title = 'viエディタ・シェルスクリプト演習'
   }, [])
 
   useEffect(() => {
@@ -220,7 +220,7 @@ export function InfraBasic4Page() {
         </button>
         <div>
           <p className="text-xs text-slate-500">課題4 · 実践演習</p>
-          <h1 className="text-xl font-bold text-slate-800">vi & シェルスクリプト演習</h1>
+          <h1 className="text-xl font-bold text-slate-800">viエディタ・シェルスクリプト演習</h1>
         </div>
         <header className="flex items-center justify-between">
           <div className="flex flex-col items-end gap-1">

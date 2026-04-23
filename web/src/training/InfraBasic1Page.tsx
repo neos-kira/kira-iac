@@ -92,7 +92,7 @@ export function InfraBasic1Page() {
   const clearedKey = getProgressKey(INFRA_BASIC_1_CLEARED_KEY)
 
   useEffect(() => {
-    document.title = 'インフラ基礎演習1'
+    document.title = 'SSH接続確認'
     const load = async () => {
       if (!username || false) { setIsLoading(false); return }
       const snap = await fetchMyProgress(username)
@@ -166,7 +166,7 @@ export function InfraBasic1Page() {
         </button>
         <div>
           <p className="text-xs text-slate-500">課題1-1 · SSH接続</p>
-          <h1 className="text-xl font-bold text-slate-800">インフラ基礎演習1</h1>
+          <h1 className="text-xl font-bold text-slate-800">SSH接続確認</h1>
           <p className="mt-1 text-sm text-slate-600">ターミナルから演習サーバーにSSH接続し、接続成功画面を提出します。</p>
         </div>
 

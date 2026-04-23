@@ -47,7 +47,7 @@ export function InfraBasic5Page() {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({ s1: true })
 
   useEffect(() => {
-    document.title = 'インフラ基礎課題5 - サーバー構築'
+    document.title = 'Rocky Linux サーバー構築'
   }, [])
 
   useEffect(() => {
@@ -203,7 +203,7 @@ export function InfraBasic5Page() {
         </button>
         <div>
           <p className="text-xs text-slate-500">課題5 · サーバー構築</p>
-          <h1 className="text-xl font-bold text-slate-800">インフラ基礎課題5 - Rocky Linux サーバー構築</h1>
+          <h1 className="text-xl font-bold text-slate-800">Rocky Linux サーバー構築</h1>
         </div>
 
         {/* 進捗バー + 中断ボタン */}

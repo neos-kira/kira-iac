@@ -12,7 +12,7 @@ function getTrainingUrl(path: string) {
 const TASKS = [
   {
     category: '課題1-1 · 使用ツール',
-    title: 'インフラ基礎演習1',
+    title: 'SSH接続確認',
     description: 'ターミナルからSSHで演習サーバーに接続する演習です。macOS / Windows 両対応。',
     path: '/training/infra-basic-1',
   },
@@ -50,7 +50,7 @@ export function InfraBasicTopPage() {
   const subTasks = taskProgress?.subTasks ?? []
 
   useEffect(() => {
-    document.title = 'インフラ基礎課題1'
+    document.title = 'Linux基本操作'
   }, [])
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export function InfraBasicTopPage() {
       <div className="mx-auto max-w-2xl space-y-6">
 
         <div>
-          <h1 className="text-lg font-bold text-slate-800">インフラ基礎課題1</h1>
+          <h1 className="text-lg font-bold text-slate-800">Linux基本操作</h1>
           <p className="mt-1 text-sm text-slate-600">
             クライアントツールを用いた演習と、Linuxコマンド30問の2つで構成されています。
           </p>

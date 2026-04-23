@@ -29,7 +29,7 @@ export function InfraBasic3TopPage() {
   const subTasks = taskProgress?.subTasks ?? []
 
   useEffect(() => {
-    document.title = 'インフラ基礎課題3'
+    document.title = 'OS・仮想化・クラウド'
   }, [])
 
   const totalCount = TASKS.length
@@ -40,7 +40,7 @@ export function InfraBasic3TopPage() {
       <div className="mx-auto max-w-2xl space-y-6">
 
         <div>
-          <h1 className="text-lg font-bold text-slate-800">インフラ基礎課題3</h1>
+          <h1 className="text-lg font-bold text-slate-800">OS・仮想化・クラウド</h1>
           <p className="mt-1 text-sm text-slate-600">
             OS・仮想化・クラウドの基礎理論を整理し、実務で説明できるレベルまで落とし込む課題です。
           </p>

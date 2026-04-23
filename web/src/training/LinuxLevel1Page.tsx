@@ -169,7 +169,7 @@ export function LinuxLevel1Page() {
   const mobileCurrentRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    document.title = 'インフラ研修1'
+    document.title = 'Linuxコマンド30問'
   }, [])
 
   // AI講師にクイズ状態を共有する（currentQuestion / studentAnswer / isCorrect）
@@ -483,7 +483,7 @@ export function LinuxLevel1Page() {
       <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
         <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-md">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">RESULT</p>
-          <h1 className="mt-2 text-xl font-semibold text-slate-800">インフラ研修1 — Linuxコマンド30問</h1>
+          <h1 className="mt-2 text-xl font-semibold text-slate-800">Linuxコマンド30問</h1>
           <p className="mt-4 text-2xl font-bold text-emerald-600">全3部クリア！</p>
           <p className="mt-2 text-sm text-slate-600">
             おめでとうございます。インフラ研修2にチャレンジできます。
@@ -676,10 +676,10 @@ export function LinuxLevel1Page() {
 
           <div className="mx-auto max-w-xl w-full" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '40px', minHeight: 'calc(100vh - 200px)' }}>
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-          TRAINING · LINUX · LEVEL 1
+          課題1-2 · LINUX コマンド
         </p>
         <h1 className="mt-2 text-xl font-semibold text-slate-800">
-          インフラ研修1 — Linuxコマンド30問
+          Linuxコマンド30問
         </h1>
         <div className="mt-1 flex items-center gap-2" />
 

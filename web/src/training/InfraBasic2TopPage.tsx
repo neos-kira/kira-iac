@@ -29,7 +29,7 @@ export function InfraBasic2TopPage() {
   const subTasks = taskProgress?.subTasks ?? []
 
   useEffect(() => {
-    document.title = 'インフラ基礎課題2'
+    document.title = 'ネットワーク基礎'
   }, [])
 
   const totalCount = TASKS.length
@@ -40,7 +40,7 @@ export function InfraBasic2TopPage() {
       <div className="mx-auto max-w-2xl space-y-6">
 
         <div>
-          <h1 className="text-lg font-bold text-slate-800">インフラ基礎課題2</h1>
+          <h1 className="text-lg font-bold text-slate-800">ネットワーク基礎</h1>
           <p className="mt-1 text-sm text-slate-600">
             ネットワーク実機を用いた調査・記述問題と、TCP/IP理解度チェック10問の2つで構成されています。
           </p>
