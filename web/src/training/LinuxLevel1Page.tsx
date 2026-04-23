@@ -556,7 +556,7 @@ export function LinuxLevel1Page() {
   // answeredCommandsに古い不正解回答があっても空入力欄・実行ボタンを表示する
   const isRetryUnanswered = isRetry && !isCleared && !showFeedback
 
-  const progressLabel = `${PART_LABELS[activePart]} ${queueIdx + 1}/${queue.length}問`
+  const progressLabel = `${PART_LABELS[activePart]} ${queueIdx + 1}問目 / 全${queue.length}問`
 
   return (
     <div style={{ minHeight: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }} className="bg-slate-50 text-slate-800 p-6">

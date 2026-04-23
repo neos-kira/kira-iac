@@ -1271,14 +1271,26 @@ function App() {
               // ── lastActive: 最後に「中断して保存」したモジュールを最優先表示 ──
               if (snap.lastActive) {
                 const la = snap.lastActive
+                const progressMatch = la.label.match(/(\d+)\/(\d+)/)
+                const completed = progressMatch ? parseInt(progressMatch[1]) : null
+                const total = progressMatch ? parseInt(progressMatch[2]) : null
+                const courseName = la.label.replace(/\s*\d+\/\d+問$/, '').trim()
                 return (
-                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
-                    <p className="mt-1 text-sm text-slate-700">{la.label}</p>
+                  <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                    <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800">{courseName}</p>
+                    {completed !== null && total !== null && (
+                      <>
+                        <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
+                          <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(completed / total) * 100}%` }} />
+                        </div>
+                        <p className="mt-1.5 text-xs text-gray-500">{completed}問完了 / 全{total}問</p>
+                      </>
+                    )}
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl(la.path), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2.5 text-sm font-medium hover:bg-sky-100">つづきから →</button>
+                    }} className="mt-4 w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1292,13 +1304,17 @@ function App() {
                 const partLabels = ['基本操作', 'サーバー構築', '実践問題']
                 const partLabel = partLabels[l1Part] ?? '基本操作'
                 return (
-                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
-                    <p className="mt-1 text-sm text-slate-700">課題1-2 · {partLabel} {l1Q + 1}/10問</p>
+                  <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                    <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800">課題1-2 · {partLabel}</p>
+                    <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
+                      <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(l1Q / 10) * 100}%` }} />
+                    </div>
+                    <p className="mt-1.5 text-xs text-gray-500">{l1Q}問完了 / 全10問</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level1'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2.5 text-sm font-medium hover:bg-sky-100">つづきから →</button>
+                    }} className="mt-4 w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1307,13 +1323,13 @@ function App() {
               const infra1InProgress = (snap.infra1Checkboxes ?? []).some(Boolean) && !(snap.infra1Cleared ?? false)
               if (infra1InProgress) {
                 return (
-                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
-                    <p className="mt-1 text-sm text-slate-700">課題1-1 · ツール演習（途中から再開）</p>
+                  <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                    <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800">課題1-1 · ツール演習</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-1'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2.5 text-sm font-medium hover:bg-sky-100">つづきから →</button>
+                    }} className="mt-4 w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1322,13 +1338,17 @@ function App() {
               const l2Q = snap.l2CurrentQuestion ?? 0
               if (l2Q > 0) {
                 return (
-                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
-                    <p className="mt-1 text-sm text-slate-700">課題2-2 · TCP/IP {l2Q + 1}/10問</p>
+                  <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                    <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800">課題2-2 · TCP/IP</p>
+                    <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
+                      <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(l2Q / 10) * 100}%` }} />
+                    </div>
+                    <p className="mt-1.5 text-xs text-gray-500">{l2Q}問完了 / 全10問</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level2'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2.5 text-sm font-medium hover:bg-sky-100">つづきから →</button>
+                    }} className="mt-4 w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1337,13 +1357,13 @@ function App() {
               const infra32InProgress = Object.values(snap.infra32Answers ?? {}).some((v) => v && String(v).trim())
               if (infra32InProgress) {
                 return (
-                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
-                    <p className="mt-1 text-sm text-slate-700">課題3-2 · 理解度チェック(途中から再開)</p>
+                  <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                    <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800">課題3-2 · 理解度チェック</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2.5 text-sm font-medium hover:bg-sky-100">つづきから →</button>
+                    }} className="mt-4 w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1352,13 +1372,17 @@ function App() {
               const vi4Done = (snap.infra4ViDoneSteps ?? []).length
               if (vi4Done > 0 && vi4Done < VI_STEPS.length) {
                 return (
-                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
-                    <p className="mt-1 text-sm text-slate-700">課題4-1 · vi演習(途中から再開)</p>
+                  <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                    <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800">課題4-1 · vi演習</p>
+                    <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
+                      <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(vi4Done / VI_STEPS.length) * 100}%` }} />
+                    </div>
+                    <p className="mt-1.5 text-xs text-gray-500">{vi4Done}ステップ完了 / 全{VI_STEPS.length}ステップ</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2.5 text-sm font-medium hover:bg-sky-100">つづきから →</button>
+                    }} className="mt-4 w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1367,13 +1391,17 @@ function App() {
               const shell4Done = (snap.infra4ShellDoneQuestions ?? []).length
               if (shell4Done > 0 && shell4Done < SHELL_QUESTIONS.length) {
                 return (
-                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
-                    <p className="mt-1 text-sm text-slate-700">課題4-2 · シェルスクリプト(途中から再開)</p>
+                  <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                    <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800">課題4-2 · シェルスクリプト</p>
+                    <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
+                      <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(shell4Done / SHELL_QUESTIONS.length) * 100}%` }} />
+                    </div>
+                    <p className="mt-1.5 text-xs text-gray-500">{shell4Done}問完了 / 全{SHELL_QUESTIONS.length}問</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2.5 text-sm font-medium hover:bg-sky-100">つづきから →</button>
+                    }} className="mt-4 w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
