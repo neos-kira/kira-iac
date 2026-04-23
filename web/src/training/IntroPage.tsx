@@ -113,8 +113,9 @@ function StepProgress({ current, onStepClick }: { current: number; onStepClick?:
             <div
               title={label}
               onClick={onStepClick ? () => onStepClick(stepNum) : undefined}
-              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold
-                ${onStepClick ? 'cursor-pointer hover:opacity-75' : ''}
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-all duration-150
+                ${done && onStepClick ? 'cursor-pointer hover:ring-2 hover:ring-offset-2 hover:ring-green-400' : ''}
+                ${!done && onStepClick ? 'cursor-pointer hover:opacity-75' : ''}
                 ${done ? 'bg-emerald-500 text-white' : active ? 'text-white' : 'bg-slate-200 text-slate-500'}`}
               style={active ? { background: '#7dd3fc' } : undefined}
             >
@@ -581,7 +582,7 @@ export function IntroPage() {
       <>
         {isReviewMode && (
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700">
-            ✓ 完了済み — 上の丸いボタンで各ステップの内容を見返せます
+            ✓ 完了済み — 番号をタップすると各ステップの内容を見返せます
           </div>
         )}
         {headerBlock}
@@ -615,7 +616,7 @@ export function IntroPage() {
       <>
         {isReviewMode && (
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700">
-            ✓ 完了済み — 上の丸いボタンで各ステップの内容を見返せます
+            ✓ 完了済み — 番号をタップすると各ステップの内容を見返せます
           </div>
         )}
         {headerBlock}
@@ -719,7 +720,7 @@ export function IntroPage() {
       <>
         {isReviewMode && (
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700">
-            ✓ 完了済み — 上の丸いボタンで各ステップの内容を見返せます
+            ✓ 完了済み — 番号をタップすると各ステップの内容を見返せます
           </div>
         )}
         {headerBlock}
@@ -805,7 +806,7 @@ export function IntroPage() {
       <>
         {isReviewMode && (
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700">
-            ✓ 完了済み — 上の丸いボタンで各ステップの内容を見返せます
+            ✓ 完了済み — 番号をタップすると各ステップの内容を見返せます
           </div>
         )}
         {headerBlock}
@@ -943,7 +944,7 @@ export function IntroPage() {
     <>
       {isReviewMode && (
         <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700">
-          ✓ 完了済み — 上の丸いボタンで各ステップの内容を見返せます
+          ✓ 完了済み — 番号をタップすると各ステップの内容を見返せます
         </div>
       )}
       {headerBlock}
