@@ -200,8 +200,6 @@ function App() {
   const [ec2StatusError, setEc2StatusError] = useState(false)
   const [pemLostOpen, setPemLostOpen] = useState(false)
   const [copiedField, setCopiedField] = useState<'ip' | 'user' | null>(null)
-  const [toastVisible, setToastVisible] = useState(false)
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const ec2PollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const openedRef = useRef<string | null>(null)
   const searchContainerRef = useRef<HTMLDivElement | null>(null)
@@ -1691,26 +1689,29 @@ function App() {
                     void navigator.clipboard.writeText(text).then(() => {
                       setCopiedField(field)
                       setTimeout(() => setCopiedField(null), 1500)
-                      // トースト表示（連続クリック時はタイマーをリセット）
-                      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-                      setToastVisible(true)
-                      toastTimerRef.current = setTimeout(() => setToastVisible(false), 2000)
                     })
                   }
                   const CopyBtn = ({ text, field }: { text: string; field: 'ip' | 'user' }) => {
                     const isCopied = copiedField === field
                     return (
-                      <button type="button" onClick={() => handleFieldCopy(text, field)} className={`transition-colors shrink-0 ${isCopied ? 'text-emerald-500' : 'text-slate-300 hover:text-slate-500'}`} title="コピー">
-                        {isCopied ? (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
+                      <div className="relative inline-flex items-center">
+                        <button type="button" onClick={() => handleFieldCopy(text, field)} className={`transition-colors shrink-0 ${isCopied ? 'text-emerald-500' : 'text-slate-300 hover:text-slate-500'}`} title="コピー">
+                          {isCopied ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          )}
+                        </button>
+                        {isCopied && (
+                          <span className="absolute left-full ml-1.5 whitespace-nowrap rounded bg-gray-800 px-2 py-0.5 text-[11px] font-medium text-white shadow-sm" style={{ zIndex: Z.tooltip }}>
+                            コピーしました
+                          </span>
                         )}
-                      </button>
+                      </div>
                     )
                   }
                   return (
@@ -1944,16 +1945,6 @@ function App() {
           </>
           )}
         </main>
-      </div>
-      {/* コピートースト */}
-      <div
-        style={{ zIndex: Z.toast }}
-        className={`fixed bottom-6 left-1/2 -translate-x-1/2 rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 ${
-          toastVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
-        }`}
-        aria-live="polite"
-      >
-        コピーしました
       </div>
     </div>
   )
