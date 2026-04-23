@@ -166,6 +166,7 @@ export function LinuxLevel1Page() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'warning' } | null>(null)
   const allClearSavedRef = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const mobileCurrentRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     document.title = 'インフラ研修1'
@@ -255,6 +256,11 @@ export function LinuxLevel1Page() {
     const canInput = lastResult === null && (retryUnanswered || !(queueIdx in answeredCommands)) && !cleared
     if (canInput && inputRef.current) inputRef.current.focus()
   }, [lastResult, queueIdx, answeredCommands, queue, firstAttemptCorrect])
+
+  // モバイルナビ: 現在問題ボタンを中央にスクロール
+  useEffect(() => {
+    mobileCurrentRef.current?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  }, [queueIdx])
 
   // フィードバック中は Enter → 次へ
   useEffect(() => {
@@ -359,6 +365,15 @@ export function LinuxLevel1Page() {
       setInputValue('')
       setQueueIdx((i) => i - 1)
     }
+  }
+
+  function handleNavigateTo(targetIdx: number) {
+    const q = queue[targetIdx]
+    if (!q || firstAttemptCorrect[q.id] !== true) return
+    setLastResult(null)
+    setWrongFeedback(false)
+    setInputValue('')
+    setQueueIdx(targetIdx)
   }
 
   async function goNext() {
@@ -557,48 +572,109 @@ export function LinuxLevel1Page() {
   const isRetryUnanswered = isRetry && !isCleared && !showFeedback
 
   const progressLabel = `${PART_LABELS[activePart]} ${queueIdx + 1}問目 / 全${queue.length}問`
+  const basePartQs = getPartQuestions(activePart)
 
   return (
-    <div style={{ minHeight: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }} className="bg-slate-50 text-slate-800 p-6">
-      <div className="mx-auto max-w-xl w-full">
-        <button type="button" onClick={() => navigate('/training/infra-basic-top')} className="mb-3 inline-flex items-center gap-1 text-sm text-sky-700 hover:text-sky-800">
-          ← 課題一覧に戻る
-        </button>
-        <div className="flex items-center justify-end mb-4">
-          <div className="flex flex-col items-end gap-1">
-            <button
-              type="button"
-              onClick={() => { void handleInterrupt() }}
-              disabled={isSaving}
-              className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSaving ? '保存中...' : '中断して保存'}
-            </button>
-            {saveError && <p className="text-xs text-red-600">{saveError}</p>}
-          </div>
-        </div>
-      </div>
-      {/* 進捗バー + ナビゲーション */}
-      <div className="mx-auto max-w-xl w-full" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', padding: '0 4px' }}>
-        <button
-          type="button"
-          onClick={handlePrevQuestion}
-          disabled={queueIdx === 0}
-          style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '6px 14px', fontSize: '13px', color: queueIdx === 0 ? '#d1d5db' : '#374151', cursor: queueIdx === 0 ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
-        >
-          ← 前の問題
-        </button>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '12px', color: '#6b7280', whiteSpace: 'nowrap' }}>
-            {progressLabel}
-          </span>
-          <div style={{ flex: 1, height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
-            <div style={{ width: `${((queueIdx + 1) / queue.length) * 100}%`, height: '100%', background: '#7dd3fc', borderRadius: '3px', transition: 'width 0.3s ease' }} />
-          </div>
+    <div className="min-h-screen bg-slate-50 text-slate-800">
+
+      {/* ────── モバイル: 上部横スクロールナビ（〜1023px） ────── */}
+      <div className="lg:hidden bg-white border-b border-gray-100 px-3 py-2">
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {basePartQs.map((q, i) => {
+            const isCurrentQ = queueIdx === i
+            const isCompletedQ = firstAttemptCorrect[q.id] === true
+            return (
+              <button
+                key={q.id}
+                ref={isCurrentQ ? mobileCurrentRef : null}
+                type="button"
+                onClick={() => { if (isCompletedQ && !isCurrentQ) handleNavigateTo(i) }}
+                className={`w-8 h-8 rounded-full text-sm flex-shrink-0 flex items-center justify-center font-medium
+                  ${isCurrentQ
+                    ? 'bg-sky-500 text-white'
+                    : isCompletedQ
+                      ? 'bg-green-500 text-white cursor-pointer'
+                      : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                  }`}
+              >
+                {i + 1}
+              </button>
+            )
+          })}
         </div>
       </div>
 
-      <div className="mx-auto max-w-xl w-full" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '40px', minHeight: 'calc(100vh - 200px)' }}>
+      <div className="flex">
+
+        {/* ────── PC: 左サイドバー（1024px〜） ────── */}
+        <aside className="hidden lg:flex flex-col w-48 shrink-0 sticky top-0 h-screen overflow-y-auto bg-white border-r border-gray-100">
+          <div className="p-3 pt-4">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2 px-1">問題一覧</p>
+            {basePartQs.map((q, i) => {
+              const isCurrentQ = queueIdx === i
+              const isCompletedQ = firstAttemptCorrect[q.id] === true
+              return (
+                <button
+                  key={q.id}
+                  type="button"
+                  onClick={() => { if (isCompletedQ && !isCurrentQ) handleNavigateTo(i) }}
+                  className={`w-full text-left py-2 text-sm mb-0.5 flex items-center justify-between
+                    ${isCurrentQ
+                      ? 'bg-sky-50 text-sky-700 font-bold cursor-default border-l-2 border-sky-500 pl-2 pr-3 rounded-r-lg'
+                      : isCompletedQ
+                        ? 'bg-green-50 text-green-700 cursor-pointer hover:bg-green-100 rounded-lg px-3'
+                        : 'text-gray-300 cursor-not-allowed rounded-lg px-3'
+                    }`}
+                >
+                  <span>{i + 1}問</span>
+                  {isCompletedQ && !isCurrentQ && <span className="text-xs">✓</span>}
+                </button>
+              )
+            })}
+          </div>
+        </aside>
+
+        {/* ────── メインコンテンツ ────── */}
+        <div className="flex-1 min-w-0 flex flex-col p-6" style={{ minHeight: 'calc(100vh - 80px)' }}>
+          <div className="mx-auto max-w-xl w-full">
+            <button type="button" onClick={() => navigate('/training/infra-basic-top')} className="mb-3 inline-flex items-center gap-1 text-sm text-sky-700 hover:text-sky-800">
+              ← 課題一覧に戻る
+            </button>
+            <div className="flex items-center justify-end mb-4">
+              <div className="flex flex-col items-end gap-1">
+                <button
+                  type="button"
+                  onClick={() => { void handleInterrupt() }}
+                  disabled={isSaving}
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSaving ? '保存中...' : '中断して保存'}
+                </button>
+                {saveError && <p className="text-xs text-red-600">{saveError}</p>}
+              </div>
+            </div>
+          </div>
+          {/* 進捗バー + ナビゲーション */}
+          <div className="mx-auto max-w-xl w-full" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', padding: '0 4px' }}>
+            <button
+              type="button"
+              onClick={handlePrevQuestion}
+              disabled={queueIdx === 0}
+              style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '6px 14px', fontSize: '13px', color: queueIdx === 0 ? '#d1d5db' : '#374151', cursor: queueIdx === 0 ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+            >
+              ← 前の問題
+            </button>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '12px', color: '#6b7280', whiteSpace: 'nowrap' }}>
+                {progressLabel}
+              </span>
+              <div style={{ flex: 1, height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{ width: `${((queueIdx + 1) / queue.length) * 100}%`, height: '100%', background: '#7dd3fc', borderRadius: '3px', transition: 'width 0.3s ease' }} />
+              </div>
+            </div>
+          </div>
+
+          <div className="mx-auto max-w-xl w-full" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '40px', minHeight: 'calc(100vh - 200px)' }}>
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
           TRAINING · LINUX · LEVEL 1
         </p>
@@ -726,6 +802,8 @@ export function LinuxLevel1Page() {
         )}
 
       </div>
+        </div>{/* /メインコンテンツ */}
+      </div>{/* /flex row */}
     </div>
   )
 }

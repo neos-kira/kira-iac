@@ -1290,7 +1290,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl(la.path), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
+                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1314,7 +1314,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level1'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
+                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1329,7 +1329,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-1'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
+                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1348,7 +1348,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level2'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
+                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1363,7 +1363,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
+                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1382,7 +1382,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
+                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1401,7 +1401,7 @@ function App() {
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
+                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
