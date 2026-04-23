@@ -260,42 +260,51 @@ export function LinuxLevel1Page() {
 
   const firstAttemptCount = Object.keys(firstAttemptCorrect).length
 
-  async function handleExecute() {
+  function handleExecute() {
     if (!current || lastResult !== null || isExecuting) return
+    // setIsExecuting(true) を先にレンダリングさせるため、採点処理を setTimeout で遅延する。
+    // React 18の自動バッチングにより await Promise.resolve() では描画されないため setTimeout を使う。
     setIsExecuting(true)
-    await Promise.resolve() // 1レンダリング分待ち、loading stateを表示する
-    const normalize = (s: string) => {
-      let r = s.trim().replace(/\u3000/g, ' ').replace(/\s+/g, ' ').toLowerCase()
-      r = r.replace(/^sudo(\s+-\S+\s+\S+)*\s+/, '')       // sudo (sudo -u root 等も) 除去
-      r = r.split(' ').filter((t) => t !== '-y').join(' ').trim()  // -y トークンを除去
-      r = r.replace(/(chown\s+\S+?):\S*/g, '$1')           // chown user:group → chown user
-      r = r.replace(/["']/g, '')                            // クォート統一（シングル/ダブル除去）
-      r = r.replace(/\/\s+/g, ' ').replace(/\/$/, '')      // パス末尾スラッシュ除去
-      r = r.replace(/^vim(\s)/, 'vi$1')                    // vim → vi
-      r = r.replace(/\bcurl\s+--head\b/, 'curl -i')        // curl --head → curl -I
-      return r
-    }
-    const trimmed = normalize(inputValue)
-    const correctAnswer = normalize(current.choices[current.correctIndex] ?? '')
-    const altAnswers = (current.alternatives ?? []).map(normalize)
-    const correct = trimmed === correctAnswer || altAnswers.includes(trimmed)
-    const isFirstAttempt = !(current.id in firstAttemptCorrect)
+    const capturedCurrent = current
+    const capturedInput = inputValue
+    const capturedQueueIdx = queueIdx
+    setTimeout(() => {
+      try {
+        const normalize = (s: string) => {
+          let r = s.trim().replace(/\u3000/g, ' ').replace(/\s+/g, ' ').toLowerCase()
+          r = r.replace(/^sudo(\s+-\S+\s+\S+)*\s+/, '')       // sudo (sudo -u root 等も) 除去
+          r = r.split(' ').filter((t) => t !== '-y').join(' ').trim()  // -y トークンを除去
+          r = r.replace(/(chown\s+\S+?):\S*/g, '$1')           // chown user:group → chown user
+          r = r.replace(/["']/g, '')                            // クォート統一（シングル/ダブル除去）
+          r = r.replace(/\/\s+/g, ' ').replace(/\/$/, '')      // パス末尾スラッシュ除去
+          r = r.replace(/^vim(\s)/, 'vi$1')                    // vim → vi
+          r = r.replace(/\bcurl\s+--head\b/, 'curl -i')        // curl --head → curl -I
+          return r
+        }
+        const trimmed = normalize(capturedInput)
+        const correctAnswer = normalize(capturedCurrent.choices[capturedCurrent.correctIndex] ?? '')
+        const altAnswers = (capturedCurrent.alternatives ?? []).map(normalize)
+        const correct = trimmed === correctAnswer || altAnswers.includes(trimmed)
+        const isFirstAttempt = !(capturedCurrent.id in firstAttemptCorrect)
 
-    if (correct) {
-      // 正解: リトライでも firstAttemptCorrect を true に更新（スコアに反映・復習モード化）
-      setFirstAttemptCorrect((prev) => ({ ...prev, [current.id]: true }))
-      setLastResult('correct')
-      setWrongFeedback(false)
-      setAnsweredCommands((prev) => ({ ...prev, [queueIdx]: trimmed }))
-    } else {
-      // 不正解: 初回のみ firstAttemptCorrect に記録（キューへの追加は廃止）
-      if (isFirstAttempt) {
-        setFirstAttemptCorrect((prev) => ({ ...prev, [current.id]: false }))
+        if (correct) {
+          // 正解: リトライでも firstAttemptCorrect を true に更新（スコアに反映・復習モード化）
+          setFirstAttemptCorrect((prev) => ({ ...prev, [capturedCurrent.id]: true }))
+          setLastResult('correct')
+          setWrongFeedback(false)
+          setAnsweredCommands((prev) => ({ ...prev, [capturedQueueIdx]: trimmed }))
+        } else {
+          // 不正解: 初回のみ firstAttemptCorrect に記録（キューへの追加は廃止）
+          if (isFirstAttempt) {
+            setFirstAttemptCorrect((prev) => ({ ...prev, [capturedCurrent.id]: false }))
+          }
+          setWrongFeedback(true)
+          // lastResult は null のまま → 入力欄は enabled・実行ボタン継続表示
+        }
+      } finally {
+        setIsExecuting(false)
       }
-      setWrongFeedback(true)
-      // lastResult は null のまま → 入力欄は enabled・実行ボタン継続表示
-    }
-    setIsExecuting(false)
+    }, 0)
   }
 
   function handlePrevQuestion() {
@@ -604,7 +613,7 @@ export function LinuxLevel1Page() {
                 e.preventDefault()
                 e.stopPropagation()
                 if (showFeedback || isReviewMode) { void goNext() }
-                else if ((isRetryUnanswered || !(queueIdx in answeredCommands)) && inputValue.trim() !== '' && !isExecuting) void handleExecute()
+                else if ((isRetryUnanswered || !(queueIdx in answeredCommands)) && inputValue.trim() !== '' && !isExecuting) handleExecute()
               }}
               disabled={showFeedback || isReviewMode || (!isRetryUnanswered && queueIdx in answeredCommands)}
               className={`flex-1 rounded-xl border px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none disabled:opacity-80 ${
@@ -632,7 +641,7 @@ export function LinuxLevel1Page() {
               // 未回答 or 再出題問題: 実行ボタン表示
               <button
                 type="button"
-                onClick={() => { void handleExecute() }}
+                onClick={() => { handleExecute() }}
                 disabled={inputValue.trim() === '' || isExecuting}
                 style={inputValue.trim() === '' || isExecuting
                   ? { background: '#e5e7eb', color: '#9ca3af', cursor: 'not-allowed', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500, pointerEvents: 'none' as const }
