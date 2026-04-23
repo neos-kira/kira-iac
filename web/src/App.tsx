@@ -1306,7 +1306,7 @@ function App() {
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                     <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800">課題1-2 · {partLabel}</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800">Linuxコマンド30問 · {partLabel}</p>
                     <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
                       <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(l1Q / 10) * 100}%` }} />
                     </div>
@@ -1325,7 +1325,7 @@ function App() {
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                     <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800">課題1-1 · SSH接続確認</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800">SSH接続確認</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-1'), '_blank')
                       else setShowIntroRequiredPopup(true)
@@ -1340,7 +1340,7 @@ function App() {
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                     <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800">課題2-2 · TCP/IP</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800">TCP/IP 理解度チェック</p>
                     <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
                       <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(l2Q / 10) * 100}%` }} />
                     </div>
@@ -1359,7 +1359,7 @@ function App() {
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                     <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800">課題3-2 · 理解度チェック</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800">OS・仮想化・クラウド理解度チェック</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
                       else setShowIntroRequiredPopup(true)
@@ -1374,7 +1374,7 @@ function App() {
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                     <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800">課題4-1 · vi演習</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800">viエディタ演習</p>
                     <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
                       <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(vi4Done / VI_STEPS.length) * 100}%` }} />
                     </div>
@@ -1393,7 +1393,7 @@ function App() {
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                     <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800">課題4-2 · シェルスクリプト</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800">シェルスクリプト演習</p>
                     <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
                       <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(shell4Done / SHELL_QUESTIONS.length) * 100}%` }} />
                     </div>
