@@ -141,11 +141,6 @@ export function LinuxLevel1Page() {
   const initRestored = buildRestoredL1State(initSave, initPart)
 
   // DynamoDB復元済みかどうかのフラグ（useEffect完了前に中断されないよう管理）
-  const initPartRef = useRef(initPart)
-  // マウント時点でlocalStorageにL1データが存在したか（復元条件の判定に使う）
-  const hadLocalL1DataRef = useRef(
-    typeof window !== 'undefined' && window.localStorage.getItem(getProgressKey(L1_PROGRESS_KEY)) !== null
-  )
 
   // DynamoDBから取得した最新値（postProgressのベース）
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
@@ -203,13 +198,7 @@ export function LinuxLevel1Page() {
       }
 
       const serverPart = snap.l1CurrentPart
-      // localStorage が空だった場合は無条件に復元、あった場合はサーバーの方が進んでいる場合のみ上書き
-      const shouldRestore = !hadLocalL1DataRef.current || serverPart > initPartRef.current
-      if (!shouldRestore) {
-        setIsLoading(false)
-        return
-      }
-
+      // DynamoDBが唯一の信頼できるデータソース（CLAUDE.md原則）。常にDynamoDBから復元する
       const serverCurrentQuestion = snap.l1CurrentQuestion ?? 0
       const serverWrongIds = snap.l1WrongIds ?? []
 
@@ -250,7 +239,7 @@ export function LinuxLevel1Page() {
         setAnsweredCommands(serverRestored.answeredCommands)
       }
 
-      saveL1State(storageKey, newPartsCleared, serverPart, serverCurrentQuestion, serverWrongIds)
+      saveL1State(storageKey, newPartsCleared, serverPart, serverCurrentQuestion, serverWrongIds, serverSavedQueueIdx)
       setIsLoading(false)
     }
     void restore()
