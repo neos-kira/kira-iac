@@ -155,6 +155,7 @@ export function LinuxLevel1Page() {
   const [phase, setPhase] = useState<'quiz' | 'part_result' | 'all_clear'>('quiz')
   const [partScore, setPartScore] = useState(0)
   const [isExecuting, setIsExecuting] = useState(false)
+  const [shakeKey, setShakeKey] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -299,6 +300,7 @@ export function LinuxLevel1Page() {
             setFirstAttemptCorrect((prev) => ({ ...prev, [capturedCurrent.id]: false }))
           }
           setWrongFeedback(true)
+          setShakeKey((k) => k + 1)
           // lastResult は null のまま → 入力欄は enabled・実行ボタン継続表示
         }
       } finally {
@@ -677,7 +679,8 @@ export function LinuxLevel1Page() {
 
         {wrongFeedback && (
           <div
-            className="mt-4 rounded-xl border border-rose-500/50 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+            key={shakeKey}
+            className="mt-4 rounded-xl border border-rose-500/50 bg-rose-50 px-4 py-3 text-sm text-rose-800 animate-shake"
             role="status"
           >
             <span className="font-medium">✗ 不正解</span>
