@@ -680,7 +680,7 @@ export function LinuxLevel1Page() {
         </h1>
         <div className="mt-1 flex items-center gap-2" />
 
-        <p style={{ fontSize: '20px', fontWeight: 600, color: '#111827', marginBottom: '32px', lineHeight: '1.7', marginTop: '16px' }}>{current?.prompt}</p>
+        <p className="text-xl font-bold leading-snug text-gray-900 mt-4 mb-8">{current?.prompt}</p>
 
         {/* 回答済みバナー（クリア済み復習モード以外のみ表示） */}
         {queueIdx in answeredCommands && !showFeedback && !isReviewMode && (
@@ -719,7 +719,7 @@ export function LinuxLevel1Page() {
                 else if ((isRetryUnanswered || !(queueIdx in answeredCommands)) && inputValue.trim() !== '' && !isExecuting) handleExecute()
               }}
               disabled={showFeedback || isReviewMode || (!isRetryUnanswered && queueIdx in answeredCommands)}
-              className={`flex-1 rounded-xl border px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none disabled:opacity-80 ${
+              className={`flex-1 rounded-xl border px-4 py-3 text-base text-slate-800 placeholder:text-slate-400 focus:outline-none disabled:opacity-80 ${
                 isReviewMode || showFeedback
                   ? 'border-emerald-200 bg-emerald-50'
                   : 'border-slate-300 bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500/50'
