@@ -84,7 +84,7 @@ const STEP_SECTION: Record<number, string> = {
   5: 'リスク共有と報告',
 }
 
-const STEP_LABELS = ['オリエンテーション', '行動基準確認', 'AI機密保持', '物理セキュリティ', 'リスク報告', '完了']
+const STEP_LABELS = ['オリエンテーション', '行動基準確認', 'AI機密保持', '物理セキュリティ', 'リスク報告']
 
 type ScoringResult = { pass: boolean; feedback: string; details?: ScoreDetails }
 
