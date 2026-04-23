@@ -1767,7 +1767,7 @@ function App() {
                               </div>
                               {pemLostOpen && (
                                 <p className="text-[10px] text-slate-500 leading-relaxed bg-slate-50 rounded px-2 py-1.5 border border-slate-200">
-                                  秘密鍵を紛失した場合は、サーバーを削除して再作成してください。新しい秘密鍵が発行されます。<br />
+                                  秘密鍵を紛失した場合は管理者（講師）に連絡し、サーバーの再作成を依頼してください。新しい秘密鍵が発行されます。<br />
                                   ※ サーバー上のデータは失われますが、研修の進捗は保持されます。
                                 </p>
                               )}

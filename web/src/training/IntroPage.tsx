@@ -487,7 +487,14 @@ export function IntroPage() {
 
   // ── レイアウトヘルパー ────────────────────────────────────────────────────
   const topBar = (
-    <div className="flex items-center justify-end mb-6">
+    <div className="flex items-center justify-between mb-6">
+      <button
+        type="button"
+        onClick={() => navigate('/')}
+        className="inline-flex items-center gap-1 text-sm text-sky-700 hover:text-sky-800"
+      >
+        ← 課題一覧に戻る
+      </button>
       {!isReviewMode && step >= 1 && step <= 5 ? (
         <div className="flex flex-col items-end gap-1">
           <button
