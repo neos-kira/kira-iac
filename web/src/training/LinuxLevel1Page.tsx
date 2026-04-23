@@ -101,6 +101,15 @@ function buildRestoredL1State(save: ReturnType<typeof loadL1Save>, partIdx: numb
       .filter((q): q is QuizQuestion => q !== undefined),
   ]
 
+  // 初回正解問の入力欄を復元（choices[correctIndex] を詰める）
+  const answeredCommands: Record<number, string> = {}
+  for (let i = 0; i < save.currentQuestion && i < PART_SIZE; i++) {
+    const q = basePartQs[i]
+    if (q && !wrongSet.has(q.id)) {
+      answeredCommands[i] = q.choices[q.correctIndex] ?? ''
+    }
+  }
+
   // savedQueueIdx がなければ currentQuestion をフォールバックとして使う
   const rawQueueIdx = save.savedQueueIdx ?? save.currentQuestion
   // queue 範囲内かチェック（部クリア後など範囲外になる場合は 0 にリセット）
@@ -111,6 +120,7 @@ function buildRestoredL1State(save: ReturnType<typeof loadL1Save>, partIdx: numb
     queueIdx: validPosition ? rawQueueIdx : 0,
     // 有効な途中位置のときだけ firstAttemptCorrect を復元（新規開始時はリセット）
     firstAttemptCorrect: validPosition ? firstAttemptCorrect : {},
+    answeredCommands: validPosition ? answeredCommands : {},
   }
 }
 
@@ -153,7 +163,7 @@ export function LinuxLevel1Page() {
   const [inputValue, setInputValue] = useState('')
   const [lastResult, setLastResult] = useState<'correct' | null>(null)
   const [wrongFeedback, setWrongFeedback] = useState(false)
-  const [answeredCommands, setAnsweredCommands] = useState<Record<number, string>>({})
+  const [answeredCommands, setAnsweredCommands] = useState<Record<number, string>>(initRestored.answeredCommands)
   const [phase, setPhase] = useState<'quiz' | 'part_result' | 'all_clear'>('quiz')
   const [partScore, setPartScore] = useState(0)
   const [isExecuting, setIsExecuting] = useState(false)
@@ -229,13 +239,15 @@ export function LinuxLevel1Page() {
       setPhase('quiz')
       setPartScore(0)
 
-      // 回答済みコマンドを復元
-      if (snap.l1AnsweredCommands) {
+      // 回答済みコマンドを復元（DynamoDBに保存値があればそちら、なければ choices[correctIndex] で補完）
+      if (snap.l1AnsweredCommands && Object.keys(snap.l1AnsweredCommands).length > 0) {
         const restored: Record<number, string> = {}
         Object.entries(snap.l1AnsweredCommands).forEach(([k, v]) => {
           restored[Number(k)] = v
         })
         setAnsweredCommands(restored)
+      } else {
+        setAnsweredCommands(serverRestored.answeredCommands)
       }
 
       saveL1State(storageKey, newPartsCleared, serverPart, serverCurrentQuestion, serverWrongIds)
