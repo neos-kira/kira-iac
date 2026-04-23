@@ -11,7 +11,7 @@ export const LINUX_LEVEL1_QUESTIONS: QuizQuestion[] = [
   { id: 'q01', prompt: '現在いるディレクトリの絶対パスを確認するには？', choices: ['pwd'], correctIndex: 0 },
   { id: 'q02', prompt: '/var/log以下のファイルを更新日時順（新しい順）で表示するには？', choices: ['ls -lt /var/log'], correctIndex: 0, alternatives: ['ls -tl /var/log'] },
   { id: 'q03', prompt: '/tmp/workディレクトリを絶対パスで作成するには？', choices: ['mkdir /tmp/work'], correctIndex: 0 },
-  { id: 'q04', prompt: 'access.logをリアルタイムで追いかけるには？', choices: ['tail -f access.log'], correctIndex: 0 },
+  { id: 'q04', prompt: 'httpdのアクセスログ（/var/log/httpd/access_log）をリアルタイムで追いかけるには？', choices: ['tail -f /var/log/httpd/access_log'], correctIndex: 0, alternatives: ['tail --follow /var/log/httpd/access_log'] },
   { id: 'q05', prompt: 'error.logからFATALを含む行だけ抽出するには？', choices: ['grep FATAL error.log'], correctIndex: 0 },
   { id: 'q06', prompt: 'deploy.sh に実行権限を付与するには？', choices: ['chmod +x deploy.sh'], correctIndex: 0, alternatives: ['chmod u+x deploy.sh', 'chmod a+x deploy.sh'] },
   { id: 'q07', prompt: '/var/www/html/index.html の所有者を user に変更するには？', choices: ['chown user /var/www/html/index.html'], correctIndex: 0 },
@@ -20,7 +20,7 @@ export const LINUX_LEVEL1_QUESTIONS: QuizQuestion[] = [
   { id: 'q10', prompt: '定期実行の設定を編集するには？', choices: ['crontab -e'], correctIndex: 0 },
 
   // 第2部: サーバ構築必須 (q11–q20)
-  { id: 'q11', prompt: 'httpdをインストールするには？（Amazon Linux 2023）', choices: ['dnf install httpd -y'], correctIndex: 0, alternatives: ['yum install httpd', 'yum install httpd -y'] },
+  { id: 'q11', prompt: 'httpdをインストールするには？（Rocky Linux 9）', choices: ['dnf install httpd -y'], correctIndex: 0, alternatives: ['yum install httpd', 'yum install httpd -y'] },
   { id: 'q12', prompt: 'httpdを今すぐ起動するには？', choices: ['systemctl start httpd'], correctIndex: 0 },
   { id: 'q13', prompt: 'httpdをOS再起動後も自動起動するよう設定するには？', choices: ['systemctl enable httpd'], correctIndex: 0 },
   { id: 'q14', prompt: 'httpdが動いているか確認するには？', choices: ['systemctl status httpd'], correctIndex: 0 },
@@ -29,10 +29,10 @@ export const LINUX_LEVEL1_QUESTIONS: QuizQuestion[] = [
   { id: 'q17', prompt: 'firewalldでhttpを許可するには？', choices: ['firewall-cmd --add-service=http --permanent'], correctIndex: 0, alternatives: ['firewall-cmd --permanent --add-service=http'] },
   { id: 'q18', prompt: 'firewalldの設定を反映するには？', choices: ['firewall-cmd --reload'], correctIndex: 0 },
   { id: 'q19', prompt: 'システムのエラーログをリアルタイムで確認するには？', choices: ['journalctl -f'], correctIndex: 0, alternatives: ['journalctl --follow'] },
-  { id: 'q20', prompt: '動いているプロセスの一覧をCPU使用率順に確認するには？', choices: ['ps aux --sort=-%cpu'], correctIndex: 0, alternatives: ['ps -aux --sort=-%cpu'] },
+  { id: 'q20', prompt: '動いているプロセスの一覧をCPU使用率順に確認するには？', choices: ['ps aux --sort=-%cpu'], correctIndex: 0, alternatives: ['ps -aux --sort=-%cpu', 'ps aux --sort -%cpu'] },
 
   // 第3部: 実践問題 (q21–q30)
-  { id: 'q21', prompt: 'WebサーバーがHTTPリクエストに応答するか確認するには？', choices: ['curl -I http://localhost'], correctIndex: 0 },
+  { id: 'q21', prompt: '演習サーバー（localhost）にHTTPリクエストを送って応答を確認するには？', choices: ['curl -I http://localhost'], correctIndex: 0, alternatives: ['curl http://localhost'] },
   { id: 'q22', prompt: 'httpdが起動しない。ログを確認するには？', choices: ['journalctl -u httpd'], correctIndex: 0, alternatives: ['journalctl --unit=httpd', 'journalctl --unit httpd'] },
   { id: 'q23', prompt: '/etc/httpd/conf/httpd.confをviで開くには？', choices: ['vi /etc/httpd/conf/httpd.conf'], correctIndex: 0 },
   { id: 'q24', prompt: 'viで開いたファイルを保存して閉じるには？', choices: [':wq'], correctIndex: 0, alternatives: [':x', 'ZZ'] },
