@@ -579,7 +579,7 @@ export function LinuxLevel1Page() {
 
       {/* ────── モバイル: 上部横スクロールナビ（〜1023px） ────── */}
       <div className="lg:hidden bg-white border-b border-gray-100 px-3 py-2">
-        <div className="flex gap-1.5 overflow-x-auto pb-1 px-3">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 scroll-pl-3">
           {basePartQs.map((q, i) => {
             const isCurrentQ = queueIdx === i
             const isCompletedQ = firstAttemptCorrect[q.id] === true
