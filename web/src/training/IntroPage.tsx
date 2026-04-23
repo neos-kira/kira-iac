@@ -955,14 +955,33 @@ export function IntroPage() {
             {eq.scenarioText}
           </pre>
         )}
-        <textarea
-          className="w-full rounded-xl border border-slate-300 bg-slate-50 p-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 resize-none disabled:opacity-60"
-          rows={6}
-          placeholder="回答を入力してください..."
-          value={currentInput}
-          disabled={isScoring || currentResult !== null || isReviewMode}
-          onChange={(e) => setCurrentInput(e.target.value)}
-        />
+        {isReviewMode ? (
+          (() => {
+            const savedAnswer = riskAnswers[eq?.id ?? ''] ?? ''
+            return savedAnswer ? (
+              <textarea
+                className="w-full rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-slate-800 resize-none disabled:opacity-100"
+                rows={6}
+                value={savedAnswer}
+                disabled
+                readOnly
+              />
+            ) : (
+              <div className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-400 italic">
+                回答データがありません
+              </div>
+            )
+          })()
+        ) : (
+          <textarea
+            className="w-full rounded-xl border border-slate-300 bg-slate-50 p-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 resize-none disabled:opacity-60"
+            rows={6}
+            placeholder="回答を入力してください..."
+            value={currentInput}
+            disabled={isScoring || currentResult !== null}
+            onChange={(e) => setCurrentInput(e.target.value)}
+          />
+        )}
         {isScoring && (
           <div className="flex flex-col items-center py-4">
             <div className="h-5 w-5 animate-spin rounded-full border-[3px] border-slate-200 border-t-sky-600" />
