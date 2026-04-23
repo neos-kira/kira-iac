@@ -635,12 +635,12 @@ export function LinuxLevel1Page() {
         </aside>
 
         {/* ────── メインコンテンツ ────── */}
-        <div className="flex-1 min-w-0 flex flex-col p-6" style={{ minHeight: 'calc(100vh - 80px)' }}>
+        <div className="flex-1 min-w-0 flex flex-col p-3 md:p-6">
           <div className="mx-auto max-w-xl w-full">
-            <button type="button" onClick={() => navigate('/training/infra-basic-top')} className="mb-3 inline-flex items-center gap-1 text-sm text-sky-700 hover:text-sky-800">
+            <button type="button" onClick={() => navigate('/training/infra-basic-top')} className="mb-1 md:mb-3 inline-flex items-center gap-1 text-sm text-sky-700 hover:text-sky-800">
               ← 課題一覧に戻る
             </button>
-            <div className="flex items-center justify-end mb-4">
+            <div className="flex items-center justify-end mb-2 md:mb-4">
               <div className="flex flex-col items-end gap-1">
                 <button
                   type="button"
@@ -655,7 +655,7 @@ export function LinuxLevel1Page() {
             </div>
           </div>
           {/* 進捗バー + ナビゲーション */}
-          <div className="mx-auto max-w-xl w-full" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', padding: '0 4px' }}>
+          <div className="mx-auto max-w-xl w-full flex items-center gap-3 mb-2 md:mb-4 px-1">
             <button
               type="button"
               onClick={handlePrevQuestion}
@@ -674,13 +674,13 @@ export function LinuxLevel1Page() {
             </div>
           </div>
 
-          <div className="mx-auto max-w-xl w-full" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '40px', minHeight: 'calc(100vh - 200px)' }}>
+          <div className="mx-auto max-w-xl w-full flex-1 min-h-0 flex flex-col bg-white rounded-xl border border-gray-200 p-5 md:p-10">
         <h1 className="text-xl font-semibold text-slate-800">
           Linuxコマンド30問
         </h1>
         <div className="mt-1 flex items-center gap-2" />
 
-        <p className="text-xl font-bold leading-snug text-gray-900 mt-4 mb-8">{current?.prompt}</p>
+        <p className="text-base md:text-xl font-bold leading-snug text-gray-900 mt-2 mb-2 md:mt-4 md:mb-8">{current?.prompt}</p>
 
         {/* 回答済みバナー（クリア済み復習モード以外のみ表示） */}
         {queueIdx in answeredCommands && !showFeedback && !isReviewMode && (
@@ -689,10 +689,10 @@ export function LinuxLevel1Page() {
           </div>
         )}
 
-        <form className="mt-4" onSubmit={(e) => e.preventDefault()}>
+        <form className="mt-2 md:mt-4" onSubmit={(e) => e.preventDefault()}>
           <label
             htmlFor="cmd-input"
-            className="block text-[11px] font-medium uppercase tracking-wider text-slate-500 mb-1.5"
+            className="block text-[11px] font-medium uppercase tracking-wider text-slate-500 mb-1"
           >
             コマンドを入力
           </label>
@@ -771,7 +771,7 @@ export function LinuxLevel1Page() {
         {/* 正解バッジ（クリア済み復習モード） */}
         {isReviewMode && (
           <div
-            className="mt-4 rounded-xl border border-emerald-500/50 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+            className="mt-2 md:mt-4 rounded-xl border border-emerald-500/50 bg-emerald-50 px-4 py-2 md:py-3 text-sm text-emerald-800"
             role="status"
           >
             <span className="font-medium">✓ 正解</span>
@@ -781,7 +781,7 @@ export function LinuxLevel1Page() {
         {wrongFeedback && (
           <div
             key={shakeKey}
-            className="mt-4 rounded-xl border border-rose-500/50 bg-rose-50 px-4 py-3 text-sm text-rose-800 animate-shake"
+            className="mt-2 md:mt-4 rounded-xl border border-rose-500/50 bg-rose-50 px-4 py-2 md:py-3 text-sm text-rose-800 animate-shake"
             role="status"
           >
             <span className="font-medium">✗ 不正解</span>
@@ -791,7 +791,7 @@ export function LinuxLevel1Page() {
 
         {showFeedback && (
           <div
-            className="mt-4 rounded-xl border border-emerald-500/50 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+            className="mt-2 md:mt-4 rounded-xl border border-emerald-500/50 bg-emerald-50 px-4 py-2 md:py-3 text-sm text-emerald-800"
             role="status"
           >
             <span className="font-medium">✓ 正解</span>
