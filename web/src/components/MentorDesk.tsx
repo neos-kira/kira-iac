@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { BASE_URL, buildAuthHeaders, forceLogout } from '../progressApi'
 import { Z } from '../zIndex'
+import { useQuizContext } from '../quizContext'
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string; image?: string }
 
@@ -43,6 +44,7 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
   const [pendingImage, setPendingImage] = useState<{ base64: string; type: string; dataUrl: string } | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const { quizState } = useQuizContext()
 
   const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
 
@@ -158,7 +160,7 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
         method: 'POST',
         headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'omit',
-        body: JSON.stringify({ message: text || '画像を確認してください', history, context: context ?? '', image: imagePayload }),
+        body: JSON.stringify({ message: text || '画像を確認してください', history, context: context ?? '', image: imagePayload, currentQuestion: quizState.currentQuestion, studentAnswer: quizState.studentAnswer, isCorrect: quizState.isCorrect }),
       })
       console.log('[MentorDesk] response:', res.status, res.ok)
       if (!res.ok) {

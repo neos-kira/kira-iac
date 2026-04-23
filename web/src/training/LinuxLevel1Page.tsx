@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { getProgressKey } from './trainingWbsData'
+import { useQuizContext } from '../quizContext'
 import { LINUX_LEVEL1_QUESTIONS, L1_CLEARED_KEY, L1_PROGRESS_KEY } from './linuxLevel1Data'
 import type { QuizQuestion } from './linuxLevel1Data'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
@@ -118,6 +119,7 @@ function getPartQuestions(partIdx: number): QuizQuestion[] {
 
 export function LinuxLevel1Page() {
   const navigate = useSafeNavigate()
+  const { setQuizState } = useQuizContext()
   const storageKey = getProgressKey(L1_PROGRESS_KEY)
   const clearedKey = getProgressKey(L1_CLEARED_KEY)
 
@@ -157,6 +159,16 @@ export function LinuxLevel1Page() {
   useEffect(() => {
     document.title = 'インフラ研修1'
   }, [])
+
+  // AI講師にクイズ状態を共有する（currentQuestion / studentAnswer / isCorrect）
+  const current = queue[queueIdx]
+  useEffect(() => {
+    setQuizState({
+      currentQuestion: current?.prompt ?? null,
+      studentAnswer: inputValue,
+      isCorrect: lastResult === 'correct' ? true : wrongFeedback ? false : null,
+    })
+  }, [current?.prompt, inputValue, lastResult, wrongFeedback, setQuizState])
 
   // DynamoDBから初期状態を復元（優先順位: DynamoDB > localStorage > デフォルト）
   useEffect(() => {
@@ -245,7 +257,6 @@ export function LinuxLevel1Page() {
     return () => document.removeEventListener('keydown', onKey)
   }, [lastResult, queue, queueIdx, firstAttemptCorrect, activePart, partsCleared])
 
-  const current = queue[queueIdx]
   const firstAttemptCount = Object.keys(firstAttemptCorrect).length
 
   function handleExecute() {

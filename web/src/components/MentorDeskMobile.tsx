@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { BASE_URL, buildAuthHeaders, forceLogout } from '../progressApi'
 import { Z } from '../zIndex'
+import { useQuizContext } from '../quizContext'
 
 type Msg = { role: 'user' | 'assistant'; content: string; image?: string }
 
@@ -50,6 +51,7 @@ export function MentorDeskMobileButton() {
   const location = useLocation()
   const path = location.pathname
   const context = CONTEXT_MAP[path] ?? ''
+  const { quizState } = useQuizContext()
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -120,7 +122,7 @@ export function MentorDeskMobileButton() {
         method: 'POST',
         headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'omit',
-        body: JSON.stringify({ message: text || '画像を確認してください', history, context, image: imagePayload }),
+        body: JSON.stringify({ message: text || '画像を確認してください', history, context, image: imagePayload, currentQuestion: quizState.currentQuestion, studentAnswer: quizState.studentAnswer, isCorrect: quizState.isCorrect }),
       })
       if (!res.ok) {
         if (res.status === 401) { forceLogout(); return }

@@ -30,6 +30,7 @@ import { Z } from './zIndex'
 import { ITBasicsTopPage } from './training/itBasics/ITBasicsTopPage'
 import { ITBasicsStudyPage } from './training/itBasics/ITBasicsStudyPage'
 import { ITBasicsTestPage } from './training/itBasics/ITBasicsTestPage'
+import { QuizContextProvider } from './quizContext'
 
 const MENTOR_CONTEXT_MAP: Record<string, string> = {
   '/training/intro': 'はじめに',
@@ -438,6 +439,7 @@ createRoot(document.getElementById('root')!).render(
     <HashRouter>
       <AuthProvider>
         <DeskOpenProvider>
+          <QuizContextProvider>
           <LoginReloadGuard />
           <JTeradaRestrictGuard />
           <LayoutWrapper>
@@ -465,6 +467,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </LayoutWrapper>
+          </QuizContextProvider>
         </DeskOpenProvider>
       </AuthProvider>
     </HashRouter>
