@@ -251,8 +251,13 @@ export function LinuxLevel1Page() {
     if (!current || lastResult !== null) return
     const normalize = (s: string) => {
       let r = s.trim().replace(/\u3000/g, ' ').replace(/\s+/g, ' ').toLowerCase()
-      r = r.replace(/^sudo\s+/, '')                        // 先頭の sudo を除去
+      r = r.replace(/^sudo(\s+-\S+\s+\S+)*\s+/, '')       // sudo (sudo -u root 等も) 除去
       r = r.split(' ').filter((t) => t !== '-y').join(' ').trim()  // -y トークンを除去
+      r = r.replace(/(chown\s+\S+?):\S*/g, '$1')           // chown user:group → chown user
+      r = r.replace(/["']/g, '')                            // クォート統一（シングル/ダブル除去）
+      r = r.replace(/\/\s+/g, ' ').replace(/\/$/, '')      // パス末尾スラッシュ除去
+      r = r.replace(/^vim(\s)/, 'vi$1')                    // vim → vi
+      r = r.replace(/\bcurl\s+--head\b/, 'curl -i')        // curl --head → curl -I
       return r
     }
     const trimmed = normalize(inputValue)
