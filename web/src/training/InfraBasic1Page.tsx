@@ -342,7 +342,7 @@ export function InfraBasic1Page() {
 
                 {/* Tips */}
                 <p className="text-[11px] text-slate-400">
-                  <span className="font-semibold text-slate-500">Tips:</span> 秘密鍵紛失時はトップページの「再DL」ボタンで再ダウンロードできます。接続に失敗する場合はサーバーが起動中であることをトップページで確認してください。
+                  <span className="font-semibold text-slate-500">Tips:</span> 秘密鍵を紛失した場合はサーバーを削除して再作成してください（研修の進捗は保持されます）。接続に失敗する場合はサーバーが起動中であることをトップページで確認してください。
                 </p>
               </div>
             </section>

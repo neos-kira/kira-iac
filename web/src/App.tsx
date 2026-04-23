@@ -196,9 +196,8 @@ function App() {
   const [serverCreatedModal, setServerCreatedModal] = useState<{ publicIp: string; keyPairName: string; pemFilename: string; ec2Username: string } | null>(null)
   const [showStopConfirm, setShowStopConfirm] = useState(false)
   const [isServerActionLoading, setIsServerActionLoading] = useState(false)
-  const [isRedownloading, setIsRedownloading] = useState(false)
-  const [redownloadError, setRedownloadError] = useState<string | null>(null)
   const [ec2StatusError, setEc2StatusError] = useState(false)
+  const [pemLostOpen, setPemLostOpen] = useState(false)
   const [copiedField, setCopiedField] = useState<'ip' | 'user' | null>(null)
   const ec2PollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const openedRef = useRef<string | null>(null)
@@ -798,54 +797,6 @@ function App() {
     }
   }
 
-  /** 秘密鍵再ダウンロード（presigned URL方式） */
-  const handleDownloadKey = async () => {
-    if (isRedownloading) return
-    setIsRedownloading(true)
-    setRedownloadError(null)
-    try {
-      const res = await fetch(`${BASE_URL}/server/download-key`, {
-        method: 'POST',
-        headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
-        credentials: 'omit',
-        body: JSON.stringify({}),
-      })
-      const data = (await res.json()) as { ok?: boolean; presignedUrl?: string; filename?: string; keyPairName?: string; error?: string; message?: string }
-      if (!res.ok || !data.presignedUrl) {
-        // HTTPステータス別エラーメッセージ
-        if (res.status === 401 || res.status === 403) {
-          setRedownloadError(data.message ?? 'セッションが切れました。再ログインしてください。')
-        } else if (res.status === 404) {
-          setRedownloadError(data.message ?? 'PEMファイルが見つかりません。サーバーを再作成してください。')
-        } else if (res.status >= 500) {
-          setRedownloadError(data.message ?? 'サーバーエラーが発生しました。時間をおいて再試行してください。')
-        } else {
-          setRedownloadError(data.message ?? 'ダウンロードに失敗しました。')
-        }
-        return
-      }
-      // presigned URLからblobを取得してダウンロード（mobile Safari対応）
-      const pemRes = await fetch(data.presignedUrl)
-      if (!pemRes.ok) {
-        setRedownloadError('ダウンロードに失敗しました。しばらくして再試行してください')
-        return
-      }
-      const blob = await pemRes.blob()
-      const blobUrl = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = blobUrl
-      a.download = data.filename ?? `${data.keyPairName ?? 'key'}.pem`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(blobUrl)
-    } catch {
-      setRedownloadError('ダウンロードに失敗しました。しばらくして再試行してください')
-    } finally {
-      setIsRedownloading(false)
-    }
-  }
-
   /** 演習サーバー停止（実EC2） */
   const handleStopServer = async () => {
     if (isServerActionLoading || !serverSnapshot) return
@@ -969,7 +920,7 @@ function App() {
               </div>
             </div>
             <p className="mt-4 text-xs text-slate-500">この情報はトップページの「あなたの演習サーバー」セクションでいつでも確認できます。</p>
-            <p className="mt-1.5 text-xs text-slate-500">秘密鍵はトップページの「再DL」ボタンからいつでもダウンロードできます。</p>
+            <p className="mt-1.5 text-xs font-medium text-amber-600">⚠ この秘密鍵は今回のみダウンロード可能です。大切に保管してください。</p>
             <button
               type="button"
               onClick={() => setServerCreatedModal(null)}
@@ -1800,16 +1751,17 @@ function App() {
                                 <span className="text-xs font-mono text-slate-500 leading-none">{serverSnapshot.keyPairName}.pem</span>
                                 <button
                                   type="button"
-                                  onClick={() => { void handleDownloadKey() }}
-                                  disabled={isRedownloading}
-                                  className="rounded px-1.5 py-0.5 text-[10px] font-medium text-blue-600 border border-blue-200 hover:bg-blue-50 leading-none disabled:opacity-50 disabled:cursor-not-allowed"
-                                  title="再ダウンロード"
+                                  onClick={() => setPemLostOpen((v) => !v)}
+                                  className="text-[10px] text-slate-400 hover:text-slate-600 underline leading-none shrink-0"
                                 >
-                                  {isRedownloading ? 'ダウンロード中...' : '再DL'}
+                                  紛失した場合
                                 </button>
                               </div>
-                              {redownloadError && (
-                                <p className="text-[10px] text-rose-600">{redownloadError}</p>
+                              {pemLostOpen && (
+                                <p className="text-[10px] text-slate-500 leading-relaxed bg-slate-50 rounded px-2 py-1.5 border border-slate-200">
+                                  秘密鍵を紛失した場合は、サーバーを削除して再作成してください。新しい秘密鍵が発行されます。<br />
+                                  ※ サーバー上のデータは失われますが、研修の進捗は保持されます。
+                                </p>
                               )}
                             </div>
                           </div>
