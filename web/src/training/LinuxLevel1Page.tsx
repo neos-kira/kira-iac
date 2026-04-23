@@ -575,11 +575,13 @@ export function LinuxLevel1Page() {
               id="cmd-input"
               type="text"
               value={
-                // クリア済み復習モード: 保存済み回答を表示
-                // 再出題問題(不正解戻り): answeredCommandsに古い回答があっても inputValue(空) を優先
-                isReviewMode || (!isRetryUnanswered && queueIdx in answeredCommands && !showFeedback)
-                  ? (answeredCommands[queueIdx] ?? '')
-                  : inputValue
+                // 正解フィードバック中: ユーザーが入力したコマンドをそのまま表示
+                showFeedback
+                  ? inputValue
+                  // クリア済み復習モード / 回答済みで変更不可: 保存済み回答を表示
+                  : isReviewMode || (!isRetryUnanswered && queueIdx in answeredCommands)
+                    ? (answeredCommands[queueIdx] ?? '')
+                    : inputValue
               }
               onChange={(e) => !showFeedback && !isReviewMode && (isRetryUnanswered || !(queueIdx in answeredCommands)) && setInputValue(e.target.value)}
               onKeyDown={(e) => {
@@ -590,9 +592,9 @@ export function LinuxLevel1Page() {
                 else if ((isRetryUnanswered || !(queueIdx in answeredCommands)) && inputValue.trim() !== '') handleExecute()
               }}
               disabled={showFeedback || isReviewMode || (!isRetryUnanswered && queueIdx in answeredCommands)}
-              className={`flex-1 rounded-xl border px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none disabled:opacity-70 ${
-                isReviewMode
-                  ? 'border-emerald-200 bg-emerald-50 focus:border-emerald-300 focus:ring-1 focus:ring-emerald-300/50'
+              className={`flex-1 rounded-xl border px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none disabled:opacity-80 ${
+                isReviewMode || showFeedback
+                  ? 'border-emerald-200 bg-emerald-50'
                   : 'border-slate-300 bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500/50'
               }`}
               autoComplete="off"
