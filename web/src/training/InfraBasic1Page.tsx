@@ -355,14 +355,14 @@ export function InfraBasic1Page() {
               <section className="rounded-xl border-2 border-emerald-300 bg-emerald-50 px-5 py-4 shadow-sm">
                 <p className="text-base font-bold text-emerald-800">SSH接続演習が完了しました 🎉</p>
                 <p className="mt-1 text-sm text-slate-700">
-                  次は「<strong>課題1-2 · LINUXコマンド</strong>」に進んでください。
+                  次は「<strong>Linuxコマンド30問</strong>」に進んでください。
                 </p>
                 <button
                   type="button"
                   onClick={() => navigate('/training/linux-level1')}
                   className="mt-3 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
                 >
-                  課題1-2 · LINUXコマンドを開く
+                  Linuxコマンド30問を開く
                 </button>
               </section>
             )}

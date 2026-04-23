@@ -94,7 +94,7 @@ export type TraineeProgressSnapshot = {
   ec2StartTime?: string | null
   /** 課題1-1（ツール演習）クリア済み */
   infra1Cleared?: boolean
-  /** 課題1-2（Linux30問）クリア済み */
+  /** Linuxコマンド30問クリア済み */
   l1Cleared?: boolean
   /** Linux30問: 回答済みコマンドテキスト（queueIdx → コマンド文字列） */
   l1AnsweredCommands?: Record<string, string>
@@ -126,7 +126,7 @@ export type TraineeProgressSnapshot = {
    */
   lastActive?: {
     moduleId: string   // 'linux-level1' | 'linux-level2' | 'infra-basic-3-2' | 'infra-basic-4' | 'infra-basic-5'
-    label: string      // 例: '課題1-2 · 基本操作 3/10問'
+    label: string      // 例: 'Linuxコマンド30問 · 基本操作 3/10問'
     path: string       // ルートパス (例: '/training/linux-level1')
     savedAt: string    // ISO 8601 タイムスタンプ
   } | null

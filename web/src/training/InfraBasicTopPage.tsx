@@ -17,7 +17,7 @@ const TASKS = [
     path: '/training/infra-basic-1',
   },
   {
-    category: '課題1-2 · LINUXコマンド',
+    category: 'Linuxコマンド30問',
     title: 'Linuxコマンド30問',
     description: 'Linuxコマンドの基礎〜実務でよく使う操作を30問で確認します。満点クリアで次のレベルに進めます。',
     path: '/training/linux-level1',

@@ -450,7 +450,7 @@ export function LinuxLevel1Page() {
         l1AnsweredCommands: cmdMap,
         lastActive: {
           moduleId: 'linux-level1',
-          label: `課題1-2 · ${partName} ${currentQuestion}/${PART_SIZE}問`,
+          label: `Linuxコマンド30問 · ${partName} ${currentQuestion}/${PART_SIZE}問`,
           path: '/training/linux-level1',
           savedAt: new Date().toISOString(),
         },
@@ -676,7 +676,7 @@ export function LinuxLevel1Page() {
 
           <div className="mx-auto max-w-xl w-full" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '40px', minHeight: 'calc(100vh - 200px)' }}>
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-          課題1-2 · LINUX コマンド
+          Linuxコマンド30問
         </p>
         <h1 className="mt-2 text-xl font-semibold text-slate-800">
           Linuxコマンド30問
