@@ -116,10 +116,9 @@ function StepProgress({ current, onStepClick }: { current: number; onStepClick?:
               className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-all duration-150
                 ${done && onStepClick ? 'cursor-pointer hover:ring-2 hover:ring-offset-2 hover:ring-green-400' : ''}
                 ${!done && onStepClick ? 'cursor-pointer hover:opacity-75' : ''}
-                ${done ? 'bg-emerald-500 text-white' : active ? 'text-white' : 'bg-slate-200 text-slate-500'}`}
-              style={active ? { background: '#7dd3fc' } : undefined}
+                ${done ? 'bg-green-500 text-white' : active ? 'bg-sky-500 text-white' : 'bg-gray-200 text-gray-400'}`}
             >
-              {done ? '✓' : stepNum}
+              {stepNum}
             </div>
             {i < STEP_LABELS.length - 1 && (
               <div className={`h-0.5 w-5 shrink-0 ${done ? 'bg-emerald-400' : 'bg-slate-200'}`} />
