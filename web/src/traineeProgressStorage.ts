@@ -60,6 +60,8 @@ export type TraineeProgressSnapshot = {
   l1CurrentPart?: number
   /** Linux30問: 現在の問題インデックス（0始まり） */
   l1CurrentQuestion?: number
+  /** Linux30問: 中断時の実際のキュー位置（答え済み問数とは異なる） */
+  l1SavedQueueIdx?: number
   /** Linux30問: 間違えた問題IDリスト */
   l1WrongIds?: string[]
   /** TCP/IP10問: 現在の問題インデックス（0始まり） */

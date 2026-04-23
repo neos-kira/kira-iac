@@ -104,7 +104,8 @@ function buildRestoredL1State(save: ReturnType<typeof loadL1Save>, partIdx: numb
   // savedQueueIdx がなければ currentQuestion をフォールバックとして使う
   const rawQueueIdx = save.savedQueueIdx ?? save.currentQuestion
   // queue 範囲内かチェック（部クリア後など範囲外になる場合は 0 にリセット）
-  const validPosition = rawQueueIdx > 0 && rawQueueIdx < queue.length
+  // Note: >= 0 にすることで第1問（index 0）でも正しく復元できる
+  const validPosition = rawQueueIdx >= 0 && rawQueueIdx < queue.length
   return {
     queue,
     queueIdx: validPosition ? rawQueueIdx : 0,
@@ -206,12 +207,14 @@ export function LinuxLevel1Page() {
       for (let i = 0; i < serverPart; i++) newPartsCleared[i] = true
 
       // DynamoDB データから queue / queueIdx / firstAttemptCorrect を復元
+      // l1SavedQueueIdx: 中断時の実際のキュー位置（l1CurrentQuestion とは異なる）
+      const serverSavedQueueIdx = typeof snap.l1SavedQueueIdx === 'number' ? snap.l1SavedQueueIdx : undefined
       const serverSaveLike = {
         partsCleared: newPartsCleared,
         currentPart: serverPart,
         currentQuestion: serverCurrentQuestion,
         wrongIds: serverWrongIds,
-        savedQueueIdx: undefined as number | undefined,
+        savedQueueIdx: serverSavedQueueIdx,
       }
       const serverRestored = buildRestoredL1State(serverSaveLike, serverPart)
 
@@ -426,6 +429,7 @@ export function LinuxLevel1Page() {
         ...base,
         l1CurrentPart: activePart,
         l1CurrentQuestion: currentQuestion,
+        l1SavedQueueIdx: savedQueueIdx,
         l1WrongIds: wrongIds,
         l1AnsweredCommands: cmdMap,
         lastActive: {

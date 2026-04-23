@@ -327,6 +327,7 @@ async function handler(event) {
         // Linux30問 中断・再開
         l1CurrentPart: typeof body.l1CurrentPart === 'number' ? body.l1CurrentPart : 0,
         l1CurrentQuestion: typeof body.l1CurrentQuestion === 'number' ? body.l1CurrentQuestion : 0,
+        l1SavedQueueIdx: typeof body.l1SavedQueueIdx === 'number' ? body.l1SavedQueueIdx : undefined,
         l1WrongIds: Array.isArray(body.l1WrongIds) ? body.l1WrongIds : [],
         // TCP/IP10問 中断・再開
         l2CurrentQuestion: typeof body.l2CurrentQuestion === 'number' ? body.l2CurrentQuestion : 0,
