@@ -3,6 +3,7 @@
  * 全ページを白/ライトで統一する。
  */
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { Z } from './zIndex'
 import { flushSync } from 'react-dom'
 import { useSafeNavigate } from './hooks/useSafeNavigate'
 import { OpenInNewTabButton } from './components/OpenInNewTabButton'
@@ -199,6 +200,8 @@ function App() {
   const [ec2StatusError, setEc2StatusError] = useState(false)
   const [pemLostOpen, setPemLostOpen] = useState(false)
   const [copiedField, setCopiedField] = useState<'ip' | 'user' | null>(null)
+  const [toastVisible, setToastVisible] = useState(false)
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const ec2PollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const openedRef = useRef<string | null>(null)
   const searchContainerRef = useRef<HTMLDivElement | null>(null)
@@ -1688,6 +1691,10 @@ function App() {
                     void navigator.clipboard.writeText(text).then(() => {
                       setCopiedField(field)
                       setTimeout(() => setCopiedField(null), 1500)
+                      // トースト表示（連続クリック時はタイマーをリセット）
+                      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+                      setToastVisible(true)
+                      toastTimerRef.current = setTimeout(() => setToastVisible(false), 2000)
                     })
                   }
                   const CopyBtn = ({ text, field }: { text: string; field: 'ip' | 'user' }) => {
@@ -1937,6 +1944,16 @@ function App() {
           </>
           )}
         </main>
+      </div>
+      {/* コピートースト */}
+      <div
+        style={{ zIndex: Z.toast }}
+        className={`fixed bottom-6 left-1/2 -translate-x-1/2 rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 ${
+          toastVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+        }`}
+        aria-live="polite"
+      >
+        コピーしました
       </div>
     </div>
   )
