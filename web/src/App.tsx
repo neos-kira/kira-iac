@@ -1264,7 +1264,7 @@ function App() {
           name: 'Linuxコマンド30問',
           completed: !!s?.l1Cleared,
           inProgress: (s?.l1CurrentPart ?? 0) > 0 || (s?.l1CurrentQuestion ?? 0) > 0,
-          pct: s?.l1Cleared ? 100 : 0,
+          pct: s?.l1Cleared ? 100 : Math.round(((s?.l1CurrentPart ?? 0) * 10 + (s?.l1CurrentQuestion ?? 0)) / 30 * 100),
         },
         {
           name: 'ネットワーク基礎',
@@ -1317,21 +1317,6 @@ function App() {
         )
       })
     })()}
-  </div>
-  <div className="border-t border-slate-100 pt-3">
-    <p className="text-label md:text-label-pc text-slate-600">
-      次: {(() => {
-        const s = serverSnapshot
-        const ch = Array.isArray(s?.chapterProgress) ? s.chapterProgress : []
-        const introOk = Number(s?.introStep ?? 0) >= 5 && s?.introConfirmed
-        if (!introOk) return 'はじめに'
-        if (!s?.l1Cleared) return 'Linuxコマンド30問'
-        if (!ch[1]?.cleared) return 'ネットワーク基礎'
-        if (!ch[2]?.cleared) return 'vi & シェルスクリプト'
-        if (!ch[3]?.cleared) return 'Rocky Linux サーバー構築'
-        return 'すべて完了'
-      })()}
-    </p>
   </div>
 </div>
             {/* つづきから / はじめに案内バナー: serverSnapshot確定後に一度だけ表示を決定 */}
