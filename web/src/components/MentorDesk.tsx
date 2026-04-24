@@ -339,9 +339,11 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
             ) : '送信'}
           </button>
         </div>
-        <p className="mt-1.5 px-1 text-[10px] leading-relaxed text-slate-400">
-          AI講師との会話内容は学習支援の品質向上のため管理者が確認する場合があります。個人情報や機密情報は入力しないでください。
-        </p>
+        <div className="px-4 py-2 border-t border-gray-100 bg-slate-50">
+          <p className="text-[11px] text-slate-400 text-center leading-relaxed px-2">
+            AI講師との会話内容は学習支援の品質向上のため管理者が確認する場合があります。
+          </p>
+        </div>
       </aside>
     )
   }
@@ -415,9 +417,11 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
                 ) : '送信'}
               </button>
             </div>
-            <p className="px-3 pb-1 text-[10px] leading-relaxed text-slate-400">
-              AI講師との会話は学習支援の品質向上のため管理者が確認する場合があります。個人情報は入力しないでください。
-            </p>
+            <div className="px-4 py-2 border-t border-gray-100 bg-slate-50">
+              <p className="text-[11px] text-slate-400 text-center leading-relaxed px-2">
+                AI講師との会話内容は学習支援の品質向上のため管理者が確認する場合があります。
+              </p>
+            </div>
           </div>
         )}
       </>
