@@ -131,7 +131,7 @@ export const TRAINING_TASKS: TrainingTaskDef[] = [
   },
   {
     id: 'infra-basic-5',
-    label: 'サーバー構築（Rocky Linux）',
+    label: 'サーバー構築（Ubuntu）',
     labelShort: '課題5',
     path: '/training/infra-basic-5',
     estimatedDays: 15,
@@ -439,7 +439,7 @@ const CHAPTER_LABELS: Record<number, string> = {
   1: 'Chapter 1 インフラ基礎課題1',
   2: 'Chapter 2 インフラ基礎課題2',
   3: 'Chapter 3 インフラ基礎課題3',
-  4: 'Chapter 4 10日間プロジェクト（Rocky Linux 9 構築）',
+  4: 'Chapter 4 10日間プロジェクト（Ubuntu 24.04 LTS 構築）',
   5: 'Chapter 5 サーバー構築',
 }
 
@@ -491,7 +491,7 @@ export function getCurrentProjectDay(username?: string): number {
 }
 
 /**
- * 講師用リファレンス（設計書サンプル・Rocky Linux 9構築スクリプト等）
+ * 講師用リファレンス（設計書サンプル・Ubuntu構築スクリプト等）
  * サイドパネルで即座に正解を確認できるよう格納
  */
 export const INSTRUCTOR_REFERENCE = {
@@ -514,8 +514,8 @@ export const INSTRUCTOR_REFERENCE = {
 - ハイパーバイザー種別
 - クラウドの責任分担モデル`,
   },
-  rockyLinuxScript: {
-    title: 'Rocky Linux 9 用構築スクリプト（.org バックアップ付き）',
+  ubuntuScript: {
+    title: 'Ubuntu 24.04 LTS 用構築スクリプト（.org バックアップ付き）',
     content: `#!/bin/bash
 # 設定変更前は必ず cp -p でバックアップ
 cp -p /etc/nginx/nginx.conf /etc/nginx/nginx.conf.org
@@ -524,8 +524,8 @@ cp -p /etc/ssh/sshd_config /etc/ssh/sshd_config.org
 # 変更後は diff で確認
 # diff /etc/nginx/nginx.conf.org /etc/nginx/nginx.conf
 
-# Rocky Linux 9 でのパッケージ例
-# dnf install -y nginx
+# Ubuntu 24.04 LTS でのパッケージ例
+# apt install -y nginx
 # systemctl enable --now nginx`,
   },
   /** Chapter 4 構築品質：技術監査で必須のチェック項目 */

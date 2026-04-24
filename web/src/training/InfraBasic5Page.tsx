@@ -47,7 +47,7 @@ export function InfraBasic5Page() {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({ s1: true })
 
   useEffect(() => {
-    document.title = 'Rocky Linux サーバー構築'
+    document.title = 'Ubuntu サーバー構築'
   }, [])
 
   useEffect(() => {
@@ -203,7 +203,7 @@ export function InfraBasic5Page() {
         </button>
         <div>
           <p className="text-label md:text-label-pc text-slate-600">課題5 · サーバー構築</p>
-          <h1 className="text-display md:text-display-pc font-bold text-slate-800 tracking-tight">Rocky Linux サーバー構築</h1>
+          <h1 className="text-display md:text-display-pc font-bold text-slate-800 tracking-tight">Ubuntu サーバー構築</h1>
         </div>
 
         {/* 進捗バー + 中断ボタン */}
@@ -237,7 +237,7 @@ export function InfraBasic5Page() {
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-600">概要</p>
           <p className="mt-2 text-body md:text-body-pc text-slate-700">
-            Rocky Linux 9 サーバーを実際に構築します。各セクションを順番に進め、すべてのタスクを完了してください。
+            Ubuntu サーバーを実際に構築します。各セクションを順番に進め、すべてのタスクを完了してください。
           </p>
           <ul className="mt-2 space-y-1 text-label md:text-label-pc text-slate-600 list-disc list-inside">
             <li>各タスクを完了したらチェックを入れてください</li>
@@ -274,7 +274,7 @@ export function InfraBasic5Page() {
           <section className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 p-5 shadow-soft-card">
             <p className="text-body md:text-body-pc font-semibold text-emerald-800">🎉 すべてのセクションが完了しました！</p>
             <p className="mt-2 text-body md:text-body-pc text-slate-700">
-              Rocky Linux サーバー構築の全課題を完了しました。お疲れ様でした。
+              Ubuntu サーバー構築の全課題を完了しました。お疲れ様でした。
             </p>
             <button
               type="button"

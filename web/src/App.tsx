@@ -1885,7 +1885,7 @@ function App() {
                 { name: 'ネットワーク基礎', sub: 'ネットワーク実践・TCP/IP10問', status: infra2Ok ? 'done' : ((snap?.l2CurrentQuestion ?? 0) > 0 ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
                 { name: 'ファイル操作・viエディタ', sub: 'OS/仮想化/クラウド解説・記述チェック', status: infra3Ok ? 'done' : (Object.keys(snap?.infra32Answers ?? {}).length > 0 ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
                 { name: 'シェルスクリプト', sub: 'vi演習・シェルスクリプト演習', status: infra4Ok ? 'done' : (infra4Active ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) } },
-                { name: 'サーバー構築（Rocky Linux）', sub: 'OS設定・ディスク・httpd・AIDE・PostgreSQL', status: infra5Ok ? 'done' : (infra5Active ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-5'), '_blank'); else setShowIntroRequiredPopup(true) } },
+                { name: 'サーバー構築（Ubuntu）', sub: 'OS設定・ディスク・apache2・AIDE・PostgreSQL', status: infra5Ok ? 'done' : (infra5Active ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-5'), '_blank'); else setShowIntroRequiredPopup(true) } },
               ]
               const linuxDone = linuxTasks.filter((t) => t.status === 'done').length
               const linuxPct = Math.round((linuxDone / linuxTasks.length) * 100)
