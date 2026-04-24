@@ -93,7 +93,17 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   })
   const [isBottomBarOpen, setIsBottomBarOpen] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE])
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
+    // sessionStorage からリロード復元を試みる
+    try {
+      const raw = safeSessionGetItem('nic-ai-mentor-session-messages')
+      if (raw) {
+        const parsed = JSON.parse(raw) as ChatMessage[]
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch { /* 復元失敗時は初期メッセージ */ }
+    return [INITIAL_MESSAGE]
+  })
 
   // リサイズ: サイドパネル幅（安全なストレージアクセス）
   const [panelWidth, setPanelWidth] = useState(() => {
@@ -159,6 +169,13 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     window.addEventListener('resize', h)
     return () => window.removeEventListener('resize', h)
   }, [isMobile])
+
+  // 会話履歴を sessionStorage に同期（リロード時復元用）
+  useEffect(() => {
+    try {
+      safeSessionSetItem('nic-ai-mentor-session-messages', JSON.stringify(chatMessages))
+    } catch { /* 書き込み失敗は無視 */ }
+  }, [chatMessages])
 
   // nic:open-ai-panel イベントでAI講師パネルを開く
   useEffect(() => {
