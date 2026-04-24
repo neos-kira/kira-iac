@@ -349,6 +349,13 @@ export function AdminPage() {
                             </button>
                             <button
                               type="button"
+                              onClick={() => navigate(`/admin/wbs?userId=${u.username}`)}
+                              className="rounded-md border border-sky-200 px-2 py-1 text-xs font-medium text-sky-700 hover:bg-sky-50"
+                            >
+                              WBS
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => { setDeleteTarget(u); setDeleteConfirmText(''); setDeleteError(null) }}
                               className="rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
                             >

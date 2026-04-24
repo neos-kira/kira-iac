@@ -45,7 +45,7 @@ const MENTOR_CONTEXT_MAP: Record<string, string> = {
   '/training/infra-basic-3-2': 'インフラ基礎課題3-2',
   '/training/infra-basic-4': 'インフラ基礎課題4',
   '/training/infra-basic-5': 'インフラ基礎課題5',
-  '/training/infra-wbs': 'インフラWBS',
+  '/admin/wbs': 'インフラWBS（管理者）',
   '/training/linux-level1': 'Linuxコマンド課題',
   '/training/linux-level2': 'TCP/IP課題',
 }
@@ -497,6 +497,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/" element={<ProtectedRoute><App /></ProtectedRoute>} />
             <Route path="/admin" element={<ManagerRoute><AdminPage /></ManagerRoute>} />
             <Route path="/admin/ai-chat-log" element={<ManagerRoute><AiChatLogPage /></ManagerRoute>} />
+            <Route path="/admin/wbs" element={<ManagerRoute><InfraWbsPage /></ManagerRoute>} />
             <Route path="/training/linux-level1" element={<IntroGate><LinuxLevel1Page /></IntroGate>} />
             <Route path="/training/infra-basic-1" element={<IntroGate><InfraBasic1Page /></IntroGate>} />
             <Route path="/training/infra-basic-top" element={<IntroGate><InfraBasicTopPage /></IntroGate>} />
@@ -508,7 +509,6 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/training/infra-basic-3-2" element={<IntroGate><InfraBasic32Page /></IntroGate>} />
             <Route path="/training/infra-basic-4" element={<IntroGate><InfraBasic4Page /></IntroGate>} />
             <Route path="/training/infra-basic-5" element={<IntroGate><InfraBasic5Page /></IntroGate>} />
-            <Route path="/training/infra-wbs" element={<InfraWbsPage />} />
             <Route path="/training/intro" element={<IntroPage />} />
             <Route path="/it-basics" element={<ITBasicsTopPage />} />
             <Route path="/it-basics/:categoryId/study" element={<ITBasicsStudyPage />} />

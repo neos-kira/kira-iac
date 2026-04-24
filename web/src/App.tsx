@@ -17,7 +17,6 @@ import { INFRA_BASIC_1_CLEARED_KEY, INFRA_BASIC_1_PARAMS } from './training/infr
 import { INFRA_BASIC_3_2_CLEARED_KEY } from './training/infraBasic3Data'
 import {
   getProgressKey,
-  getDelayedTaskIds,
   isTask1Cleared,
 } from './training/trainingWbsData'
 import { isJTerada, J_TERADA_ALLOWED_LINKS } from './specialUsers'
@@ -201,8 +200,6 @@ function App() {
   const [ec2StatusError, setEc2StatusError] = useState(false)
   const [pemLostOpen, setPemLostOpen] = useState(false)
   const [copiedField, setCopiedField] = useState<'ip' | 'user' | null>(null)
-  const [showWbsTooltip, setShowWbsTooltip] = useState(false)
-  const wbsTooltipRef = useRef<HTMLDivElement | null>(null)
   /** null=未ロード, ''=未同意, string=同意済み(ISO日付) */
   const [termsAgreedAt, setTermsAgreedAt] = useState<string | null>(null)
   const ec2PollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -228,18 +225,6 @@ function App() {
       serverSnapshot.introConfirmed === true
     setIsIntroCompleted(completed)
   }, [serverSnapshot])
-
-  /** WBSツールチップ: パネル外クリックで閉じる */
-  useEffect(() => {
-    if (!showWbsTooltip) return
-    const close = (e: MouseEvent) => {
-      if (wbsTooltipRef.current && !wbsTooltipRef.current.contains(e.target as Node)) {
-        setShowWbsTooltip(false)
-      }
-    }
-    document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
-  }, [showWbsTooltip])
 
   /** EC2実ステータス取得（AWS実態）*/
   const doFetchEc2Status = useCallback(async () => {
@@ -461,7 +446,7 @@ function App() {
   useEffect(() => {
     if (!resolution || resolution.feature !== 'training') return
     const cat = resolution.training.category
-    if (cat === 'intro' || cat === 'wbs') {
+    if (cat === 'intro') {
       return
     }
     if (cat === 'linuxLevel1') {
@@ -874,12 +859,6 @@ function App() {
     }
   }
 
-  // 「はじめに」（introStep === 5 かつ introConfirmed）完了後 かつ trainingStartDate が設定されている場合のみ遅延判定する
-  const trainingStarted = !!serverSnapshot
-    && Number(serverSnapshot.introStep ?? 0) === 5
-    && serverSnapshot.introConfirmed === true
-    && !!serverSnapshot.trainingStartDate
-  const delayed = trainingStarted && getDelayedTaskIds().length > 0
   // DynamoDB取得完了まで null を返す（チラつき防止）。取得後はサブタスクのクリア数から計算。
   const progressPct = pinnedTraining === null || !serverSnapshot
     ? null
@@ -963,11 +942,9 @@ function App() {
       )}
       <div className="mx-auto flex min-h-screen flex-col">
         <SharedHeader
-          delayed={delayed}
           progressPct={progressPct?.pct ?? null}
           completedCount={progressPct?.completed}
           totalCount={progressPct?.total}
-          onWbs={() => navigate('/training/infra-wbs')}
           onLogout={handleLogout}
           isAdmin={isAdminView}
           onAdminMenu={() => navigate('/admin')}
@@ -1262,48 +1239,99 @@ function App() {
   <p className="text-label md:text-label-pc text-slate-600 mb-4">
     {progressPct?.completed ?? 0} / {progressPct?.total ?? 8} ステージ完了
   </p>
-  <div className="border-t border-slate-100 pt-4 flex items-center justify-between">
+  {/* ── ステージ一覧 ── */}
+  <div className="mb-4 space-y-2">
+    {(() => {
+      const s = serverSnapshot
+      const ch = Array.isArray(s?.chapterProgress) ? s.chapterProgress : []
+      const itBP = (s?.itBasicsProgress ?? {}) as Record<string, { cleared: boolean }>
+      const IT_BASICS_TOTAL = 7
+      const itBasicsCleared = Object.values(itBP).filter((v) => v.cleared).length
+      const stages: { name: string; completed: boolean; inProgress: boolean; pct: number }[] = [
+        {
+          name: 'はじめに',
+          completed: Number(s?.introStep ?? 0) >= 5 && s?.introConfirmed === true,
+          inProgress: Number(s?.introStep ?? 0) > 0,
+          pct: Math.min(100, Math.round((Number(s?.introStep ?? 0) / 5) * 100)),
+        },
+        {
+          name: 'IT業界の歩き方',
+          completed: itBasicsCleared >= IT_BASICS_TOTAL,
+          inProgress: itBasicsCleared > 0,
+          pct: Math.round((itBasicsCleared / IT_BASICS_TOTAL) * 100),
+        },
+        {
+          name: 'Linuxコマンド30問',
+          completed: !!s?.l1Cleared,
+          inProgress: (s?.l1CurrentPart ?? 0) > 0 || (s?.l1CurrentQuestion ?? 0) > 0,
+          pct: s?.l1Cleared ? 100 : 0,
+        },
+        {
+          name: 'ネットワーク基礎',
+          completed: !!ch[1]?.cleared,
+          inProgress: (ch[1]?.percent ?? 0) > 0,
+          pct: ch[1]?.percent ?? 0,
+        },
+        {
+          name: 'vi & シェルスクリプト',
+          completed: !!ch[2]?.cleared,
+          inProgress: (ch[2]?.percent ?? 0) > 0,
+          pct: ch[2]?.percent ?? 0,
+        },
+        {
+          name: 'Rocky Linux サーバー構築',
+          completed: !!ch[3]?.cleared,
+          inProgress: (ch[3]?.percent ?? 0) > 0,
+          pct: ch[3]?.percent ?? 0,
+        },
+      ]
+      return stages.map((stage, i) => {
+        if (stage.completed) {
+          return (
+            <div key={stage.name} className="flex gap-2.5 items-center px-3 py-2 bg-green-50 rounded-lg">
+              <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-green-500 text-white text-[10px] font-bold">✓</span>
+              <span className="text-[12px] font-semibold text-slate-900 flex-1">{stage.name}</span>
+              <span className="text-[10px] text-green-600 font-semibold">完了</span>
+            </div>
+          )
+        }
+        if (stage.inProgress) {
+          return (
+            <div key={stage.name} className="px-3 py-2 bg-sky-50 rounded-lg border-[1.5px] border-sky-400">
+              <div className="flex gap-2.5 items-center">
+                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-sky-500 text-white text-[10px] font-bold">{i + 1}</span>
+                <span className="text-[12px] font-bold text-slate-900 flex-1">{stage.name}</span>
+                <span className="text-[10px] text-sky-600 font-semibold">{stage.pct}%</span>
+              </div>
+              <div className="mt-1.5 ml-7 h-1 bg-sky-200 rounded overflow-hidden">
+                <div className="h-full bg-sky-500 rounded transition-all" style={{ width: `${stage.pct}%` }} />
+              </div>
+            </div>
+          )
+        }
+        return (
+          <div key={stage.name} className="flex gap-2.5 items-center px-3 py-2 bg-slate-50 rounded-lg">
+            <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-slate-300 text-white text-[10px] font-bold">{i + 1}</span>
+            <span className="text-[12px] text-slate-500">{stage.name}</span>
+          </div>
+        )
+      })
+    })()}
+  </div>
+  <div className="border-t border-slate-100 pt-3">
     <p className="text-label md:text-label-pc text-slate-600">
       次: {(() => {
         const s = serverSnapshot
         const ch = Array.isArray(s?.chapterProgress) ? s.chapterProgress : []
         const introOk = Number(s?.introStep ?? 0) >= 5 && s?.introConfirmed
         if (!introOk) return 'はじめに'
-        if (!s?.infra1Cleared || !s?.l1Cleared) return 'Linuxコマンド30問'
+        if (!s?.l1Cleared) return 'Linuxコマンド30問'
         if (!ch[1]?.cleared) return 'ネットワーク基礎'
         if (!ch[2]?.cleared) return 'vi & シェルスクリプト'
         if (!ch[3]?.cleared) return 'Rocky Linux サーバー構築'
         return 'すべて完了'
       })()}
     </p>
-    <div className="flex items-center gap-2">
-      {/* WBSヘルプツールチップ */}
-      <div
-        className="relative"
-        ref={wbsTooltipRef}
-        onMouseEnter={() => setShowWbsTooltip(true)}
-        onMouseLeave={() => setShowWbsTooltip(false)}
-      >
-        <button
-          type="button"
-          aria-label="WBSとは"
-          onClick={() => setShowWbsTooltip((v) => !v)}
-          className="flex items-center justify-center w-4 h-4 rounded-full border border-gray-300 text-gray-400 text-xs leading-none"
-        >?</button>
-        {showWbsTooltip && (
-          <div className="absolute right-0 bottom-full mb-2 px-3 py-2 bg-slate-900 text-white rounded-md shadow-lg text-xs leading-relaxed whitespace-nowrap opacity-100 transition-opacity duration-150" style={{ zIndex: 10 }}>
-            WBS（Work Breakdown Structure）— 研修全体のタスクと期限を一覧表示します
-          </div>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={() => navigate('/training/infra-wbs')}
-        className="text-button md:text-button-pc font-medium text-sky-600 hover:text-sky-700 transition-colors"
-      >
-        WBSを見る →
-      </button>
-    </div>
   </div>
 </div>
             {/* つづきから / はじめに案内バナー: serverSnapshot確定後に一度だけ表示を決定 */}
@@ -1523,22 +1551,6 @@ function App() {
                       </span>
                     )}
                   </li>
-                  <li>
-                    {isTask1Cleared() ? (
-                      <a
-                        href="https://docs.google.com/spreadsheets/d/127QyXSU1_nLAeRF5HPfsYcECDWjNZKZW/edit?usp=drivesdk&ouid=100622650885455094391&rtpof=true&sd=true"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-button md:text-button-pc font-medium text-sky-800 shadow-sm ring-1 ring-sky-200 hover:bg-sky-100 hover:ring-sky-300"
-                      >
-                        WBS
-                      </a>
-                    ) : (
-                      <span className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-3 text-button md:text-button-pc font-medium text-slate-600 ring-1 ring-slate-200 cursor-not-allowed">
-                        WBS（コマンド課題をクリアするとアクセスできます）
-                      </span>
-                    )}
-                  </li>
                 </ul>
               </div>
             )}
@@ -1610,7 +1622,6 @@ function App() {
                       else setShowIntroRequiredPopup(true)
                     }}
                     onOpenIntro={() => navigate('/training/intro')}
-                    onOpenWbs={() => navigate('/training/infra-wbs')}
                   />
                 </div>
               </section>
@@ -2077,10 +2088,9 @@ type PlaceholderProps = {
   onTogglePin: (id: PinnableId) => void
   onOpenInfraOrShowIntro: (url: string) => void
   onOpenIntro?: () => void
-  onOpenWbs?: () => void
 }
 
-function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus, onTogglePin, onOpenInfraOrShowIntro, onOpenIntro, onOpenWbs }: PlaceholderProps) {
+function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus, onTogglePin, onOpenInfraOrShowIntro, onOpenIntro }: PlaceholderProps) {
   const navigate = useSafeNavigate()
   if (resolution.feature === 'training') {
     const category = resolution.training.category
@@ -2117,25 +2127,6 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
               </button>
             )}
           </div>
-        </div>
-      )
-    }
-
-    if (category === 'wbs') {
-      return (
-        <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
-          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-600">TRAINING · WBS</p>
-          <h2 className="mt-2 text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">インフラ基礎 研修WBS</h2>
-          <p className="mt-1 text-label md:text-label-pc text-slate-600">WBSページで進捗とガントチャートを確認できます。</p>
-          {onOpenWbs && (
-            <button
-              type="button"
-              onClick={onOpenWbs}
-              className="mt-3 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2 text-label md:text-label-pc font-medium hover:bg-sky-100"
-            >
-              WBSを開く
-            </button>
-          )}
         </div>
       )
     }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { ZChart } from '../zIndex'
 import {
   getTaskProgressList,
@@ -316,6 +317,9 @@ function GanttChart({ rows, ganttStart, ganttEnd }: { rows: WBSRow[]; ganttStart
 // ─── メインコンポーネント ───────────────────────────────────────────────────────
 
 export function InfraWbsPage() {
+  const [searchParams] = useSearchParams()
+  // 管理者が ?userId=xxx で他ユーザーのWBSを確認できる
+  const queryUserId = searchParams.get('userId')
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const [viewMode, setViewMode] = useState<'table' | 'gantt'>('table')
   const startDate = getTrainingStartDate()
@@ -347,7 +351,7 @@ export function InfraWbsPage() {
 
   useEffect(() => {
     if (!isProgressApiAvailable() || typeof window === 'undefined') return
-    const name = getCurrentUsername().trim().toLowerCase()
+    const name = (queryUserId || getCurrentUsername()).trim().toLowerCase()
     if (!name) return
     let cancelled = false
     const load = async () => {
@@ -355,9 +359,11 @@ export function InfraWbsPage() {
       if (!cancelled && snap) setServerSnapshot(snap)
     }
     void load()
+    // 管理者閲覧時はポーリングしない（自分のWBSのみ5秒ポーリング）
+    if (queryUserId) return () => { cancelled = true }
     const id = window.setInterval(() => { void load() }, 5000)
     return () => { cancelled = true; window.clearInterval(id) }
-  }, [])
+  }, [queryUserId])
 
   // serverSnapshot を利用したステータス補完（将来拡張用）
   void serverSnapshot
@@ -367,6 +373,14 @@ export function InfraWbsPage() {
       <div className="mx-auto max-w-5xl space-y-5">
 
         {/* ページタイトル + ビュー切替 */}
+        {queryUserId && (
+          <div className="flex items-center gap-3">
+            <a href="#/admin" className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
+              ← 管理ダッシュボードに戻る
+            </a>
+            <span className="text-xs text-slate-500">閲覧中: <span className="font-semibold text-slate-700">{queryUserId}</span></span>
+          </div>
+        )}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <p className="text-xs text-slate-500">研修管理</p>
