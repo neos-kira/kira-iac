@@ -92,7 +92,7 @@ export function ITBasicsTestPage() {
   if (!cat || questions.length === 0) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <p className="text-sm text-slate-500">カテゴリが見つかりません</p>
+        <p className="text-body md:text-body-pc text-slate-500">カテゴリが見つかりません</p>
       </div>
     )
   }
@@ -141,19 +141,19 @@ export function ITBasicsTestPage() {
             <p className={`text-3xl font-bold ${passed ? 'text-emerald-700' : 'text-red-700'}`}>
               {passed ? '合格' : '不合格'}
             </p>
-            <p className="mt-3 text-lg font-semibold text-slate-800">
+            <p className="mt-3 text-display md:text-display-pc font-semibold text-slate-800">
               {score} / {questions.length} 問正解
             </p>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-body md:text-body-pc text-slate-600">
               合格ライン: {cat.passingScore} / {questions.length} 問
             </p>
             <div className="mt-6 flex justify-center gap-3">
               {!passed && (
-                <button type="button" onClick={handleRetry} className="rounded-xl bg-sky-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-sky-700">
+                <button type="button" onClick={handleRetry} className="rounded-xl bg-sky-600 px-6 py-2.5 text-button md:text-button-pc font-medium text-white hover:bg-sky-700">
                   もう一度
                 </button>
               )}
-              <button type="button" onClick={() => { navigate('/it-basics') }} className="rounded-xl bg-white border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+              <button type="button" onClick={() => { navigate('/it-basics') }} className="rounded-xl bg-white border border-slate-200 px-6 py-2.5 text-button md:text-button-pc font-medium text-slate-700 hover:bg-slate-50">
                 カテゴリ一覧へ
               </button>
             </div>
@@ -168,17 +168,17 @@ export function ITBasicsTestPage() {
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-2xl space-y-6">
         <div>
-          <p className="text-xs text-slate-500">{cat.title}</p>
-          <h1 className="text-xl font-bold text-slate-800">{cat.title} — 確認テスト</h1>
+          <p className="text-label md:text-label-pc text-slate-500">{cat.title}</p>
+          <h1 className="text-display md:text-display-pc font-bold text-slate-800">{cat.title} — 確認テスト</h1>
         </div>
         <div className="flex items-center justify-end">
-          <span className="text-sm text-slate-500">
+          <span className="text-body md:text-body-pc text-slate-500">
             {currentIndex + 1} / {questions.length} 問
           </span>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-sm font-semibold text-slate-800 leading-relaxed">{q.prompt}</p>
+          <p className="text-body md:text-body-pc font-semibold text-slate-800 leading-relaxed">{q.prompt}</p>
 
           <ul className="mt-5 space-y-2">
             {q.choices.map((choice, ci) => {
@@ -209,10 +209,10 @@ export function ITBasicsTestPage() {
                     disabled={answered}
                     className={`flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors ${style} ${answered ? 'cursor-default' : ''}`}
                   >
-                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${markerStyle}`}>
+                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-label md:text-label-pc font-bold ${markerStyle}`}>
                       {answered && isCorrectChoice ? '✓' : String.fromCharCode(65 + ci)}
                     </span>
-                    <span className="text-sm text-slate-800 flex-1">{choice}</span>
+                    <span className="text-body md:text-body-pc text-slate-800 flex-1">{choice}</span>
                   </button>
                 </li>
               )
@@ -224,7 +224,7 @@ export function ITBasicsTestPage() {
               type="button"
               disabled={selectedIndex === null}
               onClick={handleAnswer}
-              className="mt-5 rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-5 rounded-xl bg-sky-600 px-5 py-2.5 text-button md:text-button-pc font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               回答する
             </button>
@@ -232,14 +232,14 @@ export function ITBasicsTestPage() {
 
           {answered && (
             <div className={`mt-5 rounded-xl border p-4 ${isCorrect ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'}`}>
-              <p className={`text-sm font-semibold ${isCorrect ? 'text-emerald-700' : 'text-red-700'}`}>
+              <p className={`text-body md:text-body-pc font-semibold ${isCorrect ? 'text-emerald-700' : 'text-red-700'}`}>
                 {isCorrect ? '✓ 正解' : '✗ 不正解'}
               </p>
-              <p className="mt-2 text-xs text-slate-700 leading-relaxed">{q.explanation}</p>
+              <p className="mt-2 text-label md:text-label-pc text-slate-700 leading-relaxed">{q.explanation}</p>
               <button
                 type="button"
                 onClick={handleNext}
-                className="mt-4 rounded-xl bg-slate-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-900"
+                className="mt-4 rounded-xl bg-slate-800 px-5 py-2.5 text-button md:text-button-pc font-medium text-white hover:bg-slate-900"
               >
                 {currentIndex + 1 >= questions.length ? '結果を見る' : '次の問題 →'}
               </button>

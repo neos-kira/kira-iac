@@ -56,7 +56,7 @@ export function ITBasicsStudyPage() {
   if (!cat) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <p className="text-sm text-slate-500">カテゴリが見つかりません</p>
+        <p className="text-body md:text-body-pc text-slate-500">カテゴリが見つかりません</p>
       </div>
     )
   }
@@ -69,7 +69,7 @@ export function ITBasicsStudyPage() {
           <button
             type="button"
             onClick={() => { navigate('/it-basics') }}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 shadow-sm hover:bg-slate-50"
+            className="rounded-lg px-4 py-2 text-button md:text-button-pc font-medium text-slate-700 bg-white border border-slate-200 shadow-sm hover:bg-slate-50"
           >
             カテゴリ一覧へ
           </button>
@@ -77,7 +77,7 @@ export function ITBasicsStudyPage() {
 
         <div>
           <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">{cat.subtitle}</p>
-          <h1 className="mt-1 text-lg font-bold text-slate-800">{cat.title} — 座学</h1>
+          <h1 className="mt-1 text-display md:text-display-pc font-bold text-slate-800">{cat.title} — 座学</h1>
         </div>
 
         <div className="space-y-4">
@@ -85,13 +85,13 @@ export function ITBasicsStudyPage() {
             const illust = STUDY_ILLUSTRATIONS[cat.id]?.[i]
             return (
             <details key={i} className="group rounded-2xl border border-slate-200 bg-white shadow-sm" open={i === 0}>
-              <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold text-slate-800">
+              <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-body md:text-body-pc font-semibold text-slate-800">
                 <span>{i + 1}. {section.title}</span>
                 <span className="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
               </summary>
               <div className="border-t border-slate-100 px-5 py-4">
                 <div className={illust ? 'flex flex-col sm:flex-row items-center sm:items-start gap-4' : ''}>
-                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap flex-1">{section.body}</p>
+                  <p className="text-body md:text-body-pc text-slate-700 leading-relaxed whitespace-pre-wrap flex-1">{section.body}</p>
                   {illust && <div className="shrink-0 flex justify-center sm:justify-end [&_svg]:w-20 [&_svg]:h-20 sm:[&_svg]:w-[120px] sm:[&_svg]:h-[120px]">{illust}</div>}
                 </div>
               </div>
@@ -103,7 +103,7 @@ export function ITBasicsStudyPage() {
         <div className="flex justify-center pt-4">
           <a
             href={getTrainingUrl(`/it-basics/${cat.id}/test`)}
-            className="rounded-xl bg-sky-600 px-8 py-3 text-sm font-semibold text-white hover:bg-sky-700 shadow-sm"
+            className="rounded-xl bg-sky-600 px-8 py-3 text-button md:text-button-pc font-semibold text-white hover:bg-sky-700 shadow-sm"
           >
             テストを受ける →
           </a>

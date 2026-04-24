@@ -482,10 +482,10 @@ export function LinuxLevel1Page() {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
         <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-md">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">RESULT</p>
-          <h1 className="mt-2 text-xl font-semibold text-slate-800">Linuxコマンド30問</h1>
-          <p className="mt-4 text-2xl font-bold text-emerald-600">全3部クリア！</p>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.2em] text-slate-400">RESULT</p>
+          <h1 className="mt-2 text-display md:text-display-pc font-semibold text-slate-800">Linuxコマンド30問</h1>
+          <p className="mt-4 text-display md:text-display-pc font-bold text-emerald-600">全3部クリア！</p>
+          <p className="mt-2 text-body md:text-body-pc text-slate-600">
             おめでとうございます。インフラ研修2にチャレンジできます。
           </p>
           <button
@@ -494,7 +494,7 @@ export function LinuxLevel1Page() {
               window.alert('インフラ研修1をクリアしました。インフラ研修2にチャレンジできます。')
               navigate('/')
             }}
-            className="mt-4 rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700"
+            className="mt-4 rounded-xl bg-sky-600 px-4 py-2 text-button md:text-button-pc font-medium text-white hover:bg-sky-700"
           >
             クリアを記録する
           </button>
@@ -511,21 +511,21 @@ export function LinuxLevel1Page() {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
         <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-md">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">RESULT</p>
-          <h1 className="mt-2 text-xl font-semibold text-slate-800">
+          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.2em] text-slate-400">RESULT</p>
+          <h1 className="mt-2 text-display md:text-display-pc font-semibold text-slate-800">
             {label}（{PART_NAMES[activePart]}）
           </h1>
-          <p className="mt-4 text-2xl font-bold text-slate-800">
+          <p className="mt-4 text-display md:text-display-pc font-bold text-slate-800">
             {label} 結果: {partScore}/{PART_SIZE}問正解
           </p>
           {pass ? (
             <>
-              <p className="mt-2 text-base font-semibold text-emerald-600">クリア！</p>
+              <p className="mt-2 text-body md:text-body-pc font-semibold text-emerald-600">クリア！</p>
               {activePart < 2 && (
                 <button
                   type="button"
                   onClick={() => startPart(activePart + 1)}
-                  className="mt-4 rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700"
+                  className="mt-4 rounded-xl bg-sky-600 px-4 py-2 text-button md:text-button-pc font-medium text-white hover:bg-sky-700"
                 >
                   {PART_LABELS[activePart + 1]}（{PART_NAMES[activePart + 1]}）へ進む
                 </button>
@@ -533,13 +533,13 @@ export function LinuxLevel1Page() {
             </>
           ) : (
             <>
-              <p className="mt-2 text-sm text-rose-600">
+              <p className="mt-2 text-body md:text-body-pc text-rose-600">
                 クリアには {PASS_SCORE}問 以上の正解が必要です。
               </p>
               <button
                 type="button"
                 onClick={() => startPart(activePart)}
-                className="mt-4 rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700"
+                className="mt-4 rounded-xl bg-sky-600 px-4 py-2 text-button md:text-button-pc font-medium text-white hover:bg-sky-700"
               >
                 もう一度チャレンジ
               </button>
@@ -549,7 +549,7 @@ export function LinuxLevel1Page() {
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-button md:text-button-pc font-medium text-slate-700 hover:bg-slate-50"
             >
               トップへ戻る
             </button>
@@ -609,7 +609,7 @@ export function LinuxLevel1Page() {
         {/* ────── PC: 左サイドバー（1024px〜） ────── */}
         <aside className="hidden lg:flex flex-col w-48 shrink-0 sticky top-0 h-screen overflow-y-auto bg-white border-r border-gray-100">
           <div className="p-3 pt-4">
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2 px-1">問題一覧</p>
+            <p className="text-sublabel md:text-sublabel-pc font-medium text-gray-400 uppercase tracking-wider mb-2 px-1">問題一覧</p>
             {basePartQs.map((q, i) => {
               const isCurrentQ = queueIdx === i
               const isCompletedQ = firstAttemptCorrect[q.id] === true
@@ -637,7 +637,7 @@ export function LinuxLevel1Page() {
         {/* ────── メインコンテンツ ────── */}
         <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-3 md:p-6">
           <div className="mx-auto max-w-xl w-full">
-            <button type="button" onClick={() => navigate('/training/infra-basic-top')} className="mb-1 md:mb-3 inline-flex items-center gap-1 text-sm text-sky-700 hover:text-sky-800">
+            <button type="button" onClick={() => navigate('/training/infra-basic-top')} className="mb-1 md:mb-3 inline-flex items-center gap-1 text-button md:text-button-pc text-sky-700 hover:text-sky-800">
               ← 課題一覧に戻る
             </button>
             <div className="flex items-center justify-end mb-2 md:mb-4">
@@ -646,7 +646,7 @@ export function LinuxLevel1Page() {
                   type="button"
                   onClick={() => { void handleInterrupt() }}
                   disabled={isSaving}
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-label md:text-label-pc font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSaving ? '保存中...' : '中断して保存'}
                 </button>
@@ -660,12 +660,13 @@ export function LinuxLevel1Page() {
               type="button"
               onClick={handlePrevQuestion}
               disabled={queueIdx === 0}
-              style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '6px 14px', fontSize: '13px', color: queueIdx === 0 ? '#d1d5db' : '#374151', cursor: queueIdx === 0 ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+              className="text-button md:text-button-pc"
+              style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '6px 14px', color: queueIdx === 0 ? '#d1d5db' : '#374151', cursor: queueIdx === 0 ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
             >
               ← 前の問題
             </button>
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '12px', color: '#6b7280', whiteSpace: 'nowrap' }}>
+              <span className="text-label md:text-label-pc" style={{ color: '#6b7280', whiteSpace: 'nowrap' }}>
                 {progressLabel}
               </span>
               <div style={{ flex: 1, height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
@@ -675,16 +676,16 @@ export function LinuxLevel1Page() {
           </div>
 
           <div className="mx-auto max-w-xl w-full flex-1 min-h-0 flex flex-col bg-white rounded-xl border border-gray-200 p-5 md:p-10">
-        <h1 className="text-xl font-semibold text-slate-800">
+        <h1 className="text-display md:text-display-pc font-semibold text-slate-800">
           Linuxコマンド30問
         </h1>
         <div className="mt-1 flex items-center gap-2" />
 
-        <p className="text-base md:text-xl font-bold leading-snug text-gray-900 mt-2 mb-2 md:mt-4 md:mb-8">{current?.prompt}</p>
+        <p className="text-display md:text-display-pc font-bold leading-snug text-gray-900 mt-2 mb-2 md:mt-4 md:mb-8">{current?.prompt}</p>
 
         {/* 回答済みバナー（クリア済み復習モード以外のみ表示） */}
         {queueIdx in answeredCommands && !showFeedback && !isReviewMode && (
-          <div style={{ background: '#f0fdf9', border: '1px solid #d1fae5', borderRadius: '8px', padding: '8px 14px', marginBottom: '12px', fontSize: '13px', color: '#0d9488' }}>
+          <div className="text-body md:text-body-pc" style={{ background: '#f0fdf9', border: '1px solid #d1fae5', borderRadius: '8px', padding: '8px 14px', marginBottom: '12px', color: '#0d9488' }}>
             ✓ 回答済みです（変更できません）
           </div>
         )}
@@ -719,7 +720,7 @@ export function LinuxLevel1Page() {
                 else if ((isRetryUnanswered || !(queueIdx in answeredCommands)) && inputValue.trim() !== '' && !isExecuting) handleExecute()
               }}
               disabled={showFeedback || isReviewMode || (!isRetryUnanswered && queueIdx in answeredCommands)}
-              className={`flex-1 min-w-0 rounded-xl border px-4 py-3 text-base text-slate-800 placeholder:text-slate-400 focus:outline-none disabled:opacity-80 ${
+              className={`flex-1 min-w-0 rounded-xl border px-4 py-3 text-input text-slate-800 placeholder:text-slate-400 focus:outline-none disabled:opacity-80 ${
                 isReviewMode || showFeedback
                   ? 'border-emerald-200 bg-emerald-50'
                   : 'border-slate-300 bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500/50'
@@ -733,7 +734,7 @@ export function LinuxLevel1Page() {
                 type="button"
                 onClick={() => { void goNext() }}
                 style={{ background: '#0ea5e9', color: 'white', border: 'none' }}
-                className="shrink-0 whitespace-nowrap px-3 py-2.5 md:px-5 md:py-2.5 text-sm font-medium rounded-lg cursor-pointer"
+                className="shrink-0 whitespace-nowrap px-3 py-2.5 md:px-5 md:py-2.5 text-button md:text-button-pc font-medium rounded-lg cursor-pointer"
               >
                 {queueIdx < queue.length - 1 ? '次へ' : '採点する'}
               </button>
@@ -747,7 +748,7 @@ export function LinuxLevel1Page() {
                 onClick={() => { handleExecute() }}
                 disabled={inputValue.trim() === '' || isExecuting}
                 style={{ border: 'none' }}
-                className="shrink-0 whitespace-nowrap px-3 py-2.5 md:px-5 md:py-2.5 text-sm font-medium rounded-lg cursor-pointer bg-sky-500 text-white disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:pointer-events-none"
+                className="shrink-0 whitespace-nowrap px-3 py-2.5 md:px-5 md:py-2.5 text-button md:text-button-pc font-medium rounded-lg cursor-pointer bg-sky-500 text-white disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:pointer-events-none"
               >
                 {isExecuting ? '採点中...' : '実行'}
               </button>
@@ -757,7 +758,7 @@ export function LinuxLevel1Page() {
                 type="button"
                 onClick={() => { void goNext() }}
                 style={{ background: '#0ea5e9', color: 'white', border: 'none' }}
-                className="shrink-0 whitespace-nowrap px-3 py-2.5 md:px-5 md:py-2.5 text-sm font-medium rounded-lg cursor-pointer"
+                className="shrink-0 whitespace-nowrap px-3 py-2.5 md:px-5 md:py-2.5 text-button md:text-button-pc font-medium rounded-lg cursor-pointer"
               >
                 {queueIdx < queue.length - 1 ? '次へ' : '採点する'}
               </button>
@@ -768,7 +769,7 @@ export function LinuxLevel1Page() {
         {/* 正解バッジ（クリア済み復習モード） */}
         {isReviewMode && (
           <div
-            className="mt-2 md:mt-4 rounded-xl border border-emerald-500/50 bg-emerald-50 px-4 py-2 md:py-3 text-sm text-emerald-800"
+            className="mt-2 md:mt-4 rounded-xl border border-emerald-500/50 bg-emerald-50 px-4 py-2 md:py-3 text-body md:text-body-pc text-emerald-800"
             role="status"
           >
             <span className="font-medium">✓ 正解</span>
@@ -778,7 +779,7 @@ export function LinuxLevel1Page() {
         {wrongFeedback && (
           <div
             key={shakeKey}
-            className="mt-2 md:mt-4 rounded-xl border border-rose-500/50 bg-rose-50 px-4 py-2 md:py-3 text-sm text-rose-800 animate-shake"
+            className="mt-2 md:mt-4 rounded-xl border border-rose-500/50 bg-rose-50 px-4 py-2 md:py-3 text-body md:text-body-pc text-rose-800 animate-shake"
             role="status"
           >
             <span className="font-medium">✗ 不正解</span>
@@ -788,7 +789,7 @@ export function LinuxLevel1Page() {
 
         {showFeedback && (
           <div
-            className="mt-2 md:mt-4 rounded-xl border border-emerald-500/50 bg-emerald-50 px-4 py-2 md:py-3 text-sm text-emerald-800"
+            className="mt-2 md:mt-4 rounded-xl border border-emerald-500/50 bg-emerald-50 px-4 py-2 md:py-3 text-body md:text-body-pc text-emerald-800"
             role="status"
           >
             <span className="font-medium">✓ 正解</span>

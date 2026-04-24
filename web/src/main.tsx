@@ -216,7 +216,6 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
               color: '#0f172a',
               border: 'none',
               cursor: 'pointer',
-              fontSize: 22,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -259,16 +258,16 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
               setIsBottomBarOpen(next)
               if (next) window.dispatchEvent(new CustomEvent('nic:close-user-menu'))
             }}
-            style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 48, background: 'white', borderTop: '1px solid #e5e7eb', zIndex: Z.floatingPanel, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#0f172a' }}
+            style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 48, background: 'white', borderTop: '1px solid #e5e7eb', zIndex: Z.floatingPanel, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontWeight: 600, color: '#0f172a' }}
           >
-            <span style={{ fontSize: 18 }}>🎓</span> AI講師 <span style={{ fontSize: 12, color: '#9ca3af' }}>{isBottomBarOpen ? '▼' : '▲'}</span>
+            <span>🎓</span> AI講師 <span style={{ color: '#9ca3af' }}>{isBottomBarOpen ? '▼' : '▲'}</span>
           </div>
         </>
       )}
 
       {/* モード3: モバイル 🎓ボタン */}
       {showMobile && !isChatOpen && (
-        <button type="button" onClick={() => { setIsChatOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }} style={{ position: 'fixed', bottom: 24, right: 24, width: 52, height: 52, borderRadius: '50%', background: '#7dd3fc', color: '#0f172a', border: 'none', cursor: 'pointer', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(125,211,252,0.5)', zIndex: Z.floatingPanel }}>
+        <button type="button" onClick={() => { setIsChatOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }} style={{ position: 'fixed', bottom: 24, right: 24, width: 52, height: 52, borderRadius: '50%', background: '#7dd3fc', color: '#0f172a', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(125,211,252,0.5)', zIndex: Z.floatingPanel }}>
           🎓
         </button>
       )}
@@ -337,17 +336,16 @@ class ErrorBoundary extends Component<
       const err = this.state.error
       return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24, background: '#f8fafc' }}>
-          <p style={{ fontSize: 16, fontWeight: 600, color: '#1e293b' }}>表示中にエラーが発生しました</p>
-          <p style={{ fontSize: 13, color: '#64748b', maxWidth: 400, textAlign: 'center' }}>{err?.message ?? 'Unknown error'}</p>
-          <details style={{ margin: '0 0 8px', textAlign: 'left', fontSize: '12px', maxWidth: 600, width: '100%' }}>
-            <summary style={{ cursor: 'pointer', color: '#64748b', padding: '4px 0' }}>詳細情報（開発者向け）</summary>
-            <pre style={{
+          <p className="text-heading md:text-heading-pc" style={{ fontWeight: 600, color: '#1e293b' }}>表示中にエラーが発生しました</p>
+          <p className="text-body md:text-body-pc" style={{ color: '#64748b', maxWidth: 400, textAlign: 'center' }}>{err?.message ?? 'Unknown error'}</p>
+          <details style={{ margin: '0 0 8px', textAlign: 'left', maxWidth: 600, width: '100%' }}>
+            <summary className="text-label md:text-label-pc" style={{ cursor: 'pointer', color: '#64748b', padding: '4px 0' }}>詳細情報（開発者向け）</summary>
+            <pre className="text-label md:text-label-pc" style={{
               background: '#f3f4f6',
               padding: '12px',
               borderRadius: '6px',
               overflow: 'auto',
               maxHeight: '300px',
-              fontSize: '11px',
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-all',
               marginTop: 8,
@@ -359,7 +357,8 @@ class ErrorBoundary extends Component<
           </details>
           <a
             href="/"
-            style={{ background: '#0ea5e9', color: 'white', border: 'none', borderRadius: 8, padding: '10px 24px', fontSize: 14, cursor: 'pointer', textDecoration: 'none' }}
+            className="text-button md:text-button-pc"
+            style={{ background: '#0ea5e9', color: 'white', border: 'none', borderRadius: 8, padding: '10px 24px', cursor: 'pointer', textDecoration: 'none' }}
           >
             トップに戻る
           </a>

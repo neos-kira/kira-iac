@@ -12,16 +12,16 @@ export function ConfirmLeaveModal({ isOpen, onSave, onLeave, onCancel }: Props) 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: Z.modal, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ background: 'white', borderRadius: 12, padding: 32, maxWidth: 400, width: '90%', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
-        <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>ページを離れますか？</p>
-        <p style={{ fontSize: 14, color: '#666', marginBottom: 24 }}>入力内容が保存されていません。</p>
+        <p className="text-heading md:text-heading-pc" style={{ fontWeight: 600, marginBottom: 8 }}>ページを離れますか？</p>
+        <p className="text-button md:text-button-pc" style={{ color: '#666', marginBottom: 24 }}>入力内容が保存されていません。</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <button type="button" onClick={onSave} style={{ background: '#0ea5e9', color: 'white', border: 'none', width: '100%', padding: 12, borderRadius: 8, fontSize: 14, cursor: 'pointer' }}>
+          <button type="button" onClick={onSave} className="text-button md:text-button-pc" style={{ background: '#0ea5e9', color: 'white', border: 'none', width: '100%', padding: 12, borderRadius: 8, cursor: 'pointer' }}>
             保存して戻る
           </button>
-          <button type="button" onClick={onLeave} style={{ background: 'white', border: '1px solid #e5e7eb', color: '#374151', width: '100%', padding: 12, borderRadius: 8, fontSize: 14, cursor: 'pointer' }}>
+          <button type="button" onClick={onLeave} className="text-button md:text-button-pc" style={{ background: 'white', border: '1px solid #e5e7eb', color: '#374151', width: '100%', padding: 12, borderRadius: 8, cursor: 'pointer' }}>
             保存せず戻る
           </button>
-          <button type="button" onClick={onCancel} style={{ background: 'transparent', border: 'none', color: '#9ca3af', width: '100%', padding: 8, fontSize: 14, cursor: 'pointer' }}>
+          <button type="button" onClick={onCancel} className="text-button md:text-button-pc" style={{ background: 'transparent', border: 'none', color: '#9ca3af', width: '100%', padding: 8, cursor: 'pointer' }}>
             キャンセル
           </button>
         </div>

@@ -200,8 +200,8 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
   // ── サイドバーモードで共通チャットUIを返すヘルパー ──
   const chatHeader = (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, padding: 16, borderBottom: '1px solid #e5e7eb' }}>
-      <span style={{ fontWeight: 600, fontSize: 14 }}>🎓 AI講師</span>
-      <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 18, lineHeight: 1, padding: '0 0 0 8px' }} title="閉じる">✕</button>
+      <span className="text-button md:text-button-pc" style={{ fontWeight: 600 }}>🎓 AI講師</span>
+      <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', lineHeight: 1, padding: '0 0 0 8px' }} title="閉じる">✕</button>
     </div>
   )
 

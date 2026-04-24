@@ -103,7 +103,7 @@ export function InfraBasicTopPage() {
         {/* 進捗サマリー */}
         {/* 進捗サマリー — color-primary (brand) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: '#0369a1' }}>
+          <span className="text-body md:text-body-pc" style={{ fontWeight: 600, color: '#0369a1' }}>
             {completedCount} / {totalCount} 完了
           </span>
           <div style={{ flex: 1, height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden', maxWidth: '120px' }}>
@@ -131,22 +131,22 @@ export function InfraBasicTopPage() {
                 }}
               >
                 {/* 完了チェック円 — 達成時は color-success (emerald) */}
-                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: isCompleted ? '#10b981' : '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: '16px', fontSize: '14px', color: isCompleted ? 'white' : '#9ca3af', fontWeight: 600 }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: isCompleted ? '#10b981' : '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: '16px', color: isCompleted ? 'white' : '#9ca3af', fontWeight: 600 }}>
                   {isCompleted ? '✓' : index + 1}
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '2px' }}>
+                  <div className="text-label md:text-label-pc" style={{ color: '#9ca3af', marginBottom: '2px' }}>
                     {task.category}
                   </div>
-                  <div style={{ fontSize: '15px', fontWeight: 600, color: '#111827', marginBottom: '2px' }}>
+                  <div className="text-heading md:text-heading-pc" style={{ fontWeight: 600, color: '#111827', marginBottom: '2px' }}>
                     {task.title}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#9ca3af' }}>
+                  <div className="text-label md:text-label-pc" style={{ color: '#9ca3af' }}>
                     {task.description}
                   </div>
                   {badge && (
-                    <span style={{ display: 'inline-block', marginTop: '4px', fontSize: '10px', fontWeight: 500, color: badge.color, background: badge.bg, borderRadius: '9999px', padding: '2px 8px' }}>
+                    <span className="text-sublabel md:text-sublabel-pc" style={{ display: 'inline-block', marginTop: '4px', fontWeight: 500, color: badge.color, background: badge.bg, borderRadius: '9999px', padding: '2px 8px' }}>
                       {badge.label}
                     </span>
                   )}
@@ -158,7 +158,7 @@ export function InfraBasicTopPage() {
                     type="button"
                     onClick={() => { window.location.href = getTrainingUrl(task.path) }}
                     className="rounded-lg bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 transition-colors"
-                    style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 500 }}
+                    style={{ padding: '8px 16px', fontWeight: 500 }}
                   >
                     開く
                   </button>

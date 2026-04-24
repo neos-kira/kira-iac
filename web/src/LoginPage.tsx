@@ -157,7 +157,7 @@ export function LoginPage() {
         {mode === 'login' ? (
           <div className="space-y-6">
             <div>
-              <label htmlFor="login-username" className="block font-medium mb-2" style={{ fontSize: 15, letterSpacing: '0.01em', color: '#334155' }}>
+              <label htmlFor="login-username" className="block font-medium mb-2 text-body md:text-body-pc" style={{ letterSpacing: '0.01em', color: '#334155' }}>
                 ユーザー名
               </label>
               <input
@@ -168,8 +168,8 @@ export function LoginPage() {
                 onKeyDown={handleKeyDown}
                 placeholder="ユーザー名を入力"
                 disabled={isLoggingIn}
-                className="w-full bg-white text-slate-900 placeholder:text-slate-400 disabled:bg-slate-50 outline-none transition-all"
-                style={{ height: 52, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0 16px', fontSize: 16 }}
+                className="w-full bg-white text-slate-900 placeholder:text-slate-400 disabled:bg-slate-50 outline-none transition-all text-input"
+                style={{ height: 52, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0 16px' }}
                 onFocus={e => { e.currentTarget.style.borderColor = '#7dd3fc'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(125,211,252,0.1)' }}
                 onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none' }}
                 autoComplete="username"
@@ -181,7 +181,7 @@ export function LoginPage() {
               />
             </div>
             <div>
-              <label htmlFor="login-password" className="block font-medium mb-2" style={{ fontSize: 15, letterSpacing: '0.01em', color: '#334155' }}>
+              <label htmlFor="login-password" className="block font-medium mb-2 text-body md:text-body-pc" style={{ letterSpacing: '0.01em', color: '#334155' }}>
                 パスワード
               </label>
               <div className="relative">
@@ -193,8 +193,8 @@ export function LoginPage() {
                   onKeyDown={handleKeyDown}
                   placeholder="パスワードを入力"
                   disabled={isLoggingIn}
-                  className="w-full bg-white text-slate-900 placeholder:text-slate-400 disabled:bg-slate-50 outline-none transition-all"
-                  style={{ height: 52, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0 48px 0 16px', fontSize: 16 }}
+                  className="w-full bg-white text-slate-900 placeholder:text-slate-400 disabled:bg-slate-50 outline-none transition-all text-input"
+                  style={{ height: 52, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0 48px 0 16px' }}
                   onFocus={e => { e.currentTarget.style.borderColor = '#7dd3fc'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(125,211,252,0.1)' }}
                   onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none' }}
                   autoComplete="current-password"
@@ -225,7 +225,7 @@ export function LoginPage() {
               onClick={() => void handleLogin()}
               disabled={!canSubmit || isLoggingIn}
               className="w-full font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-              style={{ height: 52, borderRadius: 10, background: '#7dd3fc', fontSize: 16, letterSpacing: '0.02em', border: 'none', cursor: 'pointer', color: '#0f172a' }}
+              style={{ height: 52, borderRadius: 10, background: '#7dd3fc', letterSpacing: '0.02em', border: 'none', cursor: 'pointer', color: '#0f172a' }}
               onMouseEnter={e => { if (canSubmit) { e.currentTarget.style.background = '#38bdf8'; e.currentTarget.style.transform = 'translateY(-1px)' } }}
               onMouseLeave={e => { e.currentTarget.style.background = '#7dd3fc'; e.currentTarget.style.transform = 'translateY(0)' }}
               onMouseDown={e => { e.currentTarget.style.transform = 'translateY(0)' }}
@@ -236,8 +236,8 @@ export function LoginPage() {
               <button
                 type="button"
                 onClick={() => { setMode('reset'); setLoginError('') }}
-                className="transition-all duration-200"
-                style={{ fontSize: 14, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
+                className="text-button md:text-button-pc transition-all duration-200"
+                style={{ color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
                 onMouseEnter={e => { e.currentTarget.style.color = '#7dd3fc'; e.currentTarget.style.textDecoration = 'underline' }}
                 onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.textDecoration = 'none' }}
               >
@@ -249,7 +249,7 @@ export function LoginPage() {
           <div className="space-y-5">
             <h2 className="text-sm font-semibold text-slate-700">パスワードのリセット</h2>
             <div>
-              <label htmlFor="reset-username" className="block font-medium mb-2" style={{ fontSize: 15, letterSpacing: '0.01em', color: '#334155' }}>
+              <label htmlFor="reset-username" className="block font-medium mb-2 text-body md:text-body-pc" style={{ letterSpacing: '0.01em', color: '#334155' }}>
                 ユーザー名
               </label>
               <input
@@ -258,15 +258,15 @@ export function LoginPage() {
                 value={resetUsername}
                 onChange={(e) => setResetUsername(e.target.value)}
                 placeholder="ユーザー名を入力"
-                className="w-full bg-white text-slate-800 placeholder:text-slate-400 outline-none transition-all"
-                style={{ height: 52, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0 16px', fontSize: 16 }}
+                className="w-full bg-white text-slate-800 placeholder:text-slate-400 outline-none transition-all text-input"
+                style={{ height: 52, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0 16px' }}
                 onFocus={e => { e.currentTarget.style.borderColor = '#7dd3fc'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(125,211,252,0.1)' }}
                 onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none' }}
                 autoComplete="username"
               />
             </div>
             <div>
-              <label htmlFor="reset-new-password" className="block font-medium mb-2" style={{ fontSize: 15, letterSpacing: '0.01em', color: '#334155' }}>
+              <label htmlFor="reset-new-password" className="block font-medium mb-2 text-body md:text-body-pc" style={{ letterSpacing: '0.01em', color: '#334155' }}>
                 新しいパスワード
               </label>
               <div className="relative">
@@ -276,8 +276,8 @@ export function LoginPage() {
                   value={resetNewPassword}
                   onChange={(e) => setResetNewPassword(e.target.value)}
                   placeholder="新しいパスワードを入力"
-                  className="w-full bg-white text-slate-800 placeholder:text-slate-400 outline-none transition-all"
-                  style={{ height: 52, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0 48px 0 16px', fontSize: 16 }}
+                  className="w-full bg-white text-slate-800 placeholder:text-slate-400 outline-none transition-all text-input"
+                  style={{ height: 52, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0 48px 0 16px' }}
                   onFocus={e => { e.currentTarget.style.borderColor = '#7dd3fc'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(125,211,252,0.1)' }}
                   onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none' }}
                   autoComplete="new-password"
@@ -294,7 +294,7 @@ export function LoginPage() {
               </div>
             </div>
             <div>
-              <label htmlFor="reset-confirm-password" className="block font-medium mb-2" style={{ fontSize: 15, letterSpacing: '0.01em', color: '#334155' }}>
+              <label htmlFor="reset-confirm-password" className="block font-medium mb-2 text-body md:text-body-pc" style={{ letterSpacing: '0.01em', color: '#334155' }}>
                 新しいパスワード（確認）
               </label>
               <div className="relative">
@@ -310,8 +310,8 @@ export function LoginPage() {
                     }
                   }}
                   placeholder="新しいパスワードを再入力"
-                  className="w-full bg-white text-slate-800 placeholder:text-slate-400 outline-none transition-all"
-                  style={{ height: 52, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0 48px 0 16px', fontSize: 16 }}
+                  className="w-full bg-white text-slate-800 placeholder:text-slate-400 outline-none transition-all text-input"
+                  style={{ height: 52, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0 48px 0 16px' }}
                   onFocus={e => { e.currentTarget.style.borderColor = '#7dd3fc'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(125,211,252,0.1)' }}
                   onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none' }}
                   autoComplete="new-password"
@@ -342,7 +342,7 @@ export function LoginPage() {
               onClick={() => void handleReset()}
               disabled={!canReset}
               className="w-full font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-              style={{ height: 52, borderRadius: 10, background: '#7dd3fc', fontSize: 16, letterSpacing: '0.02em', border: 'none', cursor: 'pointer', color: '#0f172a' }}
+              style={{ height: 52, borderRadius: 10, background: '#7dd3fc', letterSpacing: '0.02em', border: 'none', cursor: 'pointer', color: '#0f172a' }}
               onMouseEnter={e => { if (canReset) { e.currentTarget.style.background = '#38bdf8'; e.currentTarget.style.transform = 'translateY(-1px)' } }}
               onMouseLeave={e => { e.currentTarget.style.background = '#7dd3fc'; e.currentTarget.style.transform = 'translateY(0)' }}
             >
@@ -352,8 +352,8 @@ export function LoginPage() {
               <button
                 type="button"
                 onClick={() => { setMode('login'); setResetError(''); setResetSuccess('') }}
-                className="transition-all duration-200"
-                style={{ fontSize: 14, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
+                className="text-button md:text-button-pc transition-all duration-200"
+                style={{ color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
                 onMouseEnter={e => { e.currentTarget.style.color = '#7dd3fc'; e.currentTarget.style.textDecoration = 'underline' }}
                 onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.textDecoration = 'none' }}
               >

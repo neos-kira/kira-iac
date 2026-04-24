@@ -55,11 +55,10 @@ export function InfraBasic2TopPage() {
         </div>
 
         {/* 進捗サマリー */}
-        <div style={{
+        <div className="text-body md:text-body-pc" style={{
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
-          fontSize: '13px',
           color: '#6b7280',
         }}>
           {/* 進捗サマリー — color-primary (brand) */}
@@ -124,7 +123,6 @@ export function InfraBasic2TopPage() {
                   justifyContent: 'center',
                   flexShrink: 0,
                   marginRight: '16px',
-                  fontSize: '14px',
                   color: isCompleted ? 'white' : '#9ca3af',
                   fontWeight: 600,
                 }}>
@@ -133,18 +131,16 @@ export function InfraBasic2TopPage() {
 
                 {/* 中: テキスト */}
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '2px' }}>
+                  <div className="text-label md:text-label-pc" style={{ color: '#9ca3af', marginBottom: '2px' }}>
                     {task.category}
                   </div>
-                  <div style={{
-                    fontSize: '15px',
-                    fontWeight: 600,
+                  <div className="text-heading md:text-heading-pc" style={{
                     color: isLocked ? '#9ca3af' : '#111827',
                     marginBottom: '2px',
                   }}>
                     {task.title}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#9ca3af' }}>
+                  <div className="text-label md:text-label-pc" style={{ color: '#9ca3af' }}>
                     {isLocked
                       ? `課題${index}を先に完了してください`
                       : task.description
@@ -170,7 +166,7 @@ export function InfraBasic2TopPage() {
                         ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                         : 'bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 cursor-pointer'
                     }`}
-                    style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 500 }}
+                    style={{ padding: '8px 16px', fontWeight: 500 }}
                   >
                     開く
                   </button>

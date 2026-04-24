@@ -127,11 +127,11 @@ function JTeradaRestrictedView() {
       <header className="border-b border-slate-200 bg-white px-4 py-3 flex items-center justify-between">
         <NeOSLogo height={32} />
         <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-600">j-terada さん</span>
+          <span className="text-body md:text-body-pc text-slate-600">j-terada さん</span>
           <button
             type="button"
             onClick={handleLogout}
-            className="rounded-lg px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+            className="rounded-lg px-3 py-1.5 text-button md:text-button-pc text-slate-600 hover:bg-slate-100"
           >
             ログアウト
           </button>
@@ -139,8 +139,8 @@ function JTeradaRestrictedView() {
       </header>
       <main className="max-w-xl mx-auto px-4 py-8">
         <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <h1 className="text-lg font-semibold text-slate-800">コマンド問題が終わりました</h1>
-          <p className="mt-2 text-sm text-slate-600">
+          <h1 className="text-display md:text-display-pc font-semibold text-slate-800">コマンド問題が終わりました</h1>
+          <p className="mt-2 text-body md:text-body-pc text-slate-600">
             以下を行ってください。
           </p>
           <ul className="mt-6 space-y-3">
@@ -150,7 +150,7 @@ function JTeradaRestrictedView() {
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block rounded-xl bg-sky-50 px-4 py-3 text-sm font-medium text-sky-700 hover:bg-sky-100"
+                  className="block rounded-xl bg-sky-50 px-4 py-3 text-button md:text-button-pc font-medium text-sky-700 hover:bg-sky-100"
                 >
                   {label}
                 </a>
@@ -890,11 +890,11 @@ function App() {
       {showStopConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
-            <h2 className="text-base font-bold text-slate-800 mb-2">サーバーを停止しますか？</h2>
-            <p className="text-sm text-slate-600 mb-5">停止中はSSH接続できません。作業中のデータは保持されます。</p>
+            <h2 className="text-heading md:text-heading-pc font-bold text-slate-800 mb-2">サーバーを停止しますか？</h2>
+            <p className="text-body md:text-body-pc text-slate-600 mb-5">停止中はSSH接続できません。作業中のデータは保持されます。</p>
             <div className="flex gap-3">
-              <button type="button" onClick={() => setShowStopConfirm(false)} className="flex-1 rounded-xl border border-slate-300 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">キャンセル</button>
-              <button type="button" onClick={() => { void handleStopServer() }} className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700">停止する</button>
+              <button type="button" onClick={() => setShowStopConfirm(false)} className="flex-1 rounded-xl border border-slate-300 py-2.5 text-button md:text-button-pc font-medium text-slate-700 hover:bg-slate-50">キャンセル</button>
+              <button type="button" onClick={() => { void handleStopServer() }} className="flex-1 rounded-xl bg-red-600 py-2.5 text-button md:text-button-pc font-semibold text-white hover:bg-red-700">停止する</button>
             </div>
           </div>
         </div>
@@ -903,29 +903,29 @@ function App() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-7 shadow-2xl">
             <div className="flex items-center gap-3 mb-5">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">✓</span>
-              <h2 className="text-lg font-bold text-slate-800">サーバーを作成しました</h2>
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-display md:text-display-pc">✓</span>
+              <h2 className="text-display md:text-display-pc font-bold text-slate-800">サーバーを作成しました</h2>
             </div>
-            <div className="space-y-3 rounded-xl bg-slate-50 p-4 text-sm">
+            <div className="space-y-3 rounded-xl bg-slate-50 p-4 text-body md:text-body-pc">
               <div>
-                <p className="text-xs text-slate-400 mb-0.5">IPアドレス</p>
-                <p className="font-bold font-mono text-slate-800 text-lg">{serverCreatedModal.publicIp || '取得中...'}</p>
+                <p className="text-label md:text-label-pc text-slate-400 mb-0.5">IPアドレス</p>
+                <p className="font-bold font-mono text-slate-800 text-display md:text-display-pc">{serverCreatedModal.publicIp || '取得中...'}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400 mb-0.5">接続ユーザー名</p>
+                <p className="text-label md:text-label-pc text-slate-400 mb-0.5">接続ユーザー名</p>
                 <p className="font-semibold font-mono text-slate-700">{serverCreatedModal.ec2Username}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400 mb-0.5">秘密鍵ファイル（ダウンロード済み）</p>
-                <p className="font-mono text-slate-600 text-xs break-all">{serverCreatedModal.pemFilename}</p>
+                <p className="text-label md:text-label-pc text-slate-400 mb-0.5">秘密鍵ファイル（ダウンロード済み）</p>
+                <p className="font-mono text-slate-600 text-label md:text-label-pc break-all">{serverCreatedModal.pemFilename}</p>
               </div>
             </div>
-            <p className="mt-4 text-xs text-slate-500">この情報はトップページの「あなたの演習サーバー」セクションでいつでも確認できます。</p>
-            <p className="mt-1.5 text-xs font-medium text-amber-600">⚠ この秘密鍵は今回のみダウンロード可能です。大切に保管してください。</p>
+            <p className="mt-4 text-label md:text-label-pc text-slate-500">この情報はトップページの「あなたの演習サーバー」セクションでいつでも確認できます。</p>
+            <p className="mt-1.5 text-label md:text-label-pc font-medium text-amber-600">⚠ この秘密鍵は今回のみダウンロード可能です。大切に保管してください。</p>
             <button
               type="button"
               onClick={() => setServerCreatedModal(null)}
-              className="mt-5 w-full rounded-xl py-3 text-sm font-semibold bg-sky-600 text-white hover:bg-sky-700"
+              className="mt-5 w-full rounded-xl py-3 text-button md:text-button-pc font-semibold bg-sky-600 text-white hover:bg-sky-700"
             >
               研修を始める
             </button>
@@ -949,22 +949,22 @@ function App() {
         {showIntroRequiredPopup && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="intro-required-title">
             <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
-              <h2 id="intro-required-title" className="text-lg font-semibold text-slate-800">はじめに</h2>
-              <p className="mt-3 text-sm text-slate-600">
+              <h2 id="intro-required-title" className="text-display md:text-display-pc font-semibold text-slate-800">はじめに</h2>
+              <p className="mt-3 text-body md:text-body-pc text-slate-600">
                 インフラ基礎課題にアクセスするには、先に「はじめに」でプロフェッショナルとしての行動基準を確認してください。
               </p>
               <div className="mt-6 flex gap-3">
                 <button
                   type="button"
                   onClick={goToIntroAndClosePopup}
-                  className="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium bg-sky-600 text-white hover:bg-sky-700"
+                  className="flex-1 rounded-lg px-4 py-2.5 text-button md:text-button-pc font-medium bg-sky-600 text-white hover:bg-sky-700"
                 >
                   はじめに
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowIntroRequiredPopup(false)}
-                  className="rounded-lg bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-200"
+                  className="rounded-lg bg-slate-100 px-4 py-2.5 text-button md:text-button-pc font-medium text-slate-700 hover:bg-slate-200"
                 >
                   閉じる
                 </button>
@@ -976,16 +976,16 @@ function App() {
         <main className="mt-4 flex flex-1 flex-col items-center justify-start mx-auto max-w-5xl px-6 w-full">
           {isAdminView ? (
             <div className="w-full max-w-2xl space-y-4">
-              <h1 className="text-lg font-semibold text-slate-800">講師用メニュー</h1>
+              <h1 className="text-display md:text-display-pc font-semibold text-slate-800">講師用メニュー</h1>
               <section className="space-y-2">
-                <p className="text-sm text-slate-600">受講生の進捗を確認できます。</p>
+                <p className="text-body md:text-body-pc text-slate-600">受講生の進捗を確認できます。</p>
                 <button
                   type="button"
                   onClick={() => navigate('/admin')}
                   className="flex w-full flex-col items-start rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-sky-200 hover:bg-sky-50/50"
                 >
-                  <span className="text-base font-semibold text-slate-800">受講生の進捗</span>
-                  <span className="mt-1 text-xs text-slate-600">WBSに基づく進捗一覧を表示</span>
+                  <span className="text-heading md:text-heading-pc font-semibold text-slate-800">受講生の進捗</span>
+                  <span className="mt-1 text-label md:text-label-pc text-slate-600">WBSに基づく進捗一覧を表示</span>
                 </button>
               </section>
 
@@ -998,7 +998,7 @@ function App() {
                 >
                   <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
                     <div className="flex items-center justify-between gap-3">
-                      <h2 id="account-manage-title" className="text-base font-semibold text-slate-800">
+                      <h2 id="account-manage-title" className="text-heading md:text-heading-pc font-semibold text-slate-800">
                         アカウント管理
                       </h2>
                       <button
@@ -1009,12 +1009,12 @@ function App() {
                           setDeleteTarget(null)
                           setDeleteError(null)
                         }}
-                        className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600 hover:bg-slate-200"
+                        className="rounded-full bg-slate-100 px-2 py-1 text-label md:text-label-pc text-slate-600 hover:bg-slate-200"
                       >
                         閉じる
                       </button>
                     </div>
-                    <p className="mt-1 text-xs text-slate-600">
+                    <p className="mt-1 text-label md:text-label-pc text-slate-600">
                       管理者が作成したアカウントのみ、受講生画面からログインできます。
                     </p>
 
@@ -1024,19 +1024,19 @@ function App() {
                         value={newAccountName}
                         onChange={(e) => setNewAccountName(e.target.value)}
                         placeholder="新しいユーザー名（例: kira-test）"
-                        className="w-40 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                        className="w-40 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-label md:text-label-pc text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                       />
                       <input
                         type="password"
                         value={newAccountPassword}
                         onChange={(e) => setNewAccountPassword(e.target.value)}
                         placeholder="パスワード"
-                        className="w-32 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                        className="w-32 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-label md:text-label-pc text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                       />
                       <button
                         type="submit"
                         disabled={!newAccountName.trim() || !newAccountPassword}
-                        className="rounded-lg bg-sky-50 text-sky-700 border border-sky-200 px-3 py-1.5 text-xs font-medium hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg bg-sky-50 text-sky-700 border border-sky-200 px-3 py-1.5 text-label md:text-label-pc font-medium hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         アカウント作成
                       </button>
@@ -1077,7 +1077,7 @@ function App() {
 
                     {deleteTarget && (
                       <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-3">
-                        <p className="text-xs font-semibold text-rose-800">ファイナルアンサー？</p>
+                        <p className="text-label md:text-label-pc font-semibold text-rose-800">ファイナルアンサー？</p>
                         <p className="mt-1 text-[11px] text-rose-700">
                           ユーザー「{deleteTarget}」を削除します。この操作は取り消せません。
                         </p>
@@ -1209,7 +1209,7 @@ function App() {
                       alert('リセットに失敗しました。')
                     }
                   }}
-                  className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-100"
+                  className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-label md:text-label-pc font-medium text-rose-600 hover:bg-rose-100"
                 >
                   進捗リセット（開発用）
                 </button>
@@ -1236,14 +1236,14 @@ function App() {
               if (introStep === 0) {
                 return (
                   <div className="rounded-2xl border-2 border-sky-400 bg-amber-50 p-6 shadow-sm">
-                    <p className="text-sm font-semibold text-amber-800">はじめに</p>
-                    <p className="mt-2 text-sm text-slate-700">
+                    <p className="text-body md:text-body-pc font-semibold text-amber-800">はじめに</p>
+                    <p className="mt-2 text-body md:text-body-pc text-slate-700">
                       インフラ基礎課題に進む前に、「はじめに」でプロフェッショナルとしての行動基準を確認してください。
                     </p>
                     <OpenInNewTabButton
                       url={getTrainingUrl('/training/intro')}
                       label="はじめに"
-                      className="mt-4 inline-flex rounded-lg bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2.5 text-sm font-medium hover:bg-sky-100"
+                      className="mt-4 inline-flex rounded-lg bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2.5 text-button md:text-button-pc font-medium hover:bg-sky-100"
                     />
                   </div>
                 )
@@ -1259,9 +1259,9 @@ function App() {
                 }
                 return (
                   <div className="rounded-2xl border-2 border-sky-400 bg-white p-6 shadow-sm">
-                    <h2 className="mt-2 text-base font-semibold text-slate-800">つづきから</h2>
-                    <p className="mt-1 text-sm text-slate-700">{stepLabels[introStep]}</p>
-                    <button type="button" onClick={() => navigate('/training/intro')} className="mt-4 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2.5 text-sm font-medium hover:bg-sky-100">つづきから →</button>
+                    <h2 className="mt-2 text-heading md:text-heading-pc font-semibold text-slate-800">つづきから</h2>
+                    <p className="mt-1 text-body md:text-body-pc text-slate-700">{stepLabels[introStep]}</p>
+                    <button type="button" onClick={() => navigate('/training/intro')} className="mt-4 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2.5 text-button md:text-button-pc font-medium hover:bg-sky-100">つづきから →</button>
                   </div>
                 )
               }
@@ -1277,20 +1277,20 @@ function App() {
                 const courseName = la.label.replace(/\s*\d+\/\d+問$/, '').trim()
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800">{courseName}</p>
+                    <p className="text-label md:text-label-pc font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">{courseName}</p>
                     {completed !== null && total !== null && (
                       <>
                         <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
                           <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(completed / total) * 100}%` }} />
                         </div>
-                        <p className="mt-1.5 text-xs text-gray-500">{completed}問完了 / 全{total}問</p>
+                        <p className="mt-1.5 text-label md:text-label-pc text-gray-500">{completed}問完了 / 全{total}問</p>
                       </>
                     )}
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl(la.path), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
+                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-button md:text-button-pc font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1305,16 +1305,16 @@ function App() {
                 const partLabel = partLabels[l1Part] ?? '基本操作'
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800">Linuxコマンド30問 · {partLabel}</p>
+                    <p className="text-label md:text-label-pc font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">Linuxコマンド30問 · {partLabel}</p>
                     <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
                       <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(l1Q / 10) * 100}%` }} />
                     </div>
-                    <p className="mt-1.5 text-xs text-gray-500">{l1Q}問完了 / 全10問</p>
+                    <p className="mt-1.5 text-label md:text-label-pc text-gray-500">{l1Q}問完了 / 全10問</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level1'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
+                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-button md:text-button-pc font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1324,12 +1324,12 @@ function App() {
               if (infra1InProgress) {
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800">SSH接続確認</p>
+                    <p className="text-label md:text-label-pc font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">SSH接続確認</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-1'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
+                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-button md:text-button-pc font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1339,16 +1339,16 @@ function App() {
               if (l2Q > 0) {
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800">TCP/IP 理解度チェック</p>
+                    <p className="text-label md:text-label-pc font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">TCP/IP 理解度チェック</p>
                     <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
                       <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(l2Q / 10) * 100}%` }} />
                     </div>
-                    <p className="mt-1.5 text-xs text-gray-500">{l2Q}問完了 / 全10問</p>
+                    <p className="mt-1.5 text-label md:text-label-pc text-gray-500">{l2Q}問完了 / 全10問</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level2'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
+                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-button md:text-button-pc font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1358,12 +1358,12 @@ function App() {
               if (infra32InProgress) {
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800">OS・仮想化・クラウド理解度チェック</p>
+                    <p className="text-label md:text-label-pc font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">OS・仮想化・クラウド理解度チェック</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
+                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-button md:text-button-pc font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1373,16 +1373,16 @@ function App() {
               if (vi4Done > 0 && vi4Done < VI_STEPS.length) {
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800">viエディタ演習</p>
+                    <p className="text-label md:text-label-pc font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">viエディタ演習</p>
                     <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
                       <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(vi4Done / VI_STEPS.length) * 100}%` }} />
                     </div>
-                    <p className="mt-1.5 text-xs text-gray-500">{vi4Done}ステップ完了 / 全{VI_STEPS.length}ステップ</p>
+                    <p className="mt-1.5 text-label md:text-label-pc text-gray-500">{vi4Done}ステップ完了 / 全{VI_STEPS.length}ステップ</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
+                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-button md:text-button-pc font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1392,16 +1392,16 @@ function App() {
               if (shell4Done > 0 && shell4Done < SHELL_QUESTIONS.length) {
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-xs font-medium text-slate-500">前回の続きから再開</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800">シェルスクリプト演習</p>
+                    <p className="text-label md:text-label-pc font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">シェルスクリプト演習</p>
                     <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
                       <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(shell4Done / SHELL_QUESTIONS.length) * 100}%` }} />
                     </div>
-                    <p className="mt-1.5 text-xs text-gray-500">{shell4Done}問完了 / 全{SHELL_QUESTIONS.length}問</p>
+                    <p className="mt-1.5 text-label md:text-label-pc text-gray-500">{shell4Done}問完了 / 全{SHELL_QUESTIONS.length}問</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
                       else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-sm font-medium transition-colors">続きから再開する →</button>
+                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-button md:text-button-pc font-medium transition-colors">続きから再開する →</button>
                   </div>
                 )
               }
@@ -1412,7 +1412,7 @@ function App() {
             {/* j-terada 用：はじめにの下に課題1完了後の案内を表示。課題1クリア前はリンク無効 */}
             {isJTerada(getDisplayName()) && (
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="text-base font-semibold text-slate-800">
+                <p className="text-heading md:text-heading-pc font-semibold text-slate-800">
                   インフラ基礎課題1が完了したら、以下の課題を実施してください。
                 </p>
                 <ul className="mt-4 space-y-3">
@@ -1422,12 +1422,12 @@ function App() {
                         href="https://docs.google.com/presentation/d/1Xw--LXH056ekfvkneyzl-ZCFPKJon4vd/edit?usp=drivesdk&ouid=100622650885455094391&rtpof=true&sd=true"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-sky-800 shadow-sm ring-1 ring-sky-200 hover:bg-sky-100 hover:ring-sky-300"
+                        className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-button md:text-button-pc font-medium text-sky-800 shadow-sm ring-1 ring-sky-200 hover:bg-sky-100 hover:ring-sky-300"
                       >
                         概要ppt
                       </a>
                     ) : (
-                      <span className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-3 text-sm font-medium text-slate-500 ring-1 ring-slate-200 cursor-not-allowed">
+                      <span className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-3 text-button md:text-button-pc font-medium text-slate-500 ring-1 ring-slate-200 cursor-not-allowed">
                         概要ppt（コマンド課題をクリアするとアクセスできます）
                       </span>
                     )}
@@ -1438,12 +1438,12 @@ function App() {
                         href="https://docs.google.com/spreadsheets/d/127QyXSU1_nLAeRF5HPfsYcECDWjNZKZW/edit?usp=drivesdk&ouid=100622650885455094391&rtpof=true&sd=true"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-sky-800 shadow-sm ring-1 ring-sky-200 hover:bg-sky-100 hover:ring-sky-300"
+                        className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-button md:text-button-pc font-medium text-sky-800 shadow-sm ring-1 ring-sky-200 hover:bg-sky-100 hover:ring-sky-300"
                       >
                         WBS
                       </a>
                     ) : (
-                      <span className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-3 text-sm font-medium text-slate-500 ring-1 ring-slate-200 cursor-not-allowed">
+                      <span className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-3 text-button md:text-button-pc font-medium text-slate-500 ring-1 ring-slate-200 cursor-not-allowed">
                         WBS（コマンド課題をクリアするとアクセスできます）
                       </span>
                     )}
@@ -1464,7 +1464,7 @@ function App() {
                     {searchHistory.map((item, index) => (
                       <li
                         key={item}
-                        className={`group flex items-center justify-between gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 ${
+                        className={`group flex items-center justify-between gap-2 px-4 py-2.5 text-body md:text-body-pc text-slate-700 hover:bg-slate-50 ${
                           index === searchHistoryHighlightIndex ? 'bg-sky-50' : ''
                         }`}
                       >
@@ -1495,7 +1495,7 @@ function App() {
             {/* 検索結果（Enter または ↑ 実行後に表示） */}
             {resolution && (
               <section className="mt-6 space-y-3" aria-label="検索結果">
-                <div className="flex items-center justify-between text-xs text-slate-500">
+                <div className="flex items-center justify-between text-label md:text-label-pc text-slate-500">
                   <p>
                     検索結果:{' '}
                     <span className="font-medium text-slate-800">
@@ -1506,7 +1506,7 @@ function App() {
                     {resolution.feature}
                   </span>
                 </div>
-                <p className="text-xs text-slate-600">{resolution.reason}</p>
+                <p className="text-label md:text-label-pc text-slate-600">{resolution.reason}</p>
 
                 <div className="mt-3">
                   <ResolvedModulePlaceholder
@@ -1537,7 +1537,7 @@ function App() {
                   <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-slate-800">はじめに</span>
+                        <span className="text-body md:text-body-pc font-medium text-slate-800">はじめに</span>
                         <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                           📌
                         </span>
@@ -1564,7 +1564,7 @@ function App() {
                   <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-slate-800">インフラ基礎課題1</span>
+                        <span className="text-body md:text-body-pc font-medium text-slate-800">インフラ基礎課題1</span>
                         <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                           📌
                         </span>
@@ -1599,7 +1599,7 @@ function App() {
                   <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-slate-800">インフラ基礎課題2</span>
+                        <span className="text-body md:text-body-pc font-medium text-slate-800">インフラ基礎課題2</span>
                         <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                           📌
                         </span>
@@ -1638,7 +1638,7 @@ function App() {
                   <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-slate-800">インフラ基礎課題3</span>
+                        <span className="text-body md:text-body-pc font-medium text-slate-800">インフラ基礎課題3</span>
                         <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                           📌
                         </span>
@@ -1686,11 +1686,11 @@ function App() {
                 <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-800">演習サーバー</p>
-                      {!isCreatingServer && <p className="text-xs text-slate-500 mt-0.5">研修にはLinuxサーバーが必要です</p>}
+                      <p className="text-body md:text-body-pc font-semibold text-slate-800">演習サーバー</p>
+                      {!isCreatingServer && <p className="text-label md:text-label-pc text-slate-500 mt-0.5">研修にはLinuxサーバーが必要です</p>}
                       {isCreatingServer && (
                         <div className="mt-1.5 w-48">
-                          <p className="text-xs text-slate-500 mb-1">作成中...（約2分）</p>
+                          <p className="text-label md:text-label-pc text-slate-500 mb-1">作成中...（約2分）</p>
                           <div className="h-1 w-full overflow-hidden rounded-full bg-slate-100">
                             <div className="h-full rounded-full bg-blue-500 transition-all duration-300" style={{ width: `${serverCreateProgress}%` }} />
                           </div>
@@ -1701,7 +1701,7 @@ function App() {
                       type="button"
                       onClick={() => { void handleCreateServer() }}
                       disabled={isCreatingServer}
-                      className="shrink-0 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="shrink-0 rounded-lg bg-blue-600 px-3 py-2 text-label md:text-label-pc font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isCreatingServer ? '作成中...' : 'サーバーを作成する'}
                     </button>
@@ -1745,7 +1745,7 @@ function App() {
                   return (
                     <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                       <div className="flex items-center justify-between gap-2 mb-2">
-                        <p className="text-xs font-semibold text-slate-600">あなたの演習サーバー</p>
+                        <p className="text-label md:text-label-pc font-semibold text-slate-600">あなたの演習サーバー</p>
                         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
                           serverSnapshot.ec2State === 'running' ? 'bg-emerald-50 text-emerald-700' :
                           (serverSnapshot.ec2State === 'pending' || serverSnapshot.ec2State === 'stopping') ? 'bg-amber-50 text-amber-600' :
@@ -1766,7 +1766,7 @@ function App() {
                         <div>
                           <p className="text-[10px] text-slate-400 mb-0.5">IPアドレス</p>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xl font-bold font-mono text-slate-800 tracking-wide leading-none">{serverSnapshot.ec2PublicIp}</span>
+                            <span className="text-display md:text-display-pc font-bold font-mono text-slate-800 tracking-wide leading-none">{serverSnapshot.ec2PublicIp}</span>
                             <CopyBtn text={serverSnapshot.ec2PublicIp ?? ''} field="ip" />
                           </div>
                         </div>
@@ -1774,7 +1774,7 @@ function App() {
                         <div>
                           <p className="text-[10px] text-slate-400 mb-0.5">ユーザー名</p>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-sm font-semibold font-mono text-slate-700 leading-none">{displayUser}</span>
+                            <span className="text-body md:text-body-pc font-semibold font-mono text-slate-700 leading-none">{displayUser}</span>
                             <CopyBtn text={displayUser} field="user" />
                           </div>
                         </div>
@@ -1784,7 +1784,7 @@ function App() {
                             <p className="text-[10px] text-slate-400 mb-0.5">秘密鍵</p>
                             <div className="flex flex-col gap-1">
                               <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-mono text-slate-500 leading-none">{serverSnapshot.keyPairName}.pem</span>
+                                <span className="text-label md:text-label-pc font-mono text-slate-500 leading-none">{serverSnapshot.keyPairName}.pem</span>
                                 <button
                                   type="button"
                                   onClick={() => setPemLostOpen((v) => !v)}
@@ -1809,20 +1809,20 @@ function App() {
                               type="button"
                               onClick={() => setShowStopConfirm(true)}
                               disabled={isServerActionLoading}
-                              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="rounded-lg border border-slate-300 px-3 py-1.5 text-label md:text-label-pc font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >停止する</button>
                           ) : (serverSnapshot.ec2State === 'pending' || serverSnapshot.ec2State === 'stopping') ? (
                             <button
                               type="button"
                               disabled
-                              className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-400 cursor-not-allowed"
+                              className="rounded-lg bg-slate-100 px-3 py-1.5 text-label md:text-label-pc font-medium text-slate-400 cursor-not-allowed"
                             >{serverSnapshot.ec2State === 'pending' ? '起動中...' : '停止中...'}</button>
                           ) : (
                             <button
                               type="button"
                               onClick={() => { void handleStartServer() }}
                               disabled={isServerActionLoading}
-                              className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="rounded-lg bg-blue-600 px-3 py-1.5 text-label md:text-label-pc font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >起動する</button>
                           )}
                         </div>
@@ -1850,7 +1850,7 @@ function App() {
 
           {/* 研修カリキュラム */}
           <section className="mt-6 w-full max-w-2xl space-y-3">
-            <p className="text-sm font-bold text-slate-800">研修カリキュラム</p>
+            <p className="text-body md:text-body-pc font-bold text-slate-800">研修カリキュラム</p>
             {(() => {
               const snap = serverSnapshot
               const introOk = isIntroCompleted
@@ -1995,22 +1995,22 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
 
     if (category === 'intro') {
       return (
-        <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">TRAINING · はじめに</p>
+        <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
+          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-500">TRAINING · はじめに</p>
           <div className="mt-2 flex items-center gap-2">
-            <h2 className="text-base font-semibold text-slate-800">はじめに</h2>
+            <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800">はじめに</h2>
             {pinnedTraining.includes('intro') && (
               <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                 📌
               </span>
             )}
           </div>
-          <p className="mt-1 text-xs text-slate-600">はじめにのページへアクセスできます。</p>
+          <p className="mt-1 text-label md:text-label-pc text-slate-600">はじめにのページへアクセスできます。</p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => onTogglePin('intro')}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-medium text-slate-600 hover:border-amber-500 hover:text-amber-700"
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-label md:text-label-pc font-medium text-slate-600 hover:border-amber-500 hover:text-amber-700"
             >
               <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
               {(pinnedTraining ?? []).includes('intro') ? 'ピン解除' : 'ピン留め'}
@@ -2019,7 +2019,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
               <button
                 type="button"
                 onClick={onOpenIntro}
-                className="rounded-lg bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2 text-xs font-medium hover:bg-sky-100"
+                className="rounded-lg bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2 text-label md:text-label-pc font-medium hover:bg-sky-100"
               >
                 はじめにを開く
               </button>
@@ -2031,15 +2031,15 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
 
     if (category === 'wbs') {
       return (
-        <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">TRAINING · WBS</p>
-          <h2 className="mt-2 text-base font-semibold text-slate-800">インフラ基礎 研修WBS</h2>
-          <p className="mt-1 text-xs text-slate-600">WBSページで進捗とガントチャートを確認できます。</p>
+        <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
+          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-500">TRAINING · WBS</p>
+          <h2 className="mt-2 text-heading md:text-heading-pc font-semibold text-slate-800">インフラ基礎 研修WBS</h2>
+          <p className="mt-1 text-label md:text-label-pc text-slate-600">WBSページで進捗とガントチャートを確認できます。</p>
           {onOpenWbs && (
             <button
               type="button"
               onClick={onOpenWbs}
-              className="mt-3 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2 text-xs font-medium hover:bg-sky-100"
+              className="mt-3 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2 text-label md:text-label-pc font-medium hover:bg-sky-100"
             >
               WBSを開く
             </button>
@@ -2050,10 +2050,10 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
 
     if (category === 'linuxLevel1') {
       return (
-        <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Linuxコマンド30問</p>
-          <h2 className="mt-2 text-base font-semibold text-slate-800">Linuxコマンド30問</h2>
-          <p className="mt-1 text-xs text-slate-600">別タブで問題を開きました。タブを確認してください。</p>
+        <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
+          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-500">Linuxコマンド30問</p>
+          <h2 className="mt-2 text-heading md:text-heading-pc font-semibold text-slate-800">Linuxコマンド30問</h2>
+          <p className="mt-1 text-label md:text-label-pc text-slate-600">別タブで問題を開きました。タブを確認してください。</p>
           <p className="mt-2 text-[11px] text-slate-500">問題中は正誤を表示せず、30問終了後に得点を表示します。満点でクリアです。</p>
         </div>
       )
@@ -2061,12 +2061,12 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
 
     if (category === 'linuxLevel2') {
       return (
-        <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+        <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
+          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-500">
             TRAINING · INFRA · 2-2 TCP/IP
           </p>
-          <h2 className="mt-2 text-base font-semibold text-slate-800">インフラ基礎課題2-2 — TCP/IP 理解度チェック10問</h2>
-          <p className="mt-1 text-xs text-slate-600">別タブで問題を開きました。タブを確認してください。</p>
+          <h2 className="mt-2 text-heading md:text-heading-pc font-semibold text-slate-800">インフラ基礎課題2-2 — TCP/IP 理解度チェック10問</h2>
+          <p className="mt-1 text-label md:text-label-pc text-slate-600">別タブで問題を開きました。タブを確認してください。</p>
         </div>
       )
     }
@@ -2077,18 +2077,18 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
       const infra3Cleared = trainingStatus.infraOsCloudCleared
 
       return (
-        <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+        <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
+          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-500">
             TRAINING · INFRA
           </p>
-          <p className="mt-2 text-xs text-slate-500">検索結果</p>
-          <h2 className="mt-1 text-base font-semibold text-slate-800">インフラ基礎課題</h2>
+          <p className="mt-2 text-label md:text-label-pc text-slate-500">検索結果</p>
+          <h2 className="mt-1 text-heading md:text-heading-pc font-semibold text-slate-800">インフラ基礎課題</h2>
 
           <ul className="mt-4 space-y-2 text-slate-700">
             <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-slate-800">インフラ基礎課題1</span>
+                  <span className="text-body md:text-body-pc font-medium text-slate-800">インフラ基礎課題1</span>
                   {(pinnedTraining ?? []).includes('infra-basic-1') && (
                     <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                       📌
@@ -2120,7 +2120,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
             <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-slate-800">インフラ基礎課題2</span>
+                  <span className="text-body md:text-body-pc font-medium text-slate-800">インフラ基礎課題2</span>
                   {(pinnedTraining ?? []).includes('infra-basic-2') && (
                     <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                       📌
@@ -2156,7 +2156,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
             <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-slate-800">インフラ基礎課題3</span>
+                  <span className="text-body md:text-body-pc font-medium text-slate-800">インフラ基礎課題3</span>
                   {(pinnedTraining ?? []).includes('infra-basic-3') && (
                     <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                       📌
@@ -2192,7 +2192,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
             <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-slate-800">インフラ基礎課題4（vi & シェルスクリプト演習）</span>
+                  <span className="text-body md:text-body-pc font-medium text-slate-800">インフラ基礎課題4（vi & シェルスクリプト演習）</span>
                   {(pinnedTraining ?? []).includes('infra-basic-4') && (
                     <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                       📌
@@ -2224,7 +2224,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
           <div className="mt-4 rounded-xl bg-slate-50 px-3 py-2">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-sm font-medium text-slate-800">IT業界の歩き方</span>
+                <span className="text-body md:text-body-pc font-medium text-slate-800">IT業界の歩き方</span>
                 <p className="text-[11px] text-slate-500">ITエンジニアの基礎知識を6カテゴリで学ぶ</p>
               </div>
               <button
@@ -2241,9 +2241,9 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
     }
 
     return (
-      <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
-        <h2 className="text-base font-semibold text-slate-800">研修モジュール</h2>
-        <p className="mt-1 text-xs text-slate-600">
+      <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
+        <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800">研修モジュール</h2>
+        <p className="mt-1 text-label md:text-label-pc text-slate-600">
           研修ポータルへのルーティング結果です。実装時には、ここから研修管理システムの画面へ遷移させます。
         </p>
       </div>
@@ -2252,11 +2252,11 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
 
   if (resolution.feature === 'timeTracking') {
     return (
-      <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
-        <h2 className="text-base font-semibold text-slate-800">
+      <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
+        <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800">
           勤怠管理モジュール（プレースホルダー）
         </h2>
-        <p className="mt-1 text-xs text-slate-600">
+        <p className="mt-1 text-label md:text-label-pc text-slate-600">
           打刻・勤怠申請画面へのエントリーポイントです。将来的にはここから勤怠システムへシングルサインオンさせます。
         </p>
       </div>
@@ -2265,11 +2265,11 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
 
   if (resolution.feature === 'projects') {
     return (
-      <div className="rounded-2xl bg-white p-4 text-sm shadow-sm">
-        <h2 className="text-base font-semibold text-slate-800">
+      <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
+        <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800">
           プロジェクト管理モジュール（プレースホルダー）
         </h2>
-        <p className="mt-1 text-xs text-slate-600">
+        <p className="mt-1 text-label md:text-label-pc text-slate-600">
           プロジェクトボード・ガントチャートなどの画面に接続する想定のコンテナです。
         </p>
       </div>
@@ -2277,7 +2277,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
   }
 
   return (
-    <div className="rounded-2xl bg-white p-4 text-sm text-slate-600 shadow-sm">
+    <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc text-slate-600 shadow-sm">
       <p>該当する機能が見つかりませんでした。別の表現でもう一度試してください。</p>
     </div>
   )

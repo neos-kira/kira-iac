@@ -426,13 +426,13 @@ export function InfraBasic32Page() {
                     borderLeft: `4px solid ${config.borderLeft}`,
                   }}
                 >
-                  <p style={{ fontSize: '16px', fontWeight: 'bold', color: config.textColor }}>
+                  <p className="text-heading md:text-heading-pc" style={{ fontWeight: 'bold', color: config.textColor }}>
                     {config.emoji} {config.label}
                   </p>
-                  <p style={{ fontSize: '14px', color: config.textColor }}>
+                  <p className="text-button md:text-button-pc" style={{ color: config.textColor }}>
                     {qs.comment}
                   </p>
-                  <p style={{ fontSize: '13px', color: config.adviceColor, fontStyle: 'italic' }}>
+                  <p className="text-body md:text-body-pc" style={{ color: config.adviceColor, fontStyle: 'italic' }}>
                     {qs.advice}
                   </p>
                 </div>
@@ -441,7 +441,7 @@ export function InfraBasic32Page() {
               {/* エラー */}
               {qs.status === 'error' && (
                 <div className="rounded-xl p-4 space-y-2" style={{ backgroundColor: '#f9fafb' }}>
-                  <p style={{ fontSize: '14px', color: '#6b7280' }}>{qs.error}</p>
+                  <p className="text-button md:text-button-pc" style={{ color: '#6b7280' }}>{qs.error}</p>
                   <button
                     type="button"
                     onClick={() => { void handleScoreOne(q) }}

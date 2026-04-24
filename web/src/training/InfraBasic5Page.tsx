@@ -198,20 +198,20 @@ export function InfraBasic5Page() {
       <div className="mx-auto max-w-2xl space-y-6">
 
         {/* ヘッダー */}
-        <button type="button" onClick={() => navigate('/')} className="inline-flex items-center gap-1 text-sm text-sky-700 hover:text-sky-800">
+        <button type="button" onClick={() => navigate('/')} className="inline-flex items-center gap-1 text-button md:text-button-pc text-sky-700 hover:text-sky-800">
           ← 課題一覧に戻る
         </button>
         <div>
-          <p className="text-xs text-slate-500">課題5 · サーバー構築</p>
-          <h1 className="text-xl font-bold text-slate-800">Rocky Linux サーバー構築</h1>
+          <p className="text-label md:text-label-pc text-slate-500">課題5 · サーバー構築</p>
+          <h1 className="text-display md:text-display-pc font-bold text-slate-800">Rocky Linux サーバー構築</h1>
         </div>
 
         {/* 進捗バー + 中断ボタン */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-slate-500">進捗</span>
-              <span className="text-xs font-medium text-slate-700">{totalDone} / 40 ({progressPct}%)</span>
+              <span className="text-label md:text-label-pc text-slate-500">進捗</span>
+              <span className="text-label md:text-label-pc font-medium text-slate-700">{totalDone} / 40 ({progressPct}%)</span>
             </div>
             <div className="h-2 w-full rounded-full bg-slate-200">
               <div
@@ -225,21 +225,21 @@ export function InfraBasic5Page() {
               type="button"
               onClick={() => { void handleSuspend() }}
               disabled={isSaving}
-              className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-label md:text-label-pc font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSaving ? '保存中...' : '中断して保存'}
             </button>
-            {saveError && <p className="text-xs text-red-600">{saveError}</p>}
+            {saveError && <p className="text-label md:text-label-pc text-red-600">{saveError}</p>}
           </div>
         </div>
 
         {/* 概要 */}
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">概要</p>
-          <p className="mt-2 text-sm text-slate-700">
+          <p className="mt-2 text-body md:text-body-pc text-slate-700">
             Rocky Linux 9 サーバーを実際に構築します。各セクションを順番に進め、すべてのタスクを完了してください。
           </p>
-          <ul className="mt-2 space-y-1 text-xs text-slate-600 list-disc list-inside">
+          <ul className="mt-2 space-y-1 text-label md:text-label-pc text-slate-600 list-disc list-inside">
             <li>各タスクを完了したらチェックを入れてください</li>
             <li>【理解度確認】タスクは手順の内容を記述してAI採点を受けてください</li>
             <li>セクションの全タスクが完了したら「セクション完了」を押してください</li>
@@ -272,14 +272,14 @@ export function InfraBasic5Page() {
         {/* 全完了メッセージ */}
         {allSectionsDone && (
           <section className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 p-5 shadow-soft-card">
-            <p className="text-sm font-semibold text-emerald-800">🎉 すべてのセクションが完了しました！</p>
-            <p className="mt-2 text-sm text-slate-700">
+            <p className="text-body md:text-body-pc font-semibold text-emerald-800">🎉 すべてのセクションが完了しました！</p>
+            <p className="mt-2 text-body md:text-body-pc text-slate-700">
               Rocky Linux サーバー構築の全課題を完了しました。お疲れ様でした。
             </p>
             <button
               type="button"
               onClick={() => { navigate('/') }}
-              className="mt-4 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700"
+              className="mt-4 rounded-lg bg-sky-600 px-4 py-2.5 text-button md:text-button-pc font-medium text-white hover:bg-sky-700"
             >
               トップに戻る
             </button>
@@ -329,14 +329,14 @@ function SectionBlock({
         onClick={onToggleOpen}
       >
         <div className="flex items-center gap-3 min-w-0">
-          <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-sky-100 text-sky-700 text-xs font-bold">
+          <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-sky-100 text-sky-700 text-label md:text-label-pc font-bold">
             {section.number}
           </span>
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-slate-800 truncate">
+            <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800 truncate">
               {section.title}
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-label md:text-label-pc text-slate-400">
               {doneCount} / {section.tasks.length} 完了
             </p>
           </div>
@@ -360,7 +360,7 @@ function SectionBlock({
               セクション完了
             </button>
           )}
-          <span className="text-slate-400 text-xs">{isOpen ? '▲' : '▼'}</span>
+          <span className="text-slate-400 text-label md:text-label-pc">{isOpen ? '▲' : '▼'}</span>
         </div>
       </div>
 
@@ -416,8 +416,8 @@ function TaskRow({
           onClick={() => setIsExpanded((v) => !v)}
         >
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-emerald-600 text-sm flex-shrink-0">✓</span>
-            <span className="text-xs font-medium text-emerald-800 truncate">
+            <span className="text-emerald-600 text-body md:text-body-pc flex-shrink-0">✓</span>
+            <span className="text-label md:text-label-pc font-medium text-emerald-800 truncate">
               <span className="text-[11px] text-emerald-500 mr-1">{task.number}</span>
               {task.title}
             </span>
@@ -427,7 +427,7 @@ function TaskRow({
         </button>
         {isExpanded && (
           <div className="px-3 pb-3 border-t border-emerald-200 pt-2 space-y-2">
-            <p className="text-xs text-slate-600">{task.objective}</p>
+            <p className="text-label md:text-label-pc text-slate-600">{task.objective}</p>
             {reviewAnswer && (
               <div>
                 <p className="text-[11px] font-medium text-slate-500 mb-1">提出した回答:</p>
@@ -436,7 +436,7 @@ function TaskRow({
                   disabled
                   readOnly
                   rows={4}
-                  className="w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs text-slate-600 resize-none font-mono cursor-not-allowed opacity-75"
+                  className="w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-label md:text-label-pc text-slate-600 resize-none font-mono cursor-not-allowed opacity-75"
                 />
               </div>
             )}
@@ -451,11 +451,11 @@ function TaskRow({
     <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
       {/* タスクヘッダー */}
       <div>
-        <p className="text-sm font-medium text-slate-800 leading-snug">
+        <p className="text-body md:text-body-pc font-medium text-slate-800 leading-snug">
           <span className="text-[11px] text-slate-400 mr-1">{task.number}</span>
           {task.isReview ? <span className="text-sky-700">{task.title}</span> : task.title}
         </p>
-        <p className="mt-1 text-xs text-slate-500">{task.objective}</p>
+        <p className="mt-1 text-label md:text-label-pc text-slate-500">{task.objective}</p>
       </div>
 
       {/* ヒント（調べ方・考え方のみ） */}
@@ -469,7 +469,7 @@ function TaskRow({
             {showHint ? 'ヒントを隠す' : 'ヒントを見る（考え方）'}
           </button>
           {showHint && (
-            <p className="mt-1 rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-700">
+            <p className="mt-1 rounded-lg bg-sky-50 px-3 py-2 text-label md:text-label-pc text-sky-700">
               {task.hint}
             </p>
           )}
@@ -482,7 +482,7 @@ function TaskRow({
           <p className="text-[11px] font-medium text-slate-600">
             以下のコマンドを実行し、結果を貼り付けてください：
           </p>
-          <code className="block rounded-lg bg-slate-900 px-3 py-2 text-xs text-emerald-400 font-mono select-all whitespace-pre-wrap">
+          <code className="block rounded-lg bg-slate-900 px-3 py-2 text-label md:text-label-pc text-emerald-400 font-mono select-all whitespace-pre-wrap">
             $ {task.verifyCommand}
           </code>
           <textarea
@@ -490,13 +490,13 @@ function TaskRow({
             onChange={(e) => onReviewAnswerChange(e.target.value)}
             placeholder="実行結果をここに貼り付けてください..."
             rows={4}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 resize-none font-mono"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-label md:text-label-pc text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 resize-none font-mono"
           />
           <button
             type="button"
             onClick={onReviewScore}
             disabled={!reviewAnswer.trim() || reviewState.status === 'scoring'}
-            className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-lg bg-sky-600 px-3 py-1.5 text-label md:text-label-pc font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {reviewState.status === 'scoring' ? 'AI確認中...' : 'AIに確認してもらう'}
           </button>
@@ -525,19 +525,19 @@ function TaskRow({
 function VerifyResult({ state, isReview }: { state: ReviewState; isReview: boolean }) {
   if (state.status === 'idle') return null
   if (state.status === 'error') {
-    return <p className="text-xs text-red-600">{state.error ?? 'エラーが発生しました。再試行してください。'}</p>
+    return <p className="text-label md:text-label-pc text-red-600">{state.error ?? 'エラーが発生しました。再試行してください。'}</p>
   }
   if (state.status !== 'done' || !state.rating) return null
 
   return (
     <div className={`rounded-xl border p-3 ${RATING_STYLES[state.rating].bg}`}>
-      <p className="text-xs font-semibold">
+      <p className="text-label md:text-label-pc font-semibold">
         {RATING_STYLES[state.rating].icon} {RATING_STYLES[state.rating].label}
       </p>
-      {state.comment && <p className="mt-1 text-xs text-slate-700">{state.comment}</p>}
-      {state.advice && <p className="mt-1 text-xs text-slate-500">{state.advice}</p>}
+      {state.comment && <p className="mt-1 text-label md:text-label-pc text-slate-700">{state.comment}</p>}
+      {state.advice && <p className="mt-1 text-label md:text-label-pc text-slate-500">{state.advice}</p>}
       {state.rating === 'pass' && (
-        <p className="mt-1 text-xs text-emerald-700 font-medium">
+        <p className="mt-1 text-label md:text-label-pc text-emerald-700 font-medium">
           {isReview ? '✓ 合格です！完了になりました。' : '✓ 正しく完了しています！完了になりました。'}
         </p>
       )}
@@ -602,12 +602,12 @@ function ReviewUploadSection({
           <a
             href={templateUrl}
             download
-            className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-slate-300 px-3 py-1.5 text-label md:text-label-pc font-medium text-slate-700 hover:bg-slate-100"
           >
             <span>📥</span> テンプレートをダウンロード（Excel）
           </a>
         ) : (
-          <p className="text-xs text-slate-400">テンプレートファイルが設定されていません</p>
+          <p className="text-label md:text-label-pc text-slate-400">テンプレートファイルが設定されていません</p>
         )}
       </div>
 
@@ -630,7 +630,7 @@ function ReviewUploadSection({
           <span>📤</span>
           {uploadedFileName ? uploadedFileName : 'ファイルを選択...'}
         </button>
-        {parseError && <p className="mt-1 text-xs text-red-500">{parseError}</p>}
+        {parseError && <p className="mt-1 text-label md:text-label-pc text-red-500">{parseError}</p>}
         {uploadedFileName && !parseError && (
           <p className="mt-1 text-[11px] text-emerald-600">✓ 読み込み完了: {uploadedFileName}</p>
         )}
@@ -643,7 +643,7 @@ function ReviewUploadSection({
           type="button"
           onClick={onReviewScore}
           disabled={!reviewAnswer.trim() || reviewState.status === 'scoring'}
-          className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-lg bg-sky-600 px-3 py-1.5 text-label md:text-label-pc font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {reviewState.status === 'scoring' ? 'AI採点中...' : 'AIに採点してもらう'}
         </button>

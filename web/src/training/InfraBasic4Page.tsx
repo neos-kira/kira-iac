@@ -215,12 +215,12 @@ export function InfraBasic4Page() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-2xl space-y-6">
-        <button type="button" onClick={() => navigate('/')} className="inline-flex items-center gap-1 text-sm text-sky-700 hover:text-sky-800">
+        <button type="button" onClick={() => navigate('/')} className="inline-flex items-center gap-1 text-button md:text-button-pc text-sky-700 hover:text-sky-800">
           ← 課題一覧に戻る
         </button>
         <div>
-          <p className="text-xs text-slate-500">課題4 · 実践演習</p>
-          <h1 className="text-xl font-bold text-slate-800">viエディタ・シェルスクリプト演習</h1>
+          <p className="text-label md:text-label-pc text-slate-500">課題4 · 実践演習</p>
+          <h1 className="text-display md:text-display-pc font-bold text-slate-800">viエディタ・シェルスクリプト演習</h1>
         </div>
         <header className="flex items-center justify-between">
           <div className="flex flex-col items-end gap-1">
@@ -228,18 +228,18 @@ export function InfraBasic4Page() {
               type="button"
               onClick={() => { void handleSuspend() }}
               disabled={isSaving}
-              className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-label md:text-label-pc font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSaving ? '保存中...' : '中断して保存'}
             </button>
-            {saveError && <p className="text-xs text-red-600">{saveError}</p>}
+            {saveError && <p className="text-label md:text-label-pc text-red-600">{saveError}</p>}
           </div>
         </header>
 
         {/* ステータス */}
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">ステータス</p>
-          <p className="mt-2 text-sm">
+          <p className="mt-2 text-body md:text-body-pc">
             4-1: {viDoneCount}/{VI_STEPS.length} 問完了 / 4-2: {shellDoneCount}/{SHELL_QUESTIONS.length} 問完了
           </p>
         </section>
@@ -262,7 +262,7 @@ export function InfraBasic4Page() {
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
           <div className="mb-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">4-1</p>
-            <h2 className="mt-1 text-sm font-semibold text-slate-800">vi操作マスター（{VI_STEPS.length}問）</h2>
+            <h2 className="mt-1 text-heading md:text-heading-pc font-semibold text-slate-800">vi操作マスター（{VI_STEPS.length}問）</h2>
           </div>
           <div className="space-y-3">
             {VI_STEPS.map((s) => {
@@ -345,7 +345,7 @@ export function InfraBasic4Page() {
           <div className="mb-3 flex items-center justify-between gap-2">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">4-2</p>
-              <h2 className="mt-1 text-sm font-semibold text-slate-800">シェルスクリプト演習（{SHELL_QUESTIONS.length}問）</h2>
+              <h2 className="mt-1 text-heading md:text-heading-pc font-semibold text-slate-800">シェルスクリプト演習（{SHELL_QUESTIONS.length}問）</h2>
             </div>
             {!shellUnlocked && !isKiraTest && (
               <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-700 border border-amber-200">
@@ -432,13 +432,13 @@ export function InfraBasic4Page() {
         {/* 課題4クリア → 課題5へ */}
         {viAll && shellDoneCount === SHELL_QUESTIONS.length && (
           <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-soft-card">
-            <p className="text-sm font-bold text-emerald-800">
+            <p className="text-body md:text-body-pc font-bold text-emerald-800">
               🎉 課題4クリア！vi &amp; シェルスクリプト演習 全20問クリアしました。
             </p>
             <button
               type="button"
               onClick={() => navigate('/training/infra-basic-5')}
-              className="mt-3 w-full rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-700"
+              className="mt-3 w-full rounded-xl bg-sky-600 px-4 py-2.5 text-button md:text-button-pc font-semibold text-white shadow-sm hover:bg-sky-700"
             >
               課題5：サーバー構築へ進む →
             </button>

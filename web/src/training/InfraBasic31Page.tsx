@@ -58,31 +58,31 @@ export function InfraBasic31Page() {
 
         {/* OS と計算資源 */}
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft-card" style={{ marginBottom: 48 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 12 }}>1. OS と計算資源の最適化</h2>
-          <p style={{ fontSize: 15, lineHeight: 1.8, color: '#475569', marginBottom: 8, whiteSpace: 'pre-line' }}>
+          <h2 className="text-heading md:text-heading-pc" style={{ fontWeight: 700, color: '#1e293b', marginBottom: 12 }}>1. OS と計算資源の最適化</h2>
+          <p className="text-body md:text-body-pc" style={{ lineHeight: 1.8, color: '#475569', marginBottom: 8, whiteSpace: 'pre-line' }}>
             {'パソコンが重くなったとき、タスクマネージャーを開いて\n「何が重いのか」を確認したことはありませんか？\nサーバーも同じです。重くなったとき、何が原因かを特定するのが\nインフラエンジニアの最初の仕事です。\nLinuxサーバーでは、以下の3つのコマンドで原因を切り分けます。'}
           </p>
 
           <div className="rounded-xl border border-slate-200 bg-slate-50" style={{ padding: 24, marginBottom: 16 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>【コマンドで確認する】サーバーが重いときの初動</p>
+            <p className="text-button md:text-button-pc" style={{ fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>【コマンドで確認する】サーバーが重いときの初動</p>
 
-            <p style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>① CPU の状態を見る</p>
-            <pre style={{ background: '#1e293b', color: '#e2e8f0', borderRadius: 8, padding: 16, fontSize: 13, lineHeight: 1.7, overflowX: 'auto', marginBottom: 12 }}>
+            <p className="text-body md:text-body-pc" style={{ fontWeight: 600, color: '#475569', marginBottom: 4 }}>① CPU の状態を見る</p>
+            <pre className="text-body md:text-body-pc" style={{ background: '#1e293b', color: '#e2e8f0', borderRadius: 8, padding: 16, lineHeight: 1.7, overflowX: 'auto', marginBottom: 12 }}>
 {`$ top
 → us（ユーザープロセス）が高い → アプリ側の問題
 → wa（I/O待ち）が高い         → ディスクがボトルネック
 → sy（システム）が高い         → カーネル・ドライバの問題`}
             </pre>
 
-            <p style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>② メモリの状態を見る</p>
-            <pre style={{ background: '#1e293b', color: '#e2e8f0', borderRadius: 8, padding: 16, fontSize: 13, lineHeight: 1.7, overflowX: 'auto', marginBottom: 12 }}>
+            <p className="text-body md:text-body-pc" style={{ fontWeight: 600, color: '#475569', marginBottom: 4 }}>② メモリの状態を見る</p>
+            <pre className="text-body md:text-body-pc" style={{ background: '#1e293b', color: '#e2e8f0', borderRadius: 8, padding: 16, lineHeight: 1.7, overflowX: 'auto', marginBottom: 12 }}>
 {`$ free -h
 → available が物理メモリの10%未満 → メモリ不足
 → swap used が増加中              → 危険信号、早急に原因調査`}
             </pre>
 
-            <p style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>③ ディスクの状態を見る</p>
-            <pre style={{ background: '#1e293b', color: '#e2e8f0', borderRadius: 8, padding: 16, fontSize: 13, lineHeight: 1.7, overflowX: 'auto' }}>
+            <p className="text-body md:text-body-pc" style={{ fontWeight: 600, color: '#475569', marginBottom: 4 }}>③ ディスクの状態を見る</p>
+            <pre className="text-body md:text-body-pc" style={{ background: '#1e293b', color: '#e2e8f0', borderRadius: 8, padding: 16, lineHeight: 1.7, overflowX: 'auto' }}>
 {`$ df -h
 → Use% が90%超 → ディスクフル寸前、ログ・tmpを確認`}
             </pre>
@@ -114,24 +114,24 @@ export function InfraBasic31Page() {
           </div>
 
           <div className="rounded-xl border border-amber-200 bg-amber-50" style={{ padding: 20 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: '#92400e', marginBottom: 6 }}>覚えること</p>
-            <p style={{ fontSize: 14, lineHeight: 1.8, color: '#78350f' }}>
+            <p className="text-button md:text-button-pc" style={{ fontWeight: 600, color: '#92400e', marginBottom: 6 }}>覚えること</p>
+            <p className="text-button md:text-button-pc" style={{ lineHeight: 1.8, color: '#78350f' }}>
               CPU使用率100%でも「何が原因か」を特定できなければ意味がない。
-              <code style={{ background: '#fef3c7', padding: '2px 6px', borderRadius: 4, fontSize: 13 }}>us</code> / <code style={{ background: '#fef3c7', padding: '2px 6px', borderRadius: 4, fontSize: 13 }}>sy</code> / <code style={{ background: '#fef3c7', padding: '2px 6px', borderRadius: 4, fontSize: 13 }}>wa</code> の3つで原因を切り分けるのが最初のステップ。
+              <code className="text-body md:text-body-pc" style={{ background: '#fef3c7', padding: '2px 6px', borderRadius: 4 }}>us</code> / <code className="text-body md:text-body-pc" style={{ background: '#fef3c7', padding: '2px 6px', borderRadius: 4 }}>sy</code> / <code className="text-body md:text-body-pc" style={{ background: '#fef3c7', padding: '2px 6px', borderRadius: 4 }}>wa</code> の3つで原因を切り分けるのが最初のステップ。
             </p>
           </div>
         </section>
 
         {/* 仮想化アーキテクチャ */}
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft-card" style={{ marginBottom: 48 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 12 }}>2. 仮想化アーキテクチャ</h2>
-          <p style={{ fontSize: 15, lineHeight: 1.8, color: '#475569', marginBottom: 8, whiteSpace: 'pre-line' }}>
+          <h2 className="text-heading md:text-heading-pc" style={{ fontWeight: 700, color: '#1e293b', marginBottom: 12 }}>2. 仮想化アーキテクチャ</h2>
+          <p className="text-body md:text-body-pc" style={{ lineHeight: 1.8, color: '#475569', marginBottom: 8, whiteSpace: 'pre-line' }}>
             {'マンションを想像してください。\n1棟の建物（物理サーバー）の中に、複数の部屋（仮想サーバー）があります。\n各部屋は独立していますが、建物の電気・水道（CPUやメモリ）は共有しています。\nこれが仮想化の基本的な考え方です。\nAWSのEC2は、この「マンションの1部屋」にあたります。'}
           </p>
 
           <div className="rounded-xl border border-sky-200 bg-sky-50" style={{ padding: 20, marginBottom: 16 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: '#134e4a', marginBottom: 8 }}>NICの研修環境</p>
-            <p style={{ fontSize: 14, lineHeight: 1.8, color: '#115e59' }}>
+            <p className="text-button md:text-button-pc" style={{ fontWeight: 600, color: '#134e4a', marginBottom: 8 }}>NICの研修環境</p>
+            <p className="text-button md:text-button-pc" style={{ lineHeight: 1.8, color: '#115e59' }}>
               この研修ではAWSの<strong>EC2（仮想サーバー）</strong>を使う。
               EC2はESXiと同じ<strong>ベアメタル型ハイパーバイザー</strong>の上で動いている。
               つまり、物理サーバーの上にハイパーバイザーが直接載り、その上でEC2インスタンスが動作する構造。
@@ -168,8 +168,8 @@ export function InfraBasic31Page() {
 
           <div className="space-y-4">
             <div className="rounded-xl border border-slate-200 bg-slate-50" style={{ padding: 24 }}>
-              <p style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 8 }}>【知っておくと役立つこと】</p>
-              <div style={{ fontSize: 14, lineHeight: 1.8, color: '#475569' }}>
+              <p className="text-button md:text-button-pc" style={{ fontWeight: 600, color: '#1e293b', marginBottom: 8 }}>【知っておくと役立つこと】</p>
+              <div className="text-button md:text-button-pc" style={{ lineHeight: 1.8, color: '#475569' }}>
                 <p style={{ marginBottom: 12 }}>
                   <strong style={{ color: '#1e293b' }}>VMは物理リソースを他のVMと共有している。</strong><br />
                   同じ物理サーバー上の別VMが暴走すると、自分のVMも遅くなる（ノイジーネイバー問題）。
@@ -193,15 +193,15 @@ export function InfraBasic31Page() {
 
         {/* クラウドコンピューティング */}
         <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-soft-card" style={{ marginBottom: 48 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 12 }}>3. クラウドのサービスモデル</h2>
-          <p style={{ fontSize: 15, lineHeight: 1.8, color: '#475569', marginBottom: 8, whiteSpace: 'pre-line' }}>
+          <h2 className="text-heading md:text-heading-pc" style={{ fontWeight: 700, color: '#1e293b', marginBottom: 12 }}>3. クラウドのサービスモデル</h2>
+          <p className="text-body md:text-body-pc" style={{ lineHeight: 1.8, color: '#475569', marginBottom: 8, whiteSpace: 'pre-line' }}>
             {'レンタカーと自家用車の違いを考えてみてください。\n自家用車（物理サーバー）は全部自分で管理します。\nレンタカー（クラウド）は車の整備はお店がやってくれますが、\n運転は自分でします。\nクラウドも同じで「どこまでが自分の責任か」という\n境界線を理解することが重要です。'}
           </p>
 
           {/* この研修でAWSを使う理由 */}
           <div className="rounded-xl border border-slate-200 bg-slate-50" style={{ padding: 20, marginBottom: 4 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 10 }}>【この研修でAWSを使う理由】</p>
-            <div style={{ fontSize: 14, lineHeight: 1.8, color: '#475569' }}>
+            <p className="text-button md:text-button-pc" style={{ fontWeight: 600, color: '#1e293b', marginBottom: 10 }}>【この研修でAWSを使う理由】</p>
+            <div className="text-button md:text-button-pc" style={{ lineHeight: 1.8, color: '#475569' }}>
               <p style={{ marginBottom: 8 }}>
                 <strong style={{ color: '#1e293b' }}>国内クラウド案件の約50%がAWS。</strong>
                 現場に出たとき最も遭遇する確率が高い。
@@ -246,11 +246,11 @@ export function InfraBasic31Page() {
 
           {/* 責任共有モデルを現場で使う場面 */}
           <div className="rounded-xl border border-amber-200 bg-amber-50" style={{ padding: 20, marginBottom: 4 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: '#92400e', marginBottom: 10 }}>【具体的にどういう意味か】</p>
-            <p style={{ fontSize: 14, lineHeight: 1.8, color: '#78350f', marginBottom: 12 }}>
+            <p className="text-button md:text-button-pc" style={{ fontWeight: 600, color: '#92400e', marginBottom: 10 }}>【具体的にどういう意味か】</p>
+            <p className="text-button md:text-button-pc" style={{ lineHeight: 1.8, color: '#78350f', marginBottom: 12 }}>
               「このサーバーのOSパッチは誰が当てるの？」
             </p>
-            <div style={{ fontSize: 14, lineHeight: 1.8, color: '#78350f' }}>
+            <div className="text-button md:text-button-pc" style={{ lineHeight: 1.8, color: '#78350f' }}>
               <p style={{ marginBottom: 8 }}>
                 <strong>EC2（IaaS）の場合:</strong> 自分たち（利用者）の責任。
                 OSの選定・パッチ適用・セキュリティ設定すべて自分で行う。

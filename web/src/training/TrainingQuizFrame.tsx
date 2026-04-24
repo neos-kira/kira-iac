@@ -221,12 +221,13 @@ export function TrainingQuizFrame({
           type="button"
           onClick={handlePrev}
           disabled={currentIndex === 0}
-          style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', color: currentIndex === 0 ? '#d1d5db' : '#374151', cursor: currentIndex === 0 ? 'not-allowed' : 'pointer' }}
+          className="text-button md:text-button-pc"
+          style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '6px 12px', color: currentIndex === 0 ? '#d1d5db' : '#374151', cursor: currentIndex === 0 ? 'not-allowed' : 'pointer' }}
         >
           ← 前の問題
         </button>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '12px', color: '#6b7280', whiteSpace: 'nowrap' }}>
+          <span className="text-label md:text-label-pc" style={{ color: '#6b7280', whiteSpace: 'nowrap' }}>
             {currentIndex + 1} / {total}問
           </span>
           <div style={{ flex: 1, height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
@@ -237,7 +238,8 @@ export function TrainingQuizFrame({
           type="button"
           onClick={handleNext}
           disabled={!isCurrentAnswered || currentIndex >= total - 1}
-          style={{ background: isCurrentAnswered && currentIndex < total - 1 ? '#0ea5e9' : '#e5e7eb', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', color: isCurrentAnswered && currentIndex < total - 1 ? 'white' : '#9ca3af', cursor: isCurrentAnswered && currentIndex < total - 1 ? 'pointer' : 'not-allowed' }}
+          className="text-button md:text-button-pc"
+          style={{ background: isCurrentAnswered && currentIndex < total - 1 ? '#0ea5e9' : '#e5e7eb', border: 'none', borderRadius: '8px', padding: '6px 12px', color: isCurrentAnswered && currentIndex < total - 1 ? 'white' : '#9ca3af', cursor: isCurrentAnswered && currentIndex < total - 1 ? 'pointer' : 'not-allowed' }}
         >
           次の問題 →
         </button>
@@ -246,18 +248,18 @@ export function TrainingQuizFrame({
       <div className="mx-auto max-w-xl w-full" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '40px', minHeight: 'calc(100vh - 200px)' }}>
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{subtitle}</p>
         <h1 className="mt-2 text-xl font-semibold text-slate-800">{title}</h1>
-        <span style={{ fontSize: '12px', color: '#0d9488', background: '#f0fdf9', border: '1px solid #d1fae5', borderRadius: '6px', padding: '6px 10px', marginTop: '8px', marginBottom: '16px', display: 'inline-block' }}>
+        <span className="text-label md:text-label-pc" style={{ color: '#0d9488', background: '#f0fdf9', border: '1px solid #d1fae5', borderRadius: '6px', padding: '6px 10px', marginTop: '8px', marginBottom: '16px', display: 'inline-block' }}>
           正誤は出さず、全問終了後に得点を表示します
         </span>
 
         {/* 回答済みバナー */}
         {isCurrentAnswered && (
-          <div style={{ background: '#f0fdf9', border: '1px solid #d1fae5', borderRadius: '8px', padding: '10px 16px', marginBottom: '16px', fontSize: '13px', color: '#0d9488' }}>
+          <div className="text-body md:text-body-pc" style={{ background: '#f0fdf9', border: '1px solid #d1fae5', borderRadius: '8px', padding: '10px 16px', marginBottom: '16px', color: '#0d9488' }}>
             ✓ この問題は回答済みです（回答内容の変更はできません）
           </div>
         )}
 
-        <p style={{ fontSize: '20px', fontWeight: 600, color: '#111827', marginBottom: '32px', lineHeight: '1.7' }}>{current.prompt}</p>
+        <p className="text-display md:text-display-pc" style={{ fontWeight: 600, color: '#111827', marginBottom: '32px', lineHeight: '1.7' }}>{current.prompt}</p>
         <div className="grid gap-2">
           {current.choices.map((c, idx) => {
             const isSelected = isCurrentAnswered ? answeredChoice === idx : selectedIndex === idx
@@ -289,9 +291,10 @@ export function TrainingQuizFrame({
               type="button"
               onClick={submit}
               disabled={selectedIndex == null}
+              className="text-button md:text-button-pc"
               style={selectedIndex == null
-                ? { background: '#e5e7eb', color: '#9ca3af', cursor: 'not-allowed', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: 500, pointerEvents: 'none' as const }
-                : { background: '#0ea5e9', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: 500 }
+                ? { background: '#e5e7eb', color: '#9ca3af', cursor: 'not-allowed', border: 'none', borderRadius: '8px', padding: '10px 24px', fontWeight: 500, pointerEvents: 'none' as const }
+                : { background: '#0ea5e9', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '8px', padding: '10px 24px', fontWeight: 500 }
               }
             >
               {currentIndex < total - 1 ? '次へ' : '終了して得点を見る'}
