@@ -200,6 +200,8 @@ function App() {
   const [ec2StatusError, setEc2StatusError] = useState(false)
   const [pemLostOpen, setPemLostOpen] = useState(false)
   const [copiedField, setCopiedField] = useState<'ip' | 'user' | null>(null)
+  const [showWbsTooltip, setShowWbsTooltip] = useState(false)
+  const wbsTooltipRef = useRef<HTMLDivElement | null>(null)
   const ec2PollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const openedRef = useRef<string | null>(null)
   const searchContainerRef = useRef<HTMLDivElement | null>(null)
@@ -223,6 +225,18 @@ function App() {
       serverSnapshot.introConfirmed === true
     setIsIntroCompleted(completed)
   }, [serverSnapshot])
+
+  /** WBSツールチップ: パネル外クリックで閉じる */
+  useEffect(() => {
+    if (!showWbsTooltip) return
+    const close = (e: MouseEvent) => {
+      if (wbsTooltipRef.current && !wbsTooltipRef.current.contains(e.target as Node)) {
+        setShowWbsTooltip(false)
+      }
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [showWbsTooltip])
 
   /** EC2実ステータス取得（AWS実態）*/
   const doFetchEc2Status = useCallback(async () => {
@@ -1247,6 +1261,34 @@ function App() {
         return 'すべて完了'
       })()}
     </p>
+    <div className="flex items-center gap-2">
+      {/* WBSヘルプツールチップ */}
+      <div
+        className="relative"
+        ref={wbsTooltipRef}
+        onMouseEnter={() => setShowWbsTooltip(true)}
+        onMouseLeave={() => setShowWbsTooltip(false)}
+      >
+        <button
+          type="button"
+          aria-label="WBSとは"
+          onClick={() => setShowWbsTooltip((v) => !v)}
+          className="flex items-center justify-center w-4 h-4 rounded-full border border-gray-300 text-gray-400 text-xs leading-none"
+        >?</button>
+        {showWbsTooltip && (
+          <div className="absolute right-0 bottom-full mb-2 px-3 py-2 bg-slate-900 text-white rounded-md shadow-lg text-xs leading-relaxed whitespace-nowrap opacity-100 transition-opacity duration-150" style={{ zIndex: 10 }}>
+            WBS（Work Breakdown Structure）— 研修全体のタスクと期限を一覧表示します
+          </div>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => navigate('/training/infra-wbs')}
+        className="text-button md:text-button-pc font-medium text-sky-600 hover:text-sky-700 transition-colors"
+      >
+        WBSを見る →
+      </button>
+    </div>
   </div>
 </div>
             {/* つづきから / はじめに案内バナー: serverSnapshot確定後に一度だけ表示を決定 */}

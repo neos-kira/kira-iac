@@ -86,7 +86,11 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const [isWide, setIsWide] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth >= 900 : true
   )
-  const [isAiOpen, setIsAiOpen] = useState(true)
+  const [isAiOpen, setIsAiOpen] = useState(() => {
+    const v = safeGetItem('nic-ai-mentor-always-on')
+    if (v === null) safeSetItem('nic-ai-mentor-always-on', 'false')
+    return v === 'true'
+  })
   const [isBottomBarOpen, setIsBottomBarOpen] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE])

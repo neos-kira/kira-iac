@@ -42,6 +42,11 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
   const [bakumatsuCount, setBakumatsuCount] = useState<number>(0)
   const BAKUMATSU_KEYWORDS = ['幕末','新選組','土方','近藤','沖田','西郷','松陰','高杉','捨助','池田屋','桜田門外','大政奉還','明治維新','黒船','薩長','会津','斎藤','永倉','山南','芹沢','原田','藤堂','五稜郭','戊辰']
   const [pendingImage, setPendingImage] = useState<{ base64: string; type: string; dataUrl: string } | null>(null)
+  const [showSettings, setShowSettings] = useState(false)
+  const [alwaysOn, setAlwaysOn] = useState(() => {
+    try { return localStorage.getItem('nic-ai-mentor-always-on') === 'true' } catch { return false }
+  })
+  const settingsRef = useRef<HTMLDivElement | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const { quizState } = useQuizContext()
@@ -121,6 +126,18 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
   }
 
 
+
+  /** 設定ドロップダウン: 外側クリックで閉じる */
+  useEffect(() => {
+    if (!showSettings) return
+    const close = (e: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setShowSettings(false)
+      }
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [showSettings])
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -204,7 +221,55 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
         <img src="/ai-teacher.png" alt="AI講師" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
         <p style={{ fontWeight: 700, fontSize: 13, color: '#0f172a', letterSpacing: '-0.025em' }}>AI講師</p>
       </div>
-      <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', lineHeight: 1, padding: '0 0 0 8px' }} title="閉じる">✕</button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        {/* 歯車アイコン + 設定ドロップダウン */}
+        <div style={{ position: 'relative' }} ref={settingsRef}>
+          <button
+            type="button"
+            onClick={() => setShowSettings((v) => !v)}
+            title="設定"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', lineHeight: 1, padding: '4px', display: 'flex', alignItems: 'center' }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+          </button>
+          {showSettings && (
+            <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 6, background: 'white', border: '1px solid #e5e7eb', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.10)', padding: '8px 12px', minWidth: 180, zIndex: Z.dropdown }}>
+              <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>AI講師の設定</p>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, cursor: 'pointer' }}>
+                <span style={{ fontSize: 12, color: '#374151', fontWeight: 500 }}>常時表示</span>
+                {/* トグルスイッチ */}
+                <span
+                  onClick={() => {
+                    const next = !alwaysOn
+                    setAlwaysOn(next)
+                    try { localStorage.setItem('nic-ai-mentor-always-on', String(next)) } catch {}
+                  }}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center',
+                    width: 36, height: 20, borderRadius: 10,
+                    background: alwaysOn ? '#0ea5e9' : '#d1d5db',
+                    transition: 'background 0.2s', cursor: 'pointer', flexShrink: 0, position: 'relative',
+                  }}
+                  role="switch" aria-checked={alwaysOn}
+                >
+                  <span style={{
+                    position: 'absolute', left: alwaysOn ? 18 : 2,
+                    width: 16, height: 16, borderRadius: '50%', background: 'white',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.15)', transition: 'left 0.2s',
+                  }} />
+                </span>
+              </label>
+              <p style={{ fontSize: 10, color: '#9ca3af', marginTop: 6, lineHeight: 1.5 }}>
+                ONにすると次回から自動で開きます
+              </p>
+            </div>
+          )}
+        </div>
+        <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', lineHeight: 1, padding: '4px' }} title="閉じる">✕</button>
+      </div>
     </div>
   )
 
