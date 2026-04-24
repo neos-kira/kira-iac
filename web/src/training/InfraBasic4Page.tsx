@@ -219,8 +219,8 @@ export function InfraBasic4Page() {
           ← 課題一覧に戻る
         </button>
         <div>
-          <p className="text-label md:text-label-pc text-slate-500">課題4 · 実践演習</p>
-          <h1 className="text-display md:text-display-pc font-bold text-slate-800">viエディタ・シェルスクリプト演習</h1>
+          <p className="text-label md:text-label-pc text-slate-600">課題4 · 実践演習</p>
+          <h1 className="text-display md:text-display-pc font-bold text-slate-800 tracking-tight">viエディタ・シェルスクリプト演習</h1>
         </div>
         <header className="flex items-center justify-between">
           <div className="flex flex-col items-end gap-1">
@@ -238,7 +238,7 @@ export function InfraBasic4Page() {
 
         {/* ステータス */}
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">ステータス</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-600">ステータス</p>
           <p className="mt-2 text-body md:text-body-pc">
             4-1: {viDoneCount}/{VI_STEPS.length} 問完了 / 4-2: {shellDoneCount}/{SHELL_QUESTIONS.length} 問完了
           </p>
@@ -261,8 +261,8 @@ export function InfraBasic4Page() {
         {/* 4-1: vi */}
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
           <div className="mb-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">4-1</p>
-            <h2 className="mt-1 text-heading md:text-heading-pc font-semibold text-slate-800">vi操作マスター（{VI_STEPS.length}問）</h2>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-600">4-1</p>
+            <h2 className="mt-1 text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">vi操作マスター（{VI_STEPS.length}問）</h2>
           </div>
           <div className="space-y-3">
             {VI_STEPS.map((s) => {
@@ -319,7 +319,7 @@ export function InfraBasic4Page() {
                         {RATING_STYLES[score.rating].icon} {RATING_STYLES[score.rating].label}
                       </p>
                       {score.comment && <p className="mt-1 text-[11px] text-slate-700">{score.comment}</p>}
-                      {score.advice && <p className="mt-1 text-[11px] text-slate-500">{score.advice}</p>}
+                      {score.advice && <p className="mt-1 text-[11px] text-slate-600">{score.advice}</p>}
                     </div>
                   )}
                   {score?.status === 'error' && (
@@ -344,8 +344,8 @@ export function InfraBasic4Page() {
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
           <div className="mb-3 flex items-center justify-between gap-2">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">4-2</p>
-              <h2 className="mt-1 text-heading md:text-heading-pc font-semibold text-slate-800">シェルスクリプト演習（{SHELL_QUESTIONS.length}問）</h2>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-600">4-2</p>
+              <h2 className="mt-1 text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">シェルスクリプト演習（{SHELL_QUESTIONS.length}問）</h2>
             </div>
             {!shellUnlocked && !isKiraTest && (
               <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-700 border border-amber-200">
@@ -408,7 +408,7 @@ export function InfraBasic4Page() {
                         {RATING_STYLES[score.rating].icon} {RATING_STYLES[score.rating].label}
                       </p>
                       {score.comment && <p className="mt-1 text-[11px] text-slate-700">{score.comment}</p>}
-                      {score.advice && <p className="mt-1 text-[11px] text-slate-500">{score.advice}</p>}
+                      {score.advice && <p className="mt-1 text-[11px] text-slate-600">{score.advice}</p>}
                     </div>
                   )}
                   {score?.status === 'error' && (

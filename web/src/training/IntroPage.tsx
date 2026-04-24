@@ -532,7 +532,7 @@ export function IntroPage() {
 
   const headerBlock = (
     <div className="mb-6">
-      <span className="text-slate-500 text-sublabel md:text-sublabel-pc font-medium uppercase tracking-wider">SECTION · はじめに</span>
+      <span className="text-slate-600 text-sublabel md:text-sublabel-pc font-medium uppercase tracking-wider">SECTION · はじめに</span>
     </div>
   )
 
@@ -541,7 +541,7 @@ export function IntroPage() {
   if (isLoadingProgress && username) {
     return (
       <div className="min-h-screen bg-slate-100 text-slate-800 p-6 flex items-center justify-center">
-        <p className="text-body md:text-body-pc text-slate-500">読み込み中...</p>
+        <p className="text-body md:text-body-pc text-slate-600">読み込み中...</p>
       </div>
     )
   }
@@ -626,7 +626,7 @@ export function IntroPage() {
           className="rounded-xl p-6 mb-6"
           style={{ background: 'linear-gradient(135deg, #0d9488 0%, #0369a1 100%)' }}
         >
-          <h1 className="text-display md:text-display-pc font-bold text-white leading-tight">
+          <h1 className="text-display md:text-display-pc font-bold text-white leading-tight tracking-tight">
             この研修が終わる頃には、<br />Linuxサーバーを構築できる
           </h1>
           <p className="mt-3 text-body md:text-body-pc text-white/90">
@@ -658,7 +658,7 @@ export function IntroPage() {
 
         {/* 身につくスキル */}
         <section className="rounded-xl bg-white border border-slate-200 shadow-sm p-5 mb-4">
-          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-wider text-slate-500 mb-3">身につくスキル</p>
+          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-wider text-slate-600 mb-3">身につくスキル</p>
           <div className="flex flex-wrap gap-2">
             {SKILL_TAGS.map((tag, i) => (
               <span
@@ -675,19 +675,19 @@ export function IntroPage() {
 
         {/* 全体の流れ */}
         <section className="rounded-xl bg-white border border-slate-200 shadow-sm p-5 mb-4">
-          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-wider text-slate-500 mb-4">全体の流れ</p>
+          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-wider text-slate-600 mb-4">全体の流れ</p>
           <div className="flex items-start justify-between">
             {FLOW_STEPS.map((step, i) => (
               <div key={step.num} className="flex items-center">
                 <div className="flex flex-col items-center">
                   <div
                     className={`flex h-9 w-9 items-center justify-center rounded-full text-body md:text-body-pc font-bold ${
-                      step.num === 1 ? 'bg-[#7dd3fc] text-slate-900' : 'bg-slate-200 text-slate-500'
+                      step.num === 1 ? 'bg-[#7dd3fc] text-slate-900' : 'bg-slate-200 text-slate-600'
                     }`}
                   >
                     {step.num}
                   </div>
-                  <span className="mt-1.5 text-sublabel md:text-sublabel-pc text-slate-500 text-center whitespace-nowrap">{step.label}</span>
+                  <span className="mt-1.5 text-sublabel md:text-sublabel-pc text-slate-600 text-center whitespace-nowrap">{step.label}</span>
                 </div>
                 {i < FLOW_STEPS.length - 1 && (
                   <div className="w-4 sm:w-8 h-0.5 bg-slate-200 mx-0.5 mt-[18px] self-start" />
@@ -727,7 +727,7 @@ export function IntroPage() {
 
         <div className="flex items-center gap-3 mb-2">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-base" aria-hidden>🖥️</span>
-          <h1 className="text-display md:text-display-pc font-bold text-slate-800">プロフェッショナルの5つの行動基準</h1>
+          <h1 className="text-display md:text-display-pc font-bold text-slate-800 tracking-tight">プロフェッショナルの5つの行動基準</h1>
         </div>
         <p className="text-body md:text-body-pc text-slate-600 mb-6">
           プロフェッショナルとして信頼を獲得するための『5つの行動基準』を確認し、次のステップの確認テストに進んでください。
@@ -743,7 +743,7 @@ export function IntroPage() {
                     <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${accent.bg} text-base`} aria-hidden>
                       {s.icon}
                     </span>
-                    <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800">■{s.title}</h2>
+                    <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">■{s.title}</h2>
                   </div>
                   {s.codeExample ? (
                     <pre className="rounded-lg bg-slate-800 text-slate-300 p-4 text-label md:text-label-pc leading-relaxed font-mono overflow-x-auto mb-3">
@@ -763,7 +763,7 @@ export function IntroPage() {
                       </p>
                     </div>
                   ) : s.example ? (
-                    <p className="mt-2 text-label md:text-label-pc text-slate-500 border-l-2 border-slate-200 pl-3">{s.example}</p>
+                    <p className="mt-2 text-label md:text-label-pc text-slate-600 border-l-2 border-slate-200 pl-3">{s.example}</p>
                   ) : null}
                 </div>
               </div>
@@ -812,8 +812,8 @@ export function IntroPage() {
         <StepProgress current={step} onStepClick={isReviewMode ? handleReviewStepClick : undefined} />
 
         <div className="mb-5">
-          <h2 className="text-display md:text-display-pc font-bold text-slate-800">{sectionName}</h2>
-          <p className="mt-0.5 text-label md:text-label-pc text-slate-500">{sectionQIdx + 1} / {sectionQuestions.length}問</p>
+          <h2 className="text-display md:text-display-pc font-bold text-slate-800 tracking-tight">{sectionName}</h2>
+          <p className="mt-0.5 text-label md:text-label-pc text-slate-600">{sectionQIdx + 1} / {sectionQuestions.length}問</p>
         </div>
 
         {/* 選択肢カード */}
@@ -853,7 +853,7 @@ export function IntroPage() {
                               ? 'bg-amber-500 text-white'
                               : isSelected
                                 ? 'bg-sky-100 text-[#38bdf8]'
-                                : 'bg-slate-200 text-slate-500'
+                                : 'bg-slate-200 text-slate-600'
                       }`}
                     >
                       {showCorrect && isSelected ? '✓' : showMissed ? '!' : String.fromCharCode(65 + ci)}
@@ -951,7 +951,7 @@ export function IntroPage() {
 
       <div className="mb-5">
         <h2 className="text-display md:text-display-pc font-bold text-slate-800">{sectionName}</h2>
-        <p className="mt-0.5 text-label md:text-label-pc text-slate-500">{sectionQIdx + 1} / {sectionQuestions.length}問</p>
+        <p className="mt-0.5 text-label md:text-label-pc text-slate-600">{sectionQIdx + 1} / {sectionQuestions.length}問</p>
       </div>
 
       {/* 記述式問題カード */}
@@ -992,7 +992,7 @@ export function IntroPage() {
         {isScoring && (
           <div className="flex flex-col items-center py-4">
             <div className="h-5 w-5 animate-spin rounded-full border-[3px] border-slate-200 border-t-sky-600" />
-            <p className="mt-2 text-body md:text-body-pc text-slate-500">AIが採点しています...</p>
+            <p className="mt-2 text-body md:text-body-pc text-slate-600">AIが採点しています...</p>
           </div>
         )}
       </div>

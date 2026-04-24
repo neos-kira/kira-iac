@@ -472,7 +472,7 @@ export function LinuxLevel1Page() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <p className="text-sm text-slate-500">読み込み中...</p>
+        <p className="text-sm text-slate-600">読み込み中...</p>
       </div>
     )
   }
@@ -483,7 +483,7 @@ export function LinuxLevel1Page() {
       <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
         <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-md">
           <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.2em] text-slate-400">RESULT</p>
-          <h1 className="mt-2 text-display md:text-display-pc font-semibold text-slate-800">Linuxコマンド30問</h1>
+          <h1 className="mt-2 text-display md:text-display-pc font-semibold text-slate-800 tracking-tight">Linuxコマンド30問</h1>
           <p className="mt-4 text-display md:text-display-pc font-bold text-emerald-600">全3部クリア！</p>
           <p className="mt-2 text-body md:text-body-pc text-slate-600">
             おめでとうございます。インフラ研修2にチャレンジできます。
@@ -512,7 +512,7 @@ export function LinuxLevel1Page() {
       <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
         <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-md">
           <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.2em] text-slate-400">RESULT</p>
-          <h1 className="mt-2 text-display md:text-display-pc font-semibold text-slate-800">
+          <h1 className="mt-2 text-display md:text-display-pc font-semibold text-slate-800 tracking-tight">
             {label}（{PART_NAMES[activePart]}）
           </h1>
           <p className="mt-4 text-display md:text-display-pc font-bold text-slate-800">
@@ -676,7 +676,7 @@ export function LinuxLevel1Page() {
           </div>
 
           <div className="mx-auto max-w-xl w-full flex-1 min-h-0 flex flex-col bg-white rounded-xl border border-gray-200 p-5 md:p-10">
-        <h1 className="text-display md:text-display-pc font-semibold text-slate-800">
+        <h1 className="text-display md:text-display-pc font-semibold text-slate-800 tracking-tight">
           Linuxコマンド30問
         </h1>
         <div className="mt-1 flex items-center gap-2" />
@@ -693,7 +693,7 @@ export function LinuxLevel1Page() {
         <form className="mt-2 md:mt-4" onSubmit={(e) => e.preventDefault()}>
           <label
             htmlFor="cmd-input"
-            className="block text-[11px] font-medium uppercase tracking-wider text-slate-500 mb-1"
+            className="block text-[11px] font-medium uppercase tracking-wider text-slate-600 mb-1"
           >
             コマンドを入力
           </label>

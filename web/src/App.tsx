@@ -139,7 +139,7 @@ function JTeradaRestrictedView() {
       </header>
       <main className="max-w-xl mx-auto px-4 py-8">
         <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <h1 className="text-display md:text-display-pc font-semibold text-slate-800">コマンド問題が終わりました</h1>
+          <h1 className="text-display md:text-display-pc font-semibold text-slate-800 tracking-tight">コマンド問題が終わりました</h1>
           <p className="mt-2 text-body md:text-body-pc text-slate-600">
             以下を行ってください。
           </p>
@@ -890,7 +890,7 @@ function App() {
       {showStopConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
-            <h2 className="text-heading md:text-heading-pc font-bold text-slate-800 mb-2">サーバーを停止しますか？</h2>
+            <h2 className="text-heading md:text-heading-pc font-bold text-slate-800 mb-2 tracking-tight">サーバーを停止しますか？</h2>
             <p className="text-body md:text-body-pc text-slate-600 mb-5">停止中はSSH接続できません。作業中のデータは保持されます。</p>
             <div className="flex gap-3">
               <button type="button" onClick={() => setShowStopConfirm(false)} className="flex-1 rounded-xl border border-slate-300 py-2.5 text-button md:text-button-pc font-medium text-slate-700 hover:bg-slate-50">キャンセル</button>
@@ -904,7 +904,7 @@ function App() {
           <div className="w-full max-w-md rounded-2xl bg-white p-7 shadow-2xl">
             <div className="flex items-center gap-3 mb-5">
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-display md:text-display-pc">✓</span>
-              <h2 className="text-display md:text-display-pc font-bold text-slate-800">サーバーを作成しました</h2>
+              <h2 className="text-display md:text-display-pc font-bold text-slate-800 tracking-tight">サーバーを作成しました</h2>
             </div>
             <div className="space-y-3 rounded-xl bg-slate-50 p-4 text-body md:text-body-pc">
               <div>
@@ -920,7 +920,7 @@ function App() {
                 <p className="font-mono text-slate-600 text-label md:text-label-pc break-all">{serverCreatedModal.pemFilename}</p>
               </div>
             </div>
-            <p className="mt-4 text-label md:text-label-pc text-slate-500">この情報はトップページの「あなたの演習サーバー」セクションでいつでも確認できます。</p>
+            <p className="mt-4 text-label md:text-label-pc text-slate-600">この情報はトップページの「あなたの演習サーバー」セクションでいつでも確認できます。</p>
             <p className="mt-1.5 text-label md:text-label-pc font-medium text-amber-600">⚠ この秘密鍵は今回のみダウンロード可能です。大切に保管してください。</p>
             <button
               type="button"
@@ -949,7 +949,7 @@ function App() {
         {showIntroRequiredPopup && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="intro-required-title">
             <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
-              <h2 id="intro-required-title" className="text-display md:text-display-pc font-semibold text-slate-800">はじめに</h2>
+              <h2 id="intro-required-title" className="text-display md:text-display-pc font-semibold text-slate-800 tracking-tight">はじめに</h2>
               <p className="mt-3 text-body md:text-body-pc text-slate-600">
                 インフラ基礎課題にアクセスするには、先に「はじめに」でプロフェッショナルとしての行動基準を確認してください。
               </p>
@@ -976,7 +976,7 @@ function App() {
         <main className="mt-4 flex flex-1 flex-col items-center justify-start mx-auto max-w-5xl px-6 w-full">
           {isAdminView ? (
             <div className="w-full max-w-2xl space-y-4">
-              <h1 className="text-display md:text-display-pc font-semibold text-slate-800">講師用メニュー</h1>
+              <h1 className="text-display md:text-display-pc font-semibold text-slate-800 tracking-tight">講師用メニュー</h1>
               <section className="space-y-2">
                 <p className="text-body md:text-body-pc text-slate-600">受講生の進捗を確認できます。</p>
                 <button
@@ -998,7 +998,7 @@ function App() {
                 >
                   <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
                     <div className="flex items-center justify-between gap-3">
-                      <h2 id="account-manage-title" className="text-heading md:text-heading-pc font-semibold text-slate-800">
+                      <h2 id="account-manage-title" className="text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">
                         アカウント管理
                       </h2>
                       <button
@@ -1053,7 +1053,7 @@ function App() {
                     <div className="mt-4">
                       <p className="text-[11px] font-medium text-slate-700">作成済みアカウント一覧</p>
                       {accounts.length === 0 ? (
-                        <p className="mt-1 text-[11px] text-slate-500">まだアカウントがありません。</p>
+                        <p className="mt-1 text-[11px] text-slate-600">まだアカウントがありません。</p>
                       ) : (
                         <ul className="mt-2 space-y-1 max-h-40 overflow-auto text-[11px] text-slate-700">
                           {accounts.map((a) => (
@@ -1259,7 +1259,7 @@ function App() {
                 }
                 return (
                   <div className="rounded-2xl border-2 border-sky-400 bg-white p-6 shadow-sm">
-                    <h2 className="mt-2 text-heading md:text-heading-pc font-semibold text-slate-800">つづきから</h2>
+                    <h2 className="mt-2 text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">つづきから</h2>
                     <p className="mt-1 text-body md:text-body-pc text-slate-700">{stepLabels[introStep]}</p>
                     <button type="button" onClick={() => navigate('/training/intro')} className="mt-4 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2.5 text-button md:text-button-pc font-medium hover:bg-sky-100">つづきから →</button>
                   </div>
@@ -1277,14 +1277,14 @@ function App() {
                 const courseName = la.label.replace(/\s*\d+\/\d+問$/, '').trim()
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-label md:text-label-pc font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="text-label md:text-label-pc font-medium text-slate-600">前回の続きから再開</p>
                     <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">{courseName}</p>
                     {completed !== null && total !== null && (
                       <>
                         <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
                           <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(completed / total) * 100}%` }} />
                         </div>
-                        <p className="mt-1.5 text-label md:text-label-pc text-gray-500">{completed}問完了 / 全{total}問</p>
+                        <p className="mt-1.5 text-label md:text-label-pc text-slate-600">{completed}問完了 / 全{total}問</p>
                       </>
                     )}
                     <button type="button" onClick={() => {
@@ -1305,12 +1305,12 @@ function App() {
                 const partLabel = partLabels[l1Part] ?? '基本操作'
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-label md:text-label-pc font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="text-label md:text-label-pc font-medium text-slate-600">前回の続きから再開</p>
                     <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">Linuxコマンド30問 · {partLabel}</p>
                     <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
                       <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(l1Q / 10) * 100}%` }} />
                     </div>
-                    <p className="mt-1.5 text-label md:text-label-pc text-gray-500">{l1Q}問完了 / 全10問</p>
+                    <p className="mt-1.5 text-label md:text-label-pc text-slate-600">{l1Q}問完了 / 全10問</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level1'), '_blank')
                       else setShowIntroRequiredPopup(true)
@@ -1324,7 +1324,7 @@ function App() {
               if (infra1InProgress) {
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-label md:text-label-pc font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="text-label md:text-label-pc font-medium text-slate-600">前回の続きから再開</p>
                     <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">SSH接続確認</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-1'), '_blank')
@@ -1339,12 +1339,12 @@ function App() {
               if (l2Q > 0) {
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-label md:text-label-pc font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="text-label md:text-label-pc font-medium text-slate-600">前回の続きから再開</p>
                     <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">TCP/IP 理解度チェック</p>
                     <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
                       <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(l2Q / 10) * 100}%` }} />
                     </div>
-                    <p className="mt-1.5 text-label md:text-label-pc text-gray-500">{l2Q}問完了 / 全10問</p>
+                    <p className="mt-1.5 text-label md:text-label-pc text-slate-600">{l2Q}問完了 / 全10問</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level2'), '_blank')
                       else setShowIntroRequiredPopup(true)
@@ -1358,7 +1358,7 @@ function App() {
               if (infra32InProgress) {
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-label md:text-label-pc font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="text-label md:text-label-pc font-medium text-slate-600">前回の続きから再開</p>
                     <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">OS・仮想化・クラウド理解度チェック</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
@@ -1373,12 +1373,12 @@ function App() {
               if (vi4Done > 0 && vi4Done < VI_STEPS.length) {
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-label md:text-label-pc font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="text-label md:text-label-pc font-medium text-slate-600">前回の続きから再開</p>
                     <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">viエディタ演習</p>
                     <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
                       <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(vi4Done / VI_STEPS.length) * 100}%` }} />
                     </div>
-                    <p className="mt-1.5 text-label md:text-label-pc text-gray-500">{vi4Done}ステップ完了 / 全{VI_STEPS.length}ステップ</p>
+                    <p className="mt-1.5 text-label md:text-label-pc text-slate-600">{vi4Done}ステップ完了 / 全{VI_STEPS.length}ステップ</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
                       else setShowIntroRequiredPopup(true)
@@ -1392,12 +1392,12 @@ function App() {
               if (shell4Done > 0 && shell4Done < SHELL_QUESTIONS.length) {
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-label md:text-label-pc font-medium text-slate-500">前回の続きから再開</p>
+                    <p className="text-label md:text-label-pc font-medium text-slate-600">前回の続きから再開</p>
                     <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">シェルスクリプト演習</p>
                     <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
                       <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(shell4Done / SHELL_QUESTIONS.length) * 100}%` }} />
                     </div>
-                    <p className="mt-1.5 text-label md:text-label-pc text-gray-500">{shell4Done}問完了 / 全{SHELL_QUESTIONS.length}問</p>
+                    <p className="mt-1.5 text-label md:text-label-pc text-slate-600">{shell4Done}問完了 / 全{SHELL_QUESTIONS.length}問</p>
                     <button type="button" onClick={() => {
                       if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
                       else setShowIntroRequiredPopup(true)
@@ -1427,7 +1427,7 @@ function App() {
                         概要ppt
                       </a>
                     ) : (
-                      <span className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-3 text-button md:text-button-pc font-medium text-slate-500 ring-1 ring-slate-200 cursor-not-allowed">
+                      <span className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-3 text-button md:text-button-pc font-medium text-slate-600 ring-1 ring-slate-200 cursor-not-allowed">
                         概要ppt（コマンド課題をクリアするとアクセスできます）
                       </span>
                     )}
@@ -1443,7 +1443,7 @@ function App() {
                         WBS
                       </a>
                     ) : (
-                      <span className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-3 text-button md:text-button-pc font-medium text-slate-500 ring-1 ring-slate-200 cursor-not-allowed">
+                      <span className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-3 text-button md:text-button-pc font-medium text-slate-600 ring-1 ring-slate-200 cursor-not-allowed">
                         WBS（コマンド課題をクリアするとアクセスできます）
                       </span>
                     )}
@@ -1495,7 +1495,7 @@ function App() {
             {/* 検索結果（Enter または ↑ 実行後に表示） */}
             {resolution && (
               <section className="mt-6 space-y-3" aria-label="検索結果">
-                <div className="flex items-center justify-between text-label md:text-label-pc text-slate-500">
+                <div className="flex items-center justify-between text-label md:text-label-pc text-slate-600">
                   <p>
                     検索結果:{' '}
                     <span className="font-medium text-slate-800">
@@ -1529,7 +1529,7 @@ function App() {
           {/* ピン留めした課題（検索しなくてもすぐアクセス） */}
           {(pinnedTraining ?? []).length > 0 && (
             <section className="mt-6 w-full max-w-2xl rounded-2xl bg-white p-4 text-[11px] text-slate-700 shadow-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-600">
                 ピン留め
               </p>
               <ul className="mt-3 space-y-2 text-slate-700">
@@ -1545,7 +1545,7 @@ function App() {
                       <button
                         type="button"
                         onClick={() => handleTogglePin('intro')}
-                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-500"
+                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600"
                       >
                         <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
                         ピン解除
@@ -1577,7 +1577,7 @@ function App() {
                       <button
                         type="button"
                         onClick={() => handleTogglePin('infra-basic-1')}
-                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-500"
+                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600"
                       >
                         <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
                         ピン解除
@@ -1612,7 +1612,7 @@ function App() {
                       <button
                         type="button"
                         onClick={() => handleTogglePin('infra-basic-2')}
-                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-500"
+                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600"
                       >
                         <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
                         ピン解除
@@ -1652,7 +1652,7 @@ function App() {
                       <button
                         type="button"
                         onClick={() => handleTogglePin('infra-basic-3')}
-                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-500"
+                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600"
                       >
                         <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
                         ピン解除
@@ -1687,10 +1687,10 @@ function App() {
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-body md:text-body-pc font-semibold text-slate-800">演習サーバー</p>
-                      {!isCreatingServer && <p className="text-label md:text-label-pc text-slate-500 mt-0.5">研修にはLinuxサーバーが必要です</p>}
+                      {!isCreatingServer && <p className="text-label md:text-label-pc text-slate-600 mt-0.5">研修にはLinuxサーバーが必要です</p>}
                       {isCreatingServer && (
                         <div className="mt-1.5 w-48">
-                          <p className="text-label md:text-label-pc text-slate-500 mb-1">作成中...（約2分）</p>
+                          <p className="text-label md:text-label-pc text-slate-600 mb-1">作成中...（約2分）</p>
                           <div className="h-1 w-full overflow-hidden rounded-full bg-slate-100">
                             <div className="h-full rounded-full bg-blue-500 transition-all duration-300" style={{ width: `${serverCreateProgress}%` }} />
                           </div>
@@ -1723,7 +1723,7 @@ function App() {
                     const isCopied = copiedField === field
                     return (
                       <div className="relative inline-flex items-center">
-                        <button type="button" onClick={() => handleFieldCopy(text, field)} className={`transition-colors shrink-0 ${isCopied ? 'text-emerald-500' : 'text-slate-300 hover:text-slate-500'}`} title="コピー">
+                        <button type="button" onClick={() => handleFieldCopy(text, field)} className={`transition-colors shrink-0 ${isCopied ? 'text-emerald-500' : 'text-slate-300 hover:text-slate-600'}`} title="コピー">
                           {isCopied ? (
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -1749,7 +1749,7 @@ function App() {
                         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
                           serverSnapshot.ec2State === 'running' ? 'bg-emerald-50 text-emerald-700' :
                           (serverSnapshot.ec2State === 'pending' || serverSnapshot.ec2State === 'stopping') ? 'bg-amber-50 text-amber-600' :
-                          'bg-slate-100 text-slate-500'
+                          'bg-slate-100 text-slate-600'
                         }`}>
                           {(serverSnapshot.ec2State === 'pending' || serverSnapshot.ec2State === 'stopping') ? (
                             <span className="h-3 w-3 animate-spin rounded-full border-2 border-amber-200 border-t-amber-500" />
@@ -1784,7 +1784,7 @@ function App() {
                             <p className="text-[10px] text-slate-400 mb-0.5">秘密鍵</p>
                             <div className="flex flex-col gap-1">
                               <div className="flex items-center gap-1.5">
-                                <span className="text-label md:text-label-pc font-mono text-slate-500 leading-none">{serverSnapshot.keyPairName}.pem</span>
+                                <span className="text-label md:text-label-pc font-mono text-slate-600 leading-none">{serverSnapshot.keyPairName}.pem</span>
                                 <button
                                   type="button"
                                   onClick={() => setPemLostOpen((v) => !v)}
@@ -1794,7 +1794,7 @@ function App() {
                                 </button>
                               </div>
                               {pemLostOpen && (
-                                <p className="text-[10px] text-slate-500 leading-relaxed bg-slate-50 rounded px-2 py-1.5 border border-slate-200">
+                                <p className="text-[10px] text-slate-600 leading-relaxed bg-slate-50 rounded px-2 py-1.5 border border-slate-200">
                                   秘密鍵を紛失した場合は管理者（講師）に連絡し、サーバーの再作成を依頼してください。新しい秘密鍵が発行されます。<br />
                                   ※ サーバー上のデータは失われますが、研修の進捗は保持されます。
                                 </p>
@@ -1891,7 +1891,7 @@ function App() {
                       {item.status === 'done' ? '✓' : item.status === 'active' ? '▶' : ''}
                     </span>
                     <div className="min-w-0">
-                      <p className={`text-[13px] font-medium leading-tight ${item.status === 'done' ? 'text-slate-500' : 'text-slate-800'}`}>{item.name}</p>
+                      <p className={`text-[13px] font-medium leading-tight ${item.status === 'done' ? 'text-slate-600' : 'text-slate-800'}`}>{item.name}</p>
                       <p className="text-[10px] text-slate-600 mt-0.5 truncate">{item.sub}</p>
                     </div>
                   </div>
@@ -1928,7 +1928,7 @@ function App() {
                       <div className="w-24 h-1 rounded-full bg-slate-100 overflow-hidden">
                         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${course.pct}%`, background: '#7dd3fc' }} />
                       </div>
-                      <span className="text-[11px] font-medium text-slate-500 tabular-nums w-8 text-right">{course.pct}%</span>
+                      <span className="text-[11px] font-medium text-slate-600 tabular-nums w-8 text-right">{course.pct}%</span>
                     </div>
                   </div>
                   {/* タスク一覧 */}
@@ -1996,9 +1996,9 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
     if (category === 'intro') {
       return (
         <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
-          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-500">TRAINING · はじめに</p>
+          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-600">TRAINING · はじめに</p>
           <div className="mt-2 flex items-center gap-2">
-            <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800">はじめに</h2>
+            <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">はじめに</h2>
             {pinnedTraining.includes('intro') && (
               <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                 📌
@@ -2032,8 +2032,8 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
     if (category === 'wbs') {
       return (
         <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
-          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-500">TRAINING · WBS</p>
-          <h2 className="mt-2 text-heading md:text-heading-pc font-semibold text-slate-800">インフラ基礎 研修WBS</h2>
+          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-600">TRAINING · WBS</p>
+          <h2 className="mt-2 text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">インフラ基礎 研修WBS</h2>
           <p className="mt-1 text-label md:text-label-pc text-slate-600">WBSページで進捗とガントチャートを確認できます。</p>
           {onOpenWbs && (
             <button
@@ -2051,10 +2051,10 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
     if (category === 'linuxLevel1') {
       return (
         <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
-          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-500">Linuxコマンド30問</p>
-          <h2 className="mt-2 text-heading md:text-heading-pc font-semibold text-slate-800">Linuxコマンド30問</h2>
+          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-600">Linuxコマンド30問</p>
+          <h2 className="mt-2 text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">Linuxコマンド30問</h2>
           <p className="mt-1 text-label md:text-label-pc text-slate-600">別タブで問題を開きました。タブを確認してください。</p>
-          <p className="mt-2 text-[11px] text-slate-500">問題中は正誤を表示せず、30問終了後に得点を表示します。満点でクリアです。</p>
+          <p className="mt-2 text-[11px] text-slate-600">問題中は正誤を表示せず、30問終了後に得点を表示します。満点でクリアです。</p>
         </div>
       )
     }
@@ -2062,10 +2062,10 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
     if (category === 'linuxLevel2') {
       return (
         <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
-          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-500">
+          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-600">
             TRAINING · INFRA · 2-2 TCP/IP
           </p>
-          <h2 className="mt-2 text-heading md:text-heading-pc font-semibold text-slate-800">インフラ基礎課題2-2 — TCP/IP 理解度チェック10問</h2>
+          <h2 className="mt-2 text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">インフラ基礎課題2-2 — TCP/IP 理解度チェック10問</h2>
           <p className="mt-1 text-label md:text-label-pc text-slate-600">別タブで問題を開きました。タブを確認してください。</p>
         </div>
       )
@@ -2078,11 +2078,11 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
 
       return (
         <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
-          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-500">
+          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-600">
             TRAINING · INFRA
           </p>
-          <p className="mt-2 text-label md:text-label-pc text-slate-500">検索結果</p>
-          <h2 className="mt-1 text-heading md:text-heading-pc font-semibold text-slate-800">インフラ基礎課題</h2>
+          <p className="mt-2 text-label md:text-label-pc text-slate-600">検索結果</p>
+          <h2 className="mt-1 text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">インフラ基礎課題</h2>
 
           <ul className="mt-4 space-y-2 text-slate-700">
             <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
@@ -2103,7 +2103,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                 <button
                   type="button"
                   onClick={() => onTogglePin('infra-basic-1')}
-                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-500"
+                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600"
                 >
                   <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
                   {(pinnedTraining ?? []).includes('infra-basic-1') ? 'ピン解除' : 'ピン留め'}
@@ -2135,7 +2135,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
               <button
                 type="button"
                 onClick={() => onTogglePin('infra-basic-2')}
-                className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-500"
+                className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600"
               >
                 <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
                 {(pinnedTraining ?? []).includes('infra-basic-2') ? 'ピン解除' : 'ピン留め'}
@@ -2171,7 +2171,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                 <button
                   type="button"
                   onClick={() => onTogglePin('infra-basic-3')}
-                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-500"
+                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600"
                 >
                   <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
                   {(pinnedTraining ?? []).includes('infra-basic-3') ? 'ピン解除' : 'ピン留め'}
@@ -2202,7 +2202,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
                 <button
                   type="button"
                   onClick={() => onTogglePin('infra-basic-4')}
-                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-500"
+                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600"
                 >
                   <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
                   {(pinnedTraining ?? []).includes('infra-basic-4') ? 'ピン解除' : 'ピン留め'}
@@ -2225,7 +2225,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-body md:text-body-pc font-medium text-slate-800">IT業界の歩き方</span>
-                <p className="text-[11px] text-slate-500">ITエンジニアの基礎知識を6カテゴリで学ぶ</p>
+                <p className="text-[11px] text-slate-600">ITエンジニアの基礎知識を6カテゴリで学ぶ</p>
               </div>
               <button
                 type="button"
@@ -2242,7 +2242,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
 
     return (
       <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
-        <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800">研修モジュール</h2>
+        <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">研修モジュール</h2>
         <p className="mt-1 text-label md:text-label-pc text-slate-600">
           研修ポータルへのルーティング結果です。実装時には、ここから研修管理システムの画面へ遷移させます。
         </p>
@@ -2253,7 +2253,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
   if (resolution.feature === 'timeTracking') {
     return (
       <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
-        <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800">
+        <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">
           勤怠管理モジュール（プレースホルダー）
         </h2>
         <p className="mt-1 text-label md:text-label-pc text-slate-600">
@@ -2266,7 +2266,7 @@ function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus,
   if (resolution.feature === 'projects') {
     return (
       <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
-        <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800">
+        <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">
           プロジェクト管理モジュール（プレースホルダー）
         </h2>
         <p className="mt-1 text-label md:text-label-pc text-slate-600">

@@ -45,7 +45,7 @@ export function InfraBasic3TopPage() {
             OS・仮想化・クラウドの基礎理論を整理し、実務で説明できるレベルまで落とし込む課題です。
           </p>
           {taskProgress && (
-            <p className="mt-1 text-[11px] text-slate-500">
+            <p className="mt-1 text-[11px] text-slate-600">
               目安 {taskProgress.estimatedDays} 日目まで · 期限 {taskProgress.deadline}
               {taskProgress.isDelayed && (
                 <span className="ml-2 text-rose-400">遅延</span>

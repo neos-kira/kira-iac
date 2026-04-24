@@ -92,7 +92,7 @@ export function ITBasicsTestPage() {
   if (!cat || questions.length === 0) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <p className="text-body md:text-body-pc text-slate-500">カテゴリが見つかりません</p>
+        <p className="text-body md:text-body-pc text-slate-600">カテゴリが見つかりません</p>
       </div>
     )
   }
@@ -168,11 +168,11 @@ export function ITBasicsTestPage() {
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-2xl space-y-6">
         <div>
-          <p className="text-label md:text-label-pc text-slate-500">{cat.title}</p>
-          <h1 className="text-display md:text-display-pc font-bold text-slate-800">{cat.title} — 確認テスト</h1>
+          <p className="text-label md:text-label-pc text-slate-600">{cat.title}</p>
+          <h1 className="text-display md:text-display-pc font-bold text-slate-800 tracking-tight">{cat.title} — 確認テスト</h1>
         </div>
         <div className="flex items-center justify-end">
-          <span className="text-body md:text-body-pc text-slate-500">
+          <span className="text-body md:text-body-pc text-slate-600">
             {currentIndex + 1} / {questions.length} 問
           </span>
         </div>
@@ -193,7 +193,7 @@ export function ITBasicsTestPage() {
                 style = 'border-sky-300 bg-sky-50'
               }
 
-              let markerStyle = 'bg-slate-200 text-slate-500'
+              let markerStyle = 'bg-slate-200 text-slate-600'
               if (answered) {
                 if (isCorrectChoice) markerStyle = 'bg-emerald-500 text-white'
                 else if (isSelected) markerStyle = 'bg-red-500 text-white'

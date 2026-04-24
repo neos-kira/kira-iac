@@ -19,19 +19,19 @@ export function ITBasicsTopPage() {
       <div className="mx-auto max-w-2xl space-y-6">
 
         <div>
-          <h1 className="text-display md:text-display-pc font-bold text-slate-800">IT業界の歩き方</h1>
+          <h1 className="text-display md:text-display-pc font-bold text-slate-800 tracking-tight">IT業界の歩き方</h1>
           <p className="mt-1 text-body md:text-body-pc text-slate-600">
             ITエンジニアとして働くための基礎知識を6カテゴリで学びます。各カテゴリの座学を読んでからテストに挑戦してください。
           </p>
-          <p className="mt-2 text-label md:text-label-pc text-slate-500">各テストは30問の中からランダムで10問出題されます。</p>
+          <p className="mt-2 text-label md:text-label-pc text-slate-600">各テストは30問の中からランダムで10問出題されます。</p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           {IT_BASICS_CATEGORIES.map((cat) => (
             <div key={cat.id} className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div>
-                <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">{cat.subtitle}</p>
-                <h2 className="mt-1 text-heading md:text-heading-pc font-semibold text-slate-800">{cat.title}</h2>
+                <p className="text-[11px] font-medium text-slate-600 uppercase tracking-wider">{cat.subtitle}</p>
+                <h2 className="mt-1 text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">{cat.title}</h2>
                 <p className="mt-2 text-[12px] text-slate-600 leading-relaxed">{cat.description}</p>
                 <p className="mt-2 text-[11px] text-slate-400">合格ライン: {cat.passingScore}/10問</p>
               </div>

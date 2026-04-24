@@ -188,7 +188,7 @@ export function InfraBasic5Page() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <p className="text-sm text-slate-500">読み込み中...</p>
+        <p className="text-sm text-slate-600">読み込み中...</p>
       </div>
     )
   }
@@ -202,15 +202,15 @@ export function InfraBasic5Page() {
           ← 課題一覧に戻る
         </button>
         <div>
-          <p className="text-label md:text-label-pc text-slate-500">課題5 · サーバー構築</p>
-          <h1 className="text-display md:text-display-pc font-bold text-slate-800">Rocky Linux サーバー構築</h1>
+          <p className="text-label md:text-label-pc text-slate-600">課題5 · サーバー構築</p>
+          <h1 className="text-display md:text-display-pc font-bold text-slate-800 tracking-tight">Rocky Linux サーバー構築</h1>
         </div>
 
         {/* 進捗バー + 中断ボタン */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-label md:text-label-pc text-slate-500">進捗</span>
+              <span className="text-label md:text-label-pc text-slate-600">進捗</span>
               <span className="text-label md:text-label-pc font-medium text-slate-700">{totalDone} / 40 ({progressPct}%)</span>
             </div>
             <div className="h-2 w-full rounded-full bg-slate-200">
@@ -235,7 +235,7 @@ export function InfraBasic5Page() {
 
         {/* 概要 */}
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">概要</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-600">概要</p>
           <p className="mt-2 text-body md:text-body-pc text-slate-700">
             Rocky Linux 9 サーバーを実際に構築します。各セクションを順番に進め、すべてのタスクを完了してください。
           </p>
@@ -333,7 +333,7 @@ function SectionBlock({
             {section.number}
           </span>
           <div className="min-w-0">
-            <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800 truncate">
+            <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800 truncate tracking-tight">
               {section.title}
             </h2>
             <p className="text-label md:text-label-pc text-slate-400">
@@ -430,7 +430,7 @@ function TaskRow({
             <p className="text-label md:text-label-pc text-slate-600">{task.objective}</p>
             {reviewAnswer && (
               <div>
-                <p className="text-[11px] font-medium text-slate-500 mb-1">提出した回答:</p>
+                <p className="text-[11px] font-medium text-slate-600 mb-1">提出した回答:</p>
                 <textarea
                   value={reviewAnswer}
                   disabled
@@ -455,7 +455,7 @@ function TaskRow({
           <span className="text-[11px] text-slate-400 mr-1">{task.number}</span>
           {task.isReview ? <span className="text-sky-700">{task.title}</span> : task.title}
         </p>
-        <p className="mt-1 text-label md:text-label-pc text-slate-500">{task.objective}</p>
+        <p className="mt-1 text-label md:text-label-pc text-slate-600">{task.objective}</p>
       </div>
 
       {/* ヒント（調べ方・考え方のみ） */}
@@ -535,7 +535,7 @@ function VerifyResult({ state, isReview }: { state: ReviewState; isReview: boole
         {RATING_STYLES[state.rating].icon} {RATING_STYLES[state.rating].label}
       </p>
       {state.comment && <p className="mt-1 text-label md:text-label-pc text-slate-700">{state.comment}</p>}
-      {state.advice && <p className="mt-1 text-label md:text-label-pc text-slate-500">{state.advice}</p>}
+      {state.advice && <p className="mt-1 text-label md:text-label-pc text-slate-600">{state.advice}</p>}
       {state.rating === 'pass' && (
         <p className="mt-1 text-label md:text-label-pc text-emerald-700 font-medium">
           {isReview ? '✓ 合格です！完了になりました。' : '✓ 正しく完了しています！完了になりました。'}

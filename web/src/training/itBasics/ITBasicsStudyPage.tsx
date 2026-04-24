@@ -56,7 +56,7 @@ export function ITBasicsStudyPage() {
   if (!cat) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <p className="text-body md:text-body-pc text-slate-500">カテゴリが見つかりません</p>
+        <p className="text-body md:text-body-pc text-slate-600">カテゴリが見つかりません</p>
       </div>
     )
   }
@@ -76,8 +76,8 @@ export function ITBasicsStudyPage() {
         </div>
 
         <div>
-          <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">{cat.subtitle}</p>
-          <h1 className="mt-1 text-display md:text-display-pc font-bold text-slate-800">{cat.title} — 座学</h1>
+          <p className="text-[11px] font-medium text-slate-600 uppercase tracking-wider">{cat.subtitle}</p>
+          <h1 className="mt-1 text-display md:text-display-pc font-bold text-slate-800 tracking-tight">{cat.title} — 座学</h1>
         </div>
 
         <div className="space-y-4">
