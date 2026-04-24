@@ -719,7 +719,7 @@ export function LinuxLevel1Page() {
                 else if ((isRetryUnanswered || !(queueIdx in answeredCommands)) && inputValue.trim() !== '' && !isExecuting) handleExecute()
               }}
               disabled={showFeedback || isReviewMode || (!isRetryUnanswered && queueIdx in answeredCommands)}
-              className={`flex-1 rounded-xl border px-4 py-3 text-base text-slate-800 placeholder:text-slate-400 focus:outline-none disabled:opacity-80 ${
+              className={`flex-1 min-w-0 rounded-xl border px-4 py-3 text-base text-slate-800 placeholder:text-slate-400 focus:outline-none disabled:opacity-80 ${
                 isReviewMode || showFeedback
                   ? 'border-emerald-200 bg-emerald-50'
                   : 'border-slate-300 bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500/50'
@@ -732,8 +732,8 @@ export function LinuxLevel1Page() {
               <button
                 type="button"
                 onClick={() => { void goNext() }}
-                style={{ background: '#0ea5e9', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500 }}
-                className="shrink-0"
+                style={{ background: '#0ea5e9', color: 'white', border: 'none' }}
+                className="shrink-0 whitespace-nowrap px-3 py-2.5 md:px-5 md:py-2.5 text-sm font-medium rounded-lg cursor-pointer"
               >
                 {queueIdx < queue.length - 1 ? '次へ' : '採点する'}
               </button>
@@ -746,11 +746,8 @@ export function LinuxLevel1Page() {
                 type="button"
                 onClick={() => { handleExecute() }}
                 disabled={inputValue.trim() === '' || isExecuting}
-                style={inputValue.trim() === '' || isExecuting
-                  ? { background: '#e5e7eb', color: '#9ca3af', cursor: 'not-allowed', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500, pointerEvents: 'none' as const }
-                  : { background: '#0ea5e9', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500 }
-                }
-                className="shrink-0"
+                style={{ border: 'none' }}
+                className="shrink-0 whitespace-nowrap px-3 py-2.5 md:px-5 md:py-2.5 text-sm font-medium rounded-lg cursor-pointer bg-sky-500 text-white disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:pointer-events-none"
               >
                 {isExecuting ? '採点中...' : '実行'}
               </button>
@@ -759,8 +756,8 @@ export function LinuxLevel1Page() {
               <button
                 type="button"
                 onClick={() => { void goNext() }}
-                style={{ background: '#0ea5e9', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 500 }}
-                className="shrink-0"
+                style={{ background: '#0ea5e9', color: 'white', border: 'none' }}
+                className="shrink-0 whitespace-nowrap px-3 py-2.5 md:px-5 md:py-2.5 text-sm font-medium rounded-lg cursor-pointer"
               >
                 {queueIdx < queue.length - 1 ? '次へ' : '採点する'}
               </button>
