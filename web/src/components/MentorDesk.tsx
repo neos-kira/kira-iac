@@ -204,10 +204,7 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
         <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <span style={{ color: 'white', fontSize: 11, fontWeight: 700 }}>AI</span>
         </div>
-        <div>
-          <p style={{ fontWeight: 700, fontSize: 13, color: '#0f172a', letterSpacing: '-0.025em', lineHeight: 1.2 }}>AI講師</p>
-          <p style={{ fontSize: 10, color: '#64748b', fontWeight: 500, lineHeight: 1.3 }}>わからないことは何でも</p>
-        </div>
+        <p style={{ fontWeight: 700, fontSize: 13, color: '#0f172a', letterSpacing: '-0.025em' }}>AI講師</p>
       </div>
       <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', lineHeight: 1, padding: '0 0 0 8px' }} title="閉じる">✕</button>
     </div>
@@ -300,7 +297,12 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
         {open && (
           <div className="md:hidden fixed bottom-0 left-0 right-0 flex flex-col bg-white rounded-t-2xl shadow-xl" style={{ height: '75vh', zIndex: Z.floatingPanel }}>
             <header className="flex items-center justify-between bg-sky-50 border-b border-sky-100 px-4 py-3 rounded-t-2xl">
-              <p className="text-sm font-semibold text-slate-800">🎓 AI講師</p>
+              <div className="flex items-center gap-2.5">
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ color: 'white', fontSize: 10, fontWeight: 700 }}>AI</span>
+                </div>
+                <p className="text-sm font-bold text-slate-800">AI講師</p>
+              </div>
               <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg leading-none">✕</button>
             </header>
             <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-3">

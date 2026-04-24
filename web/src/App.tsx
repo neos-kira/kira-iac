@@ -2015,16 +2015,6 @@ function App() {
           )}
         </main>
 
-        {/* AI講師浮動ボタン（ダッシュボード専用） */}
-        <button
-          type="button"
-          onClick={() => window.dispatchEvent(new CustomEvent('nic:open-ai-panel'))}
-          className="fixed bottom-6 right-6 flex items-center justify-center w-14 h-14 rounded-full text-white font-bold text-sm shadow-lg shadow-sky-500/35 hover:scale-110 transition-transform"
-          style={{ background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', zIndex: 50 }}
-          title="AI講師に質問する"
-        >
-          AI
-        </button>
       </div>
     </div>
   )

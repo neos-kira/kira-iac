@@ -175,7 +175,35 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   }, [isAiOpen, isBottomBarOpen, isChatOpen])
 
   if (isLogin) return <>{children}</>
-  if (isTop) return <>{children}</>
+
+  // トップページ: App.tsx が独自の SharedHeader を持つため SharedHeader は省略し、
+  // AI講師パネルのみ LayoutWrapper 側で管理する
+  if (isTop) {
+    const showSidePanelTop = !isMobile && isWide
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh' }}>
+        <div style={{ flex: '1 1 0', minWidth: 0 }}>{children}</div>
+        {showSidePanelTop && isAiOpen && (
+          <div style={{ flex: `0 0 ${panelWidth}px`, flexShrink: 0, display: 'flex', flexDirection: 'row', background: 'white', height: '100vh', position: 'sticky', top: 0 }}>
+            <div onMouseDown={startDragX} style={{ width: 4, cursor: 'col-resize', background: 'transparent', flexShrink: 0, transition: 'background 0.15s' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#7dd3fc' }} onMouseLeave={(e) => { if (!isDragging.current) (e.currentTarget as HTMLElement).style.background = 'transparent' }} />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e5e7eb', minWidth: 0 }}>
+              <MentorDesk context={ctx} sidebar embedded onClose={() => setIsAiOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
+            </div>
+          </div>
+        )}
+        {showSidePanelTop && !isAiOpen && (
+          <button
+            type="button"
+            onClick={() => { setIsAiOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }}
+            title="AI講師に質問する"
+            style={{ position: 'fixed', bottom: 24, right: 24, width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(14,165,233,0.35)', zIndex: Z.floatingPanel, fontWeight: 700, fontSize: 14 }}
+          >
+            AI
+          </button>
+        )}
+      </div>
+    )
+  }
 
   // モード判定
   const showSidePanel = showChat && !isMobile && isWide
