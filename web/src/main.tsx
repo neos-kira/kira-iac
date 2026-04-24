@@ -498,6 +498,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/admin" element={<ManagerRoute><AdminPage /></ManagerRoute>} />
             <Route path="/admin/ai-chat-log" element={<ManagerRoute><AiChatLogPage /></ManagerRoute>} />
             <Route path="/admin/wbs" element={<ManagerRoute><InfraWbsPage /></ManagerRoute>} />
+            <Route path="/wbs" element={<ProtectedRoute><InfraWbsPage /></ProtectedRoute>} />
             <Route path="/training/linux-level1" element={<IntroGate><LinuxLevel1Page /></IntroGate>} />
             <Route path="/training/infra-basic-1" element={<IntroGate><InfraBasic1Page /></IntroGate>} />
             <Route path="/training/infra-basic-top" element={<IntroGate><InfraBasicTopPage /></IntroGate>} />

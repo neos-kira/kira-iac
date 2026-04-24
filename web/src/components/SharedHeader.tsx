@@ -24,6 +24,8 @@ type Props = {
 export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, completedCount: _completedCount, totalCount: _totalCount, onWbs: _onWbs, onLogout, isAdmin, onAdminMenu, onAccountPanel, onMenuOpen }: Props) {
   const [showMenu, setShowMenu] = useState(false)
   const [showModal, setShowModal] = useState(false)
+  const [showWbsTip, setShowWbsTip] = useState(false)
+  const wbsTipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const menuContainerRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
   const navigate = useSafeNavigate()
@@ -139,6 +141,48 @@ export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, com
                 {name && <p className="text-[14px] font-semibold text-slate-900 leading-tight truncate">{name}</p>}
               </div>
               <div className="p-1.5">
+                {/* WBS リンク */}
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => { setShowMenu(false); navigate('/wbs') }}
+                    className="flex-1 rounded-lg px-3 py-2 text-left text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                  >
+                    WBS
+                  </button>
+                  {/* ? アイコン */}
+                  <div className="relative mr-2">
+                    <button
+                      type="button"
+                      className="flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-gray-400 text-[10px] leading-none hover:border-slate-400 hover:text-slate-500 transition-colors"
+                      onMouseEnter={() => {
+                        if (wbsTipTimerRef.current) clearTimeout(wbsTipTimerRef.current)
+                        setShowWbsTip(true)
+                      }}
+                      onMouseLeave={() => {
+                        wbsTipTimerRef.current = setTimeout(() => setShowWbsTip(false), 200)
+                      }}
+                      onClick={(e) => { e.stopPropagation(); setShowWbsTip((v) => !v) }}
+                      aria-label="WBSとは"
+                    >
+                      ?
+                    </button>
+                    {showWbsTip && (
+                      <div
+                        className="absolute right-0 bottom-full mb-1.5 bg-slate-900 text-white text-xs px-3 py-2 rounded-lg max-w-xs shadow-lg whitespace-normal"
+                        style={{ zIndex: 9999, width: 220 }}
+                        onMouseEnter={() => {
+                          if (wbsTipTimerRef.current) clearTimeout(wbsTipTimerRef.current)
+                        }}
+                        onMouseLeave={() => {
+                          wbsTipTimerRef.current = setTimeout(() => setShowWbsTip(false), 200)
+                        }}
+                      >
+                        WBS（Work Breakdown Structure）— 研修全体のタスクと進捗を一覧で確認できます
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <button
                   type="button"
                   onClick={() => { setShowMenu(false); onLogout() }}

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { fetchMeInfo } from '../progressApi'
-import { ZChart } from '../zIndex'
 import {
   getTaskProgressList,
   getTrainingStartDate,
@@ -175,146 +174,6 @@ const STATUS_CONFIG: Record<WBSStatus, { label: string; bg: string; text: string
   delayed:     { label: '遅延',   bg: 'bg-red-100',   text: 'text-red-700',   dot: 'bg-red-500' },
 }
 
-// ─── ガントチャート ────────────────────────────────────────────────────────────
-
-function GanttChart({ rows, ganttStart, ganttEnd }: { rows: WBSRow[]; ganttStart: string; ganttEnd: string }) {
-  const todayStr = today()
-  const totalMs = new Date(ganttEnd).getTime() - new Date(ganttStart).getTime()
-  if (totalMs <= 0) return null
-
-  const pct = (dateStr: string) => {
-    const ms = new Date(dateStr).getTime() - new Date(ganttStart).getTime()
-    return Math.max(0, Math.min(100, (ms / totalMs) * 100))
-  }
-  const widthPct = (s: string, e: string) => {
-    const w = Math.max(0.5, pct(e) - pct(s))
-    return w
-  }
-
-  // 週単位ヘッダー生成
-  const weeks: { label: string; leftPct: number; widthPct: number }[] = []
-  const cur = new Date(ganttStart)
-  // 月曜日に揃える
-  cur.setDate(cur.getDate() - cur.getDay() + 1)
-  while (cur.getTime() <= new Date(ganttEnd).getTime() + 7 * 86400000) {
-    const wStart = cur.toISOString().split('T')[0]
-    const wEnd = new Date(cur.getTime() + 7 * 86400000).toISOString().split('T')[0]
-    const l = pct(wStart)
-    const w = widthPct(wStart, wEnd)
-    if (l < 100 && w > 0) {
-      weeks.push({ label: `${cur.getMonth() + 1}/${cur.getDate()}週`, leftPct: l, widthPct: w })
-    }
-    cur.setDate(cur.getDate() + 7)
-    if (weeks.length > 20) break
-  }
-
-  const todayPct = pct(todayStr)
-
-  const BAR_COLORS: Record<WBSStatus, string> = {
-    completed:   '#10b981',
-    in_progress: '#3b82f6',
-    delayed:     '#ef4444',
-    not_started: '#94a3b8',
-  }
-
-  return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div style={{ minWidth: 800 }}>
-        {/* ヘッダー行 */}
-        <div className="flex border-b border-slate-200 bg-slate-50 text-[10px] font-medium text-slate-500">
-          <div style={{ width: 220, flexShrink: 0 }} className="border-r border-slate-200 p-2">タスク</div>
-          <div style={{ flex: 1, position: 'relative', height: 28 }}>
-            {weeks.map((w, i) => (
-              <div
-                key={i}
-                style={{ position: 'absolute', left: `${w.leftPct}%`, width: `${w.widthPct}%`, top: 0, bottom: 0 }}
-                className="border-r border-slate-200 flex items-center px-1 overflow-hidden"
-              >
-                {w.label}
-              </div>
-            ))}
-            {/* 今日の縦線（ヘッダー） */}
-            {todayPct >= 0 && todayPct <= 100 && (
-              <div style={{ position: 'absolute', left: `${todayPct}%`, top: 0, bottom: 0, width: 1, background: '#0d9488', zIndex: ZChart.todayLine }} />
-            )}
-          </div>
-        </div>
-
-        {/* タスク行 */}
-        {rows.map((row) => (
-          <div
-            key={row.id}
-            className={`flex border-b border-slate-100 ${row.level === 0 ? 'bg-slate-50' : 'bg-white'}`}
-            style={{ minHeight: 36 }}
-          >
-            {/* タスク名 */}
-            <div
-              style={{ width: 220, flexShrink: 0, paddingLeft: row.level === 1 ? 24 : 8 }}
-              className="border-r border-slate-200 flex items-center text-[11px] py-1 pr-2"
-            >
-              {row.level === 1 && <span className="text-slate-400 mr-1">└</span>}
-              <span className={`${row.level === 0 ? 'font-semibold text-slate-700' : 'text-slate-600'} truncate`}>
-                {row.name}
-              </span>
-            </div>
-
-            {/* バー */}
-            <div style={{ flex: 1, position: 'relative', minHeight: 36 }}>
-              {/* 今日の縦線 */}
-              {todayPct >= 0 && todayPct <= 100 && (
-                <div style={{ position: 'absolute', left: `${todayPct}%`, top: 0, bottom: 0, width: 1, background: '#0d9488', opacity: 0.6, zIndex: ZChart.todayLineSub }} />
-              )}
-              {row.plannedStart !== '—' && (
-                <>
-                  {/* 予定バー（薄グレー背景） */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      left: `${pct(row.plannedStart)}%`,
-                      width: `${widthPct(row.plannedStart, row.plannedEnd)}%`,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      height: row.level === 0 ? 14 : 10,
-                      background: '#e2e8f0',
-                      borderRadius: 4,
-                      zIndex: ZChart.bar,
-                    }}
-                  />
-                  {/* 進捗バー */}
-                  {row.progressPct > 0 && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        left: `${pct(row.plannedStart)}%`,
-                        width: `${widthPct(row.plannedStart, row.plannedEnd) * row.progressPct / 100}%`,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        height: row.level === 0 ? 14 : 10,
-                        background: BAR_COLORS[row.status],
-                        borderRadius: 4,
-                        zIndex: ZChart.barProgress,
-                      }}
-                    />
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        ))}
-
-        {/* 凡例 */}
-        <div className="flex items-center gap-4 px-4 py-2 text-[10px] text-slate-500 border-t border-slate-100">
-          <span className="flex items-center gap-1"><span style={{ width: 12, height: 8, background: '#e2e8f0', borderRadius: 2, display: 'inline-block' }} /> 予定</span>
-          <span className="flex items-center gap-1"><span style={{ width: 12, height: 8, background: '#10b981', borderRadius: 2, display: 'inline-block' }} /> 完了</span>
-          <span className="flex items-center gap-1"><span style={{ width: 12, height: 8, background: '#3b82f6', borderRadius: 2, display: 'inline-block' }} /> 進行中</span>
-          <span className="flex items-center gap-1"><span style={{ width: 12, height: 8, background: '#ef4444', borderRadius: 2, display: 'inline-block' }} /> 遅延</span>
-          <span className="flex items-center gap-1"><span style={{ width: 1, height: 12, background: '#0d9488', display: 'inline-block' }} /> 今日</span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ─── メインコンポーネント ───────────────────────────────────────────────────────
 
 // displayMode: 'manager' = 全情報表示, 'corporate' = 予定日あり遅延なし, 'individual' = 予定日・遅延なし
@@ -325,7 +184,6 @@ export function InfraWbsPage() {
   // 管理者が ?userId=xxx で他ユーザーのWBSを確認できる
   const queryUserId = searchParams.get('userId')
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
-  const [viewMode, setViewMode] = useState<'table' | 'gantt'>('table')
   // queryUserId があれば管理者閲覧モード確定。なければ auth/me から判定
   const [displayMode, setDisplayMode] = useState<DisplayMode>(queryUserId ? 'manager' : 'individual')
   const startDate = getTrainingStartDate()
@@ -344,15 +202,8 @@ export function InfraWbsPage() {
     ? Math.max(0, diffDays(today(), lastTask.plannedEnd))
     : null
 
-  // ガントチャート用: 全タスクの開始日〜終了日
-  const validDates = wbsRows.filter((r) => r.plannedStart !== '—' && r.level === 0)
-  const ganttStart = validDates.length > 0 ? validDates[0].plannedStart : today()
-  const ganttEnd   = validDates.length > 0
-    ? validDates[validDates.length - 1].plannedEnd
-    : addBusinessDays(today(), 15)
-
   useEffect(() => {
-    document.title = '研修WBS'
+    document.title = 'WBS'
   }, [])
 
   // queryUserId がない（自分の画面）場合: role + accountType から displayMode を決定
@@ -400,24 +251,8 @@ export function InfraWbsPage() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <p className="text-xs text-slate-500">研修管理</p>
-            <h1 className="text-xl font-bold text-slate-800">研修 WBS</h1>
+            <h1 className="text-xl font-bold text-slate-800">WBS</h1>
             {startDate && <p className="text-xs text-slate-400 mt-0.5">研修開始日: {startDate}</p>}
-          </div>
-          <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setViewMode('table')}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'table' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}
-            >
-              表形式
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('gantt')}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'gantt' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}
-            >
-              ガントチャート
-            </button>
           </div>
         </div>
 
@@ -491,8 +326,7 @@ export function InfraWbsPage() {
         )}
 
         {/* ─── 表形式 ─── */}
-        {viewMode === 'table' && (
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <table className="w-full text-[12px] border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
@@ -597,20 +431,6 @@ export function InfraWbsPage() {
               </tbody>
             </table>
           </div>
-        )}
-
-        {/* ─── ガントチャート ─── */}
-        {viewMode === 'gantt' && (
-          <>
-            {startDate ? (
-              <GanttChart rows={wbsRows} ganttStart={ganttStart} ganttEnd={ganttEnd} />
-            ) : (
-              <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500 text-sm">
-                課題1を開くと研修開始日が設定され、ガントチャートが表示されます。
-              </div>
-            )}
-          </>
-        )}
 
         {/* 注記 */}
         <p className="text-[10px] text-slate-400 text-center pb-4">
