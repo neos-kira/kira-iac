@@ -1,4 +1,4 @@
-const { DynamoDBClient, PutItemCommand, ScanCommand, GetItemCommand, DeleteItemCommand, UpdateItemCommand } = require('@aws-sdk/client-dynamodb')
+const { DynamoDBClient, PutItemCommand, ScanCommand, GetItemCommand, DeleteItemCommand, UpdateItemCommand, QueryCommand } = require('@aws-sdk/client-dynamodb')
 const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime')
 const bedrockClient = new BedrockRuntimeClient({ region: 'ap-northeast-1' })
 const { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3')
@@ -14,6 +14,7 @@ const client = new DynamoDBClient({})
 const TableName = process.env.TABLE_NAME
 const AccountsTableName = process.env.ACCOUNTS_TABLE_NAME
 const SessionsTableName = process.env.SESSIONS_TABLE_NAME || ''
+const AiChatHistoryTableName = process.env.AI_CHAT_HISTORY_TABLE_NAME || ''
 const ScreenshotsBucket = process.env.SCREENSHOTS_BUCKET || 'kira-project-dev-screenshots'
 const RESERVED_USERNAMES = ['admin', 'root', 'system']
 
@@ -38,6 +39,26 @@ async function invokeModelWithRetry(command, maxRetries = 3) {
       throw err
     }
   }
+}
+
+/** ULID 生成（時系列ソート可能な 26 文字 ID） */
+function generateULID() {
+  const ENCODING = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
+  let ts = Date.now()
+  let timeStr = ''
+  for (let i = 9; i >= 0; i--) {
+    timeStr = ENCODING[ts % 32] + timeStr
+    ts = Math.floor(ts / 32)
+  }
+  const randomBytes = crypto.randomBytes(10)
+  let randStr = ''
+  for (let i = 0; i < 10; i++) {
+    const hi = (randomBytes[i] >> 3) & 0x1f
+    const lo = randomBytes[i] & 0x07
+    randStr += ENCODING[hi]
+    if (randStr.length < 16) randStr += ENCODING[lo]
+  }
+  return timeStr + randStr.slice(0, 16)
 }
 
 /** 日本時間（JST = UTC+9）で日付を取得 */
@@ -515,6 +536,69 @@ fail: 意味不明・設問と無関係・空欄に近い内容
         }
         return json({ error: '採点処理でエラーが発生しました', detail: String(err.message || err) }, 500)
       }
+    }
+
+    // AI会話ログ保存（POST /ai/chat-log）
+    if (method === 'POST' && (path === '/ai/chat-log' || path === '/ai/chat-log/')) {
+      const session = await verifySession(event)
+      if (!session) return json({ error: 'unauthorized' }, 401)
+
+      let body
+      try { body = JSON.parse(event.body || '{}') } catch { body = {} }
+      const { userId, role, content, contextPage, isCorrect } = body
+
+      if (!userId || !role || !content) return json({ error: 'userId, role, content are required' }, 400)
+      if (!['user', 'assistant'].includes(role)) return json({ error: 'invalid role' }, 400)
+      // 自分のログのみ書き込み可能
+      if (userId !== session.username) return json({ error: 'forbidden' }, 403)
+      if (!AiChatHistoryTableName) return json({ error: 'table not configured' }, 500)
+
+      const messageId = generateULID()
+      const createdAt = new Date().toISOString()
+      const item = { userId, messageId, role, content, createdAt }
+      if (contextPage) item.contextPage = contextPage
+      if (isCorrect !== undefined && isCorrect !== null) item.isCorrect = isCorrect
+
+      await client.send(new PutItemCommand({
+        TableName: AiChatHistoryTableName,
+        Item: marshall(item, { removeUndefinedValues: true }),
+      }))
+      return json({ ok: true, messageId })
+    }
+
+    // AI会話ログ取得（GET /ai/chat-log）
+    if (method === 'GET' && (path === '/ai/chat-log' || path === '/ai/chat-log/')) {
+      const session = await verifySession(event)
+      if (!session) return json({ error: 'unauthorized' }, 401)
+
+      const userId = event.queryStringParameters?.userId
+      const limit = Math.min(parseInt(event.queryStringParameters?.limit || '50', 10), 100)
+
+      if (!userId) return json({ error: 'userId is required' }, 400)
+      // 自分のログのみ取得可能（manager は将来拡張で対応）
+      if (userId !== session.username) return json({ error: 'forbidden' }, 403)
+      if (!AiChatHistoryTableName) return json({ messages: [] })
+
+      const { Items } = await client.send(new QueryCommand({
+        TableName: AiChatHistoryTableName,
+        IndexName: 'createdAt-index',
+        KeyConditionExpression: 'userId = :uid',
+        ExpressionAttributeValues: marshall({ ':uid': userId }),
+        ScanIndexForward: false, // 新しい順
+        Limit: limit,
+      }))
+
+      const messages = (Items || []).map((item) => {
+        const m = unmarshall(item)
+        return {
+          messageId: m.messageId,
+          role: m.role,
+          content: m.content,
+          createdAt: m.createdAt,
+          ...(m.contextPage ? { contextPage: m.contextPage } : {}),
+        }
+      })
+      return json({ messages })
     }
 
     // AIチャット（メンター）プロキシ（AWS Bedrock Claude）

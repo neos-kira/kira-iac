@@ -38,21 +38,35 @@ resource "aws_iam_role_policy" "progress_api_dynamodb" {
   role   = aws_iam_role.progress_api.id
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Action = [
-        "dynamodb:PutItem",
-        "dynamodb:GetItem",
-        "dynamodb:Scan",
-        "dynamodb:DeleteItem",
-        "dynamodb:UpdateItem"
-      ]
-      Resource = [
-        aws_dynamodb_table.progress.arn,
-        aws_dynamodb_table.accounts.arn,
-        aws_dynamodb_table.sessions.arn,
-      ]
-    }]
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:PutItem",
+          "dynamodb:GetItem",
+          "dynamodb:Scan",
+          "dynamodb:DeleteItem",
+          "dynamodb:UpdateItem"
+        ]
+        Resource = [
+          aws_dynamodb_table.progress.arn,
+          aws_dynamodb_table.accounts.arn,
+          aws_dynamodb_table.sessions.arn,
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:PutItem",
+          "dynamodb:GetItem",
+          "dynamodb:Query"
+        ]
+        Resource = [
+          aws_dynamodb_table.ai_chat_history.arn,
+          "${aws_dynamodb_table.ai_chat_history.arn}/index/*",
+        ]
+      }
+    ]
   })
 }
 
@@ -151,11 +165,12 @@ resource "aws_lambda_function" "progress_api" {
 
   environment {
     variables = {
-      TABLE_NAME          = aws_dynamodb_table.progress.name
-      ACCOUNTS_TABLE_NAME = aws_dynamodb_table.accounts.name
-      SESSIONS_TABLE_NAME = aws_dynamodb_table.sessions.name
-      ALLOWED_ORIGIN      = "https://training-org.neos-nic.jp"
-      KEYS_BUCKET         = "kira-project-dev-keys"
+      TABLE_NAME                  = aws_dynamodb_table.progress.name
+      ACCOUNTS_TABLE_NAME         = aws_dynamodb_table.accounts.name
+      SESSIONS_TABLE_NAME         = aws_dynamodb_table.sessions.name
+      AI_CHAT_HISTORY_TABLE_NAME  = aws_dynamodb_table.ai_chat_history.name
+      ALLOWED_ORIGIN              = "https://training-org.neos-nic.jp"
+      KEYS_BUCKET                 = "kira-project-dev-keys"
     }
   }
   tags = local.tags

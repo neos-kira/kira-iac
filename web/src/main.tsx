@@ -6,7 +6,8 @@ import { AuthProvider, useAuth } from './AuthContext'
 import './index.css'
 import App from './App.tsx'
 import { LoginPage } from './LoginPage'
-import { getCurrentDisplayName, isLoggedIn } from './auth'
+import { getCurrentDisplayName, getCurrentUsername, isLoggedIn } from './auth'
+import { getChatLog } from './api/aiChatApi'
 import { safeGetItem, safeSetItem, safeRemoveItem, safeSessionGetItem, safeSessionSetItem, safeSessionRemoveItem, clearCookieValue } from './utils/storage'
 import { isJTerada } from './specialUsers'
 import { isTask1Cleared } from './training/trainingWbsData'
@@ -176,6 +177,23 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
       safeSessionSetItem('nic-ai-mentor-session-messages', JSON.stringify(chatMessages))
     } catch { /* 書き込み失敗は無視 */ }
   }, [chatMessages])
+
+  // 初回マウント時: sessionStorage が空なら DynamoDB から復元
+  useEffect(() => {
+    if (chatMessages.length > 1) return // sessionStorage 復元済み
+    const userId = getCurrentUsername()
+    if (!userId) return
+    getChatLog(userId, 50).then((logs) => {
+      if (logs.length === 0) return
+      // API は新しい順 → 古い順に戻す
+      const restored: ChatMessage[] = logs.reverse().map((m) => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+      }))
+      setChatMessages([INITIAL_MESSAGE, ...restored])
+    }).catch(() => { /* 取得失敗は無視 */ })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // nic:open-ai-panel イベントでAI講師パネルを開く
   useEffect(() => {

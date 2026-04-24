@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { BASE_URL, buildAuthHeaders, forceLogout } from '../progressApi'
+import { getCurrentUsername } from '../auth'
+import { postChatLog } from '../api/aiChatApi'
 import { Z } from '../zIndex'
 import { useQuizContext } from '../quizContext'
 
@@ -149,6 +151,7 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
     const text = input.trim()
     if (!text && !pendingImage) return
     if (isSending) return
+    const userId = getCurrentUsername()
     const userMsg: ChatMessage = { role: 'user', content: text || '(画像を送信)', image: pendingImage?.dataUrl }
     const next = [...messages, userMsg].slice(-MAX_TURNS * 2)
     setMessages(next)
@@ -157,6 +160,9 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
     setPendingImage(null)
     setIsSending(true)
     const isBakumatsu = BAKUMATSU_KEYWORDS.some((k) => text.includes(k))
+
+    // ユーザーメッセージを非同期でログ保存（UI をブロックしない）
+    void postChatLog(userId, 'user', text || '(画像を送信)', context)
 
     if (isBakumatsu && bakumatsuCount >= 3) {
       setMessages((prev) => [...prev, { role: 'assistant' as const, content: '幕末トークは本日ここまでです。研修に戻りましょう！続きはログアウト後にどうぞ。' }].slice(-MAX_TURNS * 2))
@@ -199,6 +205,8 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
       const data = (await res.json()) as { reply?: string; error?: boolean }
       const reply = (data.reply ?? '').trim() || '（応答が取得できませんでした）'
       setMessages((prev) => [...prev, { role: 'assistant' as const, content: reply }].slice(-MAX_TURNS * 2))
+      // アシスタント応答を非同期でログ保存（UI をブロックしない）
+      void postChatLog(userId, 'assistant', reply, context)
     } catch (err) {
       console.error('[MentorDesk] fetch failed:', err)
       setMessages((prev) => [...prev, { role: 'assistant' as const, content: 'AIとの通信に失敗しました。もう一度送信してください。' }].slice(-MAX_TURNS * 2))
