@@ -75,7 +75,7 @@ export function AdminPage() {
     const total = students.length
     const completed = students.filter((u) => u.wbsPercent >= 100).length
     const inProgress = students.filter((u) => u.wbsPercent > 0 && u.wbsPercent < 100).length
-    const running = users.filter((u) => u.ec2State === 'running').length
+    const running = users.filter((u) => u.ec2State === 'running' && u.ec2InstanceId).length
     return { total, completed, inProgress, running }
   }, [users])
 

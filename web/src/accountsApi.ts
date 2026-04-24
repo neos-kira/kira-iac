@@ -30,7 +30,8 @@ export type AdminUser = {
   currentChapter: string
   lastActive: { label: string } | null
   lastLogin: string | null
-  ec2State: 'running' | 'stopped' | 'pending' | 'stopping' | null
+  ec2State: 'running' | 'stopped' | 'pending' | 'stopping' | 'terminated' | null
+  ec2InstanceId: string | null
   ec2PublicIp: string | null
   introConfirmed: boolean
   chapterProgress: { chapter: number; label: string; percent: number; cleared: boolean }[]

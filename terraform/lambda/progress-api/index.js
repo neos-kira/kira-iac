@@ -304,6 +304,17 @@ async function handler(event) {
         }))
         console.log(JSON.stringify({ level: 'info', event: 'ec2_state_auto_updated', traineeId: record.traineeId, instanceId, state: 'stopped', timestamp: new Date().toISOString() }))
       }
+
+      if (state === 'terminated' || state === 'shutting-down') {
+        // 削除時: ec2State/ec2InstanceId/ec2PublicIp/ec2Hostをクリア
+        await client.send(new UpdateItemCommand({
+          TableName,
+          Key: marshall({ traineeId: record.traineeId }),
+          UpdateExpression: 'SET ec2State = :state, updatedAt = :ts REMOVE ec2InstanceId, ec2PublicIp, ec2Host',
+          ExpressionAttributeValues: marshall({ ':state': 'terminated', ':ts': new Date().toISOString() }),
+        }))
+        console.log(JSON.stringify({ level: 'info', event: 'ec2_terminated_cleared', traineeId: record.traineeId, instanceId, state, timestamp: new Date().toISOString() }))
+      }
     }
 
     return { statusCode: 200, body: 'ok' }
@@ -1234,6 +1245,7 @@ ${isCorrect === true ? '正解済み。この問題は解決しています。�
             lastActive: p?.lastActive || null,
             lastLogin: p?.lastLoginAt || null,
             ec2State: p?.ec2State || null,
+            ec2InstanceId: p?.ec2InstanceId || null,
             ec2PublicIp: p?.ec2PublicIp || null,
             introConfirmed: p?.introConfirmed || false,
             chapterProgress: p?.chapterProgress || [],
