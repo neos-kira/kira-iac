@@ -21,12 +21,10 @@ type Props = {
   onMenuOpen?: () => void
 }
 
-export function SharedHeader({ delayed, progressPct, completedCount, totalCount, onWbs, onLogout, isAdmin, onAdminMenu, onAccountPanel, onMenuOpen }: Props) {
+export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, completedCount: _completedCount, totalCount: _totalCount, onWbs: _onWbs, onLogout, isAdmin, onAdminMenu, onAccountPanel, onMenuOpen }: Props) {
   const [showMenu, setShowMenu] = useState(false)
   const [showModal, setShowModal] = useState(false)
-  const [showWBSHelp, setShowWBSHelp] = useState(false)
   const menuContainerRef = useRef<HTMLDivElement>(null)
-  const wbsHelpContainerRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
   const navigate = useSafeNavigate()
   const [resolvedName, setResolvedName] = useState(() => {
@@ -57,18 +55,6 @@ export function SharedHeader({ delayed, progressPct, completedCount, totalCount,
     return () => document.removeEventListener('mousedown', onOutside)
   }, [showMenu])
 
-  /** WBSヘルプ: パネル外クリックで閉じる */
-  useEffect(() => {
-    if (!showWBSHelp) return
-    const onOutside = (e: MouseEvent) => {
-      if (wbsHelpContainerRef.current && !wbsHelpContainerRef.current.contains(e.target as Node)) {
-        setShowWBSHelp(false)
-      }
-    }
-    document.addEventListener('mousedown', onOutside)
-    return () => document.removeEventListener('mousedown', onOutside)
-  }, [showWBSHelp])
-
   /** AI講師パネルからの相互排他イベント受信 */
   useEffect(() => {
     const close = () => setShowMenu(false)
@@ -76,15 +62,15 @@ export function SharedHeader({ delayed, progressPct, completedCount, totalCount,
     return () => window.removeEventListener('nic:close-user-menu', close)
   }, [])
 
-  /** ESCキーでメニュー / WBSヘルプを閉じる */
+  /** ESCキーでメニューを閉じる */
   useEffect(() => {
-    if (!showMenu && !showWBSHelp) return
+    if (!showMenu) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { setShowMenu(false); setShowWBSHelp(false) }
+      if (e.key === 'Escape') { setShowMenu(false) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [showMenu, showWBSHelp])
+  }, [showMenu])
 
   /** メニューを開く（相互排他: AI講師パネルを閉じる） */
   const handleOpenMenu = useCallback(() => {
@@ -125,60 +111,6 @@ export function SharedHeader({ delayed, progressPct, completedCount, totalCount,
       </div>
 
       <div className="flex items-center gap-3">
-        {delayed !== undefined && (
-          <div className="hidden sm:flex items-center gap-2 relative" ref={wbsHelpContainerRef}>
-            <span
-              className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-medium tracking-wide shrink-0 ${delayed ? 'bg-rose-50 text-rose-600 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}
-            >
-              {delayed ? '遅延あり' : '遅延なし'}
-            </span>
-            {onWbs && (
-              <button
-                type="button"
-                onClick={onWbs}
-                className="text-[11px] font-medium text-slate-400 hover:text-slate-700 transition-colors shrink-0"
-              >
-                WBS →
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setShowWBSHelp((v) => !v)}
-              className="flex items-center justify-center w-4 h-4 rounded-full border border-slate-300 text-slate-400 text-[10px] font-bold shrink-0 transition-colors hover:border-slate-400"
-              title="WBSとは？"
-            >
-              ?
-            </button>
-            {showWBSHelp && (
-              <div className="absolute top-full right-0 mt-2 w-72 rounded-xl border border-slate-200 bg-slate-900 text-white p-4 shadow-xl text-[12px] leading-relaxed" style={{ zIndex: Z.dropdown }}>
-                <p className="font-semibold mb-1.5" style={{ color: '#7dd3fc' }}>WBS（Work Breakdown Structure）とは？</p>
-                <p className="text-slate-300">プロジェクトの作業を細かく分解して進捗を管理する表です。各課題の完了状況や遅延がひと目でわかります。</p>
-                <button
-                  type="button"
-                  onClick={() => setShowWBSHelp(false)}
-                  className="mt-2.5 text-[11px] transition-colors" style={{ color: '#7dd3fc' }}
-                >
-                  閉じる
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-        {progressPct !== undefined && progressPct !== null && (
-          <div className="hidden sm:flex items-center gap-3">
-            <div className="flex flex-col items-end gap-1">
-              {totalCount !== undefined && completedCount !== undefined && (
-                <span className="text-[10px] text-slate-400 tracking-wide">{completedCount} / {totalCount} 完了</span>
-              )}
-              <div className="flex items-center gap-2">
-                <div className="w-20 h-1 rounded-full bg-slate-200 overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progressPct}%`, background: '#7dd3fc' }} />
-                </div>
-                <span className="text-[11px] text-slate-500 tabular-nums w-7 text-right">{progressPct}%</span>
-              </div>
-            </div>
-          </div>
-        )}
         {isAdmin && (
           <div className="hidden sm:flex items-center gap-2">
             {onAdminMenu && <button type="button" onClick={onAdminMenu} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50 transition-colors">講師メニュー</button>}

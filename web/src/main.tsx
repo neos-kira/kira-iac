@@ -30,6 +30,7 @@ import { Z } from './zIndex'
 import { ITBasicsTopPage } from './training/itBasics/ITBasicsTopPage'
 import { ITBasicsStudyPage } from './training/itBasics/ITBasicsStudyPage'
 import { ITBasicsTestPage } from './training/itBasics/ITBasicsTestPage'
+import { RoadmapPage } from './training/RoadmapPage'
 import { QuizContextProvider } from './quizContext'
 
 const MENTOR_CONTEXT_MAP: Record<string, string> = {
@@ -155,6 +156,13 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     window.addEventListener('resize', h)
     return () => window.removeEventListener('resize', h)
   }, [isMobile])
+
+  // nic:open-ai-panel イベントでAI講師パネルを開く
+  useEffect(() => {
+    const open = () => { setIsAiOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }
+    window.addEventListener('nic:open-ai-panel', open)
+    return () => window.removeEventListener('nic:open-ai-panel', open)
+  }, [])
 
   // ESCキーでAI講師パネルを閉じる（conditional return より前に置くこと — Rules of Hooks）
   useEffect(() => {
@@ -462,6 +470,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/it-basics" element={<ITBasicsTopPage />} />
             <Route path="/it-basics/:categoryId/study" element={<ITBasicsStudyPage />} />
             <Route path="/it-basics/:categoryId/test" element={<ITBasicsTestPage />} />
+            <Route path="/roadmap" element={<ProtectedRoute><RoadmapPage /></ProtectedRoute>} />
             <Route path="/home" element={<Navigate to="/" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

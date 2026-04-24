@@ -1215,6 +1215,47 @@ function App() {
                 </button>
               </div>
             )}
+            {/* ── 学習ロードマップカード ── */}
+<div className="bg-white border border-gray-100 rounded-xl p-5 md:p-6 mb-4">
+  <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold mb-1.5">全体の進捗</p>
+  <div className="flex items-end gap-1 mb-3">
+    <span className="text-[40px] font-bold tracking-tight text-slate-800 leading-none">
+      {progressPct?.pct ?? 0}
+    </span>
+    <span className="text-lg text-slate-400 mb-1">%</span>
+  </div>
+  <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden mb-3">
+    <div
+      className="h-full rounded-full bg-gradient-to-r from-sky-500 to-sky-400 transition-all duration-700"
+      style={{ width: `${progressPct?.pct ?? 0}%` }}
+    />
+  </div>
+  <p className="text-label md:text-label-pc text-slate-600 mb-4">
+    {progressPct?.completed ?? 0} / {progressPct?.total ?? 8} ステージ完了
+  </p>
+  <div className="border-t border-slate-100 pt-4 flex items-center justify-between">
+    <p className="text-label md:text-label-pc text-slate-600">
+      次: {(() => {
+        const s = serverSnapshot
+        const ch = Array.isArray(s?.chapterProgress) ? s.chapterProgress : []
+        const introOk = Number(s?.introStep ?? 0) >= 5 && s?.introConfirmed
+        if (!introOk) return 'はじめに'
+        if (!s?.infra1Cleared || !s?.l1Cleared) return 'Linuxコマンド30問'
+        if (!ch[1]?.cleared) return 'ネットワーク基礎'
+        if (!ch[2]?.cleared) return 'vi & シェルスクリプト'
+        if (!ch[3]?.cleared) return 'Rocky Linux サーバー構築'
+        return 'すべて完了'
+      })()}
+    </p>
+    <button
+      type="button"
+      onClick={() => navigate('/roadmap')}
+      className="text-button md:text-button-pc font-medium text-sky-600 hover:text-sky-700 transition-colors"
+    >
+      ロードマップを見る →
+    </button>
+  </div>
+</div>
             {/* つづきから / はじめに案内バナー: serverSnapshot確定後に一度だけ表示を決定 */}
             {(() => {
               // ── ローディング: snap未取得時はスケルトンのみ表示 ──
@@ -1973,6 +2014,17 @@ function App() {
           </>
           )}
         </main>
+
+        {/* AI講師浮動ボタン（ダッシュボード専用） */}
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('nic:open-ai-panel'))}
+          className="fixed bottom-6 right-6 flex items-center justify-center w-14 h-14 rounded-full text-white font-bold text-sm shadow-lg shadow-sky-500/35 hover:scale-110 transition-transform"
+          style={{ background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', zIndex: 50 }}
+          title="AI講師に質問する"
+        >
+          AI
+        </button>
       </div>
     </div>
   )

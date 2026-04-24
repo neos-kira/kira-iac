@@ -7,7 +7,7 @@ type ChatMessage = { role: 'user' | 'assistant'; content: string; image?: string
 
 const INITIAL_MESSAGE: ChatMessage = {
   role: 'assistant',
-  content: '研修内容についてわからないことがあれば聞いてください。',
+  content: 'こんにちは。わからないことがあれば何でも聞いてください。',
 }
 
 const MAX_TURNS = 20
@@ -199,8 +199,16 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
 
   // ── サイドバーモードで共通チャットUIを返すヘルパー ──
   const chatHeader = (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, padding: 16, borderBottom: '1px solid #e5e7eb' }}>
-      <span className="text-button md:text-button-pc" style={{ fontWeight: 600 }}>🎓 AI講師</span>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, padding: '12px 16px', borderBottom: '1px solid #e5e7eb' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <span style={{ color: 'white', fontSize: 11, fontWeight: 700 }}>AI</span>
+        </div>
+        <div>
+          <p style={{ fontWeight: 700, fontSize: 13, color: '#0f172a', letterSpacing: '-0.025em', lineHeight: 1.2 }}>AI講師</p>
+          <p style={{ fontSize: 10, color: '#64748b', fontWeight: 500, lineHeight: 1.3 }}>わからないことは何でも</p>
+        </div>
+      </div>
       <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', lineHeight: 1, padding: '0 0 0 8px' }} title="閉じる">✕</button>
     </div>
   )
@@ -208,13 +216,18 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
   // ── サイドバーモード（PCのみ） ──
   if (sidebar) {
     return (
-      <aside style={embedded ? { flex: 1, display: 'flex', flexDirection: 'column' as const, minHeight: 0 } : { position: 'fixed' as const, top: 64, right: 0, bottom: 0, width: 280, zIndex: Z.sticky }} className={`flex flex-col ${embedded ? '' : 'border-l border-slate-200'} bg-white`}>
+      <aside style={embedded ? { flex: 1, display: 'flex', flexDirection: 'column' as const, minHeight: 0 } : { position: 'fixed' as const, top: 64, right: 0, bottom: 0, width: 380, zIndex: Z.sticky }} className={`flex flex-col ${embedded ? '' : 'border-l border-slate-200'} bg-white`}>
         {chatHeader}
 
         <div ref={scrollRef} className="flex-1 min-h-0 space-y-3 overflow-y-auto p-4" style={{ WebkitOverflowScrolling: 'touch' }}>
           {messages.map((m, i) => (
-            <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-xs leading-relaxed ${m.role === 'user' ? 'bg-sky-500 text-white' : 'bg-slate-100 text-slate-800'}`}>
+            <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start gap-2'}`}>
+              {m.role === 'assistant' && (
+                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                  <span style={{ color: 'white', fontSize: 8, fontWeight: 700 }}>AI</span>
+                </div>
+              )}
+              <div className={`max-w-[85%] whitespace-pre-wrap px-3 py-2 text-xs leading-relaxed ${m.role === 'user' ? 'bg-sky-500 text-white rounded-2xl' : 'bg-slate-100 text-slate-800'}`} style={m.role === 'assistant' ? { borderRadius: '12px 12px 12px 2px', lineHeight: 1.7 } : {}}>
                 {m.image && <img src={m.image} alt="添付画像" className="max-h-20 rounded-lg mb-1" />}
                 {m.role === 'assistant' ? <span dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }} /> : m.content}
               </div>
@@ -246,7 +259,7 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
           </button>
           {/* テキスト入力: flex-1 で伸縮 */}
-          <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste} onFocus={(e) => { setTimeout(() => { (e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'nearest' }) }, 300) }} rows={1} placeholder="メッセージを入力" className="flex-1 resize-none rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40" style={{ maxHeight: 72, minHeight: 44 }} />
+          <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste} onFocus={(e) => { setTimeout(() => { (e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'nearest' }) }, 300) }} rows={1} placeholder="メッセージを入力" className="flex-1 resize-none rounded-full border border-slate-300 bg-slate-50 px-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40" style={{ maxHeight: 72, minHeight: 44 }} />
           {/* マイクボタン: 44px タップターゲット */}
           {SpeechRecognitionAPI && (
             <button type="button" onClick={toggleVoice} className={`flex-shrink-0 flex items-center justify-center rounded-xl transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`} style={{ minWidth: 44, minHeight: 44 }} aria-label={isListening ? '音声入力を停止' : '音声入力'} title={isListening ? '音声入力を停止' : '音声入力'}>
@@ -254,7 +267,7 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
             </button>
           )}
           {/* 送信ボタン: 44px タップターゲット + 送信中スピナー */}
-          <button type="button" onClick={() => void handleSend()} disabled={isSending || (!input.trim() && !pendingImage)} className="flex-shrink-0 flex items-center justify-center gap-1.5 rounded-xl bg-sky-500 text-xs font-medium text-white hover:bg-sky-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors" style={{ minWidth: 44, minHeight: 44, paddingLeft: 12, paddingRight: 12 }}>
+          <button type="button" onClick={() => void handleSend()} disabled={isSending || (!input.trim() && !pendingImage)} className="flex-shrink-0 flex items-center justify-center gap-1.5 rounded-full bg-sky-600 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors" style={{ minWidth: 44, minHeight: 44, paddingLeft: 12, paddingRight: 12 }}>
             {isSending ? (
               <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
             ) : '送信'}
