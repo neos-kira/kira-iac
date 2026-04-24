@@ -30,7 +30,6 @@ import { Z } from './zIndex'
 import { ITBasicsTopPage } from './training/itBasics/ITBasicsTopPage'
 import { ITBasicsStudyPage } from './training/itBasics/ITBasicsStudyPage'
 import { ITBasicsTestPage } from './training/itBasics/ITBasicsTestPage'
-import { RoadmapPage } from './training/RoadmapPage'
 import { QuizContextProvider } from './quizContext'
 
 const MENTOR_CONTEXT_MAP: Record<string, string> = {
@@ -196,9 +195,10 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
             type="button"
             onClick={() => { setIsAiOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }}
             title="AI講師に質問する"
-            style={{ position: 'fixed', bottom: 24, right: 24, width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(14,165,233,0.35)', zIndex: Z.floatingPanel, fontWeight: 700, fontSize: 14 }}
+            className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35"
+            style={{ position: 'fixed', bottom: 24, right: 24, border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}
           >
-            AI
+            <img src="/ai-teacher.png" alt="AI講師" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
           </button>
         )}
       </div>
@@ -241,36 +241,10 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
               if (next) window.dispatchEvent(new CustomEvent('nic:close-user-menu'))
             }}
             title="AI講師に質問する"
-            style={{
-              position: 'fixed',
-              bottom: 24,
-              right: 24,
-              width: 56,
-              height: 56,
-              borderRadius: '50%',
-              background: '#7dd3fc',
-              color: '#0f172a',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 14px rgba(125,211,252,0.5)',
-              zIndex: Z.floatingPanel,
-              transition: 'transform 0.15s, box-shadow 0.15s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.1)'
-              e.currentTarget.style.background = '#38bdf8'
-              e.currentTarget.style.boxShadow = '0 6px 18px rgba(125,211,252,0.65)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)'
-              e.currentTarget.style.background = '#7dd3fc'
-              e.currentTarget.style.boxShadow = '0 4px 14px rgba(125,211,252,0.5)'
-            }}
+            className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35 hover:scale-110 transition-transform"
+            style={{ position: 'fixed', bottom: 24, right: 24, border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}
           >
-            🎓
+            <img src="/ai-teacher.png" alt="AI講師" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
           </button>
         )}
       </div>
@@ -303,8 +277,8 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
       {/* モード3: モバイル 🎓ボタン */}
       {showMobile && !isChatOpen && (
-        <button type="button" onClick={() => { setIsChatOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }} style={{ position: 'fixed', bottom: 24, right: 24, width: 52, height: 52, borderRadius: '50%', background: '#7dd3fc', color: '#0f172a', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(125,211,252,0.5)', zIndex: Z.floatingPanel }}>
-          🎓
+        <button type="button" onClick={() => { setIsChatOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }} className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35" style={{ position: 'fixed', bottom: 24, right: 24, border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}>
+          <img src="/ai-teacher.png" alt="AI講師" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         </button>
       )}
 
@@ -498,7 +472,6 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/it-basics" element={<ITBasicsTopPage />} />
             <Route path="/it-basics/:categoryId/study" element={<ITBasicsStudyPage />} />
             <Route path="/it-basics/:categoryId/test" element={<ITBasicsTestPage />} />
-            <Route path="/roadmap" element={<ProtectedRoute><RoadmapPage /></ProtectedRoute>} />
             <Route path="/home" element={<Navigate to="/" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

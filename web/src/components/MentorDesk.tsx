@@ -201,9 +201,7 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
   const chatHeader = (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, padding: '12px 16px', borderBottom: '1px solid #e5e7eb' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <span style={{ color: 'white', fontSize: 11, fontWeight: 700 }}>AI</span>
-        </div>
+        <img src="/ai-teacher.png" alt="AI講師" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
         <p style={{ fontWeight: 700, fontSize: 13, color: '#0f172a', letterSpacing: '-0.025em' }}>AI講師</p>
       </div>
       <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', lineHeight: 1, padding: '0 0 0 8px' }} title="閉じる">✕</button>
@@ -220,9 +218,7 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start gap-2'}`}>
               {m.role === 'assistant' && (
-                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
-                  <span style={{ color: 'white', fontSize: 8, fontWeight: 700 }}>AI</span>
-                </div>
+                <img src="/ai-teacher.png" alt="" className="w-6 h-6 rounded-full object-cover flex-shrink-0" style={{ marginTop: 2 }} />
               )}
               <div className={`max-w-[85%] whitespace-pre-wrap px-3 py-2 text-xs leading-relaxed ${m.role === 'user' ? 'bg-sky-500 text-white rounded-2xl' : 'bg-slate-100 text-slate-800'}`} style={m.role === 'assistant' ? { borderRadius: '12px 12px 12px 2px', lineHeight: 1.7 } : {}}>
                 {m.image && <img src={m.image} alt="添付画像" className="max-h-20 rounded-lg mb-1" />}
@@ -298,9 +294,7 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
           <div className="md:hidden fixed bottom-0 left-0 right-0 flex flex-col bg-white rounded-t-2xl shadow-xl" style={{ height: '75vh', zIndex: Z.floatingPanel }}>
             <header className="flex items-center justify-between bg-sky-50 border-b border-sky-100 px-4 py-3 rounded-t-2xl">
               <div className="flex items-center gap-2.5">
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ color: 'white', fontSize: 10, fontWeight: 700 }}>AI</span>
-                </div>
+                <img src="/ai-teacher.png" alt="AI講師" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
                 <p className="text-sm font-bold text-slate-800">AI講師</p>
               </div>
               <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg leading-none">✕</button>

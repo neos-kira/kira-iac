@@ -1247,13 +1247,6 @@ function App() {
         return 'すべて完了'
       })()}
     </p>
-    <button
-      type="button"
-      onClick={() => navigate('/roadmap')}
-      className="text-button md:text-button-pc font-medium text-sky-600 hover:text-sky-700 transition-colors"
-    >
-      ロードマップを見る →
-    </button>
   </div>
 </div>
             {/* つづきから / はじめに案内バナー: serverSnapshot確定後に一度だけ表示を決定 */}
