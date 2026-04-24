@@ -67,8 +67,8 @@ export async function fetchMe(): Promise<string | null> {
   }
 }
 
-/** auth/me からユーザー情報（termsAgreedAt 含む）を取得する */
-export async function fetchMeInfo(): Promise<{ username: string; role: string; termsAgreedAt: string | null; termsVersion: string | null } | null> {
+/** auth/me からユーザー情報（termsAgreedAt / accountType 含む）を取得する */
+export async function fetchMeInfo(): Promise<{ username: string; role: string; termsAgreedAt: string | null; termsVersion: string | null; accountType: 'corporate' | 'individual' } | null> {
   if (!BASE_URL) return null
   try {
     const res = await fetch(`${BASE_URL}/auth/me`, {
@@ -76,12 +76,13 @@ export async function fetchMeInfo(): Promise<{ username: string; role: string; t
       credentials: 'omit',
     })
     if (!res.ok) return null
-    const data = (await res.json()) as { username?: string; role?: string; termsAgreedAt?: string | null; termsVersion?: string | null }
+    const data = (await res.json()) as { username?: string; role?: string; termsAgreedAt?: string | null; termsVersion?: string | null; accountType?: string }
     return {
       username: data.username ?? '',
       role: data.role ?? 'student',
       termsAgreedAt: data.termsAgreedAt ?? null,
       termsVersion: data.termsVersion ?? null,
+      accountType: (data.accountType === 'corporate' ? 'corporate' : 'individual'),
     }
   } catch {
     return null

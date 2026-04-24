@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { fetchMeInfo } from '../progressApi'
 import { ZChart } from '../zIndex'
 import {
   getTaskProgressList,
@@ -316,12 +317,17 @@ function GanttChart({ rows, ganttStart, ganttEnd }: { rows: WBSRow[]; ganttStart
 
 // ─── メインコンポーネント ───────────────────────────────────────────────────────
 
+// displayMode: 'manager' = 全情報表示, 'corporate' = 予定日あり遅延なし, 'individual' = 予定日・遅延なし
+type DisplayMode = 'manager' | 'corporate' | 'individual'
+
 export function InfraWbsPage() {
   const [searchParams] = useSearchParams()
   // 管理者が ?userId=xxx で他ユーザーのWBSを確認できる
   const queryUserId = searchParams.get('userId')
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const [viewMode, setViewMode] = useState<'table' | 'gantt'>('table')
+  // queryUserId があれば管理者閲覧モード確定。なければ auth/me から判定
+  const [displayMode, setDisplayMode] = useState<DisplayMode>(queryUserId ? 'manager' : 'individual')
   const startDate = getTrainingStartDate()
 
   const wbsRows = buildWBSRows(startDate)
@@ -348,6 +354,16 @@ export function InfraWbsPage() {
   useEffect(() => {
     document.title = '研修WBS'
   }, [])
+
+  // queryUserId がない（自分の画面）場合: role + accountType から displayMode を決定
+  useEffect(() => {
+    if (queryUserId) { setDisplayMode('manager'); return }
+    fetchMeInfo().then((info) => {
+      if (!info) return
+      if (info.role === 'manager') { setDisplayMode('manager'); return }
+      setDisplayMode(info.accountType === 'corporate' ? 'corporate' : 'individual')
+    })
+  }, [queryUserId])
 
   useEffect(() => {
     if (!isProgressApiAvailable() || typeof window === 'undefined') return
@@ -406,35 +422,66 @@ export function InfraWbsPage() {
         </div>
 
         {/* サマリーカード */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-[11px] font-medium text-slate-500 mb-1">全体進捗</p>
-            <p className="text-3xl font-bold text-slate-800 tabular-nums">{overallPct}<span className="text-lg font-normal text-slate-400">%</span></p>
-            <p className="text-[10px] text-slate-400 mt-1">{cleared} / {totalTasks} 課題完了</p>
-            <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-              <div className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-500 transition-all" style={{ width: `${overallPct}%` }} />
+        {displayMode === 'individual' ? (
+          /* individual: 全体進捗 + 次のステージ の2枚のみ */
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-[11px] font-medium text-slate-500 mb-1">全体進捗</p>
+              <p className="text-3xl font-bold text-slate-800 tabular-nums">{overallPct}<span className="text-lg font-normal text-slate-400">%</span></p>
+              <p className="text-[10px] text-slate-400 mt-1">{cleared} / {totalTasks} 課題完了</p>
+              <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${overallPct}%` }} />
+              </div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-[11px] font-medium text-slate-500 mb-1">次のステージ</p>
+              <p className="text-sm font-semibold text-slate-800 mt-1 leading-snug">
+                {taskRows.find((r) => r.status !== 'completed')?.name ?? 'すべて完了'}
+              </p>
             </div>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-[11px] font-medium text-slate-500 mb-1">遅延タスク</p>
-            <p className={`text-3xl font-bold tabular-nums ${delayedCount > 0 ? 'text-red-600' : 'text-slate-800'}`}>
-              {delayedCount}<span className="text-lg font-normal text-slate-400">件</span>
-            </p>
-            <p className="text-[10px] text-slate-400 mt-1">
-              {delayedCount > 0 ? '要対応' : '問題なし'}
-            </p>
+        ) : (
+          /* manager / corporate: 3枚 */
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-[11px] font-medium text-slate-500 mb-1">全体進捗</p>
+              <p className="text-3xl font-bold text-slate-800 tabular-nums">{overallPct}<span className="text-lg font-normal text-slate-400">%</span></p>
+              <p className="text-[10px] text-slate-400 mt-1">{cleared} / {totalTasks} 課題完了</p>
+              <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                <div className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-500 transition-all" style={{ width: `${overallPct}%` }} />
+              </div>
+            </div>
+            {displayMode === 'manager' && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <p className="text-[11px] font-medium text-slate-500 mb-1">遅延タスク</p>
+                <p className={`text-3xl font-bold tabular-nums ${delayedCount > 0 ? 'text-red-600' : 'text-slate-800'}`}>
+                  {delayedCount}<span className="text-lg font-normal text-slate-400">件</span>
+                </p>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  {delayedCount > 0 ? '要対応' : '問題なし'}
+                </p>
+              </div>
+            )}
+            {displayMode === 'corporate' && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <p className="text-[11px] font-medium text-slate-500 mb-1">次のステージ</p>
+                <p className="text-sm font-semibold text-slate-800 mt-1 leading-snug">
+                  {taskRows.find((r) => r.status !== 'completed')?.name ?? 'すべて完了'}
+                </p>
+              </div>
+            )}
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-[11px] font-medium text-slate-500 mb-1">終了予定まで</p>
+              <p className="text-3xl font-bold text-slate-800 tabular-nums">
+                {remainingDays !== null ? remainingDays : '—'}
+                <span className="text-lg font-normal text-slate-400">日</span>
+              </p>
+              <p className="text-[10px] text-slate-400 mt-1">
+                {lastTask?.plannedEnd && lastTask.plannedEnd !== '—' ? `終了予定: ${lastTask.plannedEnd}` : '開始日未設定'}
+              </p>
+            </div>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-[11px] font-medium text-slate-500 mb-1">終了予定まで</p>
-            <p className="text-3xl font-bold text-slate-800 tabular-nums">
-              {remainingDays !== null ? remainingDays : '—'}
-              <span className="text-lg font-normal text-slate-400">日</span>
-            </p>
-            <p className="text-[10px] text-slate-400 mt-1">
-              {lastTask?.plannedEnd && lastTask.plannedEnd !== '—' ? `終了予定: ${lastTask.plannedEnd}` : '開始日未設定'}
-            </p>
-          </div>
-        </div>
+        )}
 
         {/* 開始日未設定の警告 */}
         {!startDate && (
@@ -450,23 +497,31 @@ export function InfraWbsPage() {
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th className="text-left px-3 py-2.5 font-semibold text-slate-600 w-[35%]">タスク</th>
-                  <th className="text-center px-2 py-2.5 font-semibold text-slate-600 whitespace-nowrap">予定開始</th>
-                  <th className="text-center px-2 py-2.5 font-semibold text-slate-600 whitespace-nowrap">予定終了</th>
+                  {displayMode !== 'individual' && (
+                    <>
+                      <th className="text-center px-2 py-2.5 font-semibold text-slate-600 whitespace-nowrap">予定開始</th>
+                      <th className="text-center px-2 py-2.5 font-semibold text-slate-600 whitespace-nowrap">予定終了</th>
+                    </>
+                  )}
                   <th className="text-center px-2 py-2.5 font-semibold text-slate-600 whitespace-nowrap hidden md:table-cell">ステータス</th>
                   <th className="text-center px-2 py-2.5 font-semibold text-slate-600 whitespace-nowrap hidden md:table-cell">進捗</th>
-                  <th className="text-center px-2 py-2.5 font-semibold text-slate-600 whitespace-nowrap">遅延</th>
+                  {displayMode === 'manager' && (
+                    <th className="text-center px-2 py-2.5 font-semibold text-slate-600 whitespace-nowrap">遅延</th>
+                  )}
                   <th className="text-center px-2 py-2.5 font-semibold text-slate-600 whitespace-nowrap hidden lg:table-cell"></th>
                 </tr>
               </thead>
               <tbody>
                 {wbsRows.map((row) => {
-                  const cfg = STATUS_CONFIG[row.status]
+                  // corporate/individual では 'delayed' を 'in_progress' として扱う（赤バッジなし）
+                  const displayStatus = displayMode !== 'manager' && row.status === 'delayed' ? 'in_progress' : row.status
+                  const cfg = STATUS_CONFIG[displayStatus]
                   const isParent = row.level === 0
+                  // 行の背景: manager のみ赤ハイライト
+                  const rowBg = isParent ? 'bg-slate-50/60' : 'bg-white'
+                  const delayBg = displayMode === 'manager' && row.status === 'delayed' ? 'bg-red-50/40' : ''
                   return (
-                    <tr
-                      key={row.id}
-                      className={`border-b border-slate-100 ${isParent ? 'bg-slate-50/60' : 'bg-white'} ${row.status === 'delayed' ? 'bg-red-50/40' : ''}`}
-                    >
+                    <tr key={row.id} className={`border-b border-slate-100 ${rowBg} ${delayBg}`}>
                       {/* タスク名 */}
                       <td className="px-3 py-2">
                         <div className="flex items-center gap-1.5" style={{ paddingLeft: row.level === 1 ? 16 : 0 }}>
@@ -477,15 +532,17 @@ export function InfraWbsPage() {
                         </div>
                       </td>
 
-                      {/* 予定開始 */}
-                      <td className="px-2 py-2 text-center text-slate-500 whitespace-nowrap tabular-nums">
-                        {fmtDate(row.plannedStart)}
-                      </td>
-
-                      {/* 予定終了 */}
-                      <td className="px-2 py-2 text-center text-slate-500 whitespace-nowrap tabular-nums">
-                        {fmtDate(row.plannedEnd)}
-                      </td>
+                      {/* 予定開始・予定終了: individual では非表示 */}
+                      {displayMode !== 'individual' && (
+                        <>
+                          <td className="px-2 py-2 text-center text-slate-500 whitespace-nowrap tabular-nums">
+                            {fmtDate(row.plannedStart)}
+                          </td>
+                          <td className="px-2 py-2 text-center text-slate-500 whitespace-nowrap tabular-nums">
+                            {fmtDate(row.plannedEnd)}
+                          </td>
+                        </>
+                      )}
 
                       {/* ステータス */}
                       <td className="px-2 py-2 text-center hidden md:table-cell">
@@ -495,7 +552,7 @@ export function InfraWbsPage() {
                         </span>
                       </td>
 
-                      {/* 進捗バー */}
+                      {/* 進捗バー: corporate/individual は青統一 */}
                       <td className="px-2 py-2 text-center hidden md:table-cell">
                         <div className="flex items-center gap-1.5 justify-center">
                           <div className="w-16 h-2 rounded-full bg-slate-200 overflow-hidden">
@@ -503,7 +560,9 @@ export function InfraWbsPage() {
                               className="h-full rounded-full transition-all"
                               style={{
                                 width: `${row.progressPct}%`,
-                                background: row.status === 'completed' ? '#10b981' : row.status === 'delayed' ? '#ef4444' : '#3b82f6',
+                                background: displayMode === 'manager'
+                                  ? (row.status === 'completed' ? '#10b981' : row.status === 'delayed' ? '#ef4444' : '#3b82f6')
+                                  : (row.status === 'completed' ? '#10b981' : '#3b82f6'),
                               }}
                             />
                           </div>
@@ -511,15 +570,17 @@ export function InfraWbsPage() {
                         </div>
                       </td>
 
-                      {/* 遅延日数 */}
-                      <td className="px-2 py-2 text-center tabular-nums font-medium whitespace-nowrap">
-                        {row.delayDays > 0
-                          ? <span className="text-red-600">+{row.delayDays}日</span>
-                          : row.status === 'completed'
-                            ? <span className="text-emerald-600">完了</span>
-                            : <span className="text-slate-400">—</span>
-                        }
-                      </td>
+                      {/* 遅延日数: manager のみ */}
+                      {displayMode === 'manager' && (
+                        <td className="px-2 py-2 text-center tabular-nums font-medium whitespace-nowrap">
+                          {row.delayDays > 0
+                            ? <span className="text-red-600">+{row.delayDays}日</span>
+                            : row.status === 'completed'
+                              ? <span className="text-emerald-600">完了</span>
+                              : <span className="text-slate-400">—</span>
+                          }
+                        </td>
+                      )}
 
                       {/* リンク */}
                       <td className="px-2 py-2 text-center hidden lg:table-cell">

@@ -43,6 +43,7 @@ export type AdminUser = {
   ec2CreatedAt: string | null
   ec2StartTime: string | null
   termsAgreedAt: string | null
+  accountType: 'corporate' | 'individual'
 }
 
 export function isAccountApiAvailable(): boolean {
@@ -155,7 +156,7 @@ export async function fetchAdminUsers(): Promise<AdminUser[]> {
 }
 
 /** ユーザー作成（POST /admin/users） - roleフィールド付き */
-export async function createAdminUser(username: string, password: string, role: string): Promise<{ ok: boolean; error?: string }> {
+export async function createAdminUser(username: string, password: string, role: string, accountType: 'corporate' | 'individual' = 'individual'): Promise<{ ok: boolean; error?: string }> {
   if (!BASE_URL) return { ok: false, error: 'API未設定' }
   const name = username.trim().toLowerCase()
   try {
@@ -163,7 +164,7 @@ export async function createAdminUser(username: string, password: string, role: 
       method: 'POST',
       headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
       credentials: 'omit',
-      body: JSON.stringify({ username: name, password, role }),
+      body: JSON.stringify({ username: name, password, role, accountType }),
     })
     const data = (await res.json()) as { ok?: boolean; error?: string; message?: string }
     if (res.status === 409 || data.error === 'username_exists' || data.error === 'already_exists') return { ok: false, error: 'そのユーザー名は既に使用されています' }

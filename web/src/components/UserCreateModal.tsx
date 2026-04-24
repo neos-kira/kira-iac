@@ -15,6 +15,7 @@ export function UserCreateModal({ onClose, onCreated }: Props) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState('student')
+  const [accountType, setAccountType] = useState<'corporate' | 'individual'>('individual')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
@@ -32,10 +33,10 @@ export function UserCreateModal({ onClose, onCreated }: Props) {
     if (!/^[a-z0-9-]+$/.test(name)) { setError('ユーザー名は半角英数字とハイフンのみ使用できます'); return }
     if (!password || password.length < 8) { setError('パスワードは8文字以上必要です'); return }
     setIsCreating(true)
-    const result = await createAdminUser(name, password, role)
+    const result = await createAdminUser(name, password, role, accountType)
     setIsCreating(false)
     if (result.ok) {
-      setSuccess(`ユーザー ${name}（${role}）を作成しました`)
+      setSuccess(`ユーザー ${name}（${role} / ${accountType === 'corporate' ? '法人' : '個人'}）を作成しました`)
       setUsername('')
       setPassword('')
       onCreated()
@@ -149,6 +150,17 @@ export function UserCreateModal({ onClose, onCreated }: Props) {
               >
                 <option value="student">student（受講生）</option>
                 <option value="manager">manager（管理者）</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">アカウント区分</label>
+              <select
+                value={accountType}
+                onChange={(e) => setAccountType(e.target.value as 'corporate' | 'individual')}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none"
+              >
+                <option value="individual">個人</option>
+                <option value="corporate">法人（SES企業社員）</option>
               </select>
             </div>
             {error && <p className="text-xs text-red-600">{error}</p>}
