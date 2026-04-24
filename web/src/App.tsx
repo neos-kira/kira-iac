@@ -867,7 +867,7 @@ function App() {
         const ch = Array.isArray(s.chapterProgress) ? s.chapterProgress : []
         const subCleared = [
           Number(s.introStep ?? 0) >= 5 && s.introConfirmed ? 1 : 0,     // はじめに
-          s.infra1Cleared ? 1 : 0,                                   // 1-1
+          Object.values((s.itBasicsProgress ?? {}) as Record<string, { cleared: boolean }>).filter(v => v.cleared).length >= 7 ? 1 : 0,  // IT業界の歩き方
           s.l1Cleared ? 1 : 0,                                       // 1-2
           ch[1]?.cleared ? 1 : 0,                                    // 2-x
           ch[2]?.cleared ? 1 : 0,                                    // 3-x
@@ -1223,6 +1223,10 @@ function App() {
             )}
             {/* ── 学習ロードマップカード ── */}
 <div className="bg-white border border-gray-100 rounded-xl p-5 md:p-6 mb-4">
+  <div className="flex items-center justify-between mb-3">
+    <h2 className="text-sm font-semibold text-slate-700">学習ロードマップ</h2>
+    <button type="button" onClick={() => navigate('/wbs')} className="text-xs text-sky-600 hover:underline">WBSを見る →</button>
+  </div>
   <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold mb-1.5">全体の進捗</p>
   <div className="flex items-end gap-1 mb-3">
     <span className="text-[40px] font-bold tracking-tight text-slate-800 leading-none">
@@ -1236,88 +1240,9 @@ function App() {
       style={{ width: `${progressPct?.pct ?? 0}%` }}
     />
   </div>
-  <p className="text-label md:text-label-pc text-slate-600 mb-4">
+  <p className="text-label md:text-label-pc text-slate-600">
     {progressPct?.completed ?? 0} / {progressPct?.total ?? 8} ステージ完了
   </p>
-  {/* ── ステージ一覧 ── */}
-  <div className="mb-4 space-y-2">
-    {(() => {
-      const s = serverSnapshot
-      const ch = Array.isArray(s?.chapterProgress) ? s.chapterProgress : []
-      const itBP = (s?.itBasicsProgress ?? {}) as Record<string, { cleared: boolean }>
-      const IT_BASICS_TOTAL = 7
-      const itBasicsCleared = Object.values(itBP).filter((v) => v.cleared).length
-      const stages: { name: string; completed: boolean; inProgress: boolean; pct: number }[] = [
-        {
-          name: 'はじめに',
-          completed: Number(s?.introStep ?? 0) >= 5 && s?.introConfirmed === true,
-          inProgress: Number(s?.introStep ?? 0) > 0,
-          pct: Math.min(100, Math.round((Number(s?.introStep ?? 0) / 5) * 100)),
-        },
-        {
-          name: 'IT業界の歩き方',
-          completed: itBasicsCleared >= IT_BASICS_TOTAL,
-          inProgress: itBasicsCleared > 0,
-          pct: Math.round((itBasicsCleared / IT_BASICS_TOTAL) * 100),
-        },
-        {
-          name: 'Linuxコマンド30問',
-          completed: !!s?.l1Cleared,
-          inProgress: (s?.l1CurrentPart ?? 0) > 0 || (s?.l1CurrentQuestion ?? 0) > 0,
-          pct: s?.l1Cleared ? 100 : Math.round(((s?.l1CurrentPart ?? 0) * 10 + (s?.l1CurrentQuestion ?? 0)) / 30 * 100),
-        },
-        {
-          name: 'ネットワーク基礎',
-          completed: !!ch[1]?.cleared,
-          inProgress: (ch[1]?.percent ?? 0) > 0,
-          pct: ch[1]?.percent ?? 0,
-        },
-        {
-          name: 'vi & シェルスクリプト',
-          completed: !!ch[2]?.cleared,
-          inProgress: (ch[2]?.percent ?? 0) > 0,
-          pct: ch[2]?.percent ?? 0,
-        },
-        {
-          name: 'Rocky Linux サーバー構築',
-          completed: !!ch[3]?.cleared,
-          inProgress: (ch[3]?.percent ?? 0) > 0,
-          pct: ch[3]?.percent ?? 0,
-        },
-      ]
-      return stages.map((stage, i) => {
-        if (stage.completed) {
-          return (
-            <div key={stage.name} className="flex gap-2.5 items-center px-3 py-2 bg-green-50 rounded-lg">
-              <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-green-500 text-white text-[10px] font-bold">✓</span>
-              <span className="text-[12px] font-semibold text-slate-900 flex-1">{stage.name}</span>
-              <span className="text-[10px] text-green-600 font-semibold">完了</span>
-            </div>
-          )
-        }
-        if (stage.inProgress) {
-          return (
-            <div key={stage.name} className="px-3 py-2 bg-sky-50 rounded-lg border-[1.5px] border-sky-400">
-              <div className="flex gap-2.5 items-center">
-                <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-sky-500 text-white text-[10px] font-bold">{i + 1}</span>
-                <span className="text-[12px] font-bold text-slate-900 flex-1">{stage.name}</span>
-                <span className="text-[10px] text-sky-600 font-semibold">{stage.pct}%</span>
-              </div>
-              <div className="mt-1.5 ml-7 h-1 bg-sky-200 rounded overflow-hidden">
-                <div className="h-full bg-sky-500 rounded transition-all" style={{ width: `${stage.pct}%` }} />
-              </div>
-            </div>
-          )
-        }
-        return (
-          <div key={stage.name} className="flex gap-2.5 items-center px-3 py-2 bg-slate-50 rounded-lg">
-            <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-slate-300 text-white text-[10px] font-bold">{i + 1}</span>
-            <span className="text-[12px] text-slate-500">{stage.name}</span>
-          </div>
-        )
-      })
-    })()}
-  </div>
 </div>
             {/* つづきから / はじめに案内バナー: serverSnapshot確定後に一度だけ表示を決定 */}
             {(() => {
