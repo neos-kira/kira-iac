@@ -575,10 +575,10 @@ export function LinuxLevel1Page() {
   const basePartQs = getPartQuestions(activePart)
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
+    <div className="h-dvh flex flex-col overflow-hidden bg-slate-50 text-slate-800">
 
       {/* ────── モバイル: 上部横スクロールナビ（〜1023px） ────── */}
-      <div className="lg:hidden bg-white border-b border-gray-100 px-3 py-2">
+      <div className="lg:hidden flex-shrink-0 bg-white border-b border-gray-100 px-3 py-2">
         <div className="flex gap-1.5 overflow-x-auto pb-1 scroll-pl-3">
           {basePartQs.map((q, i) => {
             const isCurrentQ = queueIdx === i
@@ -604,7 +604,7 @@ export function LinuxLevel1Page() {
         </div>
       </div>
 
-      <div className="flex">
+      <div className="flex flex-1 min-h-0">
 
         {/* ────── PC: 左サイドバー（1024px〜） ────── */}
         <aside className="hidden lg:flex flex-col w-48 shrink-0 sticky top-0 h-screen overflow-y-auto bg-white border-r border-gray-100">
@@ -635,7 +635,7 @@ export function LinuxLevel1Page() {
         </aside>
 
         {/* ────── メインコンテンツ ────── */}
-        <div className="flex-1 min-w-0 flex flex-col p-3 md:p-6">
+        <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-3 md:p-6">
           <div className="mx-auto max-w-xl w-full">
             <button type="button" onClick={() => navigate('/training/infra-basic-top')} className="mb-1 md:mb-3 inline-flex items-center gap-1 text-sm text-sky-700 hover:text-sky-800">
               ← 課題一覧に戻る
