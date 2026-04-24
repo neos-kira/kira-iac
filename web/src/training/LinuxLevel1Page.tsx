@@ -696,7 +696,7 @@ export function LinuxLevel1Page() {
           >
             コマンドを入力
           </label>
-          <div className="flex gap-2">
+          <div className="flex flex-row gap-2 items-center">
             <input
               ref={inputRef}
               id="cmd-input"
