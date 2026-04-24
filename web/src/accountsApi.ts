@@ -42,6 +42,7 @@ export type AdminUser = {
   keyPairName: string | null
   ec2CreatedAt: string | null
   ec2StartTime: string | null
+  termsAgreedAt: string | null
 }
 
 export function isAccountApiAvailable(): boolean {

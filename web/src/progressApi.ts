@@ -67,6 +67,27 @@ export async function fetchMe(): Promise<string | null> {
   }
 }
 
+/** auth/me からユーザー情報（termsAgreedAt 含む）を取得する */
+export async function fetchMeInfo(): Promise<{ username: string; role: string; termsAgreedAt: string | null; termsVersion: string | null } | null> {
+  if (!BASE_URL) return null
+  try {
+    const res = await fetch(`${BASE_URL}/auth/me`, {
+      headers: buildAuthHeaders(),
+      credentials: 'omit',
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as { username?: string; role?: string; termsAgreedAt?: string | null; termsVersion?: string | null }
+    return {
+      username: data.username ?? '',
+      role: data.role ?? 'student',
+      termsAgreedAt: data.termsAgreedAt ?? null,
+      termsVersion: data.termsVersion ?? null,
+    }
+  } catch {
+    return null
+  }
+}
+
 /** 進捗をサーバーに保存（受講生ログイン中に定期的に呼ぶ） */
 export async function postProgress(traineeId: string, snapshot: TraineeProgressSnapshot): Promise<boolean> {
   if (!BASE_URL) return false

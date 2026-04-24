@@ -339,6 +339,9 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
             ) : '送信'}
           </button>
         </div>
+        <p className="mt-1.5 px-1 text-[10px] leading-relaxed text-slate-400">
+          AI講師との会話内容は学習支援の品質向上のため管理者が確認する場合があります。個人情報や機密情報は入力しないでください。
+        </p>
       </aside>
     )
   }
@@ -412,6 +415,9 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
                 ) : '送信'}
               </button>
             </div>
+            <p className="px-3 pb-1 text-[10px] leading-relaxed text-slate-400">
+              AI講師との会話は学習支援の品質向上のため管理者が確認する場合があります。個人情報は入力しないでください。
+            </p>
           </div>
         )}
       </>

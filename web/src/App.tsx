@@ -25,7 +25,8 @@ import { VI_STEPS, SHELL_QUESTIONS } from './training/InfraBasic4Data'
 import { clearIntroForCurrentUser } from './training/introGate'
 import { LOGIN_FLAG_KEY, getCurrentDisplayName, getCurrentRole, USER_ROLE_KEY } from './auth'
 import { restoreProgressToLocalStorage, type TraineeProgressSnapshot } from './traineeProgressStorage'
-import { isProgressApiAvailable, postProgress, fetchMyProgress, fetchProgressFromApi, buildAuthHeaders, BASE_URL } from './progressApi'
+import { isProgressApiAvailable, postProgress, fetchMyProgress, fetchProgressFromApi, fetchMeInfo, buildAuthHeaders, BASE_URL } from './progressApi'
+import { TermsModal } from './components/TermsModal'
 import { fetchAdminUsers, createAdminUser, deleteAdminUser, type AdminUser } from './accountsApi'
 import { safeGetItem, safeSetItem, safeRemoveItem, clearCookieValue } from './utils/storage'
 
@@ -202,6 +203,8 @@ function App() {
   const [copiedField, setCopiedField] = useState<'ip' | 'user' | null>(null)
   const [showWbsTooltip, setShowWbsTooltip] = useState(false)
   const wbsTooltipRef = useRef<HTMLDivElement | null>(null)
+  /** null=未ロード, ''=未同意, string=同意済み(ISO日付) */
+  const [termsAgreedAt, setTermsAgreedAt] = useState<string | null>(null)
   const ec2PollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const openedRef = useRef<string | null>(null)
   const searchContainerRef = useRef<HTMLDivElement | null>(null)
@@ -574,6 +577,14 @@ function App() {
   }, [isAdminView])
 
 
+  // 利用規約同意状態を取得（研修生のみ）
+  useEffect(() => {
+    if (isAdminView || !isProgressApiAvailable()) return
+    fetchMeInfo().then((info) => {
+      if (info) setTermsAgreedAt(info.termsAgreedAt ?? '')
+    })
+  }, [isAdminView])
+
   // admin 用: アカウント一覧を定期取得し、既存の進捗から自動的に取り込む
   useEffect(() => {
     if (!isAdminView || !isProgressApiAvailable()) return
@@ -899,6 +910,10 @@ function App() {
   }
   return (
     <div className="min-h-screen text-slate-800">
+      {/* 利用規約同意モーダル（研修生・未同意の場合） */}
+      {!isAdminView && termsAgreedAt === '' && (
+        <TermsModal onAgreed={(t) => setTermsAgreedAt(t)} />
+      )}
       {/* サーバー作成成功モーダル */}
       {/* 停止確認ダイアログ */}
       {showStopConfirm && (

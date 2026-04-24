@@ -270,6 +270,7 @@ export function AdminPage() {
                   <th className="px-4 py-3 font-semibold text-slate-600">全体進捗</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">現在の課題</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">最終ログイン</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">規約同意</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">サーバー</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">アクション</th>
                 </tr>
@@ -277,11 +278,11 @@ export function AdminPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-slate-500">読み込み中...</td>
+                    <td colSpan={8} className="px-4 py-8 text-center text-slate-500">読み込み中...</td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                    <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
                       {users.length === 0 ? '受講生がまだ登録されていません' : '条件に一致するユーザーがいません'}
                     </td>
                   </tr>
@@ -306,6 +307,16 @@ export function AdminPage() {
                         </td>
                         <td className="px-4 py-3 text-slate-700">{u.currentChapter}</td>
                         <td className="px-4 py-3 text-slate-600">{formatDate(u.lastLogin)}</td>
+                        <td className="px-4 py-3">
+                          {u.termsAgreedAt ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+                              {formatDate(u.termsAgreedAt)}
+                            </span>
+                          ) : (
+                            <span className="text-xs font-medium text-amber-600">未</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3">
                           {u.ec2State === 'running' ? (
                             <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
