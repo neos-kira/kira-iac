@@ -25,6 +25,7 @@ import { InfraBasic5Page } from './training/InfraBasic5Page'
 import { InfraWbsPage } from './training/InfraWbsPage'
 import { IntroPage } from './training/IntroPage'
 import { AdminPage } from './admin/AdminPage'
+import { AiChatLogPage } from './admin/AiChatLogPage'
 import { MentorDesk, INITIAL_MESSAGE, type ChatMessage } from './components/MentorDesk'
 import { SharedHeader } from './components/SharedHeader'
 import { Z } from './zIndex'
@@ -495,6 +496,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/login" element={<LoginPage />} />
             <Route path="/" element={<ProtectedRoute><App /></ProtectedRoute>} />
             <Route path="/admin" element={<ManagerRoute><AdminPage /></ManagerRoute>} />
+            <Route path="/admin/ai-chat-log" element={<ManagerRoute><AiChatLogPage /></ManagerRoute>} />
             <Route path="/training/linux-level1" element={<IntroGate><LinuxLevel1Page /></IntroGate>} />
             <Route path="/training/infra-basic-1" element={<IntroGate><InfraBasic1Page /></IntroGate>} />
             <Route path="/training/infra-basic-top" element={<IntroGate><InfraBasicTopPage /></IntroGate>} />

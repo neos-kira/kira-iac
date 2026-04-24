@@ -169,6 +169,13 @@ export function AdminPage() {
             )}
             <button
               type="button"
+              onClick={() => navigate('/admin/ai-chat-log')}
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            >
+              AI会話ログ
+            </button>
+            <button
+              type="button"
               onClick={() => navigate('/')}
               className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
             >

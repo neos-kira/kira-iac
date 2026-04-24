@@ -1120,6 +1120,56 @@ ${isCorrect === true ? '正解済み。この問題は解決しています。�
     // Admin API（manager ロール専用）
     // ============================
 
+    // 研修生 AI 会話ログ取得（GET /admin/ai-chat-log）- managerのみ
+    if (method === 'GET' && (path === '/admin/ai-chat-log' || path === '/admin/ai-chat-log/')) {
+      const session = await verifySession(event)
+      if (!session) return json({ error: 'unauthorized' }, 401)
+      const role = await getSessionRole(session)
+      if (role !== 'manager') return json({ error: 'forbidden' }, 403)
+
+      const userId = event.queryStringParameters?.userId
+      const limit = Math.min(parseInt(event.queryStringParameters?.limit || '100', 10), 100)
+      const from = event.queryStringParameters?.from   // ISO 日付（例: 2026-04-01）
+      const to = event.queryStringParameters?.to       // ISO 日付（例: 2026-04-30）
+
+      if (!userId) return json({ error: 'userId is required' }, 400)
+      if (!AiChatHistoryTableName) return json({ messages: [] })
+
+      // GSI createdAt-index で取得（新しい順）
+      const queryParams = {
+        TableName: AiChatHistoryTableName,
+        IndexName: 'createdAt-index',
+        KeyConditionExpression: 'userId = :uid',
+        ExpressionAttributeValues: marshall({ ':uid': userId }),
+        ScanIndexForward: false,
+        Limit: limit,
+      }
+      // from/to フィルタ
+      if (from && to) {
+        queryParams.KeyConditionExpression += ' AND createdAt BETWEEN :from AND :to'
+        queryParams.ExpressionAttributeValues = marshall({ ':uid': userId, ':from': from, ':to': to + 'T23:59:59.999Z' })
+      } else if (from) {
+        queryParams.KeyConditionExpression += ' AND createdAt >= :from'
+        queryParams.ExpressionAttributeValues = marshall({ ':uid': userId, ':from': from })
+      } else if (to) {
+        queryParams.KeyConditionExpression += ' AND createdAt <= :to'
+        queryParams.ExpressionAttributeValues = marshall({ ':uid': userId, ':to': to + 'T23:59:59.999Z' })
+      }
+
+      const { Items } = await client.send(new QueryCommand(queryParams))
+      const messages = (Items || []).map((item) => {
+        const m = unmarshall(item)
+        return {
+          messageId: m.messageId,
+          role: m.role,
+          content: m.content,
+          createdAt: m.createdAt,
+          ...(m.contextPage ? { contextPage: m.contextPage } : {}),
+        }
+      })
+      return json({ messages })
+    }
+
     // 全ユーザー一覧 + 進捗マージ（GET /admin/users）
     if (method === 'GET' && (path === '/admin/users' || path === '/admin/users/')) {
       const session = await verifySession(event)
