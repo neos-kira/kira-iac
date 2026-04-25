@@ -947,7 +947,27 @@ function App() {
             </div>
           ) : (
           <>
-          <div className="w-full max-w-2xl space-y-4 pb-8">
+          <div className="flex w-full gap-6 pb-8 items-start">
+            {/* サイドバー（PCのみ表示） */}
+            <aside className="hidden md:block w-[200px] flex-shrink-0 pt-1">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 px-3 mb-2">メニュー</p>
+              <nav className="space-y-0.5">
+                <button type="button" onClick={() => navigate('/')} className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold text-sky-700 bg-sky-50">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                  ホーム
+                </button>
+                <button type="button" onClick={() => navigate('/wbs')} className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg>
+                  WBS
+                </button>
+                <button type="button" onClick={() => navigate('/it-basics')} className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                  IT業界の歩き方
+                </button>
+              </nav>
+            </aside>
+            {/* メインコンテンツ */}
+            <div className="flex-1 min-w-0 space-y-4">
             {/* 進捗リセットボタン（manager限定） */}
             {getCurrentRole() === 'manager' && (
               <div className="flex justify-end">
@@ -1039,10 +1059,12 @@ function App() {
                 const m = la.label.match(/(\d+)\/(\d+)/)
                 const done2 = m ? parseInt(m[1]) : null
                 const total2 = m ? parseInt(m[2]) : null
-                const courseName = la.label.replace(/\s*\d+\/\d+問$/, '').trim()
+                const fullLabel = la.label.replace(/\s*\d+\/\d+問$/, '').trim()
+                const courseBase = fullLabel.includes('・') ? fullLabel.split('・')[0] : fullLabel
+                const partName = fullLabel.includes('・') ? fullLabel.split('・').slice(1).join('・') : ''
                 currentTask = {
-                  taskName: courseName,
-                  subtaskName: la.label,
+                  taskName: courseBase,
+                  subtaskName: partName || fullLabel,
                   progress: (done2 !== null && total2 !== null) ? Math.round((done2 / total2) * 100) : null,
                   progressLabel: (done2 !== null && total2 !== null) ? `${done2} / ${total2}問` : null,
                   estimatedTime: '',
@@ -1146,7 +1168,7 @@ function App() {
               type StepItem = { no: number; name: string; sub: string; status: 'done' | 'active' | 'todo'; progress?: number | null; progressLabel?: string | null; action: () => void }
               const steps: StepItem[] = [
                 { no: 1, name: 'はじめに', sub: '行動基準・セキュリティ基礎', status: introOk ? 'done' : (introStep2 >= 1 ? 'active' : 'todo'), progress: introOk ? 100 : introStep2 > 0 ? Math.round((introStep2 / 5) * 100) : null, progressLabel: introStep2 > 0 && !introOk ? `${introStep2} / 5ステップ` : null, action: () => navigate('/training/intro') },
-                { no: 2, name: 'Linux基本操作・コマンド', sub: 'ツール操作・Linuxコマンド30問', status: infra1Ok ? 'done' : ((snap?.infra1Checkboxes ?? []).some(Boolean) || (snap?.l1CurrentPart ?? 0) > 0 ? 'active' : 'todo'), progress: infra1Ok ? 100 : null, progressLabel: null, action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
+                { no: 2, name: 'Linux基本操作・コマンド', sub: 'ツール操作・Linuxコマンド30問', status: infra1Ok ? 'done' : ((snap?.infra1Checkboxes ?? []).some(Boolean) || (snap?.l1CurrentPart ?? 0) > 0 || (snap?.l1CurrentQuestion ?? 0) > 0 ? 'active' : 'todo'), progress: infra1Ok ? 100 : null, progressLabel: null, action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
                 { no: 3, name: 'ネットワーク基礎', sub: 'ネットワーク実践・TCP/IP10問', status: infra2Ok2 ? 'done' : ((snap?.l2CurrentQuestion ?? 0) > 0 ? 'active' : 'todo'), progress: infra2Ok2 ? 100 : (snap?.l2CurrentQuestion ?? 0) > 0 ? Math.round(((snap?.l2CurrentQuestion ?? 0) / 10) * 100) : null, progressLabel: (snap?.l2CurrentQuestion ?? 0) > 0 && !infra2Ok2 ? `${snap?.l2CurrentQuestion ?? 0} / 10問` : null, action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
                 { no: 4, name: 'ファイル操作・viエディタ', sub: 'OS/仮想化/クラウド解説・記述チェック', status: infra3Ok2 ? 'done' : (Object.keys(snap?.infra32Answers ?? {}).length > 0 ? 'active' : 'todo'), progress: infra3Ok2 ? 100 : null, progressLabel: null, action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
                 { no: 5, name: 'シェルスクリプト', sub: 'vi演習・シェルスクリプト演習', status: infra4Ok2 ? 'done' : (infra4Active2 ? 'active' : 'todo'), progress: infra4Ok2 ? 100 : infra4Active2 ? Math.round(((infra4ViDone2 + infra4ShellDone2) / (VI_STEPS.length + SHELL_QUESTIONS.length)) * 100) : null, progressLabel: infra4Active2 && !infra4Ok2 ? `vi: ${infra4ViDone2}/${VI_STEPS.length}  シェル: ${infra4ShellDone2}/${SHELL_QUESTIONS.length}` : null, action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) } },
@@ -1343,6 +1365,7 @@ function App() {
               )
             )}
 
+          </div>
           </div>
           </>
           )}
