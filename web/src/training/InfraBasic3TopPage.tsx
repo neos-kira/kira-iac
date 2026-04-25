@@ -55,18 +55,17 @@ export function InfraBasic3TopPage() {
         </div>
 
         {/* 進捗サマリー */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {/* 進捗サマリー — color-primary (brand) */}
-          <span className="text-body md:text-body-pc" style={{ fontWeight: 600, color: '#0369a1' }}>
+        <div className="flex items-center gap-3">
+          <span className="text-body md:text-body-pc font-semibold text-sky-700">
             {completedCount} / {totalCount} 完了
           </span>
-          <div style={{ flex: 1, height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden', maxWidth: '120px' }}>
-            <div style={{ width: `${(completedCount / totalCount) * 100}%`, height: '100%', background: '#7dd3fc', borderRadius: '3px', transition: 'width 0.3s ease' }} />
+          <div className="h-1.5 flex-1 max-w-[120px] bg-slate-200 rounded-full overflow-hidden">
+            <div className="h-full bg-sky-300 rounded-full transition-all duration-300" style={{ width: `${(completedCount / totalCount) * 100}%` }} />
           </div>
         </div>
 
         {/* リスト型課題カード */}
-        <div style={{ display: 'flex', flexDirection: 'column', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', background: 'white' }}>
+        <div className="flex flex-col rounded-xl border border-slate-200 overflow-hidden bg-white">
           {TASKS.map((task, index) => {
             const sub = subTasks[index]
             const isCompleted = sub?.status === 'cleared'
@@ -74,39 +73,24 @@ export function InfraBasic3TopPage() {
             return (
               <div
                 key={task.path}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '20px 24px',
-                  borderBottom: index < TASKS.length - 1 ? '1px solid #f3f4f6' : 'none',
-                  background: isCompleted ? '#f0fdf9' : 'white',
-                }}
+                className={`flex items-center justify-between px-6 py-5 ${index < TASKS.length - 1 ? 'border-b border-slate-100' : ''} ${isCompleted ? 'bg-green-50' : 'bg-white'}`}
               >
-                {/* 完了チェック円 — 達成時は color-success (emerald) */}
-                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: isCompleted ? '#10b981' : '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: '16px', color: isCompleted ? 'white' : '#9ca3af', fontWeight: 600 }}>
+                {/* 完了チェック円 */}
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mr-4 font-semibold ${isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
                   {isCompleted ? '✓' : index + 1}
                 </div>
 
-                <div style={{ flex: 1 }}>
-                  <div className="text-label md:text-label-pc" style={{ color: '#9ca3af', marginBottom: '2px' }}>
-                    {task.category}
-                  </div>
-                  <div className="text-heading md:text-heading-pc" style={{ fontWeight: 600, color: '#111827', marginBottom: '2px' }}>
-                    {task.title}
-                  </div>
-                  <div className="text-label md:text-label-pc" style={{ color: '#9ca3af' }}>
-                    {task.description}
-                  </div>
+                <div className="flex-1">
+                  <div className="text-label md:text-label-pc text-slate-400 mb-0.5">{task.category}</div>
+                  <div className="text-heading md:text-heading-pc font-semibold text-slate-800 mb-0.5">{task.title}</div>
+                  <div className="text-label md:text-label-pc text-slate-400">{task.description}</div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0, marginLeft: '16px' }}>
-                  {/* 開くボタン — color-primary (light sky: 反復遷移系) */}
+                <div className="flex items-center gap-3 shrink-0 ml-4">
                   <button
                     type="button"
                     onClick={() => { window.location.href = getTrainingUrl(task.path) }}
-                    className="rounded-lg bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 transition-colors"
-                    style={{ padding: '8px 16px', fontWeight: 500 }}
+                    className="rounded-lg bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 transition-colors px-4 py-2 font-medium"
                   >
                     開く
                   </button>

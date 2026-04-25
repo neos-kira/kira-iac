@@ -38,7 +38,7 @@ export function ITBasicsTopPage() {
               <div className="mt-4 flex gap-2">
                 <a
                   href={getTrainingUrl(`/it-basics/${cat.id}/study`)}
-                  className="flex-1 rounded-lg bg-slate-100 px-3 py-2 text-center text-button md:text-button-pc font-medium text-slate-700 hover:bg-slate-200"
+                  className="flex-1 rounded-lg bg-sky-50 px-3 py-2 text-center text-button md:text-button-pc font-medium text-sky-700 border border-sky-200 hover:bg-sky-100"
                 >
                   座学
                 </a>
