@@ -3,7 +3,6 @@
  * 全ページを白/ライトで統一する。
  */
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Z } from './zIndex'
 import { useSafeNavigate } from './hooks/useSafeNavigate'
 // import { OpenInNewTabButton } from './components/OpenInNewTabButton'
 import { NeOSLogo } from './components/NeOSLogo'
@@ -17,7 +16,6 @@ import {
   isTask1Cleared,
 } from './training/trainingWbsData'
 import { isJTerada, J_TERADA_ALLOWED_LINKS } from './specialUsers'
-import { VI_STEPS, SHELL_QUESTIONS } from './training/InfraBasic4Data'
 import { clearIntroForCurrentUser } from './training/introGate'
 import { LOGIN_FLAG_KEY, getCurrentDisplayName, getCurrentRole, USER_ROLE_KEY } from './auth'
 import { restoreProgressToLocalStorage, type TraineeProgressSnapshot } from './traineeProgressStorage'
@@ -25,6 +23,7 @@ import { isProgressApiAvailable, postProgress, fetchMyProgress, fetchProgressFro
 import { TermsModal } from './components/TermsModal'
 import { fetchAdminUsers, createAdminUser, deleteAdminUser, type AdminUser } from './accountsApi'
 import { safeGetItem, safeRemoveItem, clearCookieValue } from './utils/storage'
+import { HomeDashboard } from './components/HomeDashboard'
 
 type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3' | 'infra-basic-4'
 type PinnableId = TrainingTaskId | 'intro'
@@ -58,16 +57,6 @@ function getDisplayName(): string {
   return getCurrentDisplayName()
 }
 
-function isKiraTestUser(): boolean {
-  if (typeof window === 'undefined') return false
-  try {
-    const name = getDisplayName().trim().toLowerCase()
-    return name === 'kira-test'
-  } catch {
-    return false
-  }
-}
-
 function loadPinnedTrainingTasks(): PinnableId[] {
   const raw = safeGetItem(TRAINING_PIN_KEY)
   if (!raw) return []
@@ -82,12 +71,6 @@ function loadPinnedTrainingTasks(): PinnableId[] {
     return []
   }
 }
-
-function getTrainingUrl(path: string) {
-  const base = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname || '/'}`.replace(/\/$/, '') || window.location.origin : ''
-  return `${base}#${path}`
-}
-
 
 function handleLogout() {
   if (typeof window === 'undefined') return
@@ -175,7 +158,6 @@ function App() {
   const [ec2StatusError, setEc2StatusError] = useState(false)
   const [pemLostOpen, setPemLostOpen] = useState(false)
   const [copiedField, setCopiedField] = useState<'ip' | 'user' | null>(null)
-  const [serverInfoOpen, setServerInfoOpen] = useState(false)
   /** null=未ロード, ''=未同意, string=同意済み(ISO日付) */
   const [termsAgreedAt, setTermsAgreedAt] = useState<string | null>(null)
   const ec2PollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -756,9 +738,9 @@ function App() {
           </div>
         )}
 
+        {isAdminView ? (
         <main className="mt-4 flex flex-1 flex-col items-center justify-start mx-auto max-w-5xl px-6 w-full">
-          {isAdminView ? (
-            <div className="w-full max-w-2xl space-y-4">
+          <div className="w-full max-w-2xl space-y-4">
               <h1 className="text-display md:text-display-pc font-semibold text-slate-800 tracking-tight">講師用メニュー</h1>
               <section className="space-y-2">
                 <p className="text-body md:text-body-pc text-slate-600">受講生の進捗を確認できます。</p>
@@ -945,431 +927,29 @@ function App() {
                 </div>
               )}
             </div>
-          ) : (
-          <>
-          <div className="flex w-full gap-6 pb-8 items-start">
-            {/* サイドバー（PCのみ表示） */}
-            <aside className="hidden md:block w-[200px] flex-shrink-0 pt-1">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 px-3 mb-2">メニュー</p>
-              <nav className="space-y-0.5">
-                <button type="button" onClick={() => navigate('/')} className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold text-sky-700 bg-sky-50">
-                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-                  ホーム
-                </button>
-                <button type="button" onClick={() => navigate('/wbs')} className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
-                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg>
-                  WBS
-                </button>
-                <button type="button" onClick={() => navigate('/it-basics')} className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
-                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                  IT業界の歩き方
-                </button>
-              </nav>
-            </aside>
-            {/* メインコンテンツ */}
-            <div className="flex-1 min-w-0 space-y-4">
-            {/* 進捗リセットボタン（manager限定） */}
-            {getCurrentRole() === 'manager' && (
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (!window.confirm('すべての進捗データをリセットしますか？\n（この操作は元に戻せません）')) return
-                    const username = getCurrentDisplayName()
-                    if (!username || !isProgressApiAvailable()) {
-                      alert('リセットできませんでした。')
-                      return
-                    }
-                    try {
-                      await postProgress(username, {
-                        introConfirmed: false,
-                        introAt: null,
-                        introStep: 0,
-                        introRiskAnswers: {},
-                        wbsPercent: 0,
-                        chapterProgress: [],
-                        currentDay: 0,
-                        delayedIds: [],
-                        updatedAt: new Date().toISOString(),
-                        pins: [],
-                        infra1Checkboxes: [],
-                        infra1Cleared: false,
-                        l1CurrentPart: 0,
-                        l1CurrentQuestion: 0,
-                        l1Cleared: false,
-                        l2CurrentQuestion: 0,
-                        infra32Answers: {},
-                        infra4ViDoneSteps: [],
-                        infra4ShellDoneQuestions: [],
-                        infra5PhaseDone: [],
-                        infra5BuildDone: [],
-                        infra5TroubleDone: [],
-                        infra5SecDone: [],
-                      })
-                      alert('進捗をリセットしました。ページをリロードします。')
-                      window.location.reload()
-                    } catch {
-                      alert('リセットに失敗しました。')
-                    }
-                  }}
-                  className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-label md:text-label-pc font-medium text-rose-600 hover:bg-rose-100"
-                >
-                  進捗リセット（開発用）
-                </button>
-              </div>
-            )}
-            {/* ─── 1. ページタイトル ─── */}
-            <div>
-              <h1 className="text-[18px] font-bold text-slate-800 tracking-tight">Linuxサーバー基礎</h1>
-              <div className="mt-2 flex items-center gap-3">
-                <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full bg-sky-500 transition-all duration-700" style={{ width: `${progressPct?.pct ?? 0}%` }} />
-                </div>
-                <span className="text-[12px] text-slate-500 shrink-0">{progressPct?.completed ?? 0} / {progressPct?.total ?? 8} ステージ完了 ({progressPct?.pct ?? 0}%)</span>
-              </div>
-            </div>
-
-            {/* ─── 2. 今やる課題カード ─── */}
-            {(() => {
-              if (!isSnapLoaded) {
-                return (
-                  <div className="rounded-2xl p-6 animate-pulse" style={{ background: 'linear-gradient(135deg, #3730a3, #2563eb)' }}>
-                    <div className="h-3 w-20 rounded bg-white/20 mb-3" />
-                    <div className="h-6 w-40 rounded bg-white/20 mb-4" />
-                    <div className="h-10 rounded-xl bg-white/20" />
-                  </div>
-                )
-              }
-              const snap = serverSnapshot ?? ({} as TraineeProgressSnapshot)
-              const introStep = Number(snap.introStep ?? 0)
-
-              type CurrentTask = {
-                taskName: string
-                subtaskName: string
-                progress: number | null
-                progressLabel: string | null
-                estimatedTime: string
-                action: () => void
-                actionLabel: string
-              }
-              let currentTask: CurrentTask | null = null
-
-              if (snap.lastActive) {
-                const la = snap.lastActive
-                const m = la.label.match(/(\d+)\/(\d+)/)
-                const done2 = m ? parseInt(m[1]) : null
-                const total2 = m ? parseInt(m[2]) : null
-                const fullLabel = la.label.replace(/\s*\d+\/\d+問$/, '').trim()
-                const courseBase = fullLabel.includes('・') ? fullLabel.split('・')[0] : fullLabel
-                const partName = fullLabel.includes('・') ? fullLabel.split('・').slice(1).join('・') : ''
-                currentTask = {
-                  taskName: courseBase,
-                  subtaskName: partName || fullLabel,
-                  progress: (done2 !== null && total2 !== null) ? Math.round((done2 / total2) * 100) : null,
-                  progressLabel: (done2 !== null && total2 !== null) ? `${done2} / ${total2}問` : null,
-                  estimatedTime: '',
-                  action: () => { if (isIntroCompleted) window.open(getTrainingUrl(la.path), '_blank'); else setShowIntroRequiredPopup(true) },
-                  actionLabel: '続きから再開する →',
-                }
-              } else if (introStep === 0) {
-                currentTask = { taskName: 'はじめに', subtaskName: 'プロフェッショナルとしての行動基準を確認', progress: 0, progressLabel: null, estimatedTime: '約30分', action: () => navigate('/training/intro'), actionLabel: 'はじめに →' }
-              } else if (introStep >= 1 && introStep <= 4) {
-                currentTask = { taskName: 'はじめに', subtaskName: `Step ${introStep + 1} / 5`, progress: Math.round((introStep / 5) * 100), progressLabel: `${introStep} / 5ステップ`, estimatedTime: '約30分', action: () => navigate('/training/intro'), actionLabel: '続きから →' }
-              } else {
-                const l1Part = snap.l1CurrentPart ?? 0
-                const l1Q = snap.l1CurrentQuestion ?? 0
-                const l1InProgress = (l1Part > 0 || l1Q > 0) && !(snap.l1Cleared ?? false)
-                const infra1InProgress = (snap.infra1Checkboxes ?? []).some(Boolean) && !(snap.infra1Cleared ?? false)
-                const l2Q = snap.l2CurrentQuestion ?? 0
-                const infra32InProgress = Object.values(snap.infra32Answers ?? {}).some((v) => v && String(v).trim())
-                const vi4Done = (snap.infra4ViDoneSteps ?? []).length
-                const shell4Done = (snap.infra4ShellDoneQuestions ?? []).length
-                if (l1InProgress) {
-                  const partLabels = ['基本操作', 'サーバー構築', '実践問題']
-                  currentTask = { taskName: 'Linuxコマンド30問', subtaskName: `Part ${l1Part + 1}: ${partLabels[l1Part] ?? '基本操作'}`, progress: Math.round((l1Q / 10) * 100), progressLabel: `${l1Q} / 10問`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level1'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '続きから再開する →' }
-                } else if (infra1InProgress) {
-                  currentTask = { taskName: 'SSH接続確認', subtaskName: 'インフラ基礎課題 1', progress: null, progressLabel: null, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '続きから再開する →' }
-                } else if (l2Q > 0) {
-                  currentTask = { taskName: 'TCP/IP 理解度チェック', subtaskName: 'ネットワーク基礎', progress: Math.round((l2Q / 10) * 100), progressLabel: `${l2Q} / 10問`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level2'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '続きから再開する →' }
-                } else if (infra32InProgress) {
-                  currentTask = { taskName: 'OS・仮想化・クラウド理解度チェック', subtaskName: 'インフラ基礎課題 3', progress: null, progressLabel: null, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '続きから再開する →' }
-                } else if (vi4Done > 0 && vi4Done < VI_STEPS.length) {
-                  currentTask = { taskName: 'viエディタ演習', subtaskName: 'インフラ基礎課題 4', progress: Math.round((vi4Done / VI_STEPS.length) * 100), progressLabel: `${vi4Done} / ${VI_STEPS.length}ステップ`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '続きから再開する →' }
-                } else if (shell4Done > 0 && shell4Done < SHELL_QUESTIONS.length) {
-                  currentTask = { taskName: 'シェルスクリプト演習', subtaskName: 'インフラ基礎課題 4', progress: Math.round((shell4Done / SHELL_QUESTIONS.length) * 100), progressLabel: `${shell4Done} / ${SHELL_QUESTIONS.length}問`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '続きから再開する →' }
-                }
-              }
-
-              if (!currentTask) {
-                const isAllDone2 = (snap.infra5PhaseDone ?? []).length >= 5
-                if (isAllDone2) {
-                  return (
-                    <div className="rounded-2xl p-6 text-white" style={{ background: 'linear-gradient(135deg, #059669, #0284c7)' }}>
-                      <p className="text-[11px] uppercase tracking-widest text-white/70 mb-1">今やる課題</p>
-                      <h2 className="text-[20px] font-bold">全カリキュラム完了！</h2>
-                      <p className="mt-1 text-[13px] text-white/80">おめでとうございます。すべての課題をクリアしました。</p>
-                    </div>
-                  )
-                }
-                return (
-                  <div className="rounded-2xl p-6 text-white" style={{ background: 'linear-gradient(135deg, #3730a3, #2563eb)' }}>
-                    <p className="text-[11px] uppercase tracking-widest text-white/70 mb-1">今やる課題</p>
-                    <h2 className="text-[20px] font-bold">カリキュラムを確認</h2>
-                    <p className="mt-1 text-[13px] text-white/80">下のステップ一覧から次に進む課題を選択してください。</p>
-                  </div>
-                )
-              }
-
-              return (
-                <div className="rounded-2xl p-5 md:p-6 text-white" style={{ background: 'linear-gradient(135deg, #3730a3, #2563eb)' }}>
-                  <p className="text-[11px] uppercase tracking-widest text-white/70 mb-1">今やる課題</p>
-                  <h2 className="text-[19px] md:text-[21px] font-bold leading-snug">{currentTask.taskName}</h2>
-                  <p className="mt-0.5 text-[13px] text-white/75">{currentTask.subtaskName}</p>
-                  {currentTask.estimatedTime && <p className="mt-0.5 text-[12px] text-white/60">想定時間：{currentTask.estimatedTime}</p>}
-                  {currentTask.progress !== null && (
-                    <div className="mt-3 space-y-1">
-                      <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full bg-white/70 transition-all" style={{ width: `${currentTask.progress}%` }} />
-                      </div>
-                      {currentTask.progressLabel && <p className="text-[12px] text-white/70">{currentTask.progressLabel}</p>}
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={currentTask.action}
-                    className="mt-4 w-full rounded-xl bg-white text-indigo-700 font-bold py-3 text-[14px] hover:bg-white/90 transition-colors text-center"
-                  >
-                    {currentTask.actionLabel}
-                  </button>
-                </div>
-              )
-            })()}
-
-            {/* ─── 3. ステップ一覧 ─── */}
-            {(() => {
-              const snap = serverSnapshot
-              const introOk = isIntroCompleted
-              const canAccessAll = isKiraTestUser()
-              const infra1Ok = snap?.infra1Cleared === true && snap?.l1Cleared === true
-              const infra2Ok2 = (snap?.l2CurrentQuestion ?? 0) > 0 && introOk
-              const infra3Ok2 = Object.values(snap?.infra32Answers ?? {}).some((v) => v && String(v).trim())
-              const infra4ViDone2 = (snap?.infra4ViDoneSteps ?? []).length
-              const infra4ShellDone2 = (snap?.infra4ShellDoneQuestions ?? []).length
-              const infra4Ok2 = infra4ViDone2 >= VI_STEPS.length && infra4ShellDone2 >= SHELL_QUESTIONS.length
-              const infra4Active2 = infra4ViDone2 > 0 || infra4ShellDone2 > 0
-              const infra5PhaseDone2 = (snap?.infra5PhaseDone ?? []).length
-              const infra5Ok2 = infra5PhaseDone2 >= 5
-              const infra5Active2 = infra5PhaseDone2 > 0
-              const introStep2 = Number(snap?.introStep ?? 0)
-              const itClearedCount2 = Object.values((snap?.itBasicsProgress ?? {}) as Record<string, { cleared: boolean }>).filter(v => v.cleared).length
-              const itOk2 = itClearedCount2 >= 7
-              const itActive2 = itClearedCount2 > 0
-
-              type StepItem = { no: number; name: string; sub: string; status: 'done' | 'active' | 'todo'; progress?: number | null; progressLabel?: string | null; action: () => void }
-              const steps: StepItem[] = [
-                { no: 1, name: 'はじめに', sub: '行動基準・セキュリティ基礎', status: introOk ? 'done' : (introStep2 >= 1 ? 'active' : 'todo'), progress: introOk ? 100 : introStep2 > 0 ? Math.round((introStep2 / 5) * 100) : null, progressLabel: introStep2 > 0 && !introOk ? `${introStep2} / 5ステップ` : null, action: () => navigate('/training/intro') },
-                { no: 2, name: 'Linux基本操作・コマンド', sub: 'ツール操作・Linuxコマンド30問', status: infra1Ok ? 'done' : ((snap?.infra1Checkboxes ?? []).some(Boolean) || (snap?.l1CurrentPart ?? 0) > 0 || (snap?.l1CurrentQuestion ?? 0) > 0 ? 'active' : 'todo'), progress: infra1Ok ? 100 : null, progressLabel: null, action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
-                { no: 3, name: 'ネットワーク基礎', sub: 'ネットワーク実践・TCP/IP10問', status: infra2Ok2 ? 'done' : ((snap?.l2CurrentQuestion ?? 0) > 0 ? 'active' : 'todo'), progress: infra2Ok2 ? 100 : (snap?.l2CurrentQuestion ?? 0) > 0 ? Math.round(((snap?.l2CurrentQuestion ?? 0) / 10) * 100) : null, progressLabel: (snap?.l2CurrentQuestion ?? 0) > 0 && !infra2Ok2 ? `${snap?.l2CurrentQuestion ?? 0} / 10問` : null, action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
-                { no: 4, name: 'ファイル操作・viエディタ', sub: 'OS/仮想化/クラウド解説・記述チェック', status: infra3Ok2 ? 'done' : (Object.keys(snap?.infra32Answers ?? {}).length > 0 ? 'active' : 'todo'), progress: infra3Ok2 ? 100 : null, progressLabel: null, action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
-                { no: 5, name: 'シェルスクリプト', sub: 'vi演習・シェルスクリプト演習', status: infra4Ok2 ? 'done' : (infra4Active2 ? 'active' : 'todo'), progress: infra4Ok2 ? 100 : infra4Active2 ? Math.round(((infra4ViDone2 + infra4ShellDone2) / (VI_STEPS.length + SHELL_QUESTIONS.length)) * 100) : null, progressLabel: infra4Active2 && !infra4Ok2 ? `vi: ${infra4ViDone2}/${VI_STEPS.length}  シェル: ${infra4ShellDone2}/${SHELL_QUESTIONS.length}` : null, action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) } },
-                { no: 6, name: 'サーバー構築（Ubuntu）', sub: 'OS設定・ディスク・apache2・AIDE・PostgreSQL', status: infra5Ok2 ? 'done' : (infra5Active2 ? 'active' : 'todo'), progress: infra5Ok2 ? 100 : infra5Active2 ? Math.round((infra5PhaseDone2 / 5) * 100) : null, progressLabel: infra5Active2 && !infra5Ok2 ? `${infra5PhaseDone2} / 5フェーズ` : null, action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-5'), '_blank'); else setShowIntroRequiredPopup(true) } },
-                { no: 7, name: 'IT業界の歩き方', sub: 'IT業界の基礎知識', status: itOk2 ? 'done' : (itActive2 ? 'active' : 'todo'), progress: itOk2 ? 100 : itActive2 ? Math.round((itClearedCount2 / 7) * 100) : null, progressLabel: itActive2 && !itOk2 ? `${itClearedCount2} / 7項目` : null, action: () => navigate('/it-basics') },
-              ]
-
-              return (
-                <div>
-                  <h2 className="text-[12px] font-semibold text-slate-400 uppercase tracking-wider mb-3">カリキュラム</h2>
-                  <div className="space-y-2">
-                    {steps.map((step) => {
-                      const isDone = step.status === 'done'
-                      const isActive = step.status === 'active'
-                      return (
-                        <div key={step.no} className={`rounded-xl border transition-colors ${isDone ? 'border-slate-100 bg-slate-50/60' : isActive ? 'border-sky-300 bg-white shadow-sm' : 'border-slate-100 bg-white'}`}>
-                          <div className="flex items-start gap-3 px-4 py-3.5">
-                            <div className="flex-shrink-0 mt-0.5">
-                              {isDone ? (
-                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-[11px] font-bold">✓</span>
-                              ) : isActive ? (
-                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-600 text-white text-[11px] font-bold">{step.no}</span>
-                              ) : (
-                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2">
-                                <p className={`text-[13px] font-semibold leading-tight ${isDone ? 'text-slate-400' : isActive ? 'text-slate-800' : 'text-slate-500'}`}>{step.name}</p>
-                                {isDone ? (
-                                  <span className="shrink-0 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">完了</span>
-                                ) : isActive ? (
-                                  <button type="button" onClick={step.action} className="shrink-0 rounded-lg bg-sky-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-sky-700 transition-colors">開く</button>
-                                ) : (
-                                  <span className="shrink-0 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400">未解放</span>
-                                )}
-                              </div>
-                              <p className={`mt-0.5 text-[11px] ${isDone ? 'text-slate-300' : 'text-slate-400'}`}>{step.sub}</p>
-                              {isActive && step.progress !== null && step.progress !== undefined && (
-                                <div className="mt-2 space-y-1">
-                                  <div className="h-1.5 bg-sky-100 rounded-full overflow-hidden">
-                                    <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${step.progress}%` }} />
-                                  </div>
-                                  {step.progressLabel && <p className="text-[11px] text-sky-600">{step.progressLabel}</p>}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })()}
-
-            {/* j-terada 用特別セクション */}
-            {isJTerada(getDisplayName()) && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="text-heading md:text-heading-pc font-semibold text-slate-800">インフラ基礎課題1が完了したら、以下の課題を実施してください。</p>
-                <ul className="mt-4 space-y-3">
-                  <li>
-                    {isTask1Cleared() ? (
-                      <a href="https://docs.google.com/presentation/d/1Xw--LXH056ekfvkneyzl-ZCFPKJon4vd/edit?usp=drivesdk&ouid=100622650885455094391&rtpof=true&sd=true" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-button md:text-button-pc font-medium text-sky-800 shadow-sm ring-1 ring-sky-200 hover:bg-sky-100 hover:ring-sky-300">概要ppt</a>
-                    ) : (
-                      <span className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-3 text-button md:text-button-pc font-medium text-slate-600 ring-1 ring-slate-200 cursor-not-allowed">概要ppt（コマンド課題をクリアするとアクセスできます）</span>
-                    )}
-                  </li>
-                </ul>
-              </div>
-            )}
-
-            {/* ─── 4. 接続先サーバー情報（折りたたみ） ─── */}
-            {!isAdminView && (
-              !serverSnapshot?.ec2PublicIp ? (
-                <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-body md:text-body-pc font-semibold text-slate-800">演習サーバー</p>
-                      {!isCreatingServer && <p className="text-label md:text-label-pc text-slate-600 mt-0.5">研修にはLinuxサーバーが必要です</p>}
-                      {isCreatingServer && (
-                        <div className="mt-1.5 w-48">
-                          <p className="text-label md:text-label-pc text-slate-600 mb-1">作成中...（約2分）</p>
-                          <div className="h-1 w-full overflow-hidden rounded-full bg-slate-100">
-                            <div className="h-full rounded-full bg-blue-500 transition-all duration-300" style={{ width: `${serverCreateProgress}%` }} />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <button type="button" onClick={() => { void handleCreateServer() }} disabled={isCreatingServer} className="shrink-0 rounded-lg bg-blue-600 px-3 py-2 text-label md:text-label-pc font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
-                      {isCreatingServer ? '作成中...' : 'サーバーを作成する'}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                (() => {
-                  const displayUser = (serverSnapshot.ec2Username && serverSnapshot.ec2Username !== 'rocky') ? serverSnapshot.ec2Username : getDisplayName().trim().toLowerCase()
-                  const handleFieldCopy2 = (text: string, field: 'ip' | 'user') => {
-                    void navigator.clipboard.writeText(text).then(() => { setCopiedField(field); setTimeout(() => setCopiedField(null), 1500) })
-                  }
-                  const CopyBtn2 = ({ text, field }: { text: string; field: 'ip' | 'user' }) => {
-                    const isCopied = copiedField === field
-                    return (
-                      <div className="relative inline-flex items-center">
-                        <button type="button" onClick={() => handleFieldCopy2(text, field)} className={`transition-colors shrink-0 ${isCopied ? 'text-emerald-500' : 'text-slate-300 hover:text-slate-600'}`} title="コピー">
-                          {isCopied ? (
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                          ) : (
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                          )}
-                        </button>
-                        {isCopied && (
-                          <span className="absolute left-full ml-1.5 whitespace-nowrap rounded bg-gray-800 px-2 py-0.5 text-[11px] font-medium text-white shadow-sm" style={{ zIndex: Z.tooltip }}>コピーしました</span>
-                        )}
-                      </div>
-                    )
-                  }
-                  return (
-                    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                      <button type="button" onClick={() => setServerInfoOpen((v) => !v)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors text-left">
-                        <div className="flex items-center gap-2">
-                          <span className={`h-2 w-2 rounded-full ${serverSnapshot.ec2State === 'running' ? 'bg-emerald-500' : (serverSnapshot.ec2State === 'pending' || serverSnapshot.ec2State === 'stopping') ? 'bg-amber-400' : 'bg-slate-300'}`} />
-                          <p className="text-[13px] font-semibold text-slate-700">接続情報を表示</p>
-                          <span className={`text-[11px] font-medium ${serverSnapshot.ec2State === 'running' ? 'text-emerald-600' : 'text-slate-400'}`}>
-                            {serverSnapshot.ec2State === 'running' ? '実行中' : serverSnapshot.ec2State === 'pending' ? '起動中...' : serverSnapshot.ec2State === 'stopping' ? '停止中...' : '停止中'}
-                          </span>
-                        </div>
-                        <svg className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${serverInfoOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                      </button>
-                      {serverInfoOpen && (
-                        <div className="px-4 pb-4 border-t border-slate-100">
-                          <div className="flex items-end gap-4 flex-wrap pt-3">
-                            <div>
-                              <p className="text-[10px] text-slate-400 mb-0.5">IPアドレス</p>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-display md:text-display-pc font-bold font-mono text-slate-800 tracking-wide leading-none">{serverSnapshot.ec2PublicIp}</span>
-                                <CopyBtn2 text={serverSnapshot.ec2PublicIp ?? ''} field="ip" />
-                              </div>
-                            </div>
-                            <div>
-                              <p className="text-[10px] text-slate-400 mb-0.5">ユーザー名</p>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-body md:text-body-pc font-semibold font-mono text-slate-700 leading-none">{displayUser}</span>
-                                <CopyBtn2 text={displayUser} field="user" />
-                              </div>
-                            </div>
-                            {serverSnapshot.keyPairName && (
-                              <div>
-                                <p className="text-[10px] text-slate-400 mb-0.5">秘密鍵</p>
-                                <div className="flex flex-col gap-1">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-label md:text-label-pc font-mono text-slate-600 leading-none">{serverSnapshot.keyPairName}.pem</span>
-                                    <button type="button" onClick={() => setPemLostOpen((v) => !v)} className="text-[10px] text-slate-400 hover:text-slate-600 underline leading-none shrink-0">紛失した場合</button>
-                                  </div>
-                                  {pemLostOpen && (
-                                    <p className="text-[10px] text-slate-600 leading-relaxed bg-slate-50 rounded px-2 py-1.5 border border-slate-200">
-                                      秘密鍵を紛失した場合は管理者（講師）に連絡し、サーバーの再作成を依頼してください。新しい秘密鍵が発行されます。<br />
-                                      ※ サーバー上のデータは失われますが、研修の進捗は保持されます。
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                            <div className="ml-auto">
-                              {serverSnapshot.ec2State === 'running' ? (
-                                <button type="button" onClick={() => setShowStopConfirm(true)} disabled={isServerActionLoading} className="rounded-lg border border-slate-300 px-3 py-1.5 text-label md:text-label-pc font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">停止する</button>
-                              ) : (serverSnapshot.ec2State === 'pending' || serverSnapshot.ec2State === 'stopping') ? (
-                                <button type="button" disabled className="rounded-lg bg-slate-100 px-3 py-1.5 text-label md:text-label-pc font-medium text-slate-400 cursor-not-allowed">{serverSnapshot.ec2State === 'pending' ? '起動中...' : '停止中...'}</button>
-                              ) : (
-                                <button type="button" onClick={() => { void handleStartServer() }} disabled={isServerActionLoading} className="rounded-lg bg-blue-600 px-3 py-1.5 text-label md:text-label-pc font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">起動する</button>
-                              )}
-                            </div>
-                          </div>
-                          {ec2StatusError ? (
-                            <div className="mt-2 flex items-center gap-2">
-                              <span className="text-[10px] text-red-500">状態を取得できません</span>
-                              <button type="button" onClick={() => { setEc2StatusError(false); void doFetchEc2Status() }} className="text-[10px] text-blue-500 underline hover:text-blue-700">再試行</button>
-                            </div>
-                          ) : serverSnapshot.ec2State === 'pending' || serverSnapshot.ec2State === 'stopping' ? (
-                            <p className="mt-2 text-[10px]">{serverSnapshot.ec2State === 'pending' ? '※ 起動完了まで少々お待ちください' : '※ 停止完了まで少々お待ちください'}</p>
-                          ) : (
-                            <div className="mt-2 space-y-0.5">
-                              <p className="text-xs text-amber-600">※ 使用後は必ず停止してください</p>
-                              <p className="text-xs text-slate-400">起動から8時間後に自動停止されます</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })()
-              )
-            )}
-
-          </div>
-          </div>
-          </>
-          )}
         </main>
+        ) : (
+        <HomeDashboard
+          serverSnapshot={serverSnapshot}
+          isSnapLoaded={isSnapLoaded}
+          progressPct={progressPct}
+          isIntroCompleted={isIntroCompleted}
+          isServerActionLoading={isServerActionLoading}
+          ec2StatusError={ec2StatusError}
+          pemLostOpen={pemLostOpen}
+          setPemLostOpen={setPemLostOpen}
+          copiedField={copiedField}
+          setCopiedField={setCopiedField}
+          setShowStopConfirm={setShowStopConfirm}
+          handleStartServer={handleStartServer}
+          doFetchEc2Status={doFetchEc2Status}
+          setEc2StatusError={setEc2StatusError}
+          handleCreateServer={handleCreateServer}
+          isCreatingServer={isCreatingServer}
+          serverCreateProgress={serverCreateProgress}
+          setShowIntroRequiredPopup={setShowIntroRequiredPopup}
+        />
+        )}
 
       </div>
     </div>
