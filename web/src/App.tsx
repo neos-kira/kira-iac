@@ -150,14 +150,9 @@ function App() {
   const [ec2EditPassword, setEc2EditPassword] = useState<Record<string, string>>({})
   const [showEc2Panel, setShowEc2Panel] = useState(false)
   const [ec2SaveMsg, setEc2SaveMsg] = useState<string | null>(null)
-  const [isCreatingServer, setIsCreatingServer] = useState(false)
-  const [serverCreateProgress, setServerCreateProgress] = useState(0)
   const [serverCreatedModal, setServerCreatedModal] = useState<{ publicIp: string; keyPairName: string; pemFilename: string; ec2Username: string } | null>(null)
   const [showStopConfirm, setShowStopConfirm] = useState(false)
   const [isServerActionLoading, setIsServerActionLoading] = useState(false)
-  const [ec2StatusError, setEc2StatusError] = useState(false)
-  const [pemLostOpen, setPemLostOpen] = useState(false)
-  const [copiedField, setCopiedField] = useState<'ip' | 'user' | null>(null)
   /** null=未ロード, ''=未同意, string=同意済み(ISO日付) */
   const [termsAgreedAt, setTermsAgreedAt] = useState<string | null>(null)
   const ec2PollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -185,10 +180,9 @@ function App() {
         headers: buildAuthHeaders(),
         credentials: 'omit',
       })
-      if (!res.ok) { setEc2StatusError(true); return }
+      if (!res.ok) return
       const data = (await res.json()) as { ok: boolean; status?: string; publicIp?: string | null; instanceId?: string | null }
       if (!data.status) return
-      setEc2StatusError(false)
       setServerSnapshot((prev) => {
         if (!prev) return prev
         return {
@@ -200,7 +194,7 @@ function App() {
           ...(data.instanceId ? { ec2InstanceId: data.instanceId } : {}),
         }
       })
-    } catch { setEc2StatusError(true) }
+    } catch { /* ポーリングエラーは無視 */ }
   }, []) // buildAuthHeaders/BASE_URL はモジュールスコープで安定
 
   /** pending/stopping 中は 3 秒ポーリング */
@@ -494,79 +488,6 @@ function App() {
 
   const navigate = useSafeNavigate()
 
-  /** 演習サーバー作成（実EC2） */
-  const handleCreateServer = async () => {
-    if (isCreatingServer) return
-    const username = getDisplayName().trim().toLowerCase()
-    if (!username) return
-    setIsCreatingServer(true)
-    setServerCreateProgress(5)
-
-    // プログレスバーアニメーション（API 完了まで 90% まで進める）
-    const progressInterval = window.setInterval(() => {
-      setServerCreateProgress((prev) => prev < 88 ? prev + 1 : prev)
-    }, 600)
-
-    try {
-      const res = await fetch(`${BASE_URL}/server/create`, {
-        method: 'POST',
-        headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
-        credentials: 'omit',
-        body: JSON.stringify({}),
-      })
-      window.clearInterval(progressInterval)
-      setServerCreateProgress(100)
-
-      if (!res.ok) {
-        return
-      }
-
-      const data = (await res.json()) as {
-        ok: boolean; instanceId?: string; publicIp?: string | null;
-        keyPairName?: string; privateKey?: string; ec2CreatedAt?: string; ec2StartTime?: string; ec2Username?: string
-      }
-
-      // 秘密鍵をblobでDL
-      const keyPairName = data.keyPairName ?? `nic-${username}`
-      const pemFilename = `${keyPairName}.pem`
-      if (data.privateKey) {
-        const blob = new Blob([data.privateKey], { type: 'application/octet-stream' })
-        const blobUrl = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = blobUrl
-        a.download = pemFilename
-        a.click()
-        URL.revokeObjectURL(blobUrl)
-      }
-
-      // ローカル状態を DynamoDB 保存済みデータで更新
-      const base: TraineeProgressSnapshot = serverSnapshot ?? {
-        introConfirmed: false, introAt: null, wbsPercent: 0,
-        chapterProgress: [], currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
-      }
-      const updated: TraineeProgressSnapshot = {
-        ...base,
-        ec2PublicIp: data.publicIp ?? null,
-        ec2State: 'running',
-        keyPairName,
-        ec2Username: data.ec2Username ?? 'rocky',
-        ec2CreatedAt: data.ec2CreatedAt ?? null,
-        ec2StartTime: data.ec2StartTime ?? null,
-        ec2Host: data.publicIp ?? null,
-        updatedAt: new Date().toISOString(),
-      }
-      setServerSnapshot(updated)
-
-      // 成功モーダルを表示
-      setServerCreatedModal({ publicIp: data.publicIp ?? '', keyPairName, pemFilename, ec2Username: data.ec2Username ?? username })
-    } catch {
-      window.clearInterval(progressInterval)
-      setServerCreateProgress(0)
-    } finally {
-      setIsCreatingServer(false)
-    }
-  }
-
   /** 演習サーバー停止（実EC2） */
   const handleStopServer = async () => {
     if (isServerActionLoading || !serverSnapshot) return
@@ -586,31 +507,6 @@ function App() {
         setServerSnapshot(prevSnapshot)
       }
       // 成功時は ec2State: 'stopping' のまま → useEffect がポーリングを開始する
-    } catch {
-      setServerSnapshot(prevSnapshot)
-    } finally {
-      setIsServerActionLoading(false)
-    }
-  }
-
-  /** 演習サーバー起動（実EC2） */
-  const handleStartServer = async () => {
-    if (isServerActionLoading || !serverSnapshot) return
-    setIsServerActionLoading(true)
-    const prevSnapshot = serverSnapshot
-    // 楽観的更新: pending 状態へ（ポーリングが実態を追跡）
-    setServerSnapshot({ ...serverSnapshot, ec2State: 'pending', updatedAt: new Date().toISOString() })
-    try {
-      const res = await fetch(`${BASE_URL}/server/start`, {
-        method: 'POST',
-        headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
-        credentials: 'omit',
-        body: JSON.stringify({}),
-      })
-      if (!res.ok) {
-        setServerSnapshot(prevSnapshot)
-      }
-      // 成功時は ec2State: 'pending' のまま → useEffect がポーリングを開始する
     } catch {
       setServerSnapshot(prevSnapshot)
     } finally {
@@ -934,19 +830,6 @@ function App() {
           isSnapLoaded={isSnapLoaded}
           progressPct={progressPct}
           isIntroCompleted={isIntroCompleted}
-          isServerActionLoading={isServerActionLoading}
-          ec2StatusError={ec2StatusError}
-          pemLostOpen={pemLostOpen}
-          setPemLostOpen={setPemLostOpen}
-          copiedField={copiedField}
-          setCopiedField={setCopiedField}
-          setShowStopConfirm={setShowStopConfirm}
-          handleStartServer={handleStartServer}
-          doFetchEc2Status={doFetchEc2Status}
-          setEc2StatusError={setEc2StatusError}
-          handleCreateServer={handleCreateServer}
-          isCreatingServer={isCreatingServer}
-          serverCreateProgress={serverCreateProgress}
           setShowIntroRequiredPopup={setShowIntroRequiredPopup}
         />
         )}

@@ -29,19 +29,6 @@ type Props = {
   isSnapLoaded: boolean
   progressPct: { pct: number; completed: number; total: number } | null
   isIntroCompleted: boolean
-  isServerActionLoading: boolean
-  ec2StatusError: boolean
-  pemLostOpen: boolean
-  setPemLostOpen: React.Dispatch<React.SetStateAction<boolean>>
-  copiedField: 'ip' | 'user' | null
-  setCopiedField: React.Dispatch<React.SetStateAction<'ip' | 'user' | null>>
-  setShowStopConfirm: React.Dispatch<React.SetStateAction<boolean>>
-  handleStartServer: () => Promise<void>
-  doFetchEc2Status: () => Promise<void>
-  setEc2StatusError: React.Dispatch<React.SetStateAction<boolean>>
-  handleCreateServer: () => Promise<void>
-  isCreatingServer: boolean
-  serverCreateProgress: number
   setShowIntroRequiredPopup: React.Dispatch<React.SetStateAction<boolean>>
 }
 
@@ -57,19 +44,6 @@ export function HomeDashboard({
   isSnapLoaded,
   progressPct,
   isIntroCompleted,
-  isServerActionLoading,
-  ec2StatusError,
-  pemLostOpen,
-  setPemLostOpen,
-  copiedField,
-  setCopiedField,
-  setShowStopConfirm,
-  handleStartServer,
-  doFetchEc2Status,
-  setEc2StatusError,
-  handleCreateServer,
-  isCreatingServer,
-  serverCreateProgress,
   setShowIntroRequiredPopup,
 }: Props) {
   const navigate = useSafeNavigate()
@@ -254,21 +228,6 @@ export function HomeDashboard({
   const completedCount = progressPct?.completed ?? 0
   const totalEstHours = completedCount * 3
 
-  // ─── コピーボタン ─────────────────────────────────────────
-  const CopyBtn = ({ text, field }: { text: string; field: 'ip' | 'user' }) => (
-    <button
-      type="button"
-      onClick={() => {
-        void navigator.clipboard.writeText(text)
-        setCopiedField(field)
-        setTimeout(() => setCopiedField(null), 1500)
-      }}
-      className="rounded px-1.5 py-0.5 text-[10px] border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
-    >
-      {copiedField === field ? '✓' : 'コピー'}
-    </button>
-  )
-
   return (
     <div className="flex flex-1 w-full" style={{ minHeight: 0 }}>
       {/* ═══════════════════════════════════════════════════════
@@ -291,7 +250,7 @@ export function HomeDashboard({
               <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
               マイロードマップ
             </button>
-            <button type="button" onClick={() => navigate('/wbs')} className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+            <button type="button" onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); navigate('/') }} className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
               <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
               すべての課題
             </button>
@@ -689,81 +648,6 @@ export function HomeDashboard({
                 </div>
               </div>
 
-              {/* 演習サーバー管理 */}
-              {snap?.ec2PublicIp ? (
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <h3 className="text-[13px] font-semibold text-slate-700 mb-3">演習サーバー</h3>
-                  <div className="space-y-2">
-                    <div>
-                      <p className="text-[10px] text-slate-400 mb-0.5">IPアドレス</p>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[13px] font-semibold font-mono text-slate-700">{snap.ec2PublicIp}</span>
-                        <CopyBtn text={snap.ec2PublicIp ?? ''} field="ip" />
-                      </div>
-                    </div>
-                    {snap.ec2Username && (
-                      <div>
-                        <p className="text-[10px] text-slate-400 mb-0.5">ユーザー名</p>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[13px] font-semibold font-mono text-slate-700">{snap.ec2Username}</span>
-                          <CopyBtn text={snap.ec2Username} field="user" />
-                        </div>
-                      </div>
-                    )}
-                    {snap.keyPairName && (
-                      <div>
-                        <p className="text-[10px] text-slate-400 mb-0.5">秘密鍵</p>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] font-mono text-slate-600">{snap.keyPairName}.pem</span>
-                          <button type="button" onClick={() => setPemLostOpen((v) => !v)} className="text-[10px] text-slate-400 hover:text-slate-600 underline">{pemLostOpen ? '閉じる' : '紛失?'}</button>
-                        </div>
-                        {pemLostOpen && (
-                          <p className="mt-1 text-[10px] text-slate-600 leading-relaxed bg-slate-50 rounded px-2 py-1.5 border border-slate-200">
-                            管理者（講師）に連絡しサーバー再作成を依頼してください。研修進捗は保持されます。
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between pt-1">
-                      <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${snap.ec2State === 'running' ? 'bg-emerald-100 text-emerald-700' : snap.ec2State === 'stopped' ? 'bg-slate-100 text-slate-600' : 'bg-amber-100 text-amber-700'}`}>
-                        {snap.ec2State === 'running' ? '● 起動中' : snap.ec2State === 'stopped' ? '○ 停止中' : snap.ec2State === 'pending' ? '起動中...' : snap.ec2State === 'stopping' ? '停止中...' : '—'}
-                      </span>
-                      {snap.ec2State === 'running' ? (
-                        <button type="button" onClick={() => setShowStopConfirm(true)} disabled={isServerActionLoading} className="rounded-lg border border-slate-300 px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50">停止する</button>
-                      ) : (snap.ec2State === 'pending' || snap.ec2State === 'stopping') ? (
-                        <button type="button" disabled className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-400 cursor-not-allowed">{snap.ec2State === 'pending' ? '起動中...' : '停止中...'}</button>
-                      ) : (
-                        <button type="button" onClick={() => { void handleStartServer() }} disabled={isServerActionLoading} className="rounded-lg bg-blue-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-blue-700 disabled:opacity-50">起動する</button>
-                      )}
-                    </div>
-                    {ec2StatusError ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-red-500">状態を取得できません</span>
-                        <button type="button" onClick={() => { setEc2StatusError(false); void doFetchEc2Status() }} className="text-[10px] text-blue-500 underline hover:text-blue-700">再試行</button>
-                      </div>
-                    ) : snap.ec2State === 'running' ? (
-                      <p className="text-[10px] text-amber-600">※ 使用後は必ず停止してください</p>
-                    ) : null}
-                  </div>
-                </div>
-              ) : isSnapLoaded ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-4 text-center">
-                  <svg className="w-8 h-8 text-slate-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" /></svg>
-                  <p className="text-[12px] text-slate-500 mb-2">演習サーバーが未作成です</p>
-                  {isCreatingServer ? (
-                    <div className="space-y-1">
-                      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-sky-500 rounded-full transition-all" style={{ width: `${serverCreateProgress}%` }} />
-                      </div>
-                      <p className="text-[11px] text-sky-600">作成中... {serverCreateProgress}%</p>
-                    </div>
-                  ) : (
-                    <button type="button" onClick={() => { void handleCreateServer() }} className="rounded-lg bg-sky-600 px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-sky-700">
-                      サーバーを作成する
-                    </button>
-                  )}
-                </div>
-              ) : null}
 
             </div>
           </div>
