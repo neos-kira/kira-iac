@@ -170,7 +170,7 @@ export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, com
                     {showWbsTip && (
                       <div
                         className="absolute bg-slate-900 text-white px-2 py-1.5 rounded-lg shadow-lg whitespace-normal"
-                        style={{ zIndex: 9999, fontSize: 11, maxWidth: 180, left: '100%', marginLeft: 8, top: '50%', transform: 'translateY(-50%)' }}
+                        style={{ zIndex: 9999, fontSize: 11, maxWidth: 220, right: 0, top: 'calc(100% + 6px)' }}
                         onMouseEnter={() => {
                           if (wbsTipTimerRef.current) clearTimeout(wbsTipTimerRef.current)
                         }}
