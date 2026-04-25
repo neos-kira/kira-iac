@@ -130,8 +130,8 @@ export function InfraBasic31Page() {
           </p>
 
           <div className="rounded-xl border border-sky-200 bg-sky-50" style={{ padding: 20, marginBottom: 16 }}>
-            <p className="text-button md:text-button-pc" style={{ fontWeight: 600, color: '#134e4a', marginBottom: 8 }}>NICの研修環境</p>
-            <p className="text-button md:text-button-pc" style={{ lineHeight: 1.8, color: '#115e59' }}>
+            <p className="text-button md:text-button-pc text-sky-800" style={{ fontWeight: 600, marginBottom: 8 }}>NICの研修環境</p>
+            <p className="text-button md:text-button-pc text-sky-700" style={{ lineHeight: 1.8 }}>
               この研修ではAWSの<strong>EC2（仮想サーバー）</strong>を使う。
               EC2はESXiと同じ<strong>ベアメタル型ハイパーバイザー</strong>の上で動いている。
               つまり、物理サーバーの上にハイパーバイザーが直接載り、その上でEC2インスタンスが動作する構造。

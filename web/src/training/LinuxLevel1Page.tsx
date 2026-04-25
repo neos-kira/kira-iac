@@ -660,17 +660,16 @@ export function LinuxLevel1Page() {
               type="button"
               onClick={handlePrevQuestion}
               disabled={queueIdx === 0}
-              className="text-button md:text-button-pc"
-              style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '6px 14px', color: queueIdx === 0 ? '#d1d5db' : '#374151', cursor: queueIdx === 0 ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+              className={`text-button md:text-button-pc rounded-lg border border-slate-200 px-3.5 py-1.5 whitespace-nowrap ${queueIdx === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
             >
               ← 前の問題
             </button>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className="text-label md:text-label-pc" style={{ color: '#6b7280', whiteSpace: 'nowrap' }}>
+            <div className="flex-1 flex items-center gap-2">
+              <span className="text-label md:text-label-pc text-slate-500 whitespace-nowrap">
                 {progressLabel}
               </span>
-              <div style={{ flex: 1, height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
-                <div style={{ width: `${((queueIdx + 1) / queue.length) * 100}%`, height: '100%', background: '#7dd3fc', borderRadius: '3px', transition: 'width 0.3s ease' }} />
+              <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div className="h-full bg-sky-300 rounded-full transition-all duration-300" style={{ width: `${((queueIdx + 1) / queue.length) * 100}%` }} />
               </div>
             </div>
           </div>
@@ -685,7 +684,7 @@ export function LinuxLevel1Page() {
 
         {/* 回答済みバナー（クリア済み復習モード以外のみ表示） */}
         {queueIdx in answeredCommands && !showFeedback && !isReviewMode && (
-          <div className="text-body md:text-body-pc" style={{ background: '#f0fdf9', border: '1px solid #d1fae5', borderRadius: '8px', padding: '8px 14px', marginBottom: '12px', color: '#0d9488' }}>
+          <div className="text-body md:text-body-pc rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 mb-3 text-emerald-700">
             ✓ 回答済みです（変更できません）
           </div>
         )}

@@ -174,7 +174,7 @@ export function TrainingCommandQuizFrame({
           </p>
           {isPass ? (
             <>
-              <p className="mt-2 text-sm text-emerald-300">満点です。クリア扱いになります。</p>
+              <p className="mt-2 text-sm text-emerald-600">満点です。クリア扱いになります。</p>
               {onClear && (
                 <button
                   type="button"
@@ -182,14 +182,14 @@ export function TrainingCommandQuizFrame({
                     clearProgress(storageKey)
                     onClear()
                   }}
-                  className="mt-4 rounded-xl bg-emerald-600/80 px-4 py-2 text-sm font-medium text-white"
+                  className="mt-4 rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700"
                 >
                   クリアを記録する
                 </button>
               )}
             </>
           ) : (
-            <p className="mt-2 text-sm text-rose-300">
+            <p className="mt-2 text-sm text-rose-600">
               満点でのみクリアです。もう一度挑戦してください。
             </p>
           )}
@@ -248,7 +248,7 @@ export function TrainingCommandQuizFrame({
 
         {/* 回答済みバナー */}
         {isCurrentAnswered && !showFeedback && (
-          <div className="text-body md:text-body-pc" style={{ background: '#f0fdf9', border: '1px solid #d1fae5', borderRadius: '8px', padding: '10px 16px', marginTop: '16px', marginBottom: '16px', color: '#0d9488' }}>
+          <div className="text-body md:text-body-pc rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 mt-4 mb-4 text-emerald-700">
             ✓ この問題は回答済みです（回答内容の変更はできません）
           </div>
         )}
