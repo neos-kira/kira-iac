@@ -1847,10 +1847,30 @@ function App() {
                         </div>
                       ) : (
                         <p className="mt-2 text-[10px]">
-                          {serverSnapshot.ec2State === 'running' ? <span className="text-amber-600 font-medium">※ 使用後は必ず停止してください</span> :
-                           serverSnapshot.ec2State === 'pending' ? '※ 起動完了まで少々お待ちください' :
-                           serverSnapshot.ec2State === 'stopping' ? '※ 停止完了まで少々お待ちください' :
-                           '※ 起動後、演習を開始してください'}
+                          {serverSnapshot.ec2State === 'running' ? (
+                            <>
+                              <span className="text-amber-600 font-medium">※ 使用後は必ず停止してください</span>
+                              {serverSnapshot.ec2CreatedAt && (() => {
+                                const pts = serverSnapshot.ec2CreatedAt.split(' ')
+                                const [y, mo, d] = pts[0].split('/').map(Number)
+                                const [h, mi] = (pts[1] || '00:00').split(':').map(Number)
+                                const createdUtc = new Date(Date.UTC(y, mo - 1, d, h - 9, mi))
+                                const remainMs = createdUtc.getTime() + 8 * 3600 * 1000 - Date.now()
+                                if (remainMs <= 0) return null
+                                const remainH = Math.ceil(remainMs / 3600000)
+                                return remainMs <= 2 * 3600 * 1000
+                                  ? <><br /><span className="text-amber-600 font-medium">⚠ 残り約{remainH}時間で自動停止されます</span></>
+                                  : <><br /><span className="text-slate-400">起動から8時間後に自動停止されます</span></>
+                              })()}
+                            </>
+                          ) : serverSnapshot.ec2State === 'pending' ? '※ 起動完了まで少々お待ちください' :
+                             serverSnapshot.ec2State === 'stopping' ? '※ 停止完了まで少々お待ちください' : (
+                            <>
+                              <span>※ 起動後、演習を開始してください</span>
+                              <br />
+                              <span className="text-slate-400">起動すると8時間後に自動停止されます</span>
+                            </>
+                          )}
                         </p>
                       )}
                     </div>
