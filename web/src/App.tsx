@@ -1845,26 +1845,15 @@ function App() {
                           <button type="button" onClick={() => { setEc2StatusError(false); void doFetchEc2Status() }}
                             className="text-[10px] text-blue-500 underline hover:text-blue-700">再試行</button>
                         </div>
-                      ) : (
+                      ) : serverSnapshot.ec2State === 'pending' || serverSnapshot.ec2State === 'stopping' ? (
                         <p className="mt-2 text-[10px]">
-                          {serverSnapshot.ec2State === 'running' ? (() => {
-                            if (!serverSnapshot.ec2CreatedAt) {
-                              return <span className="text-amber-600">※ 使用後は必ず停止してください。起動から8時間後に自動停止されます</span>
-                            }
-                            const pts = serverSnapshot.ec2CreatedAt.split(' ')
-                            const [y, mo, d] = pts[0].split('/').map(Number)
-                            const [h, mi] = (pts[1] || '00:00').split(':').map(Number)
-                            const createdUtc = new Date(Date.UTC(y, mo - 1, d, h - 9, mi))
-                            const remainMs = createdUtc.getTime() + 8 * 3600 * 1000 - Date.now()
-                            if (remainMs > 0 && remainMs <= 2 * 3600 * 1000) {
-                              const remainH = Math.ceil(remainMs / 3600000)
-                              return <span className="text-amber-600 font-medium">⚠ 約{remainH}時間後に自動停止されます</span>
-                            }
-                            return <span className="text-amber-600">※ 使用後は必ず停止してください。起動から8時間後に自動停止されます</span>
-                          })() : serverSnapshot.ec2State === 'pending' ? '※ 起動完了まで少々お待ちください' :
-                             serverSnapshot.ec2State === 'stopping' ? '※ 停止完了まで少々お待ちください' :
-                             <span className="text-amber-600">※ 使用後は必ず停止してください。起動から8時間後に自動停止されます</span>}
+                          {serverSnapshot.ec2State === 'pending' ? '※ 起動完了まで少々お待ちください' : '※ 停止完了まで少々お待ちください'}
                         </p>
+                      ) : (
+                        <div className="mt-2 space-y-0.5">
+                          <p className="text-xs text-amber-600">※ 使用後は必ず停止してください</p>
+                          <p className="text-xs text-slate-400">起動から8時間後に自動停止されます</p>
+                        </div>
                       )}
                     </div>
                   )
@@ -1969,27 +1958,46 @@ function App() {
                   {activeCourses.map(renderCourseCard)}
 
                   {/* IT業界の歩き方 */}
-                  <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-                    <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 bg-gradient-to-r from-white to-slate-50/50">
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-lg">📚</span>
-                        <p className="text-[13px] font-semibold text-slate-800 tracking-tight">IT業界の歩き方</p>
-                      </div>
-                    </div>
-                    <div className="px-3 py-2">
-                      <li className="flex items-center justify-between rounded-lg bg-slate-50/70 px-3 py-2.5 gap-2 list-none">
-                        <div className="flex items-center gap-3">
-                          <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] bg-slate-200 text-slate-400 font-bold" />
-                          <p className="text-[13px] font-medium text-slate-800">IT業界の基礎知識</p>
+                  {(() => {
+                    const itClearedCount = Object.values((snap?.itBasicsProgress ?? {}) as Record<string, { cleared: boolean }>).filter(v => v.cleared).length
+                    const itOk = itClearedCount >= 7
+                    const itActive = itClearedCount > 0
+                    const itStatus = itOk ? 'done' : itActive ? 'active' : 'todo'
+                    const itPct = Math.round(itClearedCount / 7 * 100)
+                    return (
+                      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 bg-gradient-to-r from-white to-slate-50/50">
+                          <div className="flex items-center gap-2.5">
+                            <span className="text-lg">📚</span>
+                            <p className="text-[13px] font-semibold text-slate-800 tracking-tight">IT業界の歩き方</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-24 h-1 rounded-full bg-slate-100 overflow-hidden">
+                              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${itPct}%`, background: '#7dd3fc' }} />
+                            </div>
+                            <span className="text-[11px] font-medium text-slate-600 tabular-nums w-8 text-right">{itPct}%</span>
+                          </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => navigate('/it-basics')}
-                          className="flex-shrink-0 rounded-md bg-sky-50 text-sky-700 border border-sky-200 px-3 py-1.5 text-[11px] font-medium hover:bg-sky-100 transition-colors"
-                        >開く</button>
-                      </li>
-                    </div>
-                  </div>
+                        <div className="px-3 py-2">
+                          <li className="flex items-center justify-between rounded-lg bg-slate-50/70 px-3 py-2.5 gap-2 list-none">
+                            <div className="flex items-center gap-3">
+                              <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${
+                                itStatus === 'done' ? 'bg-emerald-500 text-white' : itStatus === 'active' ? 'bg-[#7dd3fc] text-white' : 'bg-slate-200 text-slate-400'
+                              }`}>
+                                {itStatus === 'done' ? '✓' : itStatus === 'active' ? '▶' : ''}
+                              </span>
+                              <p className={`text-[13px] font-medium leading-tight ${itStatus === 'done' ? 'text-slate-600' : 'text-slate-800'}`}>IT業界の基礎知識</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => navigate('/it-basics')}
+                              className="flex-shrink-0 rounded-md bg-sky-50 text-sky-700 border border-sky-200 px-3 py-1.5 text-[11px] font-medium hover:bg-sky-100 transition-colors"
+                            >開く</button>
+                          </li>
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </>
               )
             })()}

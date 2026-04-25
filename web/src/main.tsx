@@ -230,12 +230,12 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         )}
-        {showSidePanelTop && !isAiOpen && (
+        {!isAiOpen && (
           <button
             type="button"
             onClick={() => { setIsAiOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }}
             title="AI講師に質問する"
-            className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35"
+            className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35 hover:scale-110 transition-transform"
             style={{ position: 'fixed', bottom: 24, right: 24, border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}
           >
             <img src="/ai-teacher.png" alt="AI講師" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -271,14 +271,11 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         )}
-        {/* AI講師トグルボタン: サイドパネルが閉じているときのみ表示 */}
-        {showSidePanel && !isAiOpen && (
+        {/* AI講師浮動ボタン: サイドパネルが閉じているときのみ表示（幅に関わらず共通） */}
+        {showChat && showSidePanel && !isAiOpen && (
           <button
             type="button"
-            onClick={() => {
-              setIsAiOpen(true)
-              window.dispatchEvent(new CustomEvent('nic:close-user-menu'))
-            }}
+            onClick={() => { setIsAiOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }}
             title="AI講師に質問する"
             className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35 hover:scale-110 transition-transform"
             style={{ position: 'fixed', bottom: 24, right: 24, border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}
@@ -314,22 +311,19 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
         </>
       )}
 
-      {/* ボトムバーモード: 浮動ボタン（パネルが閉じているときのみ） */}
-      {showBottomBar && !isBottomBarOpen && (
+      {/* AI講師浮動ボタン（統一）: ボトムバー/モバイル モードでパネルが閉じているとき常に表示 */}
+      {showChat && (showBottomBar || showMobile) && !(isBottomBarOpen || isChatOpen) && (
         <button
           type="button"
-          onClick={() => { setIsBottomBarOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }}
+          onClick={() => {
+            if (showBottomBar) setIsBottomBarOpen(true)
+            else setIsChatOpen(true)
+            window.dispatchEvent(new CustomEvent('nic:close-user-menu'))
+          }}
           title="AI講師に質問する"
           className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35 hover:scale-110 transition-transform"
-          style={{ position: 'fixed', bottom: 60, right: 24, border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}
+          style={{ position: 'fixed', bottom: showBottomBar ? 60 : 24, right: 24, border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}
         >
-          <img src="/ai-teacher.png" alt="AI講師" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        </button>
-      )}
-
-      {/* モード3: モバイル 🎓ボタン */}
-      {showMobile && !isChatOpen && (
-        <button type="button" onClick={() => { setIsChatOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }} className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35" style={{ position: 'fixed', bottom: 24, right: 24, border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}>
           <img src="/ai-teacher.png" alt="AI講師" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         </button>
       )}
