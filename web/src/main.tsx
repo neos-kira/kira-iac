@@ -271,14 +271,13 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         )}
-        {/* AI講師トグルボタン: パネルが閉じているときのみ表示（開いているときはヘッダー×で閉じる） */}
+        {/* AI講師トグルボタン: サイドパネルが閉じているときのみ表示 */}
         {showSidePanel && !isAiOpen && (
           <button
             type="button"
             onClick={() => {
-              const next = !isAiOpen
-              setIsAiOpen(next)
-              if (next) window.dispatchEvent(new CustomEvent('nic:close-user-menu'))
+              setIsAiOpen(true)
+              window.dispatchEvent(new CustomEvent('nic:close-user-menu'))
             }}
             title="AI講師に質問する"
             className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35 hover:scale-110 transition-transform"
@@ -313,6 +312,19 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
             <span>🎓</span> AI講師 <span style={{ color: '#9ca3af' }}>{isBottomBarOpen ? '▼' : '▲'}</span>
           </div>
         </>
+      )}
+
+      {/* ボトムバーモード: 浮動ボタン（パネルが閉じているときのみ） */}
+      {showBottomBar && !isBottomBarOpen && (
+        <button
+          type="button"
+          onClick={() => { setIsBottomBarOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }}
+          title="AI講師に質問する"
+          className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35 hover:scale-110 transition-transform"
+          style={{ position: 'fixed', bottom: 60, right: 24, border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}
+        >
+          <img src="/ai-teacher.png" alt="AI講師" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        </button>
       )}
 
       {/* モード3: モバイル 🎓ボタン */}

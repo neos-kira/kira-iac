@@ -4,8 +4,6 @@ import { fetchMeInfo } from '../progressApi'
 import {
   getTaskProgressList,
   getTrainingStartDate,
-  getTotalTaskCountForUser,
-  getTotalCleared,
   TRAINING_TASKS,
   addBusinessDays,
 } from './trainingWbsData'
@@ -191,10 +189,26 @@ export function InfraWbsPage() {
   const wbsRows = buildWBSRows(startDate)
   const taskRows = wbsRows.filter((r) => r.level === 0)
 
-  const totalTasks = getTotalTaskCountForUser()
-  const cleared = getTotalCleared()
   const delayedCount = taskRows.filter((r) => r.status === 'delayed').length
-  const overallPct = totalTasks > 0 ? Math.round((cleared / totalTasks) * 100) : 0
+
+  // ── Fix3: ダッシュボードと同じ serverSnapshot ベースの進捗計算 ──
+  const overallData = (() => {
+    if (!serverSnapshot) return { pct: 0, completed: 0, total: 8 }
+    const s = serverSnapshot
+    const ch = Array.isArray(s.chapterProgress) ? s.chapterProgress : []
+    const subCleared = [
+      Number(s.introStep ?? 0) >= 5 && s.introConfirmed ? 1 : 0,
+      Object.values((s.itBasicsProgress ?? {}) as Record<string, { cleared: boolean }>).filter(v => v.cleared).length >= 7 ? 1 : 0,
+      s.l1Cleared ? 1 : 0,
+      ch[1]?.cleared ? 1 : 0,
+      ch[2]?.cleared ? 1 : 0,
+      ch[3]?.cleared ? 1 : 0,
+    ].reduce((a, b) => a + b, 0)
+    return { pct: Math.round(subCleared / 8 * 100), completed: subCleared, total: 8 }
+  })()
+  const overallPct = overallData.pct
+  const clearedCount = overallData.completed
+  const totalCount = overallData.total
 
   // 研修終了予定日（最後のタスクのplannedEnd）
   const lastTask = taskRows[taskRows.length - 1]
@@ -232,9 +246,6 @@ export function InfraWbsPage() {
     return () => { cancelled = true; window.clearInterval(id) }
   }, [queryUserId])
 
-  // serverSnapshot を利用したステータス補完（将来拡張用）
-  void serverSnapshot
-
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6 text-slate-800">
       <div className="mx-auto max-w-5xl space-y-5">
@@ -255,33 +266,26 @@ export function InfraWbsPage() {
             {startDate && <p className="text-xs text-slate-400 mt-0.5">研修開始日: {startDate}</p>}
           </div>
         </div>
+        <p className="text-sm text-slate-500 mt-1 mb-4">WBS（Work Breakdown Structure）とは、研修全体のタスクと進捗を一覧で管理する表です。各タスクの完了状況を確認できます。</p>
 
         {/* サマリーカード */}
         {displayMode === 'individual' ? (
-          /* individual: 全体進捗 + 次のステージ の2枚のみ */
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-[11px] font-medium text-slate-500 mb-1">全体進捗</p>
-              <p className="text-3xl font-bold text-slate-800 tabular-nums">{overallPct}<span className="text-lg font-normal text-slate-400">%</span></p>
-              <p className="text-[10px] text-slate-400 mt-1">{cleared} / {totalTasks} 課題完了</p>
-              <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${overallPct}%` }} />
-              </div>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-[11px] font-medium text-slate-500 mb-1">次のステージ</p>
-              <p className="text-sm font-semibold text-slate-800 mt-1 leading-snug">
-                {taskRows.find((r) => r.status !== 'completed')?.name ?? 'すべて完了'}
-              </p>
+          /* individual: 全体進捗 のみ */
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-[11px] font-medium text-slate-500 mb-1">全体進捗</p>
+            <p className="text-3xl font-bold text-slate-800 tabular-nums">{overallPct}<span className="text-lg font-normal text-slate-400">%</span></p>
+            <p className="text-[10px] text-slate-400 mt-1">{clearedCount} / {totalCount} ステージ完了</p>
+            <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+              <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${overallPct}%` }} />
             </div>
           </div>
         ) : (
-          /* manager / corporate: 3枚 */
-          <div className="grid grid-cols-3 gap-3">
+          /* manager: 3枚 / corporate: 2枚 */
+          <div className={`grid gap-3 ${displayMode === 'manager' ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <p className="text-[11px] font-medium text-slate-500 mb-1">全体進捗</p>
               <p className="text-3xl font-bold text-slate-800 tabular-nums">{overallPct}<span className="text-lg font-normal text-slate-400">%</span></p>
-              <p className="text-[10px] text-slate-400 mt-1">{cleared} / {totalTasks} 課題完了</p>
+              <p className="text-[10px] text-slate-400 mt-1">{clearedCount} / {totalCount} ステージ完了</p>
               <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
                 <div className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-500 transition-all" style={{ width: `${overallPct}%` }} />
               </div>
@@ -294,14 +298,6 @@ export function InfraWbsPage() {
                 </p>
                 <p className="text-[10px] text-slate-400 mt-1">
                   {delayedCount > 0 ? '要対応' : '問題なし'}
-                </p>
-              </div>
-            )}
-            {displayMode === 'corporate' && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-[11px] font-medium text-slate-500 mb-1">次のステージ</p>
-                <p className="text-sm font-semibold text-slate-800 mt-1 leading-snug">
-                  {taskRows.find((r) => r.status !== 'completed')?.name ?? 'すべて完了'}
                 </p>
               </div>
             )}
@@ -340,7 +336,10 @@ export function InfraWbsPage() {
                   <th className="text-center px-2 py-2.5 font-semibold text-slate-600 whitespace-nowrap hidden md:table-cell">ステータス</th>
                   <th className="text-center px-2 py-2.5 font-semibold text-slate-600 whitespace-nowrap hidden md:table-cell">進捗</th>
                   {displayMode === 'manager' && (
-                    <th className="text-center px-2 py-2.5 font-semibold text-slate-600 whitespace-nowrap">遅延</th>
+                    <>
+                      <th className="text-center px-2 py-2.5 font-semibold text-slate-600 whitespace-nowrap">遅延</th>
+                      <th className="text-center px-2 py-2.5 font-semibold text-slate-600 whitespace-nowrap">完了日</th>
+                    </>
                   )}
                   <th className="text-center px-2 py-2.5 font-semibold text-slate-600 whitespace-nowrap hidden lg:table-cell"></th>
                 </tr>
@@ -348,7 +347,11 @@ export function InfraWbsPage() {
               <tbody>
                 {wbsRows.map((row) => {
                   // corporate/individual では 'delayed' を 'in_progress' として扱う（赤バッジなし）
-                  const displayStatus = displayMode !== 'manager' && row.status === 'delayed' ? 'in_progress' : row.status
+                  let displayStatus = displayMode !== 'manager' && row.status === 'delayed' ? 'in_progress' : row.status
+                  // Fix2: 進捗0%かつ未完了・非遅延は「未着手」として表示
+                  if (row.progressPct === 0 && displayStatus !== 'completed' && displayStatus !== 'delayed') {
+                    displayStatus = 'not_started'
+                  }
                   const cfg = STATUS_CONFIG[displayStatus]
                   const isParent = row.level === 0
                   // 行の背景: manager のみ赤ハイライト
@@ -404,16 +407,24 @@ export function InfraWbsPage() {
                         </div>
                       </td>
 
-                      {/* 遅延日数: manager のみ */}
+                      {/* 遅延日数・完了日: manager のみ */}
                       {displayMode === 'manager' && (
-                        <td className="px-2 py-2 text-center tabular-nums font-medium whitespace-nowrap">
-                          {row.delayDays > 0
-                            ? <span className="text-red-600">+{row.delayDays}日</span>
-                            : row.status === 'completed'
-                              ? <span className="text-emerald-600">完了</span>
+                        <>
+                          <td className="px-2 py-2 text-center tabular-nums font-medium whitespace-nowrap">
+                            {row.delayDays > 0
+                              ? <span className="text-red-600">+{row.delayDays}日</span>
+                              : row.status === 'completed'
+                                ? <span className="text-emerald-600">完了</span>
+                                : <span className="text-slate-400">—</span>
+                            }
+                          </td>
+                          <td className="px-2 py-2 text-center whitespace-nowrap">
+                            {row.status === 'completed'
+                              ? <span className="text-emerald-600 font-medium text-[11px]">✓ 完了</span>
                               : <span className="text-slate-400">—</span>
-                          }
-                        </td>
+                            }
+                          </td>
+                        </>
                       )}
 
                       {/* リンク */}

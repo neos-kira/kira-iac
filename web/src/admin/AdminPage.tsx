@@ -56,6 +56,16 @@ export function AdminPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showWbsTip, setShowWbsTip] = useState(false)
+
+  useEffect(() => {
+    if (!showWbsTip) return
+    const handler = (e: MouseEvent) => {
+      if (!(e.target as Element).closest('[data-wbs-tip]')) setShowWbsTip(false)
+    }
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
+  }, [showWbsTip])
 
   const refresh = async () => {
     const data = await fetchAdminUsers()
@@ -267,7 +277,21 @@ export function AdminPage() {
                 <tr className="border-b border-slate-100 bg-slate-50">
                   <th className="px-4 py-3 font-semibold text-slate-600">受講生名</th>
                   {/* デスクトップのみ: プログレスバー / モバイル: %数字 */}
-                  <th className="px-4 py-3 font-semibold text-slate-600">全体進捗</th>
+                  <th className="px-4 py-3 font-semibold text-slate-600">
+                    <span className="relative inline-flex items-center gap-1" data-wbs-tip>
+                      全体進捗
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setShowWbsTip((v) => !v) }}
+                        className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-500 hover:bg-slate-300 focus:outline-none"
+                      >？</button>
+                      {showWbsTip && (
+                        <div className="absolute left-0 top-full z-20 mt-1 w-60 rounded-lg border border-slate-200 bg-white p-3 text-xs font-normal text-slate-600 shadow-lg">
+                          WBS（Work Breakdown Structure）は研修全体のタスクと進捗を一覧で管理する表です。各タスクの完了状況を確認できます。
+                        </div>
+                      )}
+                    </span>
+                  </th>
                   <th className="px-4 py-3 font-semibold text-slate-600">現在の課題</th>
                   <th className="hidden md:table-cell px-4 py-3 font-semibold text-slate-600">最終ログイン</th>
                   <th className="hidden md:table-cell px-4 py-3 font-semibold text-slate-600">規約同意</th>
