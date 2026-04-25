@@ -169,7 +169,7 @@ export function TrainingQuizFrame({
                     clearProgress(storageKey)
                     onClear()
                   }}
-                  className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                  className="mt-4 rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700"
                 >
                   クリアを記録する
                 </button>
@@ -216,50 +216,48 @@ export function TrainingQuizFrame({
       </div>
 
       {/* 進捗バー + 前後ナビ */}
-      <div className="mx-auto max-w-xl w-full" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', padding: '0 4px' }}>
+      <div className="mx-auto max-w-xl w-full flex items-center gap-3 mb-4 px-1">
         <button
           type="button"
           onClick={handlePrev}
           disabled={currentIndex === 0}
-          className="text-button md:text-button-pc"
-          style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '6px 12px', color: currentIndex === 0 ? '#d1d5db' : '#374151', cursor: currentIndex === 0 ? 'not-allowed' : 'pointer' }}
+          className={`text-button md:text-button-pc rounded-lg border border-slate-200 px-3 py-1.5 ${currentIndex === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
         >
           ← 前の問題
         </button>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span className="text-label md:text-label-pc" style={{ color: '#6b7280', whiteSpace: 'nowrap' }}>
+        <div className="flex-1 flex items-center gap-2">
+          <span className="text-label md:text-label-pc text-slate-500 whitespace-nowrap">
             {currentIndex + 1} / {total}問
           </span>
-          <div style={{ flex: 1, height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
-            <div style={{ width: `${((currentIndex + 1) / total) * 100}%`, height: '100%', background: '#7dd3fc', borderRadius: '3px', transition: 'width 0.3s ease' }} />
+          <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+            <div className="h-full bg-sky-300 rounded-full transition-all duration-300" style={{ width: `${((currentIndex + 1) / total) * 100}%` }} />
           </div>
         </div>
         <button
           type="button"
           onClick={handleNext}
           disabled={!isCurrentAnswered || currentIndex >= total - 1}
-          className="text-button md:text-button-pc"
-          style={{ background: isCurrentAnswered && currentIndex < total - 1 ? '#0ea5e9' : '#e5e7eb', border: 'none', borderRadius: '8px', padding: '6px 12px', color: isCurrentAnswered && currentIndex < total - 1 ? 'white' : '#9ca3af', cursor: isCurrentAnswered && currentIndex < total - 1 ? 'pointer' : 'not-allowed' }}
+          className={`text-button md:text-button-pc rounded-lg px-3 py-1.5 ${isCurrentAnswered && currentIndex < total - 1 ? 'bg-sky-500 text-white cursor-pointer hover:bg-sky-600' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
         >
           次の問題 →
         </button>
       </div>
 
-      <div className="mx-auto max-w-xl w-full" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '40px', minHeight: 'calc(100vh - 200px)' }}>
+      <div className="mx-auto max-w-xl w-full flex flex-col bg-white rounded-xl border border-slate-200 p-10" style={{ minHeight: 'calc(100vh - 200px)' }}>
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{subtitle}</p>
         <h1 className="mt-2 text-xl font-semibold text-slate-800">{title}</h1>
-        <span className="text-label md:text-label-pc" style={{ color: '#0d9488', background: '#f0fdf9', border: '1px solid #d1fae5', borderRadius: '6px', padding: '6px 10px', marginTop: '8px', marginBottom: '16px', display: 'inline-block' }}>
+        <span className="text-label md:text-label-pc rounded bg-emerald-50 border border-emerald-200 text-emerald-700 px-2.5 py-1.5 mt-2 mb-4 inline-block">
           正誤は出さず、全問終了後に得点を表示します
         </span>
 
         {/* 回答済みバナー */}
         {isCurrentAnswered && (
-          <div className="text-body md:text-body-pc" style={{ background: '#f0fdf9', border: '1px solid #d1fae5', borderRadius: '8px', padding: '10px 16px', marginBottom: '16px', color: '#0d9488' }}>
+          <div className="text-body md:text-body-pc rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 mb-4 text-emerald-700">
             ✓ この問題は回答済みです（回答内容の変更はできません）
           </div>
         )}
 
-        <p className="text-display md:text-display-pc" style={{ fontWeight: 600, color: '#111827', marginBottom: '32px', lineHeight: '1.7' }}>{current.prompt}</p>
+        <p className="text-display md:text-display-pc font-semibold text-slate-800 mb-8 leading-relaxed">{current.prompt}</p>
         <div className="grid gap-2">
           {current.choices.map((c, idx) => {
             const isSelected = isCurrentAnswered ? answeredChoice === idx : selectedIndex === idx
@@ -291,11 +289,7 @@ export function TrainingQuizFrame({
               type="button"
               onClick={submit}
               disabled={selectedIndex == null}
-              className="text-button md:text-button-pc"
-              style={selectedIndex == null
-                ? { background: '#e5e7eb', color: '#9ca3af', cursor: 'not-allowed', border: 'none', borderRadius: '8px', padding: '10px 24px', fontWeight: 500, pointerEvents: 'none' as const }
-                : { background: '#0ea5e9', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '8px', padding: '10px 24px', fontWeight: 500 }
-              }
+              className={`text-button md:text-button-pc rounded-lg px-6 py-2.5 font-medium ${selectedIndex == null ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-sky-500 text-white cursor-pointer hover:bg-sky-600'}`}
             >
               {currentIndex < total - 1 ? '次へ' : '終了して得点を見る'}
             </button>

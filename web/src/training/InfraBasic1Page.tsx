@@ -360,7 +360,7 @@ export function InfraBasic1Page() {
                 <button
                   type="button"
                   onClick={() => navigate('/training/linux-level1')}
-                  className="mt-3 rounded-lg bg-indigo-600 px-5 py-2 text-button md:text-button-pc font-semibold text-white hover:bg-indigo-700"
+                  className="mt-3 rounded-lg bg-sky-600 px-5 py-2 text-button md:text-button-pc font-semibold text-white hover:bg-sky-700"
                 >
                   Linuxコマンド30問を開く
                 </button>

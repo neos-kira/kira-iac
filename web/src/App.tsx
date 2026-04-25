@@ -4,13 +4,10 @@
  */
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Z } from './zIndex'
-import { flushSync } from 'react-dom'
 import { useSafeNavigate } from './hooks/useSafeNavigate'
-import { OpenInNewTabButton } from './components/OpenInNewTabButton'
+// import { OpenInNewTabButton } from './components/OpenInNewTabButton'
 import { NeOSLogo } from './components/NeOSLogo'
 import { SharedHeader } from './components/SharedHeader'
-import type { CommandResolution } from './commandRouter'
-import { resolveCommand } from './commandRouter'
 import { L1_CLEARED_KEY } from './training/linuxLevel1Data'
 import { L2_CLEARED_KEY } from './training/linuxLevel2Data'
 import { INFRA_BASIC_1_CLEARED_KEY, INFRA_BASIC_1_PARAMS } from './training/infraBasic1Data'
@@ -27,7 +24,7 @@ import { restoreProgressToLocalStorage, type TraineeProgressSnapshot } from './t
 import { isProgressApiAvailable, postProgress, fetchMyProgress, fetchProgressFromApi, fetchMeInfo, buildAuthHeaders, BASE_URL } from './progressApi'
 import { TermsModal } from './components/TermsModal'
 import { fetchAdminUsers, createAdminUser, deleteAdminUser, type AdminUser } from './accountsApi'
-import { safeGetItem, safeSetItem, safeRemoveItem, clearCookieValue } from './utils/storage'
+import { safeGetItem, safeRemoveItem, clearCookieValue } from './utils/storage'
 
 type TrainingTaskId = 'infra-basic-1' | 'infra-basic-2' | 'infra-basic-3' | 'infra-basic-4'
 type PinnableId = TrainingTaskId | 'intro'
@@ -54,23 +51,8 @@ function readTrainingStatus(): TrainingStatus {
 }
 
 const TRAINING_PIN_KEY = 'kira-training-pins'
-const SEARCH_HISTORY_KEY = 'kira-search-history'
-const SEARCH_HISTORY_MAX = 10
 
-function loadSearchHistory(): string[] {
-  const raw = safeGetItem(SEARCH_HISTORY_KEY)
-  if (!raw) return []
-  try {
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed.filter((v: unknown): v is string => typeof v === 'string') : []
-  } catch {
-    return []
-  }
-}
 
-function saveSearchHistory(history: string[]) {
-  safeSetItem(SEARCH_HISTORY_KEY, JSON.stringify(history))
-}
 const USER_DISPLAY_NAME_KEY = 'kira-user-display-name'
 function getDisplayName(): string {
   return getCurrentDisplayName()
@@ -164,10 +146,7 @@ function JTeradaRestrictedView() {
 }
 
 function App() {
-  const [input, setInput] = useState('')
-  const [resolution, setResolution] = useState<CommandResolution | null>(null)
-  const [_isThinking, setIsThinking] = useState(false)
-  const [trainingStatus, setTrainingStatus] = useState<TrainingStatus>(() => readTrainingStatus())
+  const [_trainingStatus, setTrainingStatus] = useState<TrainingStatus>(() => readTrainingStatus())
   /** 初期値 null = 未ロード。サーバー取得完了まで PUT をブロックするため。 */
   const [pinnedTraining, setPinnedTraining] = useState<PinnableId[] | null>(null)
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
@@ -175,10 +154,6 @@ function App() {
   /** サーバー初回 GET が完了し pinnedTraining に反映されるまで true にしない。それまでは保存処理をブロック。 */
   const isDataReady = useRef(false)
   const [showIntroRequiredPopup, setShowIntroRequiredPopup] = useState(false)
-  const [searchHistory, setSearchHistory] = useState<string[]>(() => loadSearchHistory())
-  const [showSearchHistory, setShowSearchHistory] = useState(false)
-  const [searchHistoryHighlightIndex, setSearchHistoryHighlightIndex] = useState(-1)
-  const [isListening, setIsListening] = useState(false)
   const [accounts, setAccounts] = useState<AdminUser[]>([])
   const [newAccountName, setNewAccountName] = useState('')
   const [newAccountPassword, setNewAccountPassword] = useState('')
@@ -200,21 +175,15 @@ function App() {
   const [ec2StatusError, setEc2StatusError] = useState(false)
   const [pemLostOpen, setPemLostOpen] = useState(false)
   const [copiedField, setCopiedField] = useState<'ip' | 'user' | null>(null)
+  const [serverInfoOpen, setServerInfoOpen] = useState(false)
   /** null=未ロード, ''=未同意, string=同意済み(ISO日付) */
   const [termsAgreedAt, setTermsAgreedAt] = useState<string | null>(null)
   const ec2PollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const openedRef = useRef<string | null>(null)
-  const searchContainerRef = useRef<HTMLDivElement | null>(null)
-  const searchFormRef = useRef<HTMLFormElement | null>(null)
-  const recognitionRef = useRef<{ stop: () => void } | null>(null)
+
   /** 音声認識中の確定テキストを蓄積（リアルタイム表示用） */
-  const voiceFinalRef = useRef('')
   /** ユーザーがマイクを押して停止した場合 true。onend で再開しない判定に使用 */
-  const voiceUserStoppedRef = useRef(false)
   /** 音声認識で表示中の最新テキスト（再開時のベース用） */
-  const voiceDisplayRef = useRef('')
   /** 矢印キーで履歴を選択した場合のみ true。Enter で履歴項目を送信する判定に使用 */
-  const historyNavigatedWithKeyboardRef = useRef(false)
 
   /** はじめに完了判定（serverSnapshotから派生したstate） */
   const [isIntroCompleted, setIsIntroCompleted] = useState(false)
@@ -286,121 +255,6 @@ function App() {
     navigate('/training/intro')
   }
 
-  async function handleSubmit(event: React.FormEvent, valueOverride?: string) {
-    event.preventDefault()
-    const value = (valueOverride ?? input).trim()
-    if (!value) return
-
-    setSearchHistory((prev) => {
-      const next = [value, ...prev.filter((v) => v !== value)].slice(0, SEARCH_HISTORY_MAX)
-      saveSearchHistory(next)
-      return next
-    })
-    setShowSearchHistory(false)
-
-    setIsThinking(true)
-    openedRef.current = null
-    try {
-      const result = await resolveCommand(value)
-      setResolution(result)
-    } finally {
-      setIsThinking(false)
-    }
-  }
-
-  function removeSearchHistoryItem(item: string) {
-    setSearchHistory((prev) => {
-      const next = prev.filter((v) => v !== item)
-      saveSearchHistory(next)
-      return next
-    })
-  }
-
-  function toggleVoiceInput() {
-    if (typeof window === 'undefined') return
-    const Win = window as Window & { SpeechRecognition?: new () => unknown; webkitSpeechRecognition?: new () => unknown }
-    const SpeechRecognition = Win.SpeechRecognition ?? Win.webkitSpeechRecognition
-    if (!SpeechRecognition) {
-      return
-    }
-    if (isListening && recognitionRef.current) {
-      voiceUserStoppedRef.current = true
-      recognitionRef.current.stop()
-      recognitionRef.current = null
-      setIsListening(false)
-      return
-    }
-    voiceUserStoppedRef.current = false
-    voiceFinalRef.current = input
-    voiceDisplayRef.current = input
-
-    const startRecognition = () => {
-      const recognition = new SpeechRecognition() as {
-        start: () => void
-        stop: () => void
-        lang: string
-        continuous: boolean
-        interimResults: boolean
-        onresult: (e: { results: { length: number; [i: number]: { isFinal?: boolean; length: number; [j: number]: { transcript?: string } } } }) => void
-        onend: () => void
-        onerror: (e?: unknown) => void
-      }
-      recognition.lang = 'ja-JP'
-      recognition.continuous = true
-      recognition.interimResults = true
-      recognition.onresult = (event) => {
-        const base = voiceFinalRef.current
-        let full = ''
-        let interim = ''
-        const results = event.results as { length: number; [i: number]: { isFinal?: boolean; 0?: { transcript?: string } } }
-        for (let i = 0; i < results.length; i++) {
-          const r = results[i]
-          if (!r) continue
-          const t = (r[0] as { transcript?: string } | undefined)?.transcript ?? ''
-          const isFinal = typeof r.isFinal === 'boolean' ? r.isFinal : false
-          if (isFinal) {
-            full += t
-          } else {
-            interim = t
-          }
-        }
-        const combined = base ? `${base} ${full}${interim}`.trim() : `${full}${interim}`.trim()
-        voiceDisplayRef.current = combined
-        flushSync(() => setInput(combined))
-      }
-      recognition.onend = () => {
-        if (voiceUserStoppedRef.current) {
-          recognitionRef.current = null
-          setIsListening(false)
-          return
-        }
-        voiceFinalRef.current = voiceDisplayRef.current
-        try {
-          startRecognition()
-        } catch {
-          recognitionRef.current = null
-          setIsListening(false)
-        }
-      }
-      recognition.onerror = (event: unknown) => {
-        if (voiceUserStoppedRef.current) return
-        const err = typeof event === 'object' && event !== null && 'error' in event ? String((event as { error: string }).error) : ''
-        if (err === 'no-speech') return
-        recognitionRef.current = null
-        setIsListening(false)
-      }
-      try {
-        recognition.start()
-        recognitionRef.current = recognition
-        setIsListening(true)
-      } catch (e) {
-        recognitionRef.current = null
-        setIsListening(false)
-      }
-    }
-    startRecognition()
-  }
-
   const updateFromStorage = useCallback(() => {
     if (typeof window === 'undefined') return
     try {
@@ -411,61 +265,6 @@ function App() {
   }, [])
 
   /** 保存処理の唯一の入口。isDataReady かつ pinnedTraining !== null のときだけ PUT する。 */
-  const guardedSavePins = useCallback(
-    (name: string, pins: PinnableId[]) => {
-      if (!isDataReady.current) {
-        console.log('[Sync] 保存ブロック中')
-        return
-      }
-      // DynamoDBデータ未取得時はスキップ（localStorageを参照しない）
-      if (!serverSnapshot) return
-      const merged = {
-        ...serverSnapshot,
-        pins: pins as string[],
-        infra4ViDoneSteps: serverSnapshot.infra4ViDoneSteps ?? [],
-        infra4ShellDoneQuestions: serverSnapshot.infra4ShellDoneQuestions ?? [],
-        infra4Rag: serverSnapshot.infra4Rag ?? null,
-      }
-      if (isProgressApiAvailable()) void postProgress(name, merged)
-    },
-    [serverSnapshot],
-  )
-
-  const handleTogglePin = useCallback((id: PinnableId) => {
-    const name = getDisplayName().trim().toLowerCase()
-    setPinnedTraining((prev) => {
-      const list = prev ?? []
-      const exists = list.includes(id)
-      const next = exists ? list.filter((p) => p !== id) : [...list, id]
-      if (name) guardedSavePins(name, next)
-      safeSetItem(TRAINING_PIN_KEY, JSON.stringify(next))
-      return next
-    })
-  }, [guardedSavePins])
-
-  useEffect(() => {
-    if (!resolution || resolution.feature !== 'training') return
-    const cat = resolution.training.category
-    if (cat === 'intro') {
-      return
-    }
-    if (cat === 'linuxLevel1') {
-      if (openedRef.current === 'linuxLevel1') return
-      if (!isIntroCompleted) setShowIntroRequiredPopup(true)
-      else {
-        window.open(getTrainingUrl('/training/linux-level1'), '_blank')
-        openedRef.current = 'linuxLevel1'
-      }
-    } else if (cat === 'linuxLevel2') {
-      if (openedRef.current === 'linuxLevel2') return
-      if (!isIntroCompleted) setShowIntroRequiredPopup(true)
-      else {
-        window.open(getTrainingUrl('/training/linux-level2'), '_blank')
-        openedRef.current = 'linuxLevel2'
-      }
-    }
-    // 「インフラ研修」の場合は別タブで開かず、下に検索結果として表示するだけ
-  }, [resolution])
 
   useEffect(() => {
     document.title = 'NICプラットフォーム'
@@ -487,29 +286,7 @@ function App() {
     }
   }, [updateFromStorage])
 
-  useEffect(() => {
-    if (showSearchHistory && searchHistory.length > 0) {
-      setSearchHistoryHighlightIndex(0)
-      historyNavigatedWithKeyboardRef.current = false
-    } else {
-      setSearchHistoryHighlightIndex(-1)
-    }
-  }, [showSearchHistory, searchHistory.length])
-
-  useEffect(() => {
-    if (!showSearchHistory) return
-    function handleClickOutside(e: MouseEvent) {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
-        setShowSearchHistory(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [showSearchHistory])
-
   const isAdminView = getCurrentRole() === 'manager'
-  const isKiraTest = isKiraTestUser()
-
   /** 初回のみ: サーバーから進捗を取得し pinnedTraining をセット。必要なら localStorage を 1 回だけサーバーにマージ。完了後に isDataReady を true にする。 */
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -1170,9 +947,9 @@ function App() {
             </div>
           ) : (
           <>
-          <div className="w-full max-w-2xl space-y-6">
-            {/* 進捗リセットボタン（開発用・kira-testのみ） */}
-            {isKiraTestUser() && (
+          <div className="w-full max-w-2xl space-y-4 pb-8">
+            {/* 進捗リセットボタン（manager限定） */}
+            {getCurrentRole() === 'manager' && (
               <div className="flex justify-end">
                 <button
                   type="button"
@@ -1221,480 +998,232 @@ function App() {
                 </button>
               </div>
             )}
-            {/* ── 学習ロードマップカード ── */}
-<div className="bg-white border border-gray-100 rounded-xl p-5 md:p-6 mb-4">
-  <div className="flex items-center justify-between mb-3">
-    <h2 className="text-sm font-semibold text-slate-700">学習ロードマップ</h2>
-    <button type="button" onClick={() => navigate('/wbs')} className="text-xs text-sky-600 hover:underline">WBSを見る →</button>
-  </div>
-  <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold mb-1.5">全体の進捗</p>
-  <div className="flex items-end gap-1 mb-3">
-    <span className="text-[40px] font-bold tracking-tight text-slate-800 leading-none">
-      {progressPct?.pct ?? 0}
-    </span>
-    <span className="text-lg text-slate-400 mb-1">%</span>
-  </div>
-  <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden mb-3">
-    <div
-      className="h-full rounded-full bg-gradient-to-r from-sky-500 to-sky-400 transition-all duration-700"
-      style={{ width: `${progressPct?.pct ?? 0}%` }}
-    />
-  </div>
-  <p className="text-label md:text-label-pc text-slate-600">
-    {progressPct?.completed ?? 0} / {progressPct?.total ?? 8} ステージ完了
-  </p>
-</div>
-            {/* つづきから / はじめに案内バナー: serverSnapshot確定後に一度だけ表示を決定 */}
+            {/* ─── 1. ページタイトル ─── */}
+            <div>
+              <h1 className="text-[18px] font-bold text-slate-800 tracking-tight">Linuxサーバー基礎</h1>
+              <div className="mt-2 flex items-center gap-3">
+                <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full bg-sky-500 transition-all duration-700" style={{ width: `${progressPct?.pct ?? 0}%` }} />
+                </div>
+                <span className="text-[12px] text-slate-500 shrink-0">{progressPct?.completed ?? 0} / {progressPct?.total ?? 8} ステージ完了 ({progressPct?.pct ?? 0}%)</span>
+              </div>
+            </div>
+
+            {/* ─── 2. 今やる課題カード ─── */}
             {(() => {
-              // ── ローディング: snap未取得時はスケルトンのみ表示 ──
               if (!isSnapLoaded) {
                 return (
-                  <div className="rounded-2xl border-2 border-slate-200 bg-slate-100 p-6 shadow-sm animate-pulse">
-                    <div className="h-3 w-20 rounded bg-slate-200" />
-                    <div className="mt-3 h-5 w-32 rounded bg-slate-200" />
-                    <div className="mt-3 h-4 w-3/4 rounded bg-slate-200" />
-                    <div className="mt-5 h-10 w-36 rounded-xl bg-slate-200" />
+                  <div className="rounded-2xl p-6 animate-pulse" style={{ background: 'linear-gradient(135deg, #3730a3, #2563eb)' }}>
+                    <div className="h-3 w-20 rounded bg-white/20 mb-3" />
+                    <div className="h-6 w-40 rounded bg-white/20 mb-4" />
+                    <div className="h-10 rounded-xl bg-white/20" />
                   </div>
                 )
               }
-
               const snap = serverSnapshot ?? ({} as TraineeProgressSnapshot)
               const introStep = Number(snap.introStep ?? 0)
 
-              // ── introStepが0: はじめに案内バナーのみ ──
-              if (introStep === 0) {
-                return (
-                  <div className="rounded-2xl border-2 border-sky-400 bg-amber-50 p-6 shadow-sm">
-                    <p className="text-body md:text-body-pc font-semibold text-amber-800">はじめに</p>
-                    <p className="mt-2 text-body md:text-body-pc text-slate-700">
-                      インフラ基礎課題に進む前に、「はじめに」でプロフェッショナルとしての行動基準を確認してください。
-                    </p>
-                    <OpenInNewTabButton
-                      url={getTrainingUrl('/training/intro')}
-                      label="はじめに"
-                      className="mt-4 inline-flex rounded-lg bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2.5 text-button md:text-button-pc font-medium hover:bg-sky-100"
-                    />
-                  </div>
-                )
+              type CurrentTask = {
+                taskName: string
+                subtaskName: string
+                progress: number | null
+                progressLabel: string | null
+                estimatedTime: string
+                action: () => void
+                actionLabel: string
               }
+              let currentTask: CurrentTask | null = null
 
-              // ── introStep 1-4: つづきからカード（はじめにの続き）──
-              if (introStep >= 1 && introStep <= 4) {
-                const stepLabels: Record<number, string> = {
-                  1: 'はじめに · 行動基準の確認 Step1/5',
-                  2: 'はじめに · AI利用・機密保持 Step2/5',
-                  3: 'はじめに · 物理セキュリティ Step3/5',
-                  4: 'はじめに · インシデント報告 Step4/5',
-                }
-                return (
-                  <div className="rounded-2xl border-2 border-sky-400 bg-white p-6 shadow-sm">
-                    <h2 className="mt-2 text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">つづきから</h2>
-                    <p className="mt-1 text-body md:text-body-pc text-slate-700">{stepLabels[introStep]}</p>
-                    <button type="button" onClick={() => navigate('/training/intro')} className="mt-4 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2.5 text-button md:text-button-pc font-medium hover:bg-sky-100">つづきから →</button>
-                  </div>
-                )
-              }
-
-              // ── introStep 5以上: 課題進捗で「つづきから」を判定 ──
-
-              // ── lastActive: 最後に「中断して保存」したモジュールを最優先表示 ──
               if (snap.lastActive) {
                 const la = snap.lastActive
-                const progressMatch = la.label.match(/(\d+)\/(\d+)/)
-                const completed = progressMatch ? parseInt(progressMatch[1]) : null
-                const total = progressMatch ? parseInt(progressMatch[2]) : null
+                const m = la.label.match(/(\d+)\/(\d+)/)
+                const done2 = m ? parseInt(m[1]) : null
+                const total2 = m ? parseInt(m[2]) : null
                 const courseName = la.label.replace(/\s*\d+\/\d+問$/, '').trim()
-                return (
-                  <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-label md:text-label-pc font-medium text-slate-600">前回の続きから再開</p>
-                    <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">{courseName}</p>
-                    {completed !== null && total !== null && (
-                      <>
-                        <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
-                          <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(completed / total) * 100}%` }} />
-                        </div>
-                        <p className="mt-1.5 text-label md:text-label-pc text-slate-600">{completed}問完了 / 全{total}問</p>
-                      </>
-                    )}
-                    <button type="button" onClick={() => {
-                      if (isIntroCompleted) window.open(getTrainingUrl(la.path), '_blank')
-                      else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-button md:text-button-pc font-medium transition-colors">続きから再開する →</button>
-                  </div>
-                )
+                currentTask = {
+                  taskName: courseName,
+                  subtaskName: la.label,
+                  progress: (done2 !== null && total2 !== null) ? Math.round((done2 / total2) * 100) : null,
+                  progressLabel: (done2 !== null && total2 !== null) ? `${done2} / ${total2}問` : null,
+                  estimatedTime: '',
+                  action: () => { if (isIntroCompleted) window.open(getTrainingUrl(la.path), '_blank'); else setShowIntroRequiredPopup(true) },
+                  actionLabel: '続きから再開する →',
+                }
+              } else if (introStep === 0) {
+                currentTask = { taskName: 'はじめに', subtaskName: 'プロフェッショナルとしての行動基準を確認', progress: 0, progressLabel: null, estimatedTime: '約30分', action: () => navigate('/training/intro'), actionLabel: 'はじめに →' }
+              } else if (introStep >= 1 && introStep <= 4) {
+                currentTask = { taskName: 'はじめに', subtaskName: `Step ${introStep + 1} / 5`, progress: Math.round((introStep / 5) * 100), progressLabel: `${introStep} / 5ステップ`, estimatedTime: '約30分', action: () => navigate('/training/intro'), actionLabel: '続きから →' }
+              } else {
+                const l1Part = snap.l1CurrentPart ?? 0
+                const l1Q = snap.l1CurrentQuestion ?? 0
+                const l1InProgress = (l1Part > 0 || l1Q > 0) && !(snap.l1Cleared ?? false)
+                const infra1InProgress = (snap.infra1Checkboxes ?? []).some(Boolean) && !(snap.infra1Cleared ?? false)
+                const l2Q = snap.l2CurrentQuestion ?? 0
+                const infra32InProgress = Object.values(snap.infra32Answers ?? {}).some((v) => v && String(v).trim())
+                const vi4Done = (snap.infra4ViDoneSteps ?? []).length
+                const shell4Done = (snap.infra4ShellDoneQuestions ?? []).length
+                if (l1InProgress) {
+                  const partLabels = ['基本操作', 'サーバー構築', '実践問題']
+                  currentTask = { taskName: 'Linuxコマンド30問', subtaskName: `Part ${l1Part + 1}: ${partLabels[l1Part] ?? '基本操作'}`, progress: Math.round((l1Q / 10) * 100), progressLabel: `${l1Q} / 10問`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level1'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '続きから再開する →' }
+                } else if (infra1InProgress) {
+                  currentTask = { taskName: 'SSH接続確認', subtaskName: 'インフラ基礎課題 1', progress: null, progressLabel: null, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '続きから再開する →' }
+                } else if (l2Q > 0) {
+                  currentTask = { taskName: 'TCP/IP 理解度チェック', subtaskName: 'ネットワーク基礎', progress: Math.round((l2Q / 10) * 100), progressLabel: `${l2Q} / 10問`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level2'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '続きから再開する →' }
+                } else if (infra32InProgress) {
+                  currentTask = { taskName: 'OS・仮想化・クラウド理解度チェック', subtaskName: 'インフラ基礎課題 3', progress: null, progressLabel: null, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '続きから再開する →' }
+                } else if (vi4Done > 0 && vi4Done < VI_STEPS.length) {
+                  currentTask = { taskName: 'viエディタ演習', subtaskName: 'インフラ基礎課題 4', progress: Math.round((vi4Done / VI_STEPS.length) * 100), progressLabel: `${vi4Done} / ${VI_STEPS.length}ステップ`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '続きから再開する →' }
+                } else if (shell4Done > 0 && shell4Done < SHELL_QUESTIONS.length) {
+                  currentTask = { taskName: 'シェルスクリプト演習', subtaskName: 'インフラ基礎課題 4', progress: Math.round((shell4Done / SHELL_QUESTIONS.length) * 100), progressLabel: `${shell4Done} / ${SHELL_QUESTIONS.length}問`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '続きから再開する →' }
+                }
               }
 
-              // 以下は lastActive が null の場合のフォールバック（旧ロジック）
-              // Linuxコマンド30問途中（最優先）
-              const l1Part = snap.l1CurrentPart ?? 0
-              const l1Q = snap.l1CurrentQuestion ?? 0
-              const l1InProgress = (l1Part > 0 || l1Q > 0) && !(snap.l1Cleared ?? false)
-              if (l1InProgress) {
-                const partLabels = ['基本操作', 'サーバー構築', '実践問題']
-                const partLabel = partLabels[l1Part] ?? '基本操作'
-                return (
-                  <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-label md:text-label-pc font-medium text-slate-600">前回の続きから再開</p>
-                    <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">Linuxコマンド30問 · {partLabel}</p>
-                    <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
-                      <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(l1Q / 10) * 100}%` }} />
+              if (!currentTask) {
+                const isAllDone2 = (snap.infra5PhaseDone ?? []).length >= 5
+                if (isAllDone2) {
+                  return (
+                    <div className="rounded-2xl p-6 text-white" style={{ background: 'linear-gradient(135deg, #059669, #0284c7)' }}>
+                      <p className="text-[11px] uppercase tracking-widest text-white/70 mb-1">今やる課題</p>
+                      <h2 className="text-[20px] font-bold">全カリキュラム完了！</h2>
+                      <p className="mt-1 text-[13px] text-white/80">おめでとうございます。すべての課題をクリアしました。</p>
                     </div>
-                    <p className="mt-1.5 text-label md:text-label-pc text-slate-600">{l1Q}問完了 / 全10問</p>
-                    <button type="button" onClick={() => {
-                      if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level1'), '_blank')
-                      else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-button md:text-button-pc font-medium transition-colors">続きから再開する →</button>
+                  )
+                }
+                return (
+                  <div className="rounded-2xl p-6 text-white" style={{ background: 'linear-gradient(135deg, #3730a3, #2563eb)' }}>
+                    <p className="text-[11px] uppercase tracking-widest text-white/70 mb-1">今やる課題</p>
+                    <h2 className="text-[20px] font-bold">カリキュラムを確認</h2>
+                    <p className="mt-1 text-[13px] text-white/80">下のステップ一覧から次に進む課題を選択してください。</p>
                   </div>
                 )
               }
 
-              // 課題1-1途中
-              const infra1InProgress = (snap.infra1Checkboxes ?? []).some(Boolean) && !(snap.infra1Cleared ?? false)
-              if (infra1InProgress) {
-                return (
-                  <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-label md:text-label-pc font-medium text-slate-600">前回の続きから再開</p>
-                    <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">SSH接続確認</p>
-                    <button type="button" onClick={() => {
-                      if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-1'), '_blank')
-                      else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-button md:text-button-pc font-medium transition-colors">続きから再開する →</button>
-                  </div>
-                )
-              }
-
-              // 課題2-2途中
-              const l2Q = snap.l2CurrentQuestion ?? 0
-              if (l2Q > 0) {
-                return (
-                  <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-label md:text-label-pc font-medium text-slate-600">前回の続きから再開</p>
-                    <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">TCP/IP 理解度チェック</p>
-                    <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
-                      <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(l2Q / 10) * 100}%` }} />
+              return (
+                <div className="rounded-2xl p-5 md:p-6 text-white" style={{ background: 'linear-gradient(135deg, #3730a3, #2563eb)' }}>
+                  <p className="text-[11px] uppercase tracking-widest text-white/70 mb-1">今やる課題</p>
+                  <h2 className="text-[19px] md:text-[21px] font-bold leading-snug">{currentTask.taskName}</h2>
+                  <p className="mt-0.5 text-[13px] text-white/75">{currentTask.subtaskName}</p>
+                  {currentTask.estimatedTime && <p className="mt-0.5 text-[12px] text-white/60">想定時間：{currentTask.estimatedTime}</p>}
+                  {currentTask.progress !== null && (
+                    <div className="mt-3 space-y-1">
+                      <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-white/70 transition-all" style={{ width: `${currentTask.progress}%` }} />
+                      </div>
+                      {currentTask.progressLabel && <p className="text-[12px] text-white/70">{currentTask.progressLabel}</p>}
                     </div>
-                    <p className="mt-1.5 text-label md:text-label-pc text-slate-600">{l2Q}問完了 / 全10問</p>
-                    <button type="button" onClick={() => {
-                      if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level2'), '_blank')
-                      else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-button md:text-button-pc font-medium transition-colors">続きから再開する →</button>
-                  </div>
-                )
-              }
-
-              // 課題3-2途中
-              const infra32InProgress = Object.values(snap.infra32Answers ?? {}).some((v) => v && String(v).trim())
-              if (infra32InProgress) {
-                return (
-                  <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-label md:text-label-pc font-medium text-slate-600">前回の続きから再開</p>
-                    <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">OS・仮想化・クラウド理解度チェック</p>
-                    <button type="button" onClick={() => {
-                      if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
-                      else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-button md:text-button-pc font-medium transition-colors">続きから再開する →</button>
-                  </div>
-                )
-              }
-
-              // 課題4-1途中
-              const vi4Done = (snap.infra4ViDoneSteps ?? []).length
-              if (vi4Done > 0 && vi4Done < VI_STEPS.length) {
-                return (
-                  <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-label md:text-label-pc font-medium text-slate-600">前回の続きから再開</p>
-                    <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">viエディタ演習</p>
-                    <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
-                      <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(vi4Done / VI_STEPS.length) * 100}%` }} />
-                    </div>
-                    <p className="mt-1.5 text-label md:text-label-pc text-slate-600">{vi4Done}ステップ完了 / 全{VI_STEPS.length}ステップ</p>
-                    <button type="button" onClick={() => {
-                      if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
-                      else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-button md:text-button-pc font-medium transition-colors">続きから再開する →</button>
-                  </div>
-                )
-              }
-
-              // 課題4-2途中
-              const shell4Done = (snap.infra4ShellDoneQuestions ?? []).length
-              if (shell4Done > 0 && shell4Done < SHELL_QUESTIONS.length) {
-                return (
-                  <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <p className="text-label md:text-label-pc font-medium text-slate-600">前回の続きから再開</p>
-                    <p className="mt-1 text-body md:text-body-pc font-semibold text-slate-800">シェルスクリプト演習</p>
-                    <div className="mt-3 bg-gray-100 rounded-full h-1.5 w-full">
-                      <div className="bg-sky-500 rounded-full h-1.5" style={{ width: `${(shell4Done / SHELL_QUESTIONS.length) * 100}%` }} />
-                    </div>
-                    <p className="mt-1.5 text-label md:text-label-pc text-slate-600">{shell4Done}問完了 / 全{SHELL_QUESTIONS.length}問</p>
-                    <button type="button" onClick={() => {
-                      if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank')
-                      else setShowIntroRequiredPopup(true)
-                    }} className="mt-4 w-fit bg-sky-600 hover:bg-sky-700 text-white rounded-lg px-5 py-2.5 text-button md:text-button-pc font-medium transition-colors">続きから再開する →</button>
-                  </div>
-                )
-              }
-
-              // 全課題完了: つづきからカードを非表示
-              return null
+                  )}
+                  <button
+                    type="button"
+                    onClick={currentTask.action}
+                    className="mt-4 w-full rounded-xl bg-white text-indigo-700 font-bold py-3 text-[14px] hover:bg-white/90 transition-colors text-center"
+                  >
+                    {currentTask.actionLabel}
+                  </button>
+                </div>
+              )
             })()}
-            {/* j-terada 用：はじめにの下に課題1完了後の案内を表示。課題1クリア前はリンク無効 */}
+
+            {/* ─── 3. ステップ一覧 ─── */}
+            {(() => {
+              const snap = serverSnapshot
+              const introOk = isIntroCompleted
+              const canAccessAll = isKiraTestUser()
+              const infra1Ok = snap?.infra1Cleared === true && snap?.l1Cleared === true
+              const infra2Ok2 = (snap?.l2CurrentQuestion ?? 0) > 0 && introOk
+              const infra3Ok2 = Object.values(snap?.infra32Answers ?? {}).some((v) => v && String(v).trim())
+              const infra4ViDone2 = (snap?.infra4ViDoneSteps ?? []).length
+              const infra4ShellDone2 = (snap?.infra4ShellDoneQuestions ?? []).length
+              const infra4Ok2 = infra4ViDone2 >= VI_STEPS.length && infra4ShellDone2 >= SHELL_QUESTIONS.length
+              const infra4Active2 = infra4ViDone2 > 0 || infra4ShellDone2 > 0
+              const infra5PhaseDone2 = (snap?.infra5PhaseDone ?? []).length
+              const infra5Ok2 = infra5PhaseDone2 >= 5
+              const infra5Active2 = infra5PhaseDone2 > 0
+              const introStep2 = Number(snap?.introStep ?? 0)
+              const itClearedCount2 = Object.values((snap?.itBasicsProgress ?? {}) as Record<string, { cleared: boolean }>).filter(v => v.cleared).length
+              const itOk2 = itClearedCount2 >= 7
+              const itActive2 = itClearedCount2 > 0
+
+              type StepItem = { no: number; name: string; sub: string; status: 'done' | 'active' | 'todo'; progress?: number | null; progressLabel?: string | null; action: () => void }
+              const steps: StepItem[] = [
+                { no: 1, name: 'はじめに', sub: '行動基準・セキュリティ基礎', status: introOk ? 'done' : (introStep2 >= 1 ? 'active' : 'todo'), progress: introOk ? 100 : introStep2 > 0 ? Math.round((introStep2 / 5) * 100) : null, progressLabel: introStep2 > 0 && !introOk ? `${introStep2} / 5ステップ` : null, action: () => navigate('/training/intro') },
+                { no: 2, name: 'Linux基本操作・コマンド', sub: 'ツール操作・Linuxコマンド30問', status: infra1Ok ? 'done' : ((snap?.infra1Checkboxes ?? []).some(Boolean) || (snap?.l1CurrentPart ?? 0) > 0 ? 'active' : 'todo'), progress: infra1Ok ? 100 : null, progressLabel: null, action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
+                { no: 3, name: 'ネットワーク基礎', sub: 'ネットワーク実践・TCP/IP10問', status: infra2Ok2 ? 'done' : ((snap?.l2CurrentQuestion ?? 0) > 0 ? 'active' : 'todo'), progress: infra2Ok2 ? 100 : (snap?.l2CurrentQuestion ?? 0) > 0 ? Math.round(((snap?.l2CurrentQuestion ?? 0) / 10) * 100) : null, progressLabel: (snap?.l2CurrentQuestion ?? 0) > 0 && !infra2Ok2 ? `${snap?.l2CurrentQuestion ?? 0} / 10問` : null, action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
+                { no: 4, name: 'ファイル操作・viエディタ', sub: 'OS/仮想化/クラウド解説・記述チェック', status: infra3Ok2 ? 'done' : (Object.keys(snap?.infra32Answers ?? {}).length > 0 ? 'active' : 'todo'), progress: infra3Ok2 ? 100 : null, progressLabel: null, action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
+                { no: 5, name: 'シェルスクリプト', sub: 'vi演習・シェルスクリプト演習', status: infra4Ok2 ? 'done' : (infra4Active2 ? 'active' : 'todo'), progress: infra4Ok2 ? 100 : infra4Active2 ? Math.round(((infra4ViDone2 + infra4ShellDone2) / (VI_STEPS.length + SHELL_QUESTIONS.length)) * 100) : null, progressLabel: infra4Active2 && !infra4Ok2 ? `vi: ${infra4ViDone2}/${VI_STEPS.length}  シェル: ${infra4ShellDone2}/${SHELL_QUESTIONS.length}` : null, action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) } },
+                { no: 6, name: 'サーバー構築（Ubuntu）', sub: 'OS設定・ディスク・apache2・AIDE・PostgreSQL', status: infra5Ok2 ? 'done' : (infra5Active2 ? 'active' : 'todo'), progress: infra5Ok2 ? 100 : infra5Active2 ? Math.round((infra5PhaseDone2 / 5) * 100) : null, progressLabel: infra5Active2 && !infra5Ok2 ? `${infra5PhaseDone2} / 5フェーズ` : null, action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-5'), '_blank'); else setShowIntroRequiredPopup(true) } },
+                { no: 7, name: 'IT業界の歩き方', sub: 'IT業界の基礎知識', status: itOk2 ? 'done' : (itActive2 ? 'active' : 'todo'), progress: itOk2 ? 100 : itActive2 ? Math.round((itClearedCount2 / 7) * 100) : null, progressLabel: itActive2 && !itOk2 ? `${itClearedCount2} / 7項目` : null, action: () => navigate('/it-basics') },
+              ]
+
+              return (
+                <div>
+                  <h2 className="text-[12px] font-semibold text-slate-400 uppercase tracking-wider mb-3">カリキュラム</h2>
+                  <div className="space-y-2">
+                    {steps.map((step) => {
+                      const isDone = step.status === 'done'
+                      const isActive = step.status === 'active'
+                      return (
+                        <div key={step.no} className={`rounded-xl border transition-colors ${isDone ? 'border-slate-100 bg-slate-50/60' : isActive ? 'border-sky-300 bg-white shadow-sm' : 'border-slate-100 bg-white'}`}>
+                          <div className="flex items-start gap-3 px-4 py-3.5">
+                            <div className="flex-shrink-0 mt-0.5">
+                              {isDone ? (
+                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-[11px] font-bold">✓</span>
+                              ) : isActive ? (
+                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-600 text-white text-[11px] font-bold">{step.no}</span>
+                              ) : (
+                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className={`text-[13px] font-semibold leading-tight ${isDone ? 'text-slate-400' : isActive ? 'text-slate-800' : 'text-slate-500'}`}>{step.name}</p>
+                                {isDone ? (
+                                  <span className="shrink-0 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">完了</span>
+                                ) : isActive ? (
+                                  <button type="button" onClick={step.action} className="shrink-0 rounded-lg bg-sky-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-sky-700 transition-colors">開く</button>
+                                ) : (
+                                  <span className="shrink-0 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400">未解放</span>
+                                )}
+                              </div>
+                              <p className={`mt-0.5 text-[11px] ${isDone ? 'text-slate-300' : 'text-slate-400'}`}>{step.sub}</p>
+                              {isActive && step.progress !== null && step.progress !== undefined && (
+                                <div className="mt-2 space-y-1">
+                                  <div className="h-1.5 bg-sky-100 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${step.progress}%` }} />
+                                  </div>
+                                  {step.progressLabel && <p className="text-[11px] text-sky-600">{step.progressLabel}</p>}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* j-terada 用特別セクション */}
             {isJTerada(getDisplayName()) && (
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="text-heading md:text-heading-pc font-semibold text-slate-800">
-                  インフラ基礎課題1が完了したら、以下の課題を実施してください。
-                </p>
+                <p className="text-heading md:text-heading-pc font-semibold text-slate-800">インフラ基礎課題1が完了したら、以下の課題を実施してください。</p>
                 <ul className="mt-4 space-y-3">
                   <li>
                     {isTask1Cleared() ? (
-                      <a
-                        href="https://docs.google.com/presentation/d/1Xw--LXH056ekfvkneyzl-ZCFPKJon4vd/edit?usp=drivesdk&ouid=100622650885455094391&rtpof=true&sd=true"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-button md:text-button-pc font-medium text-sky-800 shadow-sm ring-1 ring-sky-200 hover:bg-sky-100 hover:ring-sky-300"
-                      >
-                        概要ppt
-                      </a>
+                      <a href="https://docs.google.com/presentation/d/1Xw--LXH056ekfvkneyzl-ZCFPKJon4vd/edit?usp=drivesdk&ouid=100622650885455094391&rtpof=true&sd=true" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-button md:text-button-pc font-medium text-sky-800 shadow-sm ring-1 ring-sky-200 hover:bg-sky-100 hover:ring-sky-300">概要ppt</a>
                     ) : (
-                      <span className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-3 text-button md:text-button-pc font-medium text-slate-600 ring-1 ring-slate-200 cursor-not-allowed">
-                        概要ppt（コマンド課題をクリアするとアクセスできます）
-                      </span>
+                      <span className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-3 text-button md:text-button-pc font-medium text-slate-600 ring-1 ring-slate-200 cursor-not-allowed">概要ppt（コマンド課題をクリアするとアクセスできます）</span>
                     )}
                   </li>
                 </ul>
               </div>
             )}
-            <div className="hidden">
-              <div className="relative" ref={searchContainerRef}>
-                <form ref={searchFormRef} onSubmit={handleSubmit} className="space-y-3">
-                  <div>
-                    <input type="text" value={input} onChange={(event) => setInput(event.target.value)} />
-                    <button type="button" onClick={toggleVoiceInput} disabled={_isThinking} />
-                  </div>
-                </form>
-                {showSearchHistory && searchHistory.length > 0 && (
-                  <ul className="absolute top-full left-0 right-0 mt-1 rounded-lg bg-white shadow-lg py-1 z-10 max-h-60 overflow-auto">
-                    {searchHistory.map((item, index) => (
-                      <li
-                        key={item}
-                        className={`group flex items-center justify-between gap-2 px-4 py-2.5 text-body md:text-body-pc text-slate-700 hover:bg-slate-50 ${
-                          index === searchHistoryHighlightIndex ? 'bg-sky-50' : ''
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => { setInput(item); setShowSearchHistory(false); }}
-                          className="flex-1 min-w-0 text-left truncate"
-                        >
-                          {item}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); removeSearchHistoryItem(item); }}
-                          className="shrink-0 p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200 opacity-0 group-hover:opacity-100 transition-opacity"
-                          aria-label="この履歴を削除"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
 
-            {/* 検索結果（Enter または ↑ 実行後に表示） */}
-            {resolution && (
-              <section className="mt-6 space-y-3" aria-label="検索結果">
-                <div className="flex items-center justify-between text-label md:text-label-pc text-slate-600">
-                  <p>
-                    検索結果:{' '}
-                    <span className="font-medium text-slate-800">
-                      {resolution.displayName}
-                    </span>
-                  </p>
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-slate-600">
-                    {resolution.feature}
-                  </span>
-                </div>
-                <p className="text-label md:text-label-pc text-slate-600">{resolution.reason}</p>
-
-                <div className="mt-3">
-                  <ResolvedModulePlaceholder
-                    resolution={resolution}
-                    pinnedTraining={pinnedTraining ?? []}
-                    trainingStatus={trainingStatus}
-                    onTogglePin={handleTogglePin}
-                    onOpenInfraOrShowIntro={(url: string) => {
-                      if (isIntroCompleted) window.open(url, '_blank')
-                      else setShowIntroRequiredPopup(true)
-                    }}
-                    onOpenIntro={() => navigate('/training/intro')}
-                  />
-                </div>
-              </section>
-            )}
-          </div>
-
-          {/* ピン留めした課題（検索しなくてもすぐアクセス） */}
-          {(pinnedTraining ?? []).length > 0 && (
-            <section className="mt-6 w-full max-w-2xl rounded-2xl bg-white p-4 text-[11px] text-slate-700 shadow-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-600">
-                ピン留め
-              </p>
-              <ul className="mt-3 space-y-2 text-slate-700">
-                {(pinnedTraining ?? []).includes('intro') && (
-                  <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-body md:text-body-pc font-medium text-slate-800">はじめに</span>
-                        <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                          📌
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePin('intro')}
-                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600"
-                      >
-                        <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
-                        ピン解除
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => navigate('/training/intro')}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100"
-                    >
-                      開く
-                    </button>
-                  </li>
-                )}
-                {(pinnedTraining ?? []).includes('infra-basic-1') && (
-                  <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-body md:text-body-pc font-medium text-slate-800">インフラ基礎課題1</span>
-                        <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                          📌
-                        </span>
-                        {trainingStatus.infraToolsCleared && trainingStatus.linuxL1Cleared && (
-                          <span className="inline-flex items-center justify-center rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
-                            ✓
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePin('infra-basic-1')}
-                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600"
-                      >
-                        <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
-                        ピン解除
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (isIntroCompleted || isKiraTest) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank')
-                        else setShowIntroRequiredPopup(true)
-                      }}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100"
-                    >
-                      開く
-                    </button>
-                  </li>
-                )}
-                {(pinnedTraining ?? []).includes('infra-basic-2') && (
-                  <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-body md:text-body-pc font-medium text-slate-800">インフラ基礎課題2</span>
-                        <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                          📌
-                        </span>
-                        {trainingStatus.linuxL2Cleared && (
-                          <span className="inline-flex items-center justify-center rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
-                            ✓
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePin('infra-basic-2')}
-                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600"
-                      >
-                        <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
-                        ピン解除
-                      </button>
-                      {!isKiraTest && !(trainingStatus.infraToolsCleared && trainingStatus.linuxL1Cleared) && (
-                        <p className="mt-1 text-[10px] text-amber-700">インフラ基礎課題1をクリアすると利用できます</p>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      disabled={!isKiraTest && !(trainingStatus.infraToolsCleared && trainingStatus.linuxL1Cleared)}
-                      onClick={() => {
-                        if (isIntroCompleted || isKiraTest) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank')
-                        else setShowIntroRequiredPopup(true)
-                      }}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      開く
-                    </button>
-                  </li>
-                )}
-                {(pinnedTraining ?? []).includes('infra-basic-3') && (
-                  <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-body md:text-body-pc font-medium text-slate-800">インフラ基礎課題3</span>
-                        <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                          📌
-                        </span>
-                        {trainingStatus.infraOsCloudCleared && (
-                          <span className="inline-flex items-center justify-center rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
-                            ✓
-                          </span>
-                        )}
-
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePin('infra-basic-3')}
-                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600"
-                      >
-                        <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
-                        ピン解除
-                      </button>
-                      {!isKiraTest && !trainingStatus.linuxL2Cleared && (
-                        <p className="mt-1 text-[10px] text-amber-700">インフラ基礎課題2をクリアすると利用できます</p>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      disabled={!isKiraTest && !trainingStatus.linuxL2Cleared}
-                      onClick={() => {
-                        if (isIntroCompleted || isKiraTest) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank')
-                        else setShowIntroRequiredPopup(true)
-                      }}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      開く
-                    </button>
-                  </li>
-                )}
-              </ul>
-            </section>
-          )}
-
-          {/* 演習サーバー管理 */}
-          {!isAdminView && (
-            <section className="mt-4 w-full max-w-2xl">
-              {!(serverSnapshot?.ec2PublicIp) ? (
-                /* 未作成: コンパクトな横並び */
+            {/* ─── 4. 接続先サーバー情報（折りたたみ） ─── */}
+            {!isAdminView && (
+              !serverSnapshot?.ec2PublicIp ? (
                 <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
@@ -1709,590 +1238,117 @@ function App() {
                         </div>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => { void handleCreateServer() }}
-                      disabled={isCreatingServer}
-                      className="shrink-0 rounded-lg bg-blue-600 px-3 py-2 text-label md:text-label-pc font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
+                    <button type="button" onClick={() => { void handleCreateServer() }} disabled={isCreatingServer} className="shrink-0 rounded-lg bg-blue-600 px-3 py-2 text-label md:text-label-pc font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
                       {isCreatingServer ? '作成中...' : 'サーバーを作成する'}
                     </button>
                   </div>
                 </div>
               ) : (
-                /* 作成済み: コンパクト横並び */
                 (() => {
-                  const displayUser = (serverSnapshot.ec2Username && serverSnapshot.ec2Username !== 'rocky')
-                    ? serverSnapshot.ec2Username
-                    : getDisplayName().trim().toLowerCase()
-                  const handleFieldCopy = (text: string, field: 'ip' | 'user') => {
-                    void navigator.clipboard.writeText(text).then(() => {
-                      setCopiedField(field)
-                      setTimeout(() => setCopiedField(null), 1500)
-                    })
+                  const displayUser = (serverSnapshot.ec2Username && serverSnapshot.ec2Username !== 'rocky') ? serverSnapshot.ec2Username : getDisplayName().trim().toLowerCase()
+                  const handleFieldCopy2 = (text: string, field: 'ip' | 'user') => {
+                    void navigator.clipboard.writeText(text).then(() => { setCopiedField(field); setTimeout(() => setCopiedField(null), 1500) })
                   }
-                  const CopyBtn = ({ text, field }: { text: string; field: 'ip' | 'user' }) => {
+                  const CopyBtn2 = ({ text, field }: { text: string; field: 'ip' | 'user' }) => {
                     const isCopied = copiedField === field
                     return (
                       <div className="relative inline-flex items-center">
-                        <button type="button" onClick={() => handleFieldCopy(text, field)} className={`transition-colors shrink-0 ${isCopied ? 'text-emerald-500' : 'text-slate-300 hover:text-slate-600'}`} title="コピー">
+                        <button type="button" onClick={() => handleFieldCopy2(text, field)} className={`transition-colors shrink-0 ${isCopied ? 'text-emerald-500' : 'text-slate-300 hover:text-slate-600'}`} title="コピー">
                           {isCopied ? (
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                           ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                           )}
                         </button>
                         {isCopied && (
-                          <span className="absolute left-full ml-1.5 whitespace-nowrap rounded bg-gray-800 px-2 py-0.5 text-[11px] font-medium text-white shadow-sm" style={{ zIndex: Z.tooltip }}>
-                            コピーしました
-                          </span>
+                          <span className="absolute left-full ml-1.5 whitespace-nowrap rounded bg-gray-800 px-2 py-0.5 text-[11px] font-medium text-white shadow-sm" style={{ zIndex: Z.tooltip }}>コピーしました</span>
                         )}
                       </div>
                     )
                   }
                   return (
-                    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <p className="text-label md:text-label-pc font-semibold text-slate-600">あなたの演習サーバー</p>
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                          serverSnapshot.ec2State === 'running' ? 'bg-emerald-50 text-emerald-700' :
-                          (serverSnapshot.ec2State === 'pending' || serverSnapshot.ec2State === 'stopping') ? 'bg-amber-50 text-amber-600' :
-                          'bg-slate-100 text-slate-600'
-                        }`}>
-                          {(serverSnapshot.ec2State === 'pending' || serverSnapshot.ec2State === 'stopping') ? (
-                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-amber-200 border-t-amber-500" />
-                          ) : (
-                            <span className={`h-1.5 w-1.5 rounded-full ${serverSnapshot.ec2State === 'running' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-                          )}
-                          {serverSnapshot.ec2State === 'running' ? '実行中' :
-                           serverSnapshot.ec2State === 'pending' ? '起動中...' :
-                           serverSnapshot.ec2State === 'stopping' ? '停止中...' : '停止中'}
-                        </span>
-                      </div>
-                      <div className="flex items-end gap-4 flex-wrap">
-                        {/* IP */}
-                        <div>
-                          <p className="text-[10px] text-slate-400 mb-0.5">IPアドレス</p>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-display md:text-display-pc font-bold font-mono text-slate-800 tracking-wide leading-none">{serverSnapshot.ec2PublicIp}</span>
-                            <CopyBtn text={serverSnapshot.ec2PublicIp ?? ''} field="ip" />
-                          </div>
+                    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                      <button type="button" onClick={() => setServerInfoOpen((v) => !v)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors text-left">
+                        <div className="flex items-center gap-2">
+                          <span className={`h-2 w-2 rounded-full ${serverSnapshot.ec2State === 'running' ? 'bg-emerald-500' : (serverSnapshot.ec2State === 'pending' || serverSnapshot.ec2State === 'stopping') ? 'bg-amber-400' : 'bg-slate-300'}`} />
+                          <p className="text-[13px] font-semibold text-slate-700">接続情報を表示</p>
+                          <span className={`text-[11px] font-medium ${serverSnapshot.ec2State === 'running' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                            {serverSnapshot.ec2State === 'running' ? '実行中' : serverSnapshot.ec2State === 'pending' ? '起動中...' : serverSnapshot.ec2State === 'stopping' ? '停止中...' : '停止中'}
+                          </span>
                         </div>
-                        {/* ユーザー名 */}
-                        <div>
-                          <p className="text-[10px] text-slate-400 mb-0.5">ユーザー名</p>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-body md:text-body-pc font-semibold font-mono text-slate-700 leading-none">{displayUser}</span>
-                            <CopyBtn text={displayUser} field="user" />
-                          </div>
-                        </div>
-                        {/* 秘密鍵 */}
-                        {serverSnapshot.keyPairName && (
-                          <div>
-                            <p className="text-[10px] text-slate-400 mb-0.5">秘密鍵</p>
-                            <div className="flex flex-col gap-1">
+                        <svg className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${serverInfoOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                      </button>
+                      {serverInfoOpen && (
+                        <div className="px-4 pb-4 border-t border-slate-100">
+                          <div className="flex items-end gap-4 flex-wrap pt-3">
+                            <div>
+                              <p className="text-[10px] text-slate-400 mb-0.5">IPアドレス</p>
                               <div className="flex items-center gap-1.5">
-                                <span className="text-label md:text-label-pc font-mono text-slate-600 leading-none">{serverSnapshot.keyPairName}.pem</span>
-                                <button
-                                  type="button"
-                                  onClick={() => setPemLostOpen((v) => !v)}
-                                  className="text-[10px] text-slate-400 hover:text-slate-600 underline leading-none shrink-0"
-                                >
-                                  紛失した場合
-                                </button>
+                                <span className="text-display md:text-display-pc font-bold font-mono text-slate-800 tracking-wide leading-none">{serverSnapshot.ec2PublicIp}</span>
+                                <CopyBtn2 text={serverSnapshot.ec2PublicIp ?? ''} field="ip" />
                               </div>
-                              {pemLostOpen && (
-                                <p className="text-[10px] text-slate-600 leading-relaxed bg-slate-50 rounded px-2 py-1.5 border border-slate-200">
-                                  秘密鍵を紛失した場合は管理者（講師）に連絡し、サーバーの再作成を依頼してください。新しい秘密鍵が発行されます。<br />
-                                  ※ サーバー上のデータは失われますが、研修の進捗は保持されます。
-                                </p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-slate-400 mb-0.5">ユーザー名</p>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-body md:text-body-pc font-semibold font-mono text-slate-700 leading-none">{displayUser}</span>
+                                <CopyBtn2 text={displayUser} field="user" />
+                              </div>
+                            </div>
+                            {serverSnapshot.keyPairName && (
+                              <div>
+                                <p className="text-[10px] text-slate-400 mb-0.5">秘密鍵</p>
+                                <div className="flex flex-col gap-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-label md:text-label-pc font-mono text-slate-600 leading-none">{serverSnapshot.keyPairName}.pem</span>
+                                    <button type="button" onClick={() => setPemLostOpen((v) => !v)} className="text-[10px] text-slate-400 hover:text-slate-600 underline leading-none shrink-0">紛失した場合</button>
+                                  </div>
+                                  {pemLostOpen && (
+                                    <p className="text-[10px] text-slate-600 leading-relaxed bg-slate-50 rounded px-2 py-1.5 border border-slate-200">
+                                      秘密鍵を紛失した場合は管理者（講師）に連絡し、サーバーの再作成を依頼してください。新しい秘密鍵が発行されます。<br />
+                                      ※ サーバー上のデータは失われますが、研修の進捗は保持されます。
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            <div className="ml-auto">
+                              {serverSnapshot.ec2State === 'running' ? (
+                                <button type="button" onClick={() => setShowStopConfirm(true)} disabled={isServerActionLoading} className="rounded-lg border border-slate-300 px-3 py-1.5 text-label md:text-label-pc font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">停止する</button>
+                              ) : (serverSnapshot.ec2State === 'pending' || serverSnapshot.ec2State === 'stopping') ? (
+                                <button type="button" disabled className="rounded-lg bg-slate-100 px-3 py-1.5 text-label md:text-label-pc font-medium text-slate-400 cursor-not-allowed">{serverSnapshot.ec2State === 'pending' ? '起動中...' : '停止中...'}</button>
+                              ) : (
+                                <button type="button" onClick={() => { void handleStartServer() }} disabled={isServerActionLoading} className="rounded-lg bg-blue-600 px-3 py-1.5 text-label md:text-label-pc font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">起動する</button>
                               )}
                             </div>
                           </div>
-                        )}
-                        {/* アクションボタン */}
-                        <div className="ml-auto">
-                          {serverSnapshot.ec2State === 'running' ? (
-                            <button
-                              type="button"
-                              onClick={() => setShowStopConfirm(true)}
-                              disabled={isServerActionLoading}
-                              className="rounded-lg border border-slate-300 px-3 py-1.5 text-label md:text-label-pc font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >停止する</button>
-                          ) : (serverSnapshot.ec2State === 'pending' || serverSnapshot.ec2State === 'stopping') ? (
-                            <button
-                              type="button"
-                              disabled
-                              className="rounded-lg bg-slate-100 px-3 py-1.5 text-label md:text-label-pc font-medium text-slate-400 cursor-not-allowed"
-                            >{serverSnapshot.ec2State === 'pending' ? '起動中...' : '停止中...'}</button>
+                          {ec2StatusError ? (
+                            <div className="mt-2 flex items-center gap-2">
+                              <span className="text-[10px] text-red-500">状態を取得できません</span>
+                              <button type="button" onClick={() => { setEc2StatusError(false); void doFetchEc2Status() }} className="text-[10px] text-blue-500 underline hover:text-blue-700">再試行</button>
+                            </div>
+                          ) : serverSnapshot.ec2State === 'pending' || serverSnapshot.ec2State === 'stopping' ? (
+                            <p className="mt-2 text-[10px]">{serverSnapshot.ec2State === 'pending' ? '※ 起動完了まで少々お待ちください' : '※ 停止完了まで少々お待ちください'}</p>
                           ) : (
-                            <button
-                              type="button"
-                              onClick={() => { void handleStartServer() }}
-                              disabled={isServerActionLoading}
-                              className="rounded-lg bg-blue-600 px-3 py-1.5 text-label md:text-label-pc font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >起動する</button>
+                            <div className="mt-2 space-y-0.5">
+                              <p className="text-xs text-amber-600">※ 使用後は必ず停止してください</p>
+                              <p className="text-xs text-slate-400">起動から8時間後に自動停止されます</p>
+                            </div>
                           )}
-                        </div>
-                      </div>
-                      {ec2StatusError ? (
-                        <div className="mt-2 flex items-center gap-2">
-                          <span className="text-[10px] text-red-500">状態を取得できません</span>
-                          <button type="button" onClick={() => { setEc2StatusError(false); void doFetchEc2Status() }}
-                            className="text-[10px] text-blue-500 underline hover:text-blue-700">再試行</button>
-                        </div>
-                      ) : serverSnapshot.ec2State === 'pending' || serverSnapshot.ec2State === 'stopping' ? (
-                        <p className="mt-2 text-[10px]">
-                          {serverSnapshot.ec2State === 'pending' ? '※ 起動完了まで少々お待ちください' : '※ 停止完了まで少々お待ちください'}
-                        </p>
-                      ) : (
-                        <div className="mt-2 space-y-0.5">
-                          <p className="text-xs text-amber-600">※ 使用後は必ず停止してください</p>
-                          <p className="text-xs text-slate-400">起動から8時間後に自動停止されます</p>
                         </div>
                       )}
                     </div>
                   )
                 })()
-              )}
-            </section>
-          )}
-
-          {/* 研修カリキュラム */}
-          <section className="mt-6 w-full max-w-2xl space-y-3">
-            <p className="text-body md:text-body-pc font-bold text-slate-800">研修カリキュラム</p>
-            {(() => {
-              const snap = serverSnapshot
-              const introOk = isIntroCompleted
-              const canAccessAll = isKiraTestUser()
-              const infra1Ok = snap?.infra1Cleared === true && snap?.l1Cleared === true
-              const infra2Ok = (snap?.l2CurrentQuestion ?? 0) > 0 && introOk
-              const infra3Ok = Object.values(snap?.infra32Answers ?? {}).some((v) => v && String(v).trim())
-              const infra4ViDone = (snap?.infra4ViDoneSteps ?? []).length
-              const infra4ShellDone = (snap?.infra4ShellDoneQuestions ?? []).length
-              const infra4Ok = infra4ViDone >= VI_STEPS.length && infra4ShellDone >= SHELL_QUESTIONS.length
-              const infra4Active = infra4ViDone > 0 || infra4ShellDone > 0
-              const infra5PhaseDone = (snap?.infra5PhaseDone ?? []).length
-              const infra5Ok = infra5PhaseDone >= 5
-              const infra5Active = infra5PhaseDone > 0
-
-              type TaskItem = { name: string; sub: string; status: 'done' | 'active' | 'todo'; action: () => void }
-              const linuxTasks: TaskItem[] = [
-                { name: 'はじめに', sub: '行動基準・セキュリティ基礎', status: introOk ? 'done' : (Number(snap?.introStep ?? 0) >= 1 ? 'active' : 'todo'), action: () => navigate('/training/intro') },
-                { name: 'Linux基本操作・コマンド', sub: 'ツール操作・Linuxコマンド30問', status: infra1Ok ? 'done' : ((snap?.infra1Checkboxes ?? []).some(Boolean) || (snap?.l1CurrentPart ?? 0) > 0 ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
-                { name: 'ネットワーク基礎', sub: 'ネットワーク実践・TCP/IP10問', status: infra2Ok ? 'done' : ((snap?.l2CurrentQuestion ?? 0) > 0 ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
-                { name: 'ファイル操作・viエディタ', sub: 'OS/仮想化/クラウド解説・記述チェック', status: infra3Ok ? 'done' : (Object.keys(snap?.infra32Answers ?? {}).length > 0 ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) } },
-                { name: 'シェルスクリプト', sub: 'vi演習・シェルスクリプト演習', status: infra4Ok ? 'done' : (infra4Active ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) } },
-                { name: 'サーバー構築（Ubuntu）', sub: 'OS設定・ディスク・apache2・AIDE・PostgreSQL', status: infra5Ok ? 'done' : (infra5Active ? 'active' : 'todo'), action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-5'), '_blank'); else setShowIntroRequiredPopup(true) } },
-              ]
-              const linuxDone = linuxTasks.filter((t) => t.status === 'done').length
-              const linuxPct = Math.round((linuxDone / linuxTasks.length) * 100)
-
-              const renderTask = (item: TaskItem) => (
-                <li key={item.name} className="flex items-center justify-between rounded-lg bg-slate-50/70 px-3 py-2.5 gap-2 transition-colors hover:bg-slate-50">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${
-                      item.status === 'done'
-                        ? 'bg-emerald-500 text-white'
-                        : item.status === 'active'
-                        ? 'bg-[#7dd3fc] text-white'
-                        : 'bg-slate-200 text-slate-400'
-                    }`}>
-                      {item.status === 'done' ? '✓' : item.status === 'active' ? '▶' : ''}
-                    </span>
-                    <div className="min-w-0">
-                      <p className={`text-[13px] font-medium leading-tight ${item.status === 'done' ? 'text-slate-600' : 'text-slate-800'}`}>{item.name}</p>
-                      <p className="text-[10px] text-slate-600 mt-0.5 truncate">{item.sub}</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={item.action}
-                    className="flex-shrink-0 rounded-md bg-sky-50 text-sky-700 border border-sky-200 px-3 py-1.5 text-[11px] font-medium hover:bg-sky-100 transition-colors"
-                  >
-                    開く
-                  </button>
-                </li>
               )
+            )}
 
-              type Course = { id: string; icon: string; name: string; isAvailable: boolean; tasks: TaskItem[]; pct: number }
-              const courses: Course[] = [
-                { id: 'linux', icon: '🐧', name: 'Linuxサーバー基礎', isAvailable: true, tasks: linuxTasks, pct: linuxPct },
-                { id: 'aws',   icon: '☁️', name: 'AWSクラウド基礎',   isAvailable: false, tasks: [], pct: 0 },
-                { id: 'win',   icon: '🪟', name: 'Windowsサーバー基礎', isAvailable: false, tasks: [], pct: 0 },
-              ]
-
-              const activeCourses = courses.filter((c) => c.isAvailable)
-
-              const renderCourseCard = (course: Course) => (
-                <div key={course.id} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-                  {/* コースヘッダー */}
-                  <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 bg-gradient-to-r from-white to-slate-50/50">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-lg">{course.icon}</span>
-                      <div>
-                        <p className="text-[13px] font-semibold text-slate-800 tracking-tight">{course.name}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-24 h-1 rounded-full bg-slate-100 overflow-hidden">
-                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${course.pct}%`, background: '#7dd3fc' }} />
-                      </div>
-                      <span className="text-[11px] font-medium text-slate-600 tabular-nums w-8 text-right">{course.pct}%</span>
-                    </div>
-                  </div>
-                  {/* タスク一覧 */}
-                  <ul className="px-3 py-2 space-y-1">
-                    {course.tasks.map(renderTask)}
-                  </ul>
-                </div>
-              )
-
-              return (
-                <>
-                  {/* 受講中のコース */}
-                  {activeCourses.map(renderCourseCard)}
-
-                  {/* IT業界の歩き方 */}
-                  {(() => {
-                    const itClearedCount = Object.values((snap?.itBasicsProgress ?? {}) as Record<string, { cleared: boolean }>).filter(v => v.cleared).length
-                    const itOk = itClearedCount >= 7
-                    const itActive = itClearedCount > 0
-                    const itStatus = itOk ? 'done' : itActive ? 'active' : 'todo'
-                    const itPct = Math.round(itClearedCount / 7 * 100)
-                    return (
-                      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-                        <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 bg-gradient-to-r from-white to-slate-50/50">
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-lg">📚</span>
-                            <p className="text-[13px] font-semibold text-slate-800 tracking-tight">IT業界の歩き方</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-24 h-1 rounded-full bg-slate-100 overflow-hidden">
-                              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${itPct}%`, background: '#7dd3fc' }} />
-                            </div>
-                            <span className="text-[11px] font-medium text-slate-600 tabular-nums w-8 text-right">{itPct}%</span>
-                          </div>
-                        </div>
-                        <div className="px-3 py-2">
-                          <li className="flex items-center justify-between rounded-lg bg-slate-50/70 px-3 py-2.5 gap-2 list-none">
-                            <div className="flex items-center gap-3">
-                              <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${
-                                itStatus === 'done' ? 'bg-emerald-500 text-white' : itStatus === 'active' ? 'bg-[#7dd3fc] text-white' : 'bg-slate-200 text-slate-400'
-                              }`}>
-                                {itStatus === 'done' ? '✓' : itStatus === 'active' ? '▶' : ''}
-                              </span>
-                              <p className={`text-[13px] font-medium leading-tight ${itStatus === 'done' ? 'text-slate-600' : 'text-slate-800'}`}>IT業界の基礎知識</p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => navigate('/it-basics')}
-                              className="flex-shrink-0 rounded-md bg-sky-50 text-sky-700 border border-sky-200 px-3 py-1.5 text-[11px] font-medium hover:bg-sky-100 transition-colors"
-                            >開く</button>
-                          </li>
-                        </div>
-                      </div>
-                    )
-                  })()}
-                </>
-              )
-            })()}
-          </section>
-
+          </div>
           </>
           )}
         </main>
 
       </div>
-    </div>
-  )
-}
-
-type PlaceholderProps = {
-  resolution: CommandResolution
-  pinnedTraining: PinnableId[]
-  trainingStatus: TrainingStatus
-  onTogglePin: (id: PinnableId) => void
-  onOpenInfraOrShowIntro: (url: string) => void
-  onOpenIntro?: () => void
-}
-
-function ResolvedModulePlaceholder({ resolution, pinnedTraining, trainingStatus, onTogglePin, onOpenInfraOrShowIntro, onOpenIntro }: PlaceholderProps) {
-  const navigate = useSafeNavigate()
-  if (resolution.feature === 'training') {
-    const category = resolution.training.category
-
-    if (category === 'intro') {
-      return (
-        <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
-          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-600">TRAINING · はじめに</p>
-          <div className="mt-2 flex items-center gap-2">
-            <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">はじめに</h2>
-            {pinnedTraining.includes('intro') && (
-              <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                📌
-              </span>
-            )}
-          </div>
-          <p className="mt-1 text-label md:text-label-pc text-slate-600">はじめにのページへアクセスできます。</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => onTogglePin('intro')}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-label md:text-label-pc font-medium text-slate-600 hover:border-amber-500 hover:text-amber-700"
-            >
-              <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
-              {(pinnedTraining ?? []).includes('intro') ? 'ピン解除' : 'ピン留め'}
-            </button>
-            {onOpenIntro && (
-              <button
-                type="button"
-                onClick={onOpenIntro}
-                className="rounded-lg bg-sky-50 text-sky-700 border border-sky-200 px-4 py-2 text-label md:text-label-pc font-medium hover:bg-sky-100"
-              >
-                はじめにを開く
-              </button>
-            )}
-          </div>
-        </div>
-      )
-    }
-
-    if (category === 'linuxLevel1') {
-      return (
-        <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
-          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-600">Linuxコマンド30問</p>
-          <h2 className="mt-2 text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">Linuxコマンド30問</h2>
-          <p className="mt-1 text-label md:text-label-pc text-slate-600">別タブで問題を開きました。タブを確認してください。</p>
-          <p className="mt-2 text-[11px] text-slate-600">問題中は正誤を表示せず、30問終了後に得点を表示します。満点でクリアです。</p>
-        </div>
-      )
-    }
-
-    if (category === 'linuxLevel2') {
-      return (
-        <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
-          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-600">
-            TRAINING · INFRA · 2-2 TCP/IP
-          </p>
-          <h2 className="mt-2 text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">インフラ基礎課題2-2 — TCP/IP 理解度チェック10問</h2>
-          <p className="mt-1 text-label md:text-label-pc text-slate-600">別タブで問題を開きました。タブを確認してください。</p>
-        </div>
-      )
-    }
-
-    if (category === 'infra') {
-      const infra1Cleared = trainingStatus.infraToolsCleared && trainingStatus.linuxL1Cleared
-      const infra2Cleared = trainingStatus.linuxL2Cleared
-      const infra3Cleared = trainingStatus.infraOsCloudCleared
-
-      return (
-        <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
-          <p className="text-sublabel md:text-sublabel-pc font-semibold uppercase tracking-[0.22em] text-slate-600">
-            TRAINING · INFRA
-          </p>
-          <p className="mt-2 text-label md:text-label-pc text-slate-600">検索結果</p>
-          <h2 className="mt-1 text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">インフラ基礎課題</h2>
-
-          <ul className="mt-4 space-y-2 text-slate-700">
-            <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-body md:text-body-pc font-medium text-slate-800">インフラ基礎課題1</span>
-                  {(pinnedTraining ?? []).includes('infra-basic-1') && (
-                    <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                      📌
-                    </span>
-                  )}
-                  {infra1Cleared && (
-                    <span className="inline-flex items-center justify-center rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
-                      ✓
-                    </span>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onTogglePin('infra-basic-1')}
-                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600"
-                >
-                  <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
-                  {(pinnedTraining ?? []).includes('infra-basic-1') ? 'ピン解除' : 'ピン留め'}
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-top'))}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100"
-              >
-                開く
-              </button>
-            </li>
-            <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-body md:text-body-pc font-medium text-slate-800">インフラ基礎課題2</span>
-                  {(pinnedTraining ?? []).includes('infra-basic-2') && (
-                    <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                      📌
-                    </span>
-                  )}
-                  {infra2Cleared && (
-                    <span className="inline-flex items-center justify-center rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
-                      ✓
-                    </span>
-                  )}
-                </div>
-              <button
-                type="button"
-                onClick={() => onTogglePin('infra-basic-2')}
-                className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600"
-              >
-                <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
-                {(pinnedTraining ?? []).includes('infra-basic-2') ? 'ピン解除' : 'ピン留め'}
-              </button>
-              {!isKiraTestUser() && !infra1Cleared && (
-                <p className="mt-1 text-[10px] text-amber-700">インフラ基礎課題1をクリアすると利用できます</p>
-              )}
-              </div>
-              <button
-                type="button"
-                disabled={!isKiraTestUser() && !infra1Cleared}
-                onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-2-top'))}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                開く
-              </button>
-            </li>
-            <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-body md:text-body-pc font-medium text-slate-800">インフラ基礎課題3</span>
-                  {(pinnedTraining ?? []).includes('infra-basic-3') && (
-                    <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                      📌
-                    </span>
-                  )}
-                  {infra3Cleared && (
-                    <span className="inline-flex items-center justify-center rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
-                      ✓
-                    </span>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onTogglePin('infra-basic-3')}
-                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600"
-                >
-                  <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
-                  {(pinnedTraining ?? []).includes('infra-basic-3') ? 'ピン解除' : 'ピン留め'}
-                </button>
-                {!isKiraTestUser() && !infra2Cleared && (
-                  <p className="mt-1 text-[10px] text-amber-700">インフラ基礎課題2をクリアすると利用できます</p>
-                )}
-              </div>
-              <button
-                type="button"
-                disabled={!isKiraTestUser() && !infra2Cleared}
-                onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-3-top'))}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                開く
-              </button>
-            </li>
-            <li className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-body md:text-body-pc font-medium text-slate-800">インフラ基礎課題4（vi & シェルスクリプト演習）</span>
-                  {(pinnedTraining ?? []).includes('infra-basic-4') && (
-                    <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                      📌
-                    </span>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onTogglePin('infra-basic-4')}
-                  className="mt-1 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600"
-                >
-                  <span aria-hidden style={{ filter: 'grayscale(1) opacity(0.5)' }}>📌</span>
-                  {(pinnedTraining ?? []).includes('infra-basic-4') ? 'ピン解除' : 'ピン留め'}
-                </button>
-                {!isKiraTestUser() && !infra3Cleared && (
-                  <p className="mt-1 text-[10px] text-amber-700">インフラ基礎課題3をクリアすると利用できます</p>
-                )}
-              </div>
-              <button
-                type="button"
-                disabled={!isKiraTestUser() && !infra3Cleared}
-                onClick={() => onOpenInfraOrShowIntro(getTrainingUrl('/training/infra-basic-4'))}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                開く
-              </button>
-            </li>
-          </ul>
-          <div className="mt-4 rounded-xl bg-slate-50 px-3 py-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-body md:text-body-pc font-medium text-slate-800">IT業界の歩き方</span>
-                <p className="text-[11px] text-slate-600">ITエンジニアの基礎知識を6カテゴリで学ぶ</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => navigate('/it-basics')}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100"
-              >
-                開く
-              </button>
-            </div>
-          </div>
-        </div>
-      )
-    }
-
-    return (
-      <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
-        <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">研修モジュール</h2>
-        <p className="mt-1 text-label md:text-label-pc text-slate-600">
-          研修ポータルへのルーティング結果です。実装時には、ここから研修管理システムの画面へ遷移させます。
-        </p>
-      </div>
-    )
-  }
-
-  if (resolution.feature === 'timeTracking') {
-    return (
-      <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
-        <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">
-          勤怠管理モジュール（プレースホルダー）
-        </h2>
-        <p className="mt-1 text-label md:text-label-pc text-slate-600">
-          打刻・勤怠申請画面へのエントリーポイントです。将来的にはここから勤怠システムへシングルサインオンさせます。
-        </p>
-      </div>
-    )
-  }
-
-  if (resolution.feature === 'projects') {
-    return (
-      <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc shadow-sm">
-        <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">
-          プロジェクト管理モジュール（プレースホルダー）
-        </h2>
-        <p className="mt-1 text-label md:text-label-pc text-slate-600">
-          プロジェクトボード・ガントチャートなどの画面に接続する想定のコンテナです。
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="rounded-2xl bg-white p-4 text-body md:text-body-pc text-slate-600 shadow-sm">
-      <p>該当する機能が見つかりませんでした。別の表現でもう一度試してください。</p>
     </div>
   )
 }

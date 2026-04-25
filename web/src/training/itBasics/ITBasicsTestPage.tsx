@@ -239,7 +239,7 @@ export function ITBasicsTestPage() {
               <button
                 type="button"
                 onClick={handleNext}
-                className="mt-4 rounded-xl bg-slate-800 px-5 py-2.5 text-button md:text-button-pc font-medium text-white hover:bg-slate-900"
+                className="mt-4 rounded-xl bg-sky-600 px-5 py-2.5 text-button md:text-button-pc font-medium text-white hover:bg-sky-700"
               >
                 {currentIndex + 1 >= questions.length ? '結果を見る' : '次の問題 →'}
               </button>
