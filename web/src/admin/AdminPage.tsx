@@ -20,7 +20,7 @@ function formatDate(iso: string | null): string {
 }
 
 function ProgressBar({ pct }: { pct: number }) {
-  const color = pct <= 30 ? 'bg-red-500' : pct <= 70 ? 'bg-amber-400' : 'bg-sky-500'
+  const color = pct <= 70 ? 'bg-amber-400' : 'bg-sky-500'
   return (
     <div className="flex items-center gap-2">
       <div className="h-2 w-20 overflow-hidden rounded-full bg-slate-200">
@@ -31,11 +31,11 @@ function ProgressBar({ pct }: { pct: number }) {
   )
 }
 
-function StatCard({ label, value, sub, danger }: { label: string; value: number | string; sub?: string; danger?: boolean }) {
+function StatCard({ label, value, sub, warn }: { label: string; value: number | string; sub?: string; warn?: boolean }) {
   return (
-    <div className={`rounded-xl border p-4 shadow-sm ${danger ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-white'}`}>
+    <div className={`rounded-xl border p-4 shadow-sm ${warn ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white'}`}>
       <p className="text-xs font-medium text-slate-500">{label}</p>
-      <p className={`mt-1 text-2xl font-bold ${danger ? 'text-red-700' : 'text-slate-800'}`}>{value}</p>
+      <p className={`mt-1 text-2xl font-bold ${warn ? 'text-amber-700' : 'text-slate-800'}`}>{value}</p>
       {sub && <p className="mt-0.5 text-xs text-slate-500">{sub}</p>}
     </div>
   )
@@ -209,7 +209,7 @@ export function AdminPage() {
             label="起動中サーバー"
             value={stats.running}
             sub="台（コスト発生中）"
-            danger={stats.running > 0}
+            warn={stats.running > 0}
           />
         </div>
 
@@ -262,27 +262,27 @@ export function AdminPage() {
 
           {/* テーブル */}
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px] text-left text-sm">
+            <table className="w-full min-w-0 md:min-w-[700px] text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50">
                   <th className="px-4 py-3 font-semibold text-slate-600">受講生名</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">ロール</th>
+                  {/* デスクトップのみ: プログレスバー / モバイル: %数字 */}
                   <th className="px-4 py-3 font-semibold text-slate-600">全体進捗</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">現在の課題</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">最終ログイン</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">規約同意</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">サーバー</th>
+                  <th className="hidden md:table-cell px-4 py-3 font-semibold text-slate-600">最終ログイン</th>
+                  <th className="hidden md:table-cell px-4 py-3 font-semibold text-slate-600">規約同意</th>
+                  <th className="hidden md:table-cell px-4 py-3 font-semibold text-slate-600">サーバー</th>
                   <th className="px-4 py-3 font-semibold text-slate-600">アクション</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-slate-500">読み込み中...</td>
+                    <td colSpan={7} className="px-4 py-8 text-center text-slate-500">読み込み中...</td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
+                    <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
                       {users.length === 0 ? '受講生がまだ登録されていません' : '条件に一致するユーザーがいません'}
                     </td>
                   </tr>
@@ -292,22 +292,17 @@ export function AdminPage() {
                     return (
                       <tr
                         key={u.username}
-                        className={`border-b border-slate-100 ${isDelayed ? 'bg-red-50/60' : 'hover:bg-slate-50/70'}`}
+                        className={`border-b border-slate-100 ${isDelayed ? 'bg-amber-50/40' : 'hover:bg-slate-50/70'}`}
                       >
                         <td className="px-4 py-3 font-medium text-slate-800">{u.username}</td>
                         <td className="px-4 py-3">
-                          <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                            u.role === 'manager' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
-                          }`}>
-                            {u.role}
-                          </span>
+                          {/* モバイル: %数字のみ / デスクトップ: プログレスバー */}
+                          <span className="md:hidden tabular-nums text-xs font-medium text-slate-700">{u.wbsPercent}%</span>
+                          <span className="hidden md:flex"><ProgressBar pct={u.wbsPercent} /></span>
                         </td>
-                        <td className="px-4 py-3">
-                          <ProgressBar pct={u.wbsPercent} />
-                        </td>
-                        <td className="px-4 py-3 text-slate-700">{u.currentChapter}</td>
-                        <td className="px-4 py-3 text-slate-600">{formatDate(u.lastLogin)}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-slate-700 text-xs">{u.currentChapter}</td>
+                        <td className="hidden md:table-cell px-4 py-3 text-slate-600">{formatDate(u.lastLogin)}</td>
+                        <td className="hidden md:table-cell px-4 py-3">
                           {u.termsAgreedAt ? (
                             <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
                               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
@@ -317,7 +312,7 @@ export function AdminPage() {
                             <span className="text-xs font-medium text-amber-600">未</span>
                           )}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="hidden md:table-cell px-4 py-3">
                           {u.ec2State === 'running' ? (
                             <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
                               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" /> 実行中
@@ -339,25 +334,25 @@ export function AdminPage() {
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-3 whitespace-nowrap">
                             <button
                               type="button"
                               onClick={() => setDetailUser(u)}
-                              className="rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                              className="text-xs font-medium text-sky-600 hover:text-sky-800 hover:underline"
                             >
-                              進捗詳細
+                              詳細
                             </button>
                             <button
                               type="button"
                               onClick={() => navigate(`/admin/wbs?userId=${u.username}`)}
-                              className="rounded-md border border-sky-200 px-2 py-1 text-xs font-medium text-sky-700 hover:bg-sky-50"
+                              className="hidden md:inline text-xs font-medium text-slate-600 hover:text-slate-800 hover:underline"
                             >
                               WBS
                             </button>
                             <button
                               type="button"
                               onClick={() => { setDeleteTarget(u); setDeleteConfirmText(''); setDeleteError(null) }}
-                              className="rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                              className="hidden md:inline text-xs font-medium text-red-500 hover:text-red-700 hover:underline"
                             >
                               削除
                             </button>
