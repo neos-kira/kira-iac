@@ -169,8 +169,8 @@ export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, com
                     </button>
                     {showWbsTip && (
                       <div
-                        className="absolute bg-slate-900 text-white px-2 py-1.5 rounded-lg shadow-lg whitespace-normal"
-                        style={{ zIndex: 9999, fontSize: 11, maxWidth: 220, right: 0, top: 'calc(100% + 6px)' }}
+                        className="absolute shadow-lg whitespace-normal"
+                        style={{ zIndex: 9999, width: 260, padding: '12px 16px', fontSize: 13, lineHeight: 1.6, borderRadius: 8, background: '#1e293b', color: '#f8fafc', right: '100%', top: 0, marginRight: 8 }}
                         onMouseEnter={() => {
                           if (wbsTipTimerRef.current) clearTimeout(wbsTipTimerRef.current)
                         }}
