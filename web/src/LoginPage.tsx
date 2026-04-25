@@ -210,11 +210,6 @@ export function LoginPage() {
 
         {mode === 'login' ? (
           <div>
-            {/* Title */}
-            <h1 style={{ fontSize: 19, fontWeight: 600, color: '#0F172A', marginBottom: 24, textAlign: 'center', letterSpacing: '-0.01em' }}>
-              ログイン
-            </h1>
-
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {/* Username */}
               <div>
