@@ -133,7 +133,7 @@ export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, com
           </button>
           {showMenu && (
             <div
-              className="absolute right-0 top-full mt-2 w-52 rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-900/10 overflow-hidden"
+              className="absolute right-0 top-full mt-2 w-52 rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-900/10"
               style={{ zIndex: Z.dropdown }}
             >
               <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
@@ -169,8 +169,8 @@ export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, com
                     </button>
                     {showWbsTip && (
                       <div
-                        className="absolute right-0 bottom-full mb-1.5 bg-slate-900 text-white text-xs px-3 py-2 rounded-lg max-w-xs shadow-lg whitespace-normal"
-                        style={{ zIndex: 9999, width: 220 }}
+                        className="absolute bg-slate-900 text-white px-2 py-1.5 rounded-lg shadow-lg whitespace-normal"
+                        style={{ zIndex: 9999, fontSize: 11, maxWidth: 180, left: '100%', marginLeft: 8, top: '50%', transform: 'translateY(-50%)' }}
                         onMouseEnter={() => {
                           if (wbsTipTimerRef.current) clearTimeout(wbsTipTimerRef.current)
                         }}
@@ -178,7 +178,7 @@ export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, com
                           wbsTipTimerRef.current = setTimeout(() => setShowWbsTip(false), 200)
                         }}
                       >
-                        WBS（Work Breakdown Structure）— 研修全体のタスクと進捗を一覧で確認できます
+                        WBS（Work Breakdown Structure）とは、プロジェクトの作業を階層的に分解して進捗を管理する表です。NICでは各課題の期限・進捗状況を一覧で確認できます。
                       </div>
                     )}
                   </div>
