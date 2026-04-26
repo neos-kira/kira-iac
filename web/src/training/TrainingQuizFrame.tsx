@@ -13,8 +13,6 @@ type Props = {
   serverInitialIndex?: number
   /** 中断時: 現在インデックスと回答配列を受け取りDynamoDB保存する。trueなら遷移、falseならエラー表示 */
   onInterrupt?: (currentIndex: number, answers: number[]) => Promise<boolean>
-  /** 課題一覧に戻るボタンの遷移先。指定時はページ上部に「← 課題一覧に戻る」を表示 */
-  backPath?: string
 }
 
 type SavedProgress = {
@@ -73,7 +71,6 @@ export function TrainingQuizFrame({
   storageKey,
   serverInitialIndex,
   onInterrupt,
-  backPath,
 }: Props) {
   const navigate = useSafeNavigate()
   const total = questions.length
@@ -100,6 +97,12 @@ export function TrainingQuizFrame({
   useEffect(() => {
     if (isFinished && storageKey) clearProgress(storageKey)
   }, [isFinished, storageKey])
+
+  useEffect(() => {
+    const handler = () => { void interrupt() }
+    window.addEventListener('nic:save-and-leave', handler)
+    return () => window.removeEventListener('nic:save-and-leave', handler)
+  })
 
   function submit() {
     if (selectedIndex == null) return
@@ -195,24 +198,7 @@ export function TrainingQuizFrame({
   return (
     <div style={{ minHeight: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }} className="bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-xl w-full">
-        {backPath && (
-          <button type="button" onClick={() => navigate(backPath)} className="mb-3 inline-flex items-center gap-1 text-sm text-sky-700 hover:text-sky-800">
-            ← 課題一覧に戻る
-          </button>
-        )}
-        <div className="flex items-center justify-end mb-4">
-          <div className="flex flex-col items-end gap-1">
-            <button
-              type="button"
-              onClick={() => { void interrupt() }}
-              disabled={isSuspending}
-              className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSuspending ? '保存中...' : '中断して保存'}
-            </button>
-            {suspendError && <p className="text-xs text-red-600">{suspendError}</p>}
-          </div>
-        </div>
+        {suspendError && <p className="text-xs text-red-600 text-right mb-4">{suspendError}</p>}
       </div>
 
       {/* 進捗バー + 前後ナビ */}

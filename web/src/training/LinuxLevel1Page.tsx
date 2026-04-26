@@ -172,6 +172,12 @@ export function LinuxLevel1Page() {
     document.title = 'Linuxコマンド30問'
   }, [])
 
+  useEffect(() => {
+    const handler = () => { void handleInterrupt() }
+    window.addEventListener('nic:save-and-leave', handler)
+    return () => window.removeEventListener('nic:save-and-leave', handler)
+  })
+
   // AI講師にクイズ状態を共有する（currentQuestion / studentAnswer / isCorrect）
   const current = queue[queueIdx]
   useEffect(() => {
@@ -637,22 +643,7 @@ export function LinuxLevel1Page() {
         {/* ────── メインコンテンツ ────── */}
         <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-3 md:p-6">
           <div className="mx-auto max-w-xl w-full">
-            <button type="button" onClick={() => navigate('/training/infra-basic-top')} className="mb-1 md:mb-3 inline-flex items-center gap-1 text-button md:text-button-pc text-sky-700 hover:text-sky-800">
-              ← 課題一覧に戻る
-            </button>
-            <div className="flex items-center justify-end mb-2 md:mb-4">
-              <div className="flex flex-col items-end gap-1">
-                <button
-                  type="button"
-                  onClick={() => { void handleInterrupt() }}
-                  disabled={isSaving}
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-label md:text-label-pc font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSaving ? '保存中...' : '中断して保存'}
-                </button>
-                {saveError && <p className="text-xs text-red-600">{saveError}</p>}
-              </div>
-            </div>
+            {saveError && <p className="text-xs text-red-600 text-right mb-2">{saveError}</p>}
           </div>
           {/* 進捗バー + ナビゲーション */}
           <div className="mx-auto max-w-xl w-full flex items-center gap-3 mb-2 md:mb-4 px-1">

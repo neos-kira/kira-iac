@@ -36,6 +36,7 @@ import { ITBasicsTestPage } from './training/itBasics/ITBasicsTestPage'
 import { QuizContextProvider } from './quizContext'
 import { ServerPage } from './pages/ServerPage'
 import { ProgressPage } from './pages/ProgressPage'
+import { BottomTabNav } from './components/BottomTabNav'
 
 const MENTOR_CONTEXT_MAP: Record<string, string> = {
   '/training/intro': 'はじめに',
@@ -235,7 +236,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     const showSidePanelTop = !isMobile && isWide
     return (
       <div style={{ display: 'flex', minHeight: '100vh' }}>
-        <div style={{ flex: '1 1 0', minWidth: 0 }}>{children}</div>
+        <div style={{ flex: '1 1 0', minWidth: 0 }} className="pb-[60px] md:pb-0">{children}</div>
         {showSidePanelTop && isAiOpen && (
           <div style={{ flex: `0 0 ${panelWidth}px`, flexShrink: 0, display: 'flex', flexDirection: 'row', background: 'white', height: '100vh', position: 'sticky', top: 0 }}>
             <div onMouseDown={startDragX} style={{ width: 4, cursor: 'col-resize', background: 'transparent', flexShrink: 0, transition: 'background 0.15s' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#7dd3fc' }} onMouseLeave={(e) => { if (!isDragging.current) (e.currentTarget as HTMLElement).style.background = 'transparent' }} />
@@ -249,12 +250,13 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
             type="button"
             onClick={() => { setIsAiOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }}
             title="AI講師に質問する"
-            className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35 hover:scale-110 transition-transform"
-            style={{ position: 'fixed', bottom: 24, right: 24, border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}
+            className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35 hover:scale-110 transition-transform bottom-[76px] md:bottom-6 right-6"
+            style={{ position: 'fixed', border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}
           >
             <img src="/ai-teacher.png" alt="AI講師" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
           </button>
         )}
+        <BottomTabNav />
       </div>
     )
   }
@@ -265,7 +267,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const showMobile = showChat && isMobile
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', flexDirection: 'column' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', flexDirection: 'column' }} className={!showChat ? 'pb-[60px] md:pb-0' : ''}>
       {showChat ? (
         <CourseHeader
           onLogout={handleGlobalLogout}
@@ -375,6 +377,8 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
           </div>
         </>
       )}
+      {/* モバイルBottom Tabナビ (training以外のページ) */}
+      {!showChat && <BottomTabNav />}
     </div>
   )
 }

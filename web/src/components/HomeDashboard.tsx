@@ -435,11 +435,11 @@ export function HomeDashboard({
                       {currentTask.progressLabel && <p className="text-[12px] text-white/70">{currentTask.progressLabel}</p>}
                     </div>
                   )}
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button type="button" onClick={currentTask.action} className="rounded-xl bg-white text-indigo-700 font-bold px-5 py-2.5 text-[14px] hover:bg-white/90 transition-colors">
+                  <div className="mt-4 flex flex-col sm:flex-row flex-wrap gap-2">
+                    <button type="button" onClick={currentTask.action} className="w-full sm:w-auto rounded-xl bg-white text-indigo-700 font-bold px-5 py-2.5 text-[14px] hover:bg-white/90 transition-colors">
                       {currentTask.actionLabel}
                     </button>
-                    <button type="button" onClick={currentTask.action} className="rounded-xl bg-white/10 border border-white/20 text-white font-medium px-5 py-2.5 text-[14px] hover:bg-white/20 transition-colors">
+                    <button type="button" onClick={currentTask.action} className="w-full sm:w-auto rounded-xl bg-white/10 border border-white/20 text-white font-medium px-5 py-2.5 text-[14px] hover:bg-white/20 transition-colors">
                       詳細を見る
                     </button>
                   </div>
@@ -490,10 +490,10 @@ export function HomeDashboard({
               </div>
 
               {/* タブ */}
-              <div className="flex gap-1 flex-wrap">
+              <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
                 {(Object.keys(TAB_LABELS) as TabKey[]).map((tab) => (
                   <button key={tab} type="button" onClick={() => setActiveTab(tab)}
-                    className={`rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${activeTab === tab ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                    className={`flex-shrink-0 rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${activeTab === tab ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                     {TAB_LABELS[tab]}
                   </button>
                 ))}

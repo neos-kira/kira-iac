@@ -51,6 +51,12 @@ export function InfraBasic5Page() {
   }, [])
 
   useEffect(() => {
+    const handler = () => { void handleSuspend() }
+    window.addEventListener('nic:save-and-leave', handler)
+    return () => window.removeEventListener('nic:save-and-leave', handler)
+  })
+
+  useEffect(() => {
     const load = async () => {
       const username = getCurrentDisplayName().trim().toLowerCase()
       if (!username || false) { setIsLoading(false); return }
@@ -198,9 +204,6 @@ export function InfraBasic5Page() {
       <div className="mx-auto max-w-2xl space-y-6">
 
         {/* ヘッダー */}
-        <button type="button" onClick={() => navigate('/')} className="inline-flex items-center gap-1 text-button md:text-button-pc text-sky-700 hover:text-sky-800">
-          ← 課題一覧に戻る
-        </button>
         <div>
           <p className="text-label md:text-label-pc text-slate-600">課題5 · サーバー構築</p>
           <h1 className="text-display md:text-display-pc font-bold text-slate-800 tracking-tight">Ubuntu サーバー構築</h1>
@@ -220,17 +223,7 @@ export function InfraBasic5Page() {
               />
             </div>
           </div>
-          <div className="flex flex-col items-end gap-1">
-            <button
-              type="button"
-              onClick={() => { void handleSuspend() }}
-              disabled={isSaving}
-              className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-label md:text-label-pc font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSaving ? '保存中...' : '中断して保存'}
-            </button>
-            {saveError && <p className="text-label md:text-label-pc text-red-600">{saveError}</p>}
-          </div>
+          {saveError && <p className="text-label md:text-label-pc text-red-600">{saveError}</p>}
         </div>
 
         {/* 概要 */}

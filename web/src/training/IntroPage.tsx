@@ -163,6 +163,12 @@ export function IntroPage() {
 
   // ── マウント: DynamoDB復元 ────────────────────────────────────────────────
   useEffect(() => {
+    const handler = () => { void handleSuspend() }
+    window.addEventListener('nic:save-and-leave', handler)
+    return () => window.removeEventListener('nic:save-and-leave', handler)
+  })
+
+  useEffect(() => {
     document.title = 'はじめに'
     const username = getCurrentDisplayName().trim().toLowerCase()
     if (usernameAtMountRef.current === null) usernameAtMountRef.current = username
@@ -487,24 +493,10 @@ export function IntroPage() {
 
   // ── レイアウトヘルパー ────────────────────────────────────────────────────
   const topBar = (
-    <div className="flex items-center justify-between mb-6">
-      <button
-        type="button"
-        onClick={() => navigate('/')}
-        className="inline-flex items-center gap-1 text-button md:text-button-pc text-sky-700 hover:text-sky-800"
-      >
-        ← 課題一覧に戻る
-      </button>
+    <div className="flex items-center justify-end mb-6">
       {!isReviewMode && step >= 1 && step <= 5 ? (
         <div className="flex flex-col items-end gap-1">
-          <button
-            type="button"
-            onClick={() => { void handleSuspend() }}
-            disabled={isSaving}
-            className="rounded-lg px-4 py-2 text-button md:text-button-pc font-medium text-slate-700 bg-white border border-slate-200 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSaving ? '保存中...' : '中断して保存'}
-          </button>
+          {isSaving && <p className="text-label md:text-label-pc text-slate-500">保存中...</p>}
           {saveError && (
             <p className="text-label md:text-label-pc text-red-600">{saveError}</p>
           )}

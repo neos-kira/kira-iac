@@ -173,6 +173,12 @@ export function InfraBasic32Page() {
   }, [])
 
   useEffect(() => {
+    const handler = () => { void handleSuspend() }
+    window.addEventListener('nic:save-and-leave', handler)
+    return () => window.removeEventListener('nic:save-and-leave', handler)
+  })
+
+  useEffect(() => {
     const load = async () => {
       const username = getCurrentDisplayName().trim().toLowerCase()
       if (!username || false) {
@@ -351,28 +357,12 @@ export function InfraBasic32Page() {
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-3xl space-y-6">
         {/* パンくず・タイトル */}
-        <button type="button" onClick={() => navigate('/training/infra-basic-3-top')} className="inline-flex items-center gap-1 text-sm text-sky-700 hover:text-sky-800">
-          ← 課題一覧に戻る
-        </button>
         <div>
           <p className="text-xs text-slate-500">課題3-2 · 理解度チェック</p>
           <h1 className="text-xl font-bold text-slate-800">OS・仮想化・クラウド 記述式チェック</h1>
         </div>
 
-        {/* 中断ボタン */}
-        <div className="flex justify-end">
-          <div className="flex flex-col items-end gap-1">
-            <button
-              type="button"
-              onClick={() => { void handleSuspend() }}
-              disabled={isSaving}
-              className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSaving ? '保存中...' : '中断して保存'}
-            </button>
-            {saveError && <p className="text-xs text-red-600">{saveError}</p>}
-          </div>
-        </div>
+        {saveError && <p className="text-xs text-red-600">{saveError}</p>}
 
         {/* 問題カード */}
         {QUESTIONS.map((q, idx) => {

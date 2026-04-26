@@ -52,6 +52,12 @@ export function InfraBasic4Page() {
   }, [])
 
   useEffect(() => {
+    const handler = () => { void handleSuspend() }
+    window.addEventListener('nic:save-and-leave', handler)
+    return () => window.removeEventListener('nic:save-and-leave', handler)
+  })
+
+  useEffect(() => {
     if (!isProgressApiAvailable() || typeof window === 'undefined') return
     const name = username.trim().toLowerCase()
     if (!name || false) return
@@ -215,26 +221,11 @@ export function InfraBasic4Page() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-6">
       <div className="mx-auto max-w-2xl space-y-6">
-        <button type="button" onClick={() => navigate('/')} className="inline-flex items-center gap-1 text-button md:text-button-pc text-sky-700 hover:text-sky-800">
-          ← 課題一覧に戻る
-        </button>
         <div>
           <p className="text-label md:text-label-pc text-slate-600">課題4 · 実践演習</p>
           <h1 className="text-display md:text-display-pc font-bold text-slate-800 tracking-tight">viエディタ・シェルスクリプト演習</h1>
         </div>
-        <header className="flex items-center justify-between">
-          <div className="flex flex-col items-end gap-1">
-            <button
-              type="button"
-              onClick={() => { void handleSuspend() }}
-              disabled={isSaving}
-              className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-label md:text-label-pc font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSaving ? '保存中...' : '中断して保存'}
-            </button>
-            {saveError && <p className="text-label md:text-label-pc text-red-600">{saveError}</p>}
-          </div>
-        </header>
+        {saveError && <p className="text-label md:text-label-pc text-red-600">{saveError}</p>}
 
         {/* ステータス */}
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft-card">

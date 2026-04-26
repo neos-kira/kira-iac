@@ -161,9 +161,6 @@ export function InfraBasic1Page() {
       <div className="mx-auto max-w-2xl space-y-4">
 
         {/* ヘッダー */}
-        <button type="button" onClick={() => navigate('/training/infra-basic-top')} className="inline-flex items-center gap-1 text-button md:text-button-pc text-sky-700 hover:text-sky-800">
-          ← 課題一覧に戻る
-        </button>
         <div>
           <p className="text-label md:text-label-pc text-slate-600">課題1-1 · SSH接続</p>
           <h1 className="text-display md:text-display-pc font-bold text-slate-800 tracking-tight">SSH接続確認</h1>
