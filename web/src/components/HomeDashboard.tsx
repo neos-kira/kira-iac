@@ -356,30 +356,30 @@ export function HomeDashboard({
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
 
             {/* 1. 全体の進捗 */}
-            <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-sm">
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">全体の進捗</p>
-              <div className="flex items-center gap-3">
+            <div className="rounded-2xl bg-white border border-slate-200 p-3 md:p-4 shadow-sm">
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2 md:mb-3">全体の進捗</p>
+              <div className="flex items-center gap-2 md:gap-3">
                 <div className="relative flex-shrink-0">
-                  <svg className="w-14 h-14 -rotate-90" viewBox="0 0 36 36">
+                  <svg className="w-12 h-12 md:w-14 md:h-14 -rotate-90" viewBox="0 0 36 36">
                     <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e2e8f0" strokeWidth="3" />
                     <circle cx="18" cy="18" r="15.9" fill="none" stroke="#0ea5e9" strokeWidth="3"
                       strokeDasharray={`${(progressPct?.pct ?? 0) * 99.9 / 100} 99.9`}
                       strokeLinecap="round" />
                   </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-[12px] font-bold text-slate-800">{progressPct?.pct ?? 0}%</span>
+                  <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-slate-800">{progressPct?.pct ?? 0}%</span>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[22px] font-bold text-slate-800 leading-none">{progressPct?.pct ?? 0}<span className="text-[12px] text-slate-400 ml-0.5">%</span></p>
-                  <p className="mt-0.5 text-[11px] text-slate-500 leading-tight">{progressPct?.completed ?? 0}/{progressPct?.total ?? 8}ステージ完了</p>
-                  <button type="button" onClick={() => navigate('/wbs')} className="mt-1.5 text-[11px] text-sky-600 hover:underline">ロードマップを見る→</button>
+                  <p className="text-[20px] md:text-[22px] font-bold text-slate-800 leading-none">{progressPct?.pct ?? 0}<span className="text-[12px] text-slate-400 ml-0.5">%</span></p>
+                  <p className="mt-0.5 text-[10px] md:text-[11px] text-slate-500 leading-tight">{progressPct?.completed ?? 0}/{progressPct?.total ?? 8}ステージ完了</p>
+                  <button type="button" onClick={() => navigate('/wbs')} className="hidden md:block mt-1.5 text-[11px] text-sky-600 hover:underline">ロードマップを見る→</button>
                 </div>
               </div>
             </div>
 
             {/* 2. 今週の学習時間 */}
-            <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-sm">
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">今週の学習時間</p>
-              <p className="text-[26px] font-bold text-slate-800 leading-none">—<span className="text-[12px] text-slate-400 ml-0.5">h</span></p>
+            <div className="rounded-2xl bg-white border border-slate-200 p-3 md:p-4 shadow-sm">
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2 md:mb-3">今週の学習時間</p>
+              <p className="text-[20px] md:text-[26px] font-bold text-slate-800 leading-none">—<span className="text-[12px] text-slate-400 ml-0.5">h</span></p>
               <p className="mt-0.5 text-[11px] text-slate-500">学習時間は記録中</p>
               <div className="mt-3 flex items-end gap-0.5 h-5">
                 {['月', '火', '水', '木', '金', '土', '日'].map((d, i) => (
@@ -396,10 +396,10 @@ export function HomeDashboard({
             </div>
 
             {/* 3. 連続学習日数 */}
-            <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-sm">
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">連続学習日数</p>
+            <div className="rounded-2xl bg-white border border-slate-200 p-3 md:p-4 shadow-sm">
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2 md:mb-3">連続学習日数</p>
               <div className="flex items-baseline gap-1.5">
-                <p className="text-[26px] font-bold text-slate-800 leading-none">{streakDays}</p>
+                <p className="text-[20px] md:text-[26px] font-bold text-slate-800 leading-none">{streakDays}</p>
                 <span className="text-[12px] text-slate-400">日</span>
                 {streakDays > 0 && <span className="text-[18px] leading-none">🔥</span>}
               </div>
@@ -407,9 +407,9 @@ export function HomeDashboard({
             </div>
 
             {/* 4. 総学習時間（目安） */}
-            <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-sm">
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">総学習時間（目安）</p>
-              <p className="text-[26px] font-bold text-slate-800 leading-none">{totalEstHours}<span className="text-[12px] text-slate-400 ml-0.5">h+</span></p>
+            <div className="rounded-2xl bg-white border border-slate-200 p-3 md:p-4 shadow-sm">
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2 md:mb-3">総学習時間（目安）</p>
+              <p className="text-[20px] md:text-[26px] font-bold text-slate-800 leading-none">{totalEstHours}<span className="text-[12px] text-slate-400 ml-0.5">h+</span></p>
               <p className="mt-1 text-[11px] text-slate-500">{completedCount}ステージ × 約3h</p>
             </div>
           </div>

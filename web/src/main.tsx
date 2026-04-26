@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useState, useRef, useCallback, Component, type ReactNode, type ErrorInfo } from 'react'
+import { StrictMode, useEffect, useState, Component, type ReactNode, type ErrorInfo } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { DeskOpenProvider } from './deskOpenContext'
@@ -59,10 +59,6 @@ function isSidebarPage(path: string): boolean {
   return path.startsWith('/training/') || path.startsWith('/it-basics')
 }
 
-/** AI講師チャット（トグル式・レスポンシブ対応） */
-// MentorDeskToggle は LayoutWrapper 内に統合されたため削除
-
-
 function handleGlobalLogout() {
   safeRemoveItem('kira-session-token')
   safeRemoveItem('kira-user-logged-in')
@@ -73,8 +69,6 @@ function handleGlobalLogout() {
   window.location.hash = '#/login'
   window.location.reload()
 }
-
-const NAV_HEIGHT = 64 // h-16 = 64px
 
 /** DashboardShell を使うページ（max-widthラッパーを外す） */
 function isShellPage(p: string): boolean {
@@ -94,18 +88,15 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const [isMobile] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(pointer: coarse)').matches : false
   )
-  const [isWide, setIsWide] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth >= 900 : true
-  )
-  const [isAiOpen, setIsAiOpen] = useState(() => {
+
+  // AI講師チャット開閉状態（alwaysOn設定から初期化）
+  const [isChatOpen, setIsChatOpen] = useState(() => {
     const v = safeGetItem('nic-ai-mentor-always-on')
     if (v === null) safeSetItem('nic-ai-mentor-always-on', 'false')
     return v === 'true'
   })
-  const [isBottomBarOpen, setIsBottomBarOpen] = useState(false)
-  const [isChatOpen, setIsChatOpen] = useState(false)
+
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
-    // sessionStorage からリロード復元を試みる
     try {
       const raw = safeSessionGetItem('nic-ai-mentor-session-messages')
       if (raw) {
@@ -115,72 +106,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     } catch { /* 復元失敗時は初期メッセージ */ }
     return [INITIAL_MESSAGE]
   })
-
-  // リサイズ: サイドパネル幅（安全なストレージアクセス）
-  const [panelWidth, setPanelWidth] = useState(() => {
-    const saved = safeGetItem('aiPanelWidth')
-    return saved ? Math.max(240, Math.min(600, Number(saved))) : 320
-  })
-  // リサイズ: ボトムパネル高さ（安全なストレージアクセス）
-  const [panelHeight, setPanelHeight] = useState(() => {
-    if (typeof window === 'undefined') return 400
-    const saved = safeGetItem('aiPanelHeight')
-    return saved ? Math.max(200, Math.min(window.innerHeight * 0.8, Number(saved))) : window.innerHeight * 0.6
-  })
-  const isDragging = useRef(false)
   const [courseProgressPct, setCourseProgressPct] = useState(0)
-
-  const startDragX = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    isDragging.current = true
-    document.body.style.userSelect = 'none'
-    document.body.style.cursor = 'col-resize'
-    const onMove = (ev: MouseEvent) => {
-      if (!isDragging.current) return
-      const w = Math.max(240, Math.min(600, window.innerWidth - ev.clientX))
-      setPanelWidth(w)
-    }
-    const onUp = () => {
-      isDragging.current = false
-      document.body.style.userSelect = ''
-      document.body.style.cursor = ''
-      document.removeEventListener('mousemove', onMove)
-      document.removeEventListener('mouseup', onUp)
-      setPanelWidth((w) => { safeSetItem('aiPanelWidth', String(w)); return w })
-    }
-    document.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseup', onUp)
-  }, [])
-
-  const startDragY = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    isDragging.current = true
-    document.body.style.userSelect = 'none'
-    document.body.style.cursor = 'row-resize'
-    const onMove = (ev: MouseEvent) => {
-      if (!isDragging.current) return
-      const maxH = window.innerHeight * 0.8
-      const h = Math.max(200, Math.min(maxH, window.innerHeight - ev.clientY - 48))
-      setPanelHeight(h)
-    }
-    const onUp = () => {
-      isDragging.current = false
-      document.body.style.userSelect = ''
-      document.body.style.cursor = ''
-      document.removeEventListener('mousemove', onMove)
-      document.removeEventListener('mouseup', onUp)
-      setPanelHeight((h) => { safeSetItem('aiPanelHeight', String(h)); return h })
-    }
-    document.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseup', onUp)
-  }, [])
-
-  useEffect(() => {
-    if (isMobile) return
-    const h = () => setIsWide(window.innerWidth >= 900)
-    window.addEventListener('resize', h)
-    return () => window.removeEventListener('resize', h)
-  }, [isMobile])
 
   // 会話履歴を sessionStorage に同期（リロード時復元用）
   useEffect(() => {
@@ -196,7 +122,6 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     if (!userId) return
     getChatLog(userId, 50).then((logs) => {
       if (logs.length === 0) return
-      // API は新しい順 → 古い順に戻す
       const restored: ChatMessage[] = logs.reverse().map((m) => ({
         role: m.role as 'user' | 'assistant',
         content: m.content,
@@ -206,9 +131,9 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // nic:open-ai-panel イベントでAI講師パネルを開く
+  // nic:open-ai-panel イベントでAI講師チャットを開く
   useEffect(() => {
-    const open = () => { setIsAiOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }
+    const open = () => { setIsChatOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }
     window.addEventListener('nic:open-ai-panel', open)
     return () => window.removeEventListener('nic:open-ai-panel', open)
   }, [])
@@ -223,158 +148,72 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('nic:course-progress', handler)
   }, [])
 
-  // ESCキーでAI講師パネルを閉じる（conditional return より前に置くこと — Rules of Hooks）
-  useEffect(() => {
-    if (!isAiOpen && !isBottomBarOpen && !isChatOpen) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { setIsAiOpen(false); setIsBottomBarOpen(false); setIsChatOpen(false) }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [isAiOpen, isBottomBarOpen, isChatOpen])
-
   if (isLogin) return <>{children}</>
 
-  // トップページ: App.tsx が独自の SharedHeader を持つため SharedHeader は省略し、
-  // AI講師パネルのみ LayoutWrapper 側で管理する
+  // AI浮動ボタンのbottom位置: モバイル非研修ページはBottomTabNavの上(76px)
+  const btnBottom = showChat ? 24 : (isMobile ? 76 : 24)
+  // モバイルまたはウィンドウ幅768px未満 → 全画面ポップアップ
+  const isPopupFullscreen = isMobile || (typeof window !== 'undefined' && window.innerWidth < 768)
+
+  // AI浮動ボタン（チャット未表示時のみ表示）
+  const aiButton = !isChatOpen ? (
+    <button
+      type="button"
+      onClick={() => { setIsChatOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }}
+      title="AI講師に質問する"
+      className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35 hover:scale-110 transition-transform"
+      style={{ position: 'fixed', bottom: btnBottom, right: 24, border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}
+    >
+      <img src="/ai-teacher.png" alt="AI講師" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+    </button>
+  ) : null
+
+  // AIチャットポップアップ（オーバーレイ型・×ボタンのみで閉じる）
+  const aiPopup = isChatOpen ? (
+    <>
+      {/* モバイルのみ背景を暗くする（pointer-events:none で背景操作は維持） */}
+      {isPopupFullscreen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: Z.floatingPanelBehind, pointerEvents: 'none' }} />
+      )}
+      <div style={isPopupFullscreen
+        ? { position: 'fixed', right: 0, bottom: 0, width: '100vw', height: '100dvh', zIndex: Z.floatingPanel, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: '16px 16px 0 0' }
+        : { position: 'fixed', right: 24, bottom: 24, width: 380, height: 560, zIndex: Z.floatingPanel, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }
+      }>
+        <MentorDesk context={ctx} sidebar embedded onClose={() => setIsChatOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
+      </div>
+    </>
+  ) : null
+
   if (isTop) {
-    const showSidePanelTop = !isMobile && isWide
     return (
-      <div style={{ display: 'flex', minHeight: '100vh' }}>
-        <div style={{ flex: '1 1 0', minWidth: 0 }} className="pb-[60px] md:pb-0">{children}</div>
-        {showSidePanelTop && isAiOpen && (
-          <div style={{ flex: `0 0 ${panelWidth}px`, flexShrink: 0, display: 'flex', flexDirection: 'row', background: 'white', height: '100vh', position: 'sticky', top: 0 }}>
-            <div onMouseDown={startDragX} style={{ width: 4, cursor: 'col-resize', background: 'transparent', flexShrink: 0, transition: 'background 0.15s' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#7dd3fc' }} onMouseLeave={(e) => { if (!isDragging.current) (e.currentTarget as HTMLElement).style.background = 'transparent' }} />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e5e7eb', minWidth: 0 }}>
-              <MentorDesk context={ctx} sidebar embedded onClose={() => setIsAiOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
-            </div>
-          </div>
-        )}
-        {/* AI浮動ボタン: サイドパネル展開中以外は常に表示 */}
-        {!(showSidePanelTop && isAiOpen) && !isChatOpen && (
-          <button
-            type="button"
-            onClick={() => {
-              if (showSidePanelTop) setIsAiOpen(true)
-              else setIsChatOpen(true)
-              window.dispatchEvent(new CustomEvent('nic:close-user-menu'))
-            }}
-            title="AI講師に質問する"
-            className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35 hover:scale-110 transition-transform bottom-[76px] md:bottom-6 right-6"
-            style={{ position: 'fixed', border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}
-          >
-            <img src="/ai-teacher.png" alt="AI講師" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-          </button>
-        )}
-        {/* チャットポップアップ: モバイル全画面 / デスクトップ右下380×560 */}
-        {isChatOpen && (
-          <>
-            <style>{`
-              .nic-ai-popup { position: fixed; inset: 0; z-index: ${Z.floatingPanel}; display: flex; flex-direction: column; background: white; }
-              @media (min-width: 768px) { .nic-ai-popup { inset: auto; bottom: 80px; right: 24px; width: 380px; height: 560px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); } }
-            `}</style>
-            <div onClick={() => setIsChatOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: Z.floatingPanelBehind }} />
-            <div className="nic-ai-popup">
-              <MentorDesk context={ctx} sidebar embedded onClose={() => setIsChatOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
-            </div>
-          </>
-        )}
+      <div style={{ display: 'flex', minHeight: '100vh' }} className="pb-[60px] md:pb-0">
+        <div style={{ flex: '1 1 0', minWidth: 0 }}>{children}</div>
+        {aiButton}
+        {aiPopup}
         <BottomTabNav />
       </div>
     )
   }
-
-  // モード判定
-  const showSidePanel = showChat && !isMobile && isWide
-  const showBottomBar = showChat && !isMobile && !isWide
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', flexDirection: 'column' }} className={!showChat ? 'pb-[60px] md:pb-0' : ''}>
       {showChat ? (
         <CourseHeader
           onLogout={handleGlobalLogout}
-          onMenuOpen={() => { setIsAiOpen(false); setIsBottomBarOpen(false); setIsChatOpen(false) }}
+          onMenuOpen={() => setIsChatOpen(false)}
           progressPct={courseProgressPct}
         />
       ) : (
         <SharedHeader
           onLogout={handleGlobalLogout}
-          onMenuOpen={() => { setIsAiOpen(false); setIsBottomBarOpen(false); setIsChatOpen(false) }}
+          onMenuOpen={() => setIsChatOpen(false)}
         />
       )}
-      <div style={{ display: 'flex', flex: 1, paddingBottom: showBottomBar ? 48 : 0 }}>
-        {/* メインコンテンツ */}
-        <div style={{ flex: '1 1 0', minWidth: 0, wordBreak: 'break-word' as const, position: 'relative' }}>
-          {isShellPage(path) ? children : <div className="mx-auto max-w-5xl px-6">{children}</div>}
-        </div>
-
-        {/* モード1: サイドパネル（pointer:fine & width>=900px） */}
-        {showSidePanel && isAiOpen && (
-          <div style={{ flex: `0 0 ${panelWidth}px`, flexShrink: 0, display: 'flex', flexDirection: 'row', background: 'white', height: `calc(100vh - ${NAV_HEIGHT}px)`, position: 'sticky', top: NAV_HEIGHT }}>
-            <div onMouseDown={startDragX} style={{ width: 4, cursor: 'col-resize', background: 'transparent', flexShrink: 0, transition: 'background 0.15s' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#7dd3fc' }} onMouseLeave={(e) => { if (!isDragging.current) (e.currentTarget as HTMLElement).style.background = 'transparent' }} />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e5e7eb', minWidth: 0 }}>
-              <MentorDesk context={ctx} sidebar embedded onClose={() => setIsAiOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
-            </div>
-          </div>
-        )}
+      <div style={{ flex: 1, minWidth: 0, wordBreak: 'break-word' as const, position: 'relative' }}>
+        {isShellPage(path) ? children : <div className="mx-auto max-w-5xl px-6">{children}</div>}
       </div>
-
-      {/* モード2: ボトムバー（pointer:fine & width<900px） */}
-      {showBottomBar && (
-        <>
-          {/* 展開パネル */}
-          {isBottomBarOpen && (
-            <div style={{ position: 'fixed', bottom: 48, left: 0, right: 0, height: panelHeight, display: 'flex', flexDirection: 'column', background: 'white', borderTop: '1px solid #e5e7eb', zIndex: Z.floatingPanelBehind, boxShadow: '0 -4px 16px rgba(0,0,0,0.08)' }}>
-              <div onMouseDown={startDragY} style={{ height: 4, cursor: 'row-resize', background: 'transparent', flexShrink: 0, transition: 'background 0.15s' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#7dd3fc' }} onMouseLeave={(e) => { if (!isDragging.current) (e.currentTarget as HTMLElement).style.background = 'transparent' }} />
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <MentorDesk context={ctx} sidebar embedded onClose={() => setIsBottomBarOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
-              </div>
-            </div>
-          )}
-          {/* 固定バー */}
-          <div
-            onClick={() => {
-              const next = !isBottomBarOpen
-              setIsBottomBarOpen(next)
-              if (next) window.dispatchEvent(new CustomEvent('nic:close-user-menu'))
-            }}
-            style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 48, background: 'white', borderTop: '1px solid #e5e7eb', zIndex: Z.floatingPanel, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontWeight: 600, color: '#0f172a' }}
-          >
-            <span>🎓</span> AI講師 <span style={{ color: '#9ca3af' }}>{isBottomBarOpen ? '▼' : '▲'}</span>
-          </div>
-        </>
-      )}
-
-      {/* AI浮動ボタン: 全ページ共通（サイドパネル表示中・ポップアップ・ボトムバー展開中を除く） */}
-      {!(showSidePanel && isAiOpen) && !isChatOpen && !isBottomBarOpen && (
-        <button
-          type="button"
-          onClick={() => {
-            if (showSidePanel) setIsAiOpen(true)
-            else if (showBottomBar) setIsBottomBarOpen(true)
-            else setIsChatOpen(true)
-            window.dispatchEvent(new CustomEvent('nic:close-user-menu'))
-          }}
-          title="AI講師に質問する"
-          className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35 hover:scale-110 transition-transform"
-          style={{ position: 'fixed', bottom: showBottomBar ? 60 : (isMobile && !showChat ? 76 : 24), right: 24, border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}
-        >
-          <img src="/ai-teacher.png" alt="AI講師" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        </button>
-      )}
-      {/* チャットポップアップ: モバイル全画面 / デスクトップ右下380×560 */}
-      {isChatOpen && (
-        <>
-          <style>{`
-            .nic-ai-popup { position: fixed; inset: 0; z-index: ${Z.floatingPanel}; display: flex; flex-direction: column; background: white; }
-            @media (min-width: 768px) { .nic-ai-popup { inset: auto; bottom: 80px; right: 24px; width: 380px; height: 560px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); } }
-          `}</style>
-          <div onClick={() => setIsChatOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: Z.floatingPanelBehind }} />
-          <div className="nic-ai-popup">
-            <MentorDesk context={ctx} sidebar embedded onClose={() => setIsChatOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
-          </div>
-        </>
-      )}
+      {aiButton}
+      {aiPopup}
       {/* モバイルBottom Tabナビ (training以外のページ) */}
       {!showChat && <BottomTabNav />}
     </div>
