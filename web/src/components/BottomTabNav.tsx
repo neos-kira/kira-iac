@@ -91,7 +91,7 @@ export function BottomTabNav() {
 
       {/* Bottom Tab Bar */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-[155] bg-white border-t border-[#E2E8F0] flex"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-[1000] bg-white border-t border-[#E2E8F0] flex"
         style={{ height: 'calc(60px + env(safe-area-inset-bottom))', paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {tabs.map((tab) => (

@@ -176,7 +176,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: Z.floatingPanelBehind, pointerEvents: 'none' }} />
       )}
       <div style={isPopupFullscreen
-        ? { position: 'fixed', right: 0, bottom: 0, width: '100vw', height: '100dvh', zIndex: Z.floatingPanel, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: '16px 16px 0 0' }
+        ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100dvh', zIndex: Z.floatingPanel, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: 0 }
         : { position: 'fixed', right: 24, bottom: 24, width: 380, height: 560, zIndex: Z.floatingPanel, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }
       }>
         <MentorDesk context={ctx} sidebar embedded onClose={() => setIsChatOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
@@ -186,7 +186,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
   if (isTop) {
     return (
-      <div style={{ display: 'flex', minHeight: '100vh' }} className="pb-[60px] md:pb-0">
+      <div style={{ display: 'flex', minHeight: '100vh', paddingBottom: isMobile ? 'calc(60px + env(safe-area-inset-bottom))' : undefined }} className="md:pb-0">
         <div style={{ flex: '1 1 0', minWidth: 0 }}>{children}</div>
         {aiButton}
         {aiPopup}
@@ -196,7 +196,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', flexDirection: 'column' }} className={!showChat ? 'pb-[60px] md:pb-0' : ''}>
+    <div style={{ display: 'flex', minHeight: '100vh', flexDirection: 'column', paddingBottom: (!showChat && isMobile) ? 'calc(60px + env(safe-area-inset-bottom))' : undefined }} className={!showChat ? 'md:pb-0' : ''}>
       {showChat ? (
         <CourseHeader
           onLogout={handleGlobalLogout}
