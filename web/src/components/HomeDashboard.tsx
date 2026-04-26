@@ -242,7 +242,7 @@ export function HomeDashboard({
           >
           {/* ロゴ */}
           <div className="flex items-start px-4 pb-3">
-            <NeOSLogo height={28} noLink />
+            <NeOSLogo height={40} noLink />
           </div>
 
           {/* ナビ */}
