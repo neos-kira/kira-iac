@@ -262,7 +262,7 @@ export function HomeDashboard({
 
             <div className="my-2 border-t border-slate-100" />
 
-            <button type="button" onClick={() => navigate('/')} className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+            <button type="button" onClick={() => navigate('/server')} className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
               <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>
               演習サーバー
             </button>
@@ -620,25 +620,6 @@ export function HomeDashboard({
                         <p className="text-[11px] text-slate-400 mt-0.5">{item.date}</p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* クイックアクセス */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <h3 className="text-[13px] font-semibold text-slate-700 mb-3">クイックアクセス</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { label: '演習サーバー', action: () => navigate('/'), icon: <svg className="w-5 h-5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg> },
-                    { label: 'マイノート', action: () => navigate('/wbs'), icon: <svg className="w-5 h-5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg> },
-                    { label: 'ヘルプ', action: () => navigate('/'), icon: <svg className="w-5 h-5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
-                    { label: 'ロードマップ', action: () => navigate('/wbs'), icon: <svg className="w-5 h-5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg> },
-                  ].map((item) => (
-                    <button key={item.label} type="button" onClick={item.action}
-                      className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 p-3 hover:bg-sky-50 hover:border-sky-200 transition-colors">
-                      {item.icon}
-                      <span className="text-[11px] font-medium text-slate-700">{item.label}</span>
-                    </button>
                   ))}
                 </div>
               </div>
