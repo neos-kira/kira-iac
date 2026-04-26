@@ -596,15 +596,18 @@ function App() {
         </div>
       )}
       <div className="mx-auto flex min-h-screen flex-col">
-        <SharedHeader
-          progressPct={progressPct?.pct ?? null}
-          completedCount={progressPct?.completed}
-          totalCount={progressPct?.total}
-          onLogout={handleLogout}
-          isAdmin={isAdminView}
-          onAdminMenu={() => navigate('/admin')}
-          onAccountPanel={() => setShowAccountPanel(true)}
-        />
+        {/* モバイルはLayoutWrapperのmd:hiddenヘッダーが表示されるため、ここではPC(md以上)のみ表示 */}
+        <div className="hidden md:block">
+          <SharedHeader
+            progressPct={progressPct?.pct ?? null}
+            completedCount={progressPct?.completed}
+            totalCount={progressPct?.total}
+            onLogout={handleLogout}
+            isAdmin={isAdminView}
+            onAdminMenu={() => navigate('/admin')}
+            onAccountPanel={() => setShowAccountPanel(true)}
+          />
+        </div>
 
         {/* はじめに未完了時ポップアップ */}
         {showIntroRequiredPopup && (
