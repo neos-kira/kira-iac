@@ -156,13 +156,27 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   }, [])
 
   // iOS Safari: キーボード表示時に visualViewport.height で実ビューポート高さを追跡
+  // - isMobileガードなし（全デバイスで監視、vpHeightはモバイルポップアップのみ使用）
+  // - resize と scroll 両方を監視（iOS バージョンによってどちらかしか発火しない）
   useEffect(() => {
     const vv = window.visualViewport
-    if (!vv || !isMobile) return
-    const onResize = () => setVpHeight(vv.height)
-    vv.addEventListener('resize', onResize)
-    return () => vv.removeEventListener('resize', onResize)
-  }, [isMobile])
+    if (!vv) return
+    const handler = () => setVpHeight(vv.height ?? window.innerHeight)
+    vv.addEventListener('resize', handler)
+    vv.addEventListener('scroll', handler)
+    handler() // マウント時に初期値をセット
+    return () => {
+      vv.removeEventListener('resize', handler)
+      vv.removeEventListener('scroll', handler)
+    }
+  }, [])
+
+  // チャット開閉時に vpHeight を即時同期（キーボードが既に開いている場合の対応）
+  useEffect(() => {
+    if (!isChatOpen) return
+    const height = window.visualViewport?.height ?? window.innerHeight
+    setVpHeight(height)
+  }, [isChatOpen])
 
   // displayName未設定チェック（ログイン後、localStorageになければAPIで確認）
   useEffect(() => {
