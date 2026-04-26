@@ -108,9 +108,11 @@ export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, com
       className="flex h-14 items-center justify-between border-b bg-white/95 backdrop-blur-sm px-5 shrink-0"
       style={{ borderColor: 'rgba(14,165,233,0.15)', position: 'sticky', top: 0, zIndex: Z.sticky }}
     >
-      <div className="shrink-0" onClick={handleLogoClick} style={isTopPage ? {} : { cursor: 'pointer' }}>
-        <NeOSLogo height={40} noLink />
-      </div>
+      {!isTopPage && (
+        <div className="shrink-0 cursor-pointer" onClick={handleLogoClick}>
+          <NeOSLogo height={40} noLink />
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         {isAdmin && (
