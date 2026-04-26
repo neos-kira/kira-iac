@@ -250,16 +250,34 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         )}
-        {!isAiOpen && (
+        {/* AI浮動ボタン: サイドパネル展開中以外は常に表示 */}
+        {!(showSidePanelTop && isAiOpen) && !isChatOpen && (
           <button
             type="button"
-            onClick={() => { setIsAiOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }}
+            onClick={() => {
+              if (showSidePanelTop) setIsAiOpen(true)
+              else setIsChatOpen(true)
+              window.dispatchEvent(new CustomEvent('nic:close-user-menu'))
+            }}
             title="AI講師に質問する"
             className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35 hover:scale-110 transition-transform bottom-[76px] md:bottom-6 right-6"
             style={{ position: 'fixed', border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}
           >
             <img src="/ai-teacher.png" alt="AI講師" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
           </button>
+        )}
+        {/* チャットポップアップ: モバイル全画面 / デスクトップ右下380×560 */}
+        {isChatOpen && (
+          <>
+            <style>{`
+              .nic-ai-popup { position: fixed; inset: 0; z-index: ${Z.floatingPanel}; display: flex; flex-direction: column; background: white; }
+              @media (min-width: 768px) { .nic-ai-popup { inset: auto; bottom: 80px; right: 24px; width: 380px; height: 560px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); } }
+            `}</style>
+            <div onClick={() => setIsChatOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: Z.floatingPanelBehind }} />
+            <div className="nic-ai-popup">
+              <MentorDesk context={ctx} sidebar embedded onClose={() => setIsChatOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
+            </div>
+          </>
         )}
         <BottomTabNav />
       </div>
@@ -269,7 +287,6 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   // モード判定
   const showSidePanel = showChat && !isMobile && isWide
   const showBottomBar = showChat && !isMobile && !isWide
-  const showMobile = showChat && isMobile
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', flexDirection: 'column' }} className={!showChat ? 'pb-[60px] md:pb-0' : ''}>
@@ -300,18 +317,6 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         )}
-        {/* AI講師浮動ボタン: サイドパネルが閉じているときのみ表示（幅に関わらず共通） */}
-        {showChat && showSidePanel && !isAiOpen && (
-          <button
-            type="button"
-            onClick={() => { setIsAiOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }}
-            title="AI講師に質問する"
-            className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35 hover:scale-110 transition-transform"
-            style={{ position: 'fixed', bottom: 24, right: 24, border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}
-          >
-            <img src="/ai-teacher.png" alt="AI講師" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-          </button>
-        )}
       </div>
 
       {/* モード2: ボトムバー（pointer:fine & width<900px） */}
@@ -340,44 +345,32 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
         </>
       )}
 
-      {/* AI講師浮動ボタン（統一）: ボトムバー/モバイル モードでパネルが閉じているとき常に表示 */}
-      {showChat && (showBottomBar || showMobile) && !(isBottomBarOpen || isChatOpen) && (
+      {/* AI浮動ボタン: 全ページ共通（サイドパネル表示中・ポップアップ・ボトムバー展開中を除く） */}
+      {!(showSidePanel && isAiOpen) && !isChatOpen && !isBottomBarOpen && (
         <button
           type="button"
           onClick={() => {
-            if (showBottomBar) setIsBottomBarOpen(true)
+            if (showSidePanel) setIsAiOpen(true)
+            else if (showBottomBar) setIsBottomBarOpen(true)
             else setIsChatOpen(true)
             window.dispatchEvent(new CustomEvent('nic:close-user-menu'))
           }}
           title="AI講師に質問する"
           className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35 hover:scale-110 transition-transform"
-          style={{ position: 'fixed', bottom: showBottomBar ? 60 : 24, right: 24, border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}
+          style={{ position: 'fixed', bottom: showBottomBar ? 60 : (isMobile && !showChat ? 76 : 24), right: 24, border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}
         >
           <img src="/ai-teacher.png" alt="AI講師" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         </button>
       )}
-
-      {/* モード3: モバイル ボトムシート */}
-      {showMobile && isChatOpen && (
+      {/* チャットポップアップ: モバイル全画面 / デスクトップ右下380×560 */}
+      {isChatOpen && (
         <>
           <style>{`
-            .mobile-chat-panel {
-              position: fixed;
-              left: 0;
-              right: 0;
-              bottom: 0;
-              height: 60dvh;
-              max-height: 80dvh;
-              display: flex;
-              flex-direction: column;
-              background: white;
-              border-radius: 16px 16px 0 0;
-              z-index: ${Z.floatingPanel};
-              box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
-            }
+            .nic-ai-popup { position: fixed; inset: 0; z-index: ${Z.floatingPanel}; display: flex; flex-direction: column; background: white; }
+            @media (min-width: 768px) { .nic-ai-popup { inset: auto; bottom: 80px; right: 24px; width: 380px; height: 560px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); } }
           `}</style>
           <div onClick={() => setIsChatOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: Z.floatingPanelBehind }} />
-          <div className="mobile-chat-panel">
+          <div className="nic-ai-popup">
             <MentorDesk context={ctx} sidebar embedded onClose={() => setIsChatOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
           </div>
         </>
