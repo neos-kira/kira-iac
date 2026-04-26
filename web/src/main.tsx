@@ -28,6 +28,7 @@ import { AdminPage } from './admin/AdminPage'
 import { AiChatLogPage } from './admin/AiChatLogPage'
 import { MentorDesk, INITIAL_MESSAGE, type ChatMessage } from './components/MentorDesk'
 import { SharedHeader } from './components/SharedHeader'
+import { CourseHeader } from './components/CourseHeader'
 import { Z } from './zIndex'
 import { ITBasicsTopPage } from './training/itBasics/ITBasicsTopPage'
 import { ITBasicsStudyPage } from './training/itBasics/ITBasicsStudyPage'
@@ -120,6 +121,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     return saved ? Math.max(200, Math.min(window.innerHeight * 0.8, Number(saved))) : window.innerHeight * 0.6
   })
   const isDragging = useRef(false)
+  const [courseProgressPct, setCourseProgressPct] = useState(0)
 
   const startDragX = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
@@ -204,6 +206,16 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('nic:open-ai-panel', open)
   }, [])
 
+  // 課題ページからの進捗バー更新
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ pct: number }>).detail
+      if (typeof detail?.pct === 'number') setCourseProgressPct(detail.pct)
+    }
+    window.addEventListener('nic:course-progress', handler)
+    return () => window.removeEventListener('nic:course-progress', handler)
+  }, [])
+
   // ESCキーでAI講師パネルを閉じる（conditional return より前に置くこと — Rules of Hooks）
   useEffect(() => {
     if (!isAiOpen && !isBottomBarOpen && !isChatOpen) return
@@ -253,10 +265,18 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', flexDirection: 'column' }}>
-      <SharedHeader
-        onLogout={handleGlobalLogout}
-        onMenuOpen={() => { setIsAiOpen(false); setIsBottomBarOpen(false); setIsChatOpen(false) }}
-      />
+      {showChat ? (
+        <CourseHeader
+          onLogout={handleGlobalLogout}
+          onMenuOpen={() => { setIsAiOpen(false); setIsBottomBarOpen(false); setIsChatOpen(false) }}
+          progressPct={courseProgressPct}
+        />
+      ) : (
+        <SharedHeader
+          onLogout={handleGlobalLogout}
+          onMenuOpen={() => { setIsAiOpen(false); setIsBottomBarOpen(false); setIsChatOpen(false) }}
+        />
+      )}
       <div style={{ display: 'flex', flex: 1, paddingBottom: showBottomBar ? 48 : 0 }}>
         {/* メインコンテンツ */}
         <div style={{ flex: '1 1 0', minWidth: 0, wordBreak: 'break-word' as const, position: 'relative' }}>

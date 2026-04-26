@@ -271,27 +271,27 @@ export function InfraWbsPage() {
         {/* サマリーカード */}
         {displayMode === 'individual' ? (
           /* individual: 全体進捗 のみ */
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <p className="text-[11px] font-medium text-slate-500 mb-1">全体進捗</p>
             <p className="text-3xl font-bold text-slate-800 tabular-nums">{overallPct}<span className="text-lg font-normal text-slate-400">%</span></p>
             <p className="text-[10px] text-slate-400 mt-1">{clearedCount} / {totalCount} ステージ完了</p>
             <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-              <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${overallPct}%` }} />
+              <div className="h-full rounded-full bg-[#2563EB] transition-all" style={{ width: `${overallPct}%` }} />
             </div>
           </div>
         ) : (
           /* manager: 3枚 / corporate: 2枚 */
           <div className={`grid gap-3 ${displayMode === 'manager' ? 'grid-cols-3' : 'grid-cols-2'}`}>
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-[11px] font-medium text-slate-500 mb-1">全体進捗</p>
               <p className="text-3xl font-bold text-slate-800 tabular-nums">{overallPct}<span className="text-lg font-normal text-slate-400">%</span></p>
               <p className="text-[10px] text-slate-400 mt-1">{clearedCount} / {totalCount} ステージ完了</p>
               <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-500 transition-all" style={{ width: `${overallPct}%` }} />
+                <div className="h-full rounded-full bg-[#2563EB] transition-all" style={{ width: `${overallPct}%` }} />
               </div>
             </div>
             {displayMode === 'manager' && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <p className="text-[11px] font-medium text-slate-500 mb-1">遅延タスク</p>
                 <p className={`text-3xl font-bold tabular-nums ${delayedCount > 0 ? 'text-red-600' : 'text-slate-800'}`}>
                   {delayedCount}<span className="text-lg font-normal text-slate-400">件</span>
@@ -301,7 +301,7 @@ export function InfraWbsPage() {
                 </p>
               </div>
             )}
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-[11px] font-medium text-slate-500 mb-1">終了予定まで</p>
               <p className="text-3xl font-bold text-slate-800 tabular-nums">
                 {remainingDays !== null ? remainingDays : '—'}
