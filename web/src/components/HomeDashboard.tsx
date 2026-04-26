@@ -495,7 +495,6 @@ export function HomeDashboard({
             <div className="lg:col-span-2 space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-[14px] font-semibold text-slate-700">学習ロードマップ</h2>
-                <button type="button" onClick={() => navigate('/wbs')} className="text-[12px] text-sky-600 hover:underline">すべての課題を見る→</button>
               </div>
 
               {/* タブ */}
