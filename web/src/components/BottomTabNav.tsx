@@ -7,8 +7,14 @@ export function BottomTabNav() {
   const location = useLocation()
   const navigate = useSafeNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
   const path = location.pathname
   const isManager = getCurrentRole() === 'manager'
+
+  const showToast = (msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 2500)
+  }
 
   const allTabs = [
     {
@@ -56,37 +62,62 @@ export function BottomTabNav() {
 
   const tabs = allTabs.filter((t) => !('managerOnly' in t && t.managerOnly && !isManager))
 
+  // 準備中メニュー項目（ページ未実装のためタップ時にトーストを表示）
+  const drawerItems = [
+    { label: 'お知らせ', icon: '🔔' },
+    { label: 'ヘルプセンター', icon: '❓' },
+    { label: 'お問い合わせ', icon: '✉️' },
+  ]
+
   return (
     <>
       {/* メニュードロワー */}
       {menuOpen && (
         <>
+          {/* 背景オーバーレイ（タップで閉じる） */}
           <div
-            className="fixed inset-0 z-[160] bg-black/20"
+            className="fixed inset-0 bg-black/20"
+            style={{ zIndex: 1001 }}
             onClick={() => setMenuOpen(false)}
           />
-          <div className="fixed bottom-[60px] left-0 right-0 z-[170] bg-white border-t border-[#E2E8F0] rounded-t-2xl shadow-lg px-4 py-3"
-            style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
+          {/* ドロワー本体: z-[1002]でタブバー(z-1000)より前面、background完全不透明 */}
+          <div
+            className="fixed left-0 right-0 rounded-t-2xl shadow-lg px-4 py-3"
+            style={{
+              bottom: 'calc(60px + env(safe-area-inset-bottom))',
+              zIndex: 1002,
+              background: '#ffffff',
+              paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
+              borderTop: '1px solid #E2E8F0',
+            }}
           >
             <div className="w-8 h-1 bg-slate-200 rounded-full mx-auto mb-3" />
-            {[
-              { label: 'お知らせ', icon: '🔔', disabled: true },
-              { label: 'ヘルプセンター', icon: '❓', disabled: true },
-              { label: 'お問い合わせ', icon: '✉️', disabled: true },
-            ].map((item) => (
+            {drawerItems.map((item) => (
               <button
                 key={item.label}
                 type="button"
-                disabled={item.disabled}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-[14px] text-slate-400 cursor-not-allowed"
+                onClick={() => {
+                  setMenuOpen(false)
+                  showToast('現在準備中です')
+                }}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-[14px] text-slate-600 hover:bg-slate-50 active:bg-slate-100 transition-colors"
               >
                 <span className="text-[18px]">{item.icon}</span>
                 {item.label}
-                <span className="ml-auto text-[11px] text-slate-300">準備中</span>
               </button>
             ))}
           </div>
         </>
+      )}
+
+      {/* トースト（準備中メッセージ） */}
+      {toast && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[13px] font-medium px-5 py-2 rounded-full shadow-lg pointer-events-none"
+          style={{ bottom: 'calc(72px + env(safe-area-inset-bottom))', zIndex: 1100 }}
+        >
+          {toast}
+        </div>
       )}
 
       {/* Bottom Tab Bar */}
