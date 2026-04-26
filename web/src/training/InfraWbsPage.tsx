@@ -262,7 +262,7 @@ export function InfraWbsPage() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <p className="text-xs text-slate-500">研修管理</p>
-            <h1 className="text-xl font-bold text-slate-800">WBS</h1>
+            <h1 className="text-2xl font-semibold text-slate-900">WBS</h1>
             {startDate && <p className="text-xs text-slate-400 mt-0.5">研修開始日: {startDate}</p>}
           </div>
         </div>
@@ -271,7 +271,7 @@ export function InfraWbsPage() {
         {/* サマリーカード */}
         {displayMode === 'individual' ? (
           /* individual: 全体進捗 のみ */
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
             <p className="text-[11px] font-medium text-slate-500 mb-1">全体進捗</p>
             <p className="text-3xl font-bold text-slate-800 tabular-nums">{overallPct}<span className="text-lg font-normal text-slate-400">%</span></p>
             <p className="text-[10px] text-slate-400 mt-1">{clearedCount} / {totalCount} ステージ完了</p>
@@ -282,7 +282,7 @@ export function InfraWbsPage() {
         ) : (
           /* manager: 3枚 / corporate: 2枚 */
           <div className={`grid gap-3 ${displayMode === 'manager' ? 'grid-cols-3' : 'grid-cols-2'}`}>
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
               <p className="text-[11px] font-medium text-slate-500 mb-1">全体進捗</p>
               <p className="text-3xl font-bold text-slate-800 tabular-nums">{overallPct}<span className="text-lg font-normal text-slate-400">%</span></p>
               <p className="text-[10px] text-slate-400 mt-1">{clearedCount} / {totalCount} ステージ完了</p>
@@ -291,7 +291,7 @@ export function InfraWbsPage() {
               </div>
             </div>
             {displayMode === 'manager' && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
                 <p className="text-[11px] font-medium text-slate-500 mb-1">遅延タスク</p>
                 <p className={`text-3xl font-bold tabular-nums ${delayedCount > 0 ? 'text-red-600' : 'text-slate-800'}`}>
                   {delayedCount}<span className="text-lg font-normal text-slate-400">件</span>
@@ -301,7 +301,7 @@ export function InfraWbsPage() {
                 </p>
               </div>
             )}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
               <p className="text-[11px] font-medium text-slate-500 mb-1">終了予定まで</p>
               <p className="text-3xl font-bold text-slate-800 tabular-nums">
                 {remainingDays !== null ? remainingDays : '—'}
@@ -322,7 +322,7 @@ export function InfraWbsPage() {
         )}
 
         {/* ─── 表形式 ─── */}
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
             <table className="w-full text-[12px] border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
