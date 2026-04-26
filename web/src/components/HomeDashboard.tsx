@@ -236,7 +236,7 @@ export function HomeDashboard({
       {sidebarOpen && (
         <aside className="hidden md:flex w-[200px] flex-shrink-0 flex-col h-[calc(100vh-3.5rem)] sticky top-14 border-r border-slate-100 bg-white overflow-y-auto">
           {/* ロゴ */}
-          <div className="px-4 pt-0 pb-3">
+          <div className="flex items-start px-4 pb-3">
             <NeOSLogo height={28} noLink />
           </div>
 
@@ -250,7 +250,7 @@ export function HomeDashboard({
               <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
               WBS
             </button>
-            <button type="button" onClick={() => navigate('/wbs')} className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+            <button type="button" onClick={() => navigate('/progress')} className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
               <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
               進捗状況
             </button>
