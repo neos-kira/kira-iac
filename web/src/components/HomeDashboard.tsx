@@ -234,7 +234,12 @@ export function HomeDashboard({
           左サイドバー PC固定200px
       ═══════════════════════════════════════════════════════ */}
       {sidebarOpen && (
-        <aside className="hidden md:flex w-[200px] flex-shrink-0 flex-col h-[calc(100vh-3.5rem)] sticky top-14 border-r border-slate-100 bg-white overflow-y-auto">
+        <>
+          {/* fixed サイドバー：ビューポート左上原点から描画（ロゴが y=0 に来る） */}
+          <aside
+            className="hidden md:flex w-[200px] flex-shrink-0 flex-col h-screen border-r border-slate-100 bg-white overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, zIndex: 150 }}
+          >
           {/* ロゴ */}
           <div className="flex items-start px-4 pb-3">
             <NeOSLogo height={28} noLink />
@@ -287,6 +292,9 @@ export function HomeDashboard({
             </button>
           </div>
         </aside>
+          {/* フローの中に幅スペーサーを置いてコンテンツをアサイドの右に押し出す */}
+          <div className="hidden md:block w-[200px] flex-shrink-0" />
+        </>
       )}
 
       {/* ═══════════════════════════════════════════════════════
