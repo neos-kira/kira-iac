@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react'
-import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { getCurrentUsername } from '../auth'
 import { fetchMyProgress } from '../progressApi'
 import { getTaskProgressList } from '../training/trainingWbsData'
+import { DashboardShell } from '../components/DashboardShell'
 
 export function ProgressPage() {
-  const navigate = useSafeNavigate()
   const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {
@@ -24,20 +23,9 @@ export function ProgressPage() {
   const overallPct = totalCount > 0 ? Math.round((clearedCount / totalCount) * 100) : 0
 
   return (
+    <DashboardShell>
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-6">
       <div className="mx-auto max-w-3xl space-y-5">
-
-        {/* 戻るボタン */}
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className="flex items-center gap-1 text-[13px] text-slate-500 hover:text-slate-700 transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          ホームに戻る
-        </button>
 
         {/* ページタイトル */}
         <h1 className="text-2xl font-semibold text-[#0F172A]">進捗状況</h1>
@@ -129,5 +117,6 @@ export function ProgressPage() {
         )}
       </div>
     </div>
+    </DashboardShell>
   )
 }

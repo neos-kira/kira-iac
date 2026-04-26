@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useSafeNavigate } from '../hooks/useSafeNavigate'
+import { getCurrentRole } from '../auth'
 
 export function BottomTabNav() {
   const location = useLocation()
   const navigate = useSafeNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const path = location.pathname
+  const isManager = getCurrentRole() === 'manager'
 
-  const tabs = [
+  const allTabs = [
     {
       label: 'ホーム',
       path: '/',
@@ -22,6 +24,7 @@ export function BottomTabNav() {
     {
       label: 'WBS',
       path: '/wbs',
+      managerOnly: true,
       active: path === '/wbs',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -50,6 +53,8 @@ export function BottomTabNav() {
       ),
     },
   ]
+
+  const tabs = allTabs.filter((t) => !('managerOnly' in t && t.managerOnly && !isManager))
 
   return (
     <>

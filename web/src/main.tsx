@@ -76,6 +76,11 @@ function handleGlobalLogout() {
 
 const NAV_HEIGHT = 64 // h-16 = 64px
 
+/** DashboardShell を使うページ（max-widthラッパーを外す） */
+function isShellPage(p: string): boolean {
+  return p === '/wbs' || p === '/progress'
+}
+
 function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   const path = location.pathname
@@ -283,7 +288,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
       <div style={{ display: 'flex', flex: 1, paddingBottom: showBottomBar ? 48 : 0 }}>
         {/* メインコンテンツ */}
         <div style={{ flex: '1 1 0', minWidth: 0, wordBreak: 'break-word' as const, position: 'relative' }}>
-          <div className="mx-auto max-w-5xl px-6">{children}</div>
+          {isShellPage(path) ? children : <div className="mx-auto max-w-5xl px-6">{children}</div>}
         </div>
 
         {/* モード1: サイドパネル（pointer:fine & width>=900px） */}
@@ -514,6 +519,13 @@ function ManagerRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+/** studentはアクセス不可・ホームにリダイレクト */
+function ManagerOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { role } = useAuth()
+  if (role === 'student') return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
@@ -530,7 +542,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/admin" element={<ManagerRoute><AdminPage /></ManagerRoute>} />
             <Route path="/admin/ai-chat-log" element={<ManagerRoute><AiChatLogPage /></ManagerRoute>} />
             <Route path="/admin/wbs" element={<ManagerRoute><InfraWbsPage /></ManagerRoute>} />
-            <Route path="/wbs" element={<ProtectedRoute><InfraWbsPage /></ProtectedRoute>} />
+            <Route path="/wbs" element={<ProtectedRoute><ManagerOnlyRoute><InfraWbsPage /></ManagerOnlyRoute></ProtectedRoute>} />
             <Route path="/server" element={<ProtectedRoute><ServerPage /></ProtectedRoute>} />
             <Route path="/progress" element={<ProtectedRoute><ProgressPage /></ProtectedRoute>} />
             <Route path="/training/linux-level1" element={<IntroGate><LinuxLevel1Page /></IntroGate>} />

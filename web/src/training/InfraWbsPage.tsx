@@ -8,9 +8,10 @@ import {
   addBusinessDays,
 } from './trainingWbsData'
 import { OpenInNewTabButton } from '../components/OpenInNewTabButton'
-import { getCurrentUsername } from '../auth'
+import { getCurrentUsername, getCurrentDisplayName } from '../auth'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 import { fetchMyProgress, isProgressApiAvailable } from '../progressApi'
+import { DashboardShell } from '../components/DashboardShell'
 
 // ─── 型定義 ────────────────────────────────────────────────────────────────────
 
@@ -246,8 +247,11 @@ export function InfraWbsPage() {
     return () => { cancelled = true; window.clearInterval(id) }
   }, [queryUserId])
 
+  const displayName = queryUserId || getCurrentDisplayName()
+
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-6 text-slate-800">
+    <DashboardShell>
+    <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-6 text-slate-800">
       <div className="mx-auto max-w-5xl space-y-5">
 
         {/* ページタイトル + ビュー切替 */}
@@ -263,6 +267,7 @@ export function InfraWbsPage() {
           <div>
             <p className="text-xs text-slate-500">研修管理</p>
             <h1 className="text-2xl font-semibold text-slate-900">WBS</h1>
+            {displayName && <p className="text-xs text-slate-400 mt-0.5">研修生: {displayName}</p>}
             {startDate && <p className="text-xs text-slate-400 mt-0.5">研修開始日: {startDate}</p>}
           </div>
         </div>
@@ -449,5 +454,6 @@ export function InfraWbsPage() {
         </p>
       </div>
     </div>
+    </DashboardShell>
   )
 }
