@@ -325,15 +325,15 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
           </button>
           {/* テキスト入力: flex-1 で伸縮 */}
-          <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste} onFocus={(e) => { setTimeout(() => { (e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'nearest' }) }, 300) }} rows={1} placeholder="メッセージを入力" className="flex-1 resize-none rounded-full border border-slate-300 bg-slate-50 px-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40" style={{ maxHeight: 72, minHeight: 44 }} />
+          <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste} onFocus={(e) => { setTimeout(() => { (e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'nearest' }) }, 300) }} rows={1} placeholder="メッセージを入力" enterKeyHint="send" className="flex-1 resize-none rounded-full border border-slate-300 bg-slate-50 px-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40" style={{ maxHeight: 72, minHeight: 44 }} />
           {/* マイクボタン: 44px タップターゲット */}
           {SpeechRecognitionAPI && (
             <button type="button" onClick={toggleVoice} className={`flex-shrink-0 flex items-center justify-center rounded-xl transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`} style={{ minWidth: 44, minHeight: 44 }} aria-label={isListening ? '音声入力を停止' : '音声入力'} title={isListening ? '音声入力を停止' : '音声入力'}>
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z" /></svg>
             </button>
           )}
-          {/* 送信ボタン: 44px タップターゲット + 送信中スピナー */}
-          <button type="button" onClick={() => void handleSend()} disabled={isSending || (!input.trim() && !pendingImage)} className="flex-shrink-0 flex items-center justify-center gap-1.5 rounded-full bg-sky-600 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors" style={{ minWidth: 44, minHeight: 44, paddingLeft: 12, paddingRight: 12 }}>
+          {/* 送信ボタン: PCのみ表示（モバイルはEnterキーで送信） */}
+          <button type="button" onClick={() => void handleSend()} disabled={isSending || (!input.trim() && !pendingImage)} className="hidden md:flex flex-shrink-0 items-center justify-center gap-1.5 rounded-full bg-sky-600 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors" style={{ minWidth: 44, minHeight: 44, paddingLeft: 12, paddingRight: 12 }}>
             {isSending ? (
               <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
             ) : '送信'}
@@ -405,17 +405,12 @@ export function MentorDesk({ context, open: externalOpen, onClose: externalOnClo
               <button type="button" onClick={() => fileInputRef.current?.click()} className="flex-shrink-0 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200" style={{ minWidth: 44, minHeight: 44 }} aria-label="画像を添付">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
               </button>
-              <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste} onFocus={(e) => { setTimeout(() => { (e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'nearest' }) }, 300) }} rows={1} placeholder="メッセージを入力" className="flex-1 resize-none rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40" style={{ maxHeight: 72, minHeight: 44 }} />
+              <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste} onFocus={(e) => { setTimeout(() => { (e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'nearest' }) }, 300) }} rows={1} placeholder="メッセージを入力" enterKeyHint="send" className="flex-1 resize-none rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40" style={{ maxHeight: 72, minHeight: 44 }} />
               {SpeechRecognitionAPI && (
                 <button type="button" onClick={toggleVoice} className={`flex-shrink-0 flex items-center justify-center rounded-xl transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`} style={{ minWidth: 44, minHeight: 44 }} aria-label={isListening ? '音声入力を停止' : '音声入力'}>
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z" /></svg>
                 </button>
               )}
-              <button type="button" onClick={() => void handleSend()} disabled={isSending || (!input.trim() && !pendingImage)} className="flex-shrink-0 flex items-center justify-center gap-1.5 rounded-xl bg-sky-500 text-xs font-medium text-white hover:bg-sky-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors" style={{ minWidth: 44, minHeight: 44, paddingLeft: 12, paddingRight: 12 }}>
-                {isSending ? (
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                ) : '送信'}
-              </button>
             </div>
             <div className="px-4 py-2 border-t border-gray-100 bg-slate-50">
               <p className="text-[11px] text-slate-400 text-center leading-relaxed px-2">
