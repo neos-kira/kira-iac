@@ -31,13 +31,28 @@ export function ProfileEditModal({ currentDisplayName, currentEmail, onClose, on
 
   return (
     <div
-      className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0"
+      style={{ zIndex: 9999, background: 'rgba(0,0,0,0.4)' }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="profile-edit-title"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="w-full max-w-md rounded-2xl bg-white p-7 shadow-2xl">
+      <div
+        className="bg-white shadow-2xl"
+        style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 'min(480px, 90vw)',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          borderRadius: 16,
+          padding: 24,
+          zIndex: 10000,
+        }}
+      >
         <div className="flex items-center justify-between mb-5">
           <h2 id="profile-edit-title" className="text-[18px] font-bold text-slate-800">
             プロフィール設定
