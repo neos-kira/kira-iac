@@ -170,12 +170,12 @@ export function HomeDashboard({
         progressLabel: done2 !== null && total2 !== null ? `${done2} / ${total2}問` : null,
         estimatedTime: '',
         action: () => { if (isIntroCompleted) window.open(getTrainingUrl(la.path), '_blank'); else setShowIntroRequiredPopup(true) },
-        actionLabel: '続きから再開する ▶',
+        actionLabel: '▶ 続きから再開する',
       }
     } else if (introStep === 0) {
-      currentTask = { taskName: 'はじめに', subtaskName: 'プロフェッショナルとしての行動基準を確認', progress: 0, progressLabel: null, estimatedTime: '約30分', action: () => navigate('/training/intro'), actionLabel: 'はじめに ▶' }
+      currentTask = { taskName: 'はじめに', subtaskName: 'プロフェッショナルとしての行動基準を確認', progress: 0, progressLabel: null, estimatedTime: '約30分', action: () => navigate('/training/intro'), actionLabel: '▶ はじめに' }
     } else if (introStep >= 1 && introStep <= 4) {
-      currentTask = { taskName: 'はじめに', subtaskName: `Step ${introStep + 1} / 5`, progress: Math.round((introStep / 5) * 100), progressLabel: `${introStep} / 5ステップ`, estimatedTime: '約30分', action: () => navigate('/training/intro'), actionLabel: '続きから ▶' }
+      currentTask = { taskName: 'はじめに', subtaskName: `Step ${introStep + 1} / 5`, progress: Math.round((introStep / 5) * 100), progressLabel: `${introStep} / 5ステップ`, estimatedTime: '約30分', action: () => navigate('/training/intro'), actionLabel: '▶ 続きから' }
     } else {
       const l1Part = snap.l1CurrentPart ?? 0
       const l1Q = snap.l1CurrentQuestion ?? 0
@@ -187,17 +187,17 @@ export function HomeDashboard({
       const shell4Done = (snap.infra4ShellDoneQuestions ?? []).length
       if (l1InProgress) {
         const partLabels = ['基本操作', 'サーバー構築', '実践問題']
-        currentTask = { taskName: 'Linuxコマンド30問', subtaskName: `Part ${l1Part + 1}: ${partLabels[l1Part] ?? '基本操作'}`, progress: Math.round((l1Q / 10) * 100), progressLabel: `${l1Q} / 10問`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level1'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '続きから再開する ▶' }
+        currentTask = { taskName: 'Linuxコマンド30問', subtaskName: `Part ${l1Part + 1}: ${partLabels[l1Part] ?? '基本操作'}`, progress: Math.round((l1Q / 10) * 100), progressLabel: `${l1Q} / 10問`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level1'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '▶ 続きから再開する' }
       } else if (infra1InProgress) {
-        currentTask = { taskName: 'SSH接続確認', subtaskName: 'インフラ基礎課題 1', progress: null, progressLabel: null, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '続きから再開する ▶' }
+        currentTask = { taskName: 'SSH接続確認', subtaskName: 'インフラ基礎課題 1', progress: null, progressLabel: null, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '▶ 続きから再開する' }
       } else if (l2Q > 0) {
-        currentTask = { taskName: 'TCP/IP 理解度チェック', subtaskName: 'ネットワーク基礎', progress: Math.round((l2Q / 10) * 100), progressLabel: `${l2Q} / 10問`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level2'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '続きから再開する ▶' }
+        currentTask = { taskName: 'TCP/IP 理解度チェック', subtaskName: 'ネットワーク基礎', progress: Math.round((l2Q / 10) * 100), progressLabel: `${l2Q} / 10問`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level2'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '▶ 続きから再開する' }
       } else if (infra32InProgress) {
-        currentTask = { taskName: 'OS・仮想化・クラウド理解度チェック', subtaskName: 'インフラ基礎課題 3', progress: null, progressLabel: null, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '続きから再開する ▶' }
+        currentTask = { taskName: 'OS・仮想化・クラウド理解度チェック', subtaskName: 'インフラ基礎課題 3', progress: null, progressLabel: null, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '▶ 続きから再開する' }
       } else if (vi4Done > 0 && vi4Done < VI_STEPS.length) {
-        currentTask = { taskName: 'viエディタ演習', subtaskName: 'インフラ基礎課題 4', progress: Math.round((vi4Done / VI_STEPS.length) * 100), progressLabel: `${vi4Done} / ${VI_STEPS.length}ステップ`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '続きから再開する ▶' }
+        currentTask = { taskName: 'viエディタ演習', subtaskName: 'インフラ基礎課題 4', progress: Math.round((vi4Done / VI_STEPS.length) * 100), progressLabel: `${vi4Done} / ${VI_STEPS.length}ステップ`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '▶ 続きから再開する' }
       } else if (shell4Done > 0 && shell4Done < SHELL_QUESTIONS.length) {
-        currentTask = { taskName: 'シェルスクリプト演習', subtaskName: 'インフラ基礎課題 4', progress: Math.round((shell4Done / SHELL_QUESTIONS.length) * 100), progressLabel: `${shell4Done} / ${SHELL_QUESTIONS.length}問`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '続きから再開する ▶' }
+        currentTask = { taskName: 'シェルスクリプト演習', subtaskName: 'インフラ基礎課題 4', progress: Math.round((shell4Done / SHELL_QUESTIONS.length) * 100), progressLabel: `${shell4Done} / ${SHELL_QUESTIONS.length}問`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '▶ 続きから再開する' }
       }
     }
   }
@@ -344,19 +344,86 @@ export function HomeDashboard({
 
           {/* ── グリーティング ─────────────────────────────── */}
           <div>
-            <h1 className="text-[20px] md:text-[24px] font-bold text-slate-800 leading-tight">
+            <h1 className="text-[20px] font-medium text-slate-800 leading-tight">
               ようこそ、{username}さん 👋
             </h1>
-            <p className="mt-1 text-[13px] md:text-[14px] text-slate-500">
+            <p className="mt-1 text-[13px] text-slate-500">
               今日もスキルを積み上げて、理想のエンジニアに近づきましょう。
             </p>
           </div>
+
+          {/* ── 次に学習するレッスンカード（Heroカード・最上部） ── */}
+          {!isSnapLoaded ? (
+            <div className="rounded-2xl p-6 animate-pulse" style={{ background: 'linear-gradient(135deg, #3730a3, #2563EB)' }}>
+              <div className="h-3 w-20 rounded bg-white/20 mb-3" />
+              <div className="h-6 w-40 rounded bg-white/20 mb-4" />
+              <div className="h-10 rounded-xl bg-white/20" />
+            </div>
+          ) : currentTask ? (
+            <div className="rounded-2xl text-white" style={{ background: 'linear-gradient(135deg, #3730a3, #2563EB)', borderRadius: 16, padding: '24px 28px' }}>
+              <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] uppercase tracking-widest mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>次に学習するレッスン</p>
+                  <h2 className="text-[22px] font-medium leading-snug">{currentTask.taskName}</h2>
+                  <p className="mt-0.5 text-[13px]" style={{ color: 'rgba(255,255,255,0.7)' }}>{currentTask.subtaskName}</p>
+                  {currentTask.estimatedTime && <p className="mt-0.5 text-[11px]" style={{ color: 'rgba(255,255,255,0.7)' }}>⏱ 想定時間：{currentTask.estimatedTime}</p>}
+                  {currentTask.progress !== null && (
+                    <div className="mt-3 space-y-1">
+                      <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.25)', margin: '12px 0 0' }}>
+                        <div className="h-full rounded-full bg-white transition-all" style={{ width: `${currentTask.progress}%` }} />
+                      </div>
+                      {currentTask.progressLabel && <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.8)' }}>{currentTask.progressLabel}</p>}
+                    </div>
+                  )}
+                  <div className="mt-4 flex flex-col sm:flex-row flex-wrap gap-2">
+                    <button type="button" onClick={currentTask.action} className="w-full sm:w-auto font-medium text-[14px] hover:bg-white/90 transition-colors" style={{ background: '#fff', color: '#1E40AF', borderRadius: 10, padding: '9px 18px' }}>
+                      {currentTask.actionLabel}
+                    </button>
+                    <button type="button" onClick={currentTask.action} className="w-full sm:w-auto text-white font-medium text-[14px] hover:bg-white/20 transition-colors" style={{ background: 'rgba(255,255,255,0.15)', border: '0.5px solid rgba(255,255,255,0.3)', borderRadius: 10, padding: '9px 18px' }}>
+                      詳細を見る
+                    </button>
+                  </div>
+                </div>
+                {/* ターミナルイメージ */}
+                <div className="hidden md:flex w-[150px] flex-shrink-0 flex-col p-3" style={{ background: '#1a1a2e', borderRadius: 8 }}>
+                  <div className="flex gap-1 mb-2.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-400/80" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-yellow-400/80" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-green-400/80" />
+                  </div>
+                  <code className="font-mono leading-relaxed" style={{ fontSize: 11, color: '#86EFAC' }}>
+                    <span style={{ color: '#86EFAC' }}>$ ls -la</span><br />
+                    <span className="text-white/40">total 24</span><br />
+                    <span className="text-white/40">drwxr-xr-x</span><br />
+                    <span style={{ color: '#86EFAC' }}>$ <span className="animate-pulse">_</span></span>
+                  </code>
+                  <div className="mt-auto pt-2 flex flex-wrap gap-1">
+                    {['BASIC', 'CMD', 'LINUX'].map((tag) => (
+                      <span key={tag} className="rounded px-1.5 py-0.5 font-semibold" style={{ fontSize: 9, background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)' }}>{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl p-5 md:p-6 text-white" style={{ background: 'linear-gradient(135deg, #059669, #0284c7)' }}>
+              <p className="text-[11px] uppercase tracking-widest text-white/70 mb-1">カリキュラム状況</p>
+              <h2 className="text-[20px] font-bold">
+                {(progressPct?.completed ?? 0) >= 8 ? '全カリキュラム完了！🎉' : 'カリキュラムを確認'}
+              </h2>
+              <p className="mt-1 text-[13px] text-white/80">
+                {(progressPct?.completed ?? 0) >= 8
+                  ? 'おめでとうございます。すべての課題をクリアしました。'
+                  : '下のロードマップから次に進む課題を選択してください。'}
+              </p>
+            </div>
+          )}
 
           {/* ── KPI 4カード ──────────────────────────────────── */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
 
             {/* 1. 全体の進捗 */}
-            <div className="rounded-2xl bg-white border border-slate-200 p-3 md:p-4 shadow-sm">
+            <div className="rounded-2xl bg-white shadow-sm" style={{ border: '0.5px solid #E2E8F0', padding: '16px 18px' }}>
               <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2 md:mb-3">全体の進捗</p>
               <div className="flex items-center gap-2 md:gap-3">
                 <div className="relative flex-shrink-0">
@@ -377,7 +444,7 @@ export function HomeDashboard({
             </div>
 
             {/* 2. 今週の学習時間 */}
-            <div className="rounded-2xl bg-white border border-slate-200 p-3 md:p-4 shadow-sm">
+            <div className="rounded-2xl bg-white shadow-sm" style={{ border: '0.5px solid #E2E8F0', padding: '16px 18px' }}>
               <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2 md:mb-3">今週の学習時間</p>
               <p className="text-[20px] md:text-[26px] font-bold text-slate-800 leading-none">—<span className="text-[12px] text-slate-400 ml-0.5">h</span></p>
               <p className="mt-0.5 text-[11px] text-slate-500">学習時間は記録中</p>
@@ -396,7 +463,7 @@ export function HomeDashboard({
             </div>
 
             {/* 3. 連続学習日数 */}
-            <div className="rounded-2xl bg-white border border-slate-200 p-3 md:p-4 shadow-sm">
+            <div className="rounded-2xl bg-white shadow-sm" style={{ border: '0.5px solid #E2E8F0', padding: '16px 18px' }}>
               <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2 md:mb-3">連続学習日数</p>
               <div className="flex items-baseline gap-1.5">
                 <p className="text-[20px] md:text-[26px] font-bold text-slate-800 leading-none">{streakDays}</p>
@@ -410,82 +477,16 @@ export function HomeDashboard({
                 streakDays >= 7 ? `${streakDays}日連続！素晴らしい習慣です` :
                 `${streakDays}日連続！この調子で続けよう`
               }</p>
+              <button type="button" onClick={() => navigate('/progress')} className="hidden md:block mt-1.5 text-[11px] text-sky-600 hover:underline">連続記録の詳細を見る→</button>
             </div>
 
             {/* 4. 総学習時間（目安） */}
-            <div className="rounded-2xl bg-white border border-slate-200 p-3 md:p-4 shadow-sm">
+            <div className="rounded-2xl bg-white shadow-sm" style={{ border: '0.5px solid #E2E8F0', padding: '16px 18px' }}>
               <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2 md:mb-3">総学習時間（目安）</p>
               <p className="text-[20px] md:text-[26px] font-bold text-slate-800 leading-none">{totalEstHours}<span className="text-[12px] text-slate-400 ml-0.5">h+</span></p>
               <p className="mt-1 text-[11px] text-slate-500">{completedCount}ステージ × 約3h</p>
             </div>
           </div>
-
-          {/* ── 次に学習するレッスンカード ──────────────────── */}
-          {!isSnapLoaded ? (
-            <div className="rounded-2xl p-6 animate-pulse" style={{ background: 'linear-gradient(135deg, #3730a3, #2563EB)' }}>
-              <div className="h-3 w-20 rounded bg-white/20 mb-3" />
-              <div className="h-6 w-40 rounded bg-white/20 mb-4" />
-              <div className="h-10 rounded-xl bg-white/20" />
-            </div>
-          ) : currentTask ? (
-            <div className="rounded-2xl p-5 md:p-6 text-white" style={{ background: 'linear-gradient(135deg, #3730a3, #2563EB)' }}>
-              <div className="flex flex-col md:flex-row gap-4 md:gap-8">
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] uppercase tracking-widest text-white/70 mb-1">次に学習するレッスン</p>
-                  <h2 className="text-[19px] md:text-[22px] font-bold leading-snug">{currentTask.taskName}</h2>
-                  <p className="mt-0.5 text-[13px] text-white/75">{currentTask.subtaskName}</p>
-                  {currentTask.estimatedTime && <p className="mt-0.5 text-[12px] text-white/60">想定時間：{currentTask.estimatedTime}</p>}
-                  {currentTask.progress !== null && (
-                    <div className="mt-3 space-y-1">
-                      <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full bg-white/70 transition-all" style={{ width: `${currentTask.progress}%` }} />
-                      </div>
-                      {currentTask.progressLabel && <p className="text-[12px] text-white/70">{currentTask.progressLabel}</p>}
-                    </div>
-                  )}
-                  <div className="mt-4 flex flex-col sm:flex-row flex-wrap gap-2">
-                    <button type="button" onClick={currentTask.action} className="w-full sm:w-auto rounded-xl bg-white text-indigo-700 font-bold px-5 py-2.5 text-[14px] hover:bg-white/90 transition-colors">
-                      {currentTask.actionLabel}
-                    </button>
-                    <button type="button" onClick={currentTask.action} className="w-full sm:w-auto rounded-xl bg-white/10 border border-white/20 text-white font-medium px-5 py-2.5 text-[14px] hover:bg-white/20 transition-colors">
-                      詳細を見る
-                    </button>
-                  </div>
-                </div>
-                {/* ターミナルイメージ */}
-                <div className="hidden md:flex w-[150px] flex-shrink-0 flex-col rounded-xl bg-[#1e1e2e] p-3">
-                  <div className="flex gap-1 mb-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-400/80" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-yellow-400/80" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-green-400/80" />
-                  </div>
-                  <code className="text-[10px] font-mono leading-relaxed">
-                    <span className="text-slate-400">$ </span><span className="text-green-400">ls -la</span><br />
-                    <span className="text-white/40">total 24</span><br />
-                    <span className="text-white/40">drwxr-xr-x</span><br />
-                    <span className="text-slate-400">$ </span><span className="animate-pulse text-green-400">_</span>
-                  </code>
-                  <div className="mt-auto pt-2 flex flex-wrap gap-1">
-                    {['BASIC', 'CMD', 'LINUX'].map((tag) => (
-                      <span key={tag} className="rounded px-1.5 py-0.5 text-[9px] font-semibold bg-white/10 text-white/60">{tag}</span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-2xl p-5 md:p-6 text-white" style={{ background: 'linear-gradient(135deg, #059669, #0284c7)' }}>
-              <p className="text-[11px] uppercase tracking-widest text-white/70 mb-1">カリキュラム状況</p>
-              <h2 className="text-[20px] font-bold">
-                {(progressPct?.completed ?? 0) >= 8 ? '全カリキュラム完了！🎉' : 'カリキュラムを確認'}
-              </h2>
-              <p className="mt-1 text-[13px] text-white/80">
-                {(progressPct?.completed ?? 0) >= 8
-                  ? 'おめでとうございます。すべての課題をクリアしました。'
-                  : '下のロードマップから次に進む課題を選択してください。'}
-              </p>
-            </div>
-          )}
 
           {/* ── 下部 2カラム ────────────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-6">
