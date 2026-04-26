@@ -345,7 +345,7 @@ export function HomeDashboard({
           {/* ── グリーティング ─────────────────────────────── */}
           <div>
             <h1 className="text-[20px] md:text-[24px] font-bold text-slate-800 leading-tight">
-              おかえりなさい、{username}さん 👋
+              ようこそ、{username}さん 👋
             </h1>
             <p className="mt-1 text-[13px] md:text-[14px] text-slate-500">
               今日もスキルを積み上げて、理想のエンジニアに近づきましょう。
@@ -403,7 +403,13 @@ export function HomeDashboard({
                 <span className="text-[12px] text-slate-400">日</span>
                 {streakDays > 0 && <span className="text-[18px] leading-none">🔥</span>}
               </div>
-              <p className="mt-1 text-[11px] text-slate-500">{streakDays > 0 ? '今日も頑張っています！' : 'ログインして記録スタート'}</p>
+              <p className="mt-1 text-[11px] text-slate-500">{
+                streakDays === 0 ? 'ログインして記録スタート' :
+                streakDays === 1 ? '今日からスタート！続けよう' :
+                streakDays >= 30 ? `${streakDays}日連続！プロ級の継続力です` :
+                streakDays >= 7 ? `${streakDays}日連続！素晴らしい習慣です` :
+                `${streakDays}日連続！この調子で続けよう`
+              }</p>
             </div>
 
             {/* 4. 総学習時間（目安） */}
