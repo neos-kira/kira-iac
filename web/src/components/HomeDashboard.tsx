@@ -376,8 +376,9 @@ export function HomeDashboard({
                     </div>
                   )}
                   <div className="mt-4 flex flex-col sm:flex-row flex-wrap gap-2">
-                    <button type="button" onClick={currentTask.action} className="w-full sm:w-auto font-medium text-[14px] hover:bg-white/90 transition-colors" style={{ background: '#fff', color: '#1E40AF', borderRadius: 10, padding: '9px 18px' }}>
-                      {currentTask.actionLabel}
+                    <button type="button" onClick={currentTask.action} className="w-full sm:w-auto flex items-center justify-center gap-1.5 font-medium text-[14px] hover:bg-white/90 transition-colors" style={{ background: '#fff', color: '#1E40AF', borderRadius: 10, padding: '9px 18px' }}>
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 2.5l8 4.5-8 4.5V2.5z" fill="#1E40AF" stroke="#1E40AF" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+                      {currentTask.actionLabel.replace(/^▶\s*/, '')}
                     </button>
                     <button type="button" onClick={currentTask.action} className="w-full sm:w-auto text-white font-medium text-[14px] hover:bg-white/20 transition-colors" style={{ background: 'rgba(255,255,255,0.15)', border: '0.5px solid rgba(255,255,255,0.3)', borderRadius: 10, padding: '9px 18px' }}>
                       詳細を見る
@@ -387,9 +388,9 @@ export function HomeDashboard({
                 {/* ターミナルイメージ */}
                 <div className="hidden md:flex w-[150px] flex-shrink-0 flex-col p-3" style={{ background: '#1a1a2e', borderRadius: 8 }}>
                   <div className="flex gap-1 mb-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-400/80" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-yellow-400/80" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-green-400/80" />
+                    <span className="rounded-full" style={{ width: 7, height: 7, background: '#E88080', display: 'inline-block' }} />
+                    <span className="rounded-full" style={{ width: 7, height: 7, background: '#E8C060', display: 'inline-block' }} />
+                    <span className="rounded-full" style={{ width: 7, height: 7, background: '#60B860', display: 'inline-block' }} />
                   </div>
                   <code className="font-mono leading-relaxed" style={{ fontSize: 11, color: '#86EFAC' }}>
                     <span style={{ color: '#86EFAC' }}>$ ls -la</span><br />
@@ -522,12 +523,20 @@ export function HomeDashboard({
                         <div className="flex items-start gap-3 px-4 py-3.5">
                           <div className="flex-shrink-0 mt-0.5">
                             {isDone ? (
-                              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-[11px] font-bold">✓</span>
+                              <span className="flex h-6 w-6 items-center justify-center rounded-full flex-shrink-0">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                  <circle cx="10" cy="10" r="9" fill="#F0FDF4" stroke="#22C55E" strokeWidth="1.8"/>
+                                  <path d="M6 10l3 3 5-5" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </span>
                             ) : isActive ? (
-                              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-600 text-white text-[11px] font-bold">{step.no}</span>
+                              <span className="flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold flex-shrink-0" style={{ border: '1.5px solid #2563EB', background: '#EFF6FF', color: '#2563EB' }}>{step.no}</span>
                             ) : (
-                              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                              <span className="flex h-6 w-6 items-center justify-center rounded-full flex-shrink-0" style={{ border: '1.5px solid #CBD5E1', background: '#F8FAFC', opacity: 0.7 }}>
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#CBD5E1" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                  <rect x="3" y="7" width="10" height="7" rx="2"/>
+                                  <path d="M5 7V5a3 3 0 016 0v2"/>
+                                </svg>
                               </span>
                             )}
                           </div>
