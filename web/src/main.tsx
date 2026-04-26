@@ -6,8 +6,9 @@ import { AuthProvider, useAuth } from './AuthContext'
 import './index.css'
 import App from './App.tsx'
 import { LoginPage } from './LoginPage'
-import { getCurrentDisplayName, getCurrentUsername, isLoggedIn } from './auth'
-import { getChatLog } from './api/aiChatApi'
+import { getCurrentDisplayName, getCurrentUsername, isLoggedIn, getUserRealName, setUserRealName } from './auth'
+import { getChatLog, } from './api/aiChatApi'
+import { fetchProfile } from './progressApi'
 import { safeGetItem, safeSetItem, safeRemoveItem, safeSessionGetItem, safeSessionSetItem, safeSessionRemoveItem, clearCookieValue } from './utils/storage'
 import { isJTerada } from './specialUsers'
 import { isTask1Cleared } from './training/trainingWbsData'
@@ -38,6 +39,7 @@ import { QuizContextProvider } from './quizContext'
 import { ServerPage } from './pages/ServerPage'
 import { ProgressPage } from './pages/ProgressPage'
 import { BottomTabNav } from './components/BottomTabNav'
+import { ProfileSetupModal } from './components/ProfileSetupModal'
 
 const MENTOR_CONTEXT_MAP: Record<string, string> = {
   '/training/intro': 'はじめに',
@@ -110,6 +112,8 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const [courseProgressPct, setCourseProgressPct] = useState(0)
   // iOS Safari キーボード表示時の実ビューポート高さ（visualViewport API）
   const [vpHeight, setVpHeight] = useState<number | undefined>(undefined)
+  // displayName未設定時の初回入力モーダル
+  const [needsProfileSetup, setNeedsProfileSetup] = useState(false)
 
   // 会話履歴を sessionStorage に同期（リロード時復元用）
   useEffect(() => {
@@ -160,7 +164,33 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     return () => vv.removeEventListener('resize', onResize)
   }, [isMobile])
 
+  // displayName未設定チェック（ログイン後、localStorageになければAPIで確認）
+  useEffect(() => {
+    if (isLogin) return
+    if (getUserRealName()) return // localStorageに既にある
+    fetchProfile().then((prof) => {
+      if (prof?.displayName) {
+        setUserRealName(prof.displayName)
+      } else {
+        setNeedsProfileSetup(true)
+      }
+    }).catch(() => { /* ネットワークエラーは無視 */ })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLogin])
+
   if (isLogin) return <>{children}</>
+
+  // displayName未設定なら全画面入力モーダルを優先表示
+  if (needsProfileSetup) {
+    return (
+      <ProfileSetupModal
+        onComplete={(name) => {
+          setUserRealName(name)
+          setNeedsProfileSetup(false)
+        }}
+      />
+    )
+  }
 
   // AI浮動ボタンのbottom位置: モバイル非研修ページはBottomTabNavの上(76px)
   const btnBottom = showChat ? 24 : (isMobile ? 76 : 24)

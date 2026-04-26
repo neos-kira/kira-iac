@@ -8,7 +8,7 @@ import {
   addBusinessDays,
 } from './trainingWbsData'
 import { OpenInNewTabButton } from '../components/OpenInNewTabButton'
-import { getCurrentUsername, getCurrentDisplayName } from '../auth'
+import { getCurrentUsername, getCurrentDisplayName, getUserRealName } from '../auth'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 import { fetchMyProgress, isProgressApiAvailable } from '../progressApi'
 import { DashboardShell } from '../components/DashboardShell'
@@ -247,7 +247,8 @@ export function InfraWbsPage() {
     return () => { cancelled = true; window.clearInterval(id) }
   }, [queryUserId])
 
-  const displayName = queryUserId || getCurrentDisplayName()
+  // displayName: 管理者閲覧時はqueryUserId（username）、自分の場合は本名→usernameフォールバック
+  const displayName = queryUserId || getUserRealName() || getCurrentDisplayName()
 
   return (
     <DashboardShell>

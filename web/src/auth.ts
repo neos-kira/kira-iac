@@ -63,3 +63,18 @@ export function setCurrentRole(role: string): void {
   safeSetItem(USER_ROLE_KEY, role)
   setCookieValue(USER_ROLE_KEY, role)
 }
+
+/** 本名（displayName）用ストレージキー */
+export const USER_REAL_NAME_KEY = 'kira-real-name'
+
+/** DynamoDBに保存された本名を取得 */
+export function getUserRealName(): string {
+  if (typeof window === 'undefined') return ''
+  return (safeGetItem(USER_REAL_NAME_KEY) || '').trim()
+}
+
+/** 本名をlocalStorageに保存 */
+export function setUserRealName(name: string): void {
+  if (typeof window === 'undefined') return
+  safeSetItem(USER_REAL_NAME_KEY, name)
+}

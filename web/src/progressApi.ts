@@ -67,8 +67,8 @@ export async function fetchMe(): Promise<string | null> {
   }
 }
 
-/** auth/me からユーザー情報（termsAgreedAt / accountType 含む）を取得する */
-export async function fetchMeInfo(): Promise<{ username: string; role: string; termsAgreedAt: string | null; termsVersion: string | null; accountType: 'corporate' | 'individual' } | null> {
+/** auth/me からユーザー情報（termsAgreedAt / accountType / displayName 含む）を取得する */
+export async function fetchMeInfo(): Promise<{ username: string; role: string; termsAgreedAt: string | null; termsVersion: string | null; accountType: 'corporate' | 'individual'; displayName: string | null; email: string | null } | null> {
   if (!BASE_URL) return null
   try {
     const res = await fetch(`${BASE_URL}/auth/me`, {
@@ -76,16 +76,49 @@ export async function fetchMeInfo(): Promise<{ username: string; role: string; t
       credentials: 'omit',
     })
     if (!res.ok) return null
-    const data = (await res.json()) as { username?: string; role?: string; termsAgreedAt?: string | null; termsVersion?: string | null; accountType?: string }
+    const data = (await res.json()) as { username?: string; role?: string; termsAgreedAt?: string | null; termsVersion?: string | null; accountType?: string; displayName?: string | null; email?: string | null }
     return {
       username: data.username ?? '',
       role: data.role ?? 'student',
       termsAgreedAt: data.termsAgreedAt ?? null,
       termsVersion: data.termsVersion ?? null,
       accountType: (data.accountType === 'corporate' ? 'corporate' : 'individual'),
+      displayName: data.displayName ?? null,
+      email: data.email ?? null,
     }
   } catch {
     return null
+  }
+}
+
+/** プロフィール（displayName・email）を取得する */
+export async function fetchProfile(): Promise<{ displayName: string | null; email: string | null } | null> {
+  if (!BASE_URL) return null
+  try {
+    const res = await fetch(`${BASE_URL}/api/profile`, {
+      headers: buildAuthHeaders(),
+      credentials: 'omit',
+    })
+    if (!res.ok) return null
+    return (await res.json()) as { displayName: string | null; email: string | null }
+  } catch {
+    return null
+  }
+}
+
+/** プロフィール（displayName・email）を更新する */
+export async function updateProfile(displayName: string, email?: string): Promise<boolean> {
+  if (!BASE_URL) return false
+  try {
+    const res = await fetch(`${BASE_URL}/api/profile`, {
+      method: 'PUT',
+      headers: buildAuthHeaders({ 'Content-Type': 'application/json' } as HeadersInit),
+      credentials: 'omit',
+      body: JSON.stringify({ displayName, ...(email ? { email } : {}) }),
+    })
+    return res.ok
+  } catch {
+    return false
   }
 }
 

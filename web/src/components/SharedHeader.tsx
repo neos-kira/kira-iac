@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { NeOSLogo } from './NeOSLogo'
-import { getCurrentDisplayName } from '../auth'
+import { getCurrentDisplayName, getUserRealName } from '../auth'
 import { fetchMe } from '../progressApi'
 import { ConfirmLeaveModal } from './common/ConfirmLeaveModal'
+import { ProfileEditModal } from './ProfileEditModal'
 import { Z } from '../zIndex'
 
 type Props = {
@@ -24,8 +25,7 @@ type Props = {
 export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, completedCount: _completedCount, totalCount: _totalCount, onWbs: _onWbs, onLogout, isAdmin, onAdminMenu, onAccountPanel, onMenuOpen }: Props) {
   const [showMenu, setShowMenu] = useState(false)
   const [showModal, setShowModal] = useState(false)
-  const [showWbsTip, setShowWbsTip] = useState(false)
-  const wbsTipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [showProfileEdit, setShowProfileEdit] = useState(false)
   const menuContainerRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
   const navigate = useSafeNavigate()
@@ -35,14 +35,19 @@ export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, com
     if (typeof window === 'undefined') return ''
     try { return window.localStorage.getItem('kira-user-display-name') ?? '' } catch { return '' }
   })
+  const [realName, setRealName] = useState(getUserRealName)
+  const [profileEmail, setProfileEmail] = useState('')
+
   useEffect(() => {
     if (resolvedName) return
     fetchMe().then((username) => {
       if (username) setResolvedName(username)
     })
   }, [resolvedName])
+
   const name = resolvedName
-  const initial = name ? name[0].toUpperCase() : ''
+  const displayLabel = realName || name
+  const initial = displayLabel ? displayLabel[0].toUpperCase() : ''
   const isTopPage = location.pathname === '/' || location.pathname === '/home'
 
   /** ユーザーメニュー: パネル外クリックで閉じる */
@@ -102,8 +107,6 @@ export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, com
   const handleCancel = () => { setShowModal(false) }
 
   return (
-    // position:sticky + z-index:Z.sticky でスタッキングコンテキストを確立し、
-    // AI講師サイドパネル(z:auto)よりヘッダーおよびドロップダウンを手前に描画する
     <header
       className="flex h-14 items-center justify-between border-b bg-white/95 backdrop-blur-sm px-5 shrink-0"
       style={{ borderColor: 'rgba(14,165,233,0.15)', position: 'sticky', top: 0, zIndex: Z.sticky }}
@@ -134,7 +137,7 @@ export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, com
             type="button"
             onClick={handleOpenMenu}
             className="flex items-center gap-1.5 rounded-full pl-0.5 pr-2 py-0.5 hover:bg-slate-100 transition-colors"
-            title={name}
+            title={displayLabel}
           >
             <span
               className="flex h-7 w-7 items-center justify-center rounded-full text-[12px] font-semibold text-white shrink-0 ring-2 ring-[rgba(125,211,252,0.2)]"
@@ -151,56 +154,27 @@ export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, com
             >
               <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
                 <p className="text-[10px] text-slate-400 mb-0.5 tracking-widest uppercase">ログイン中</p>
-                {name && <p className="text-[14px] font-semibold text-slate-900 leading-tight truncate">{name}</p>}
+                <p className="text-[14px] font-semibold text-slate-900 leading-tight truncate">{displayLabel || name}</p>
+                {realName && name && realName !== name && (
+                  <p className="text-[11px] text-slate-400 leading-tight truncate mt-0.5">@{name}</p>
+                )}
               </div>
               <div className="p-1.5">
-                {/* WBS リンク */}
-                <div className="flex items-center">
-                  <button
-                    type="button"
-                    onClick={() => { setShowMenu(false); navigate('/wbs') }}
-                    className="flex-1 rounded-lg px-3 py-2 text-left text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                  >
-                    WBS
-                  </button>
-                  {/* ? アイコン */}
-                  <div className="relative mr-2">
-                    <button
-                      type="button"
-                      className="flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-gray-400 text-[10px] leading-none hover:border-slate-400 hover:text-slate-500 transition-colors"
-                      onMouseEnter={() => {
-                        if (wbsTipTimerRef.current) clearTimeout(wbsTipTimerRef.current)
-                        setShowWbsTip(true)
-                      }}
-                      onMouseLeave={() => {
-                        wbsTipTimerRef.current = setTimeout(() => setShowWbsTip(false), 200)
-                      }}
-                      onClick={(e) => { e.stopPropagation(); setShowWbsTip((v) => !v) }}
-                      aria-label="WBSとは"
-                    >
-                      ?
-                    </button>
-                    {showWbsTip && (
-                      <div
-                        className="absolute shadow-lg whitespace-normal"
-                        style={{ zIndex: 9999, width: 260, padding: '12px 16px', fontSize: 13, lineHeight: 1.6, borderRadius: 8, background: '#1e293b', color: '#f8fafc', right: '100%', top: 0, marginRight: 8 }}
-                        onMouseEnter={() => {
-                          if (wbsTipTimerRef.current) clearTimeout(wbsTipTimerRef.current)
-                        }}
-                        onMouseLeave={() => {
-                          wbsTipTimerRef.current = setTimeout(() => setShowWbsTip(false), 200)
-                        }}
-                      >
-                        WBS（Work Breakdown Structure）とは、プロジェクトの作業を階層的に分解して進捗を管理する表です。NICでは各課題の期限・進捗状況を一覧で確認できます。
-                      </div>
-                    )}
-                  </div>
-                </div>
+                {/* プロフィール設定 */}
+                <button
+                  type="button"
+                  onClick={() => { setShowMenu(false); setShowProfileEdit(true) }}
+                  className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  プロフィール設定
+                </button>
                 <button
                   type="button"
                   onClick={() => { setShowMenu(false); onLogout() }}
-                  className="w-full rounded-lg px-3 py-2 text-left text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                  className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
                 >
+                  <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                   ログアウト
                 </button>
               </div>
@@ -209,6 +183,17 @@ export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, com
         </div>
       </div>
       <ConfirmLeaveModal isOpen={showModal} onSave={handleSave} onLeave={handleLeave} onCancel={handleCancel} />
+      {showProfileEdit && (
+        <ProfileEditModal
+          currentDisplayName={realName}
+          currentEmail={profileEmail}
+          onClose={() => setShowProfileEdit(false)}
+          onSaved={(newName) => {
+            setRealName(newName)
+            setProfileEmail('')
+          }}
+        />
+      )}
     </header>
   )
 }
