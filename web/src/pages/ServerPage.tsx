@@ -194,6 +194,7 @@ export function ServerPage() {
                     {copiedField === 'ip' ? '✓ コピー済' : 'コピー'}
                   </button>
                 </div>
+                <p className="text-[12px] mt-1" style={{ color: '#64748B' }}>※ IPアドレスはサーバーを起動するたびに変わります。接続前に必ず最新のIPを確認してください。</p>
               </div>
 
               {/* ユーザー名 */}
