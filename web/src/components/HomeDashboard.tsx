@@ -236,7 +236,7 @@ export function HomeDashboard({
       {sidebarOpen && (
         <aside className="hidden md:flex w-[200px] flex-shrink-0 flex-col h-[calc(100vh-3.5rem)] sticky top-14 border-r border-slate-100 bg-white overflow-y-auto">
           {/* ロゴ */}
-          <div className="px-2 pt-2 pb-1">
+          <div className="px-4 pt-0 pb-3">
             <NeOSLogo height={28} noLink />
           </div>
 
