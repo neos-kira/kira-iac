@@ -68,7 +68,7 @@ export function BottomTabNav() {
   ]
 
   return (
-    <>
+    <div className="md:hidden">
       {/* メニュードロワー */}
       {menuOpen && (
         <>
@@ -145,6 +145,6 @@ export function BottomTabNav() {
           </button>
         ))}
       </nav>
-    </>
+    </div>
   )
 }
