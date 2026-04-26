@@ -62,10 +62,8 @@ export function BottomTabNav() {
 
   const tabs = allTabs.filter((t) => !('managerOnly' in t && t.managerOnly && !isManager))
 
-  // 準備中メニュー項目（ページ未実装のためタップ時にトーストを表示）
+  // メニュー項目
   const drawerItems = [
-    { label: 'お知らせ', icon: '🔔' },
-    { label: 'ヘルプセンター', icon: '❓' },
     { label: 'お問い合わせ', icon: '✉️' },
   ]
 
