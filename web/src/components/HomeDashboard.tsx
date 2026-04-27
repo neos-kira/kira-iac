@@ -322,9 +322,21 @@ export function HomeDashboard({
     progressLabel: string | null; estimatedTime: string
     action: () => void; actionLabel: string
   }
+  // lastActive のモジュールが既に完了しているか判定（完了済みなら個別フラグ優先）
+  const isLastActiveModuleDone = (moduleId: string | undefined): boolean => {
+    switch (moduleId) {
+      case 'linux-level1':    return snap?.l1Cleared === true
+      case 'linux-level2':    return infra2Ok
+      case 'infra-basic-3-2': return infra3Ok
+      case 'infra-basic-4':   return infra4Ok
+      case 'infra-basic-5':   return infra5Ok
+      default: return false
+    }
+  }
+
   let currentTask: CurrentTask | null = null
   if (isSnapLoaded && snap) {
-    if (snap.lastActive) {
+    if (snap.lastActive && !isLastActiveModuleDone(snap.lastActive.moduleId)) {
       const la = snap.lastActive
       const m = la.label.match(/(\d+)\/(\d+)/)
       const done2 = m ? parseInt(m[1]) : null
