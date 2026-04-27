@@ -24,6 +24,25 @@ function isKiraTestUser(): boolean {
   }
 }
 
+function getHeroVisual(taskName: string): { terminal: string; terminalColor: string; tags: string[] } {
+  if (taskName.includes('vi') || taskName.includes('エディタ')) {
+    return { terminal: '$ vi server.conf\n-- INSERT --\n~\n~', terminalColor: '#60A5FA', tags: ['VI', 'EDITOR', 'LINUX'] }
+  }
+  if (taskName.includes('シェル') || taskName.includes('スクリプト')) {
+    return { terminal: '#!/bin/bash\nfor i in 1 2 3\ndo echo $i\ndone', terminalColor: '#FCD34D', tags: ['SHELL', 'BASH', 'SCRIPT'] }
+  }
+  if (taskName.includes('ネットワーク') || taskName.includes('TCP')) {
+    return { terminal: '$ ping 8.8.8.8\n64 bytes ttl=118\ntime=5.2ms\n$ _', terminalColor: '#6EE7B7', tags: ['NETWORK', 'TCP/IP', 'PING'] }
+  }
+  if (taskName.includes('サーバー構築') || taskName.includes('Ubuntu')) {
+    return { terminal: '$ apt install apache2\n$ systemctl start\napache2\n$ _', terminalColor: '#C084FC', tags: ['SERVER', 'UBUNTU', 'APACHE'] }
+  }
+  if (taskName.includes('AWS') || taskName.includes('クラウド')) {
+    return { terminal: '$ aws s3 ls\n$ aws ec2\ndescribe-instances\n$ _', terminalColor: '#FB923C', tags: ['AWS', 'CLOUD', 'CLI'] }
+  }
+  return { terminal: '$ ls -la\ntotal 24\ndrwxr-xr-x\n$ _', terminalColor: '#86EFAC', tags: ['BASIC', 'CMD', 'LINUX'] }
+}
+
 type Props = {
   serverSnapshot: TraineeProgressSnapshot | null
   isSnapLoaded: boolean
@@ -175,7 +194,7 @@ export function HomeDashboard({
     } else if (introStep === 0) {
       currentTask = { taskName: 'はじめに', subtaskName: 'プロフェッショナルとしての行動基準を確認', progress: 0, progressLabel: null, estimatedTime: '約30分', action: () => navigate('/training/intro'), actionLabel: '▶ はじめに' }
     } else if (introStep >= 1 && introStep <= 4) {
-      currentTask = { taskName: 'はじめに', subtaskName: `Step ${introStep + 1} / 5`, progress: Math.round((introStep / 5) * 100), progressLabel: `${introStep} / 5ステップ`, estimatedTime: '約30分', action: () => navigate('/training/intro'), actionLabel: '▶ 続きから' }
+      currentTask = { taskName: 'はじめに', subtaskName: `Step ${introStep} / 5`, progress: Math.round((introStep / 5) * 100), progressLabel: `${introStep} / 5ステップ`, estimatedTime: '約30分', action: () => navigate('/training/intro'), actionLabel: '▶ 続きから' }
     } else {
       const l1Part = snap.l1CurrentPart ?? 0
       const l1Q = snap.l1CurrentQuestion ?? 0
@@ -385,25 +404,32 @@ export function HomeDashboard({
                     </button>
                   </div>
                 </div>
-                {/* ターミナルイメージ */}
-                <div className="hidden md:flex w-[150px] flex-shrink-0 flex-col p-3" style={{ background: '#1a1a2e', borderRadius: 8 }}>
-                  <div className="flex gap-1 mb-2.5">
-                    <span className="rounded-full" style={{ width: 7, height: 7, background: '#E88080', display: 'inline-block' }} />
-                    <span className="rounded-full" style={{ width: 7, height: 7, background: '#E8C060', display: 'inline-block' }} />
-                    <span className="rounded-full" style={{ width: 7, height: 7, background: '#60B860', display: 'inline-block' }} />
-                  </div>
-                  <code className="font-mono leading-relaxed" style={{ fontSize: 11, color: '#86EFAC' }}>
-                    <span style={{ color: '#86EFAC' }}>$ ls -la</span><br />
-                    <span className="text-white/40">total 24</span><br />
-                    <span className="text-white/40">drwxr-xr-x</span><br />
-                    <span style={{ color: '#86EFAC' }}>$ <span className="animate-pulse">_</span></span>
-                  </code>
-                  <div className="mt-auto pt-2 flex flex-wrap gap-1">
-                    {['BASIC', 'CMD', 'LINUX'].map((tag) => (
-                      <span key={tag} className="rounded px-1.5 py-0.5 font-semibold" style={{ fontSize: 9, background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)' }}>{tag}</span>
-                    ))}
-                  </div>
-                </div>
+                {/* ターミナルイメージ（課題種別に応じて動的切り替え） */}
+                {(() => {
+                  const visual = getHeroVisual(currentTask.taskName)
+                  const lines = visual.terminal.split('\n')
+                  return (
+                    <div className="hidden md:flex w-[150px] flex-shrink-0 flex-col p-3" style={{ background: '#1a1a2e', borderRadius: 8 }}>
+                      <div className="flex gap-1 mb-2.5">
+                        <span className="rounded-full" style={{ width: 7, height: 7, background: '#E88080', display: 'inline-block' }} />
+                        <span className="rounded-full" style={{ width: 7, height: 7, background: '#E8C060', display: 'inline-block' }} />
+                        <span className="rounded-full" style={{ width: 7, height: 7, background: '#60B860', display: 'inline-block' }} />
+                      </div>
+                      <code className="font-mono leading-relaxed" style={{ fontSize: 11, color: visual.terminalColor }}>
+                        {lines.map((line, i) => (
+                          <span key={i} style={{ display: 'block', color: line.startsWith('$') || line.startsWith('#!') ? visual.terminalColor : 'rgba(255,255,255,0.45)' }}>
+                            {line === '$ _' ? <><span style={{ color: visual.terminalColor }}>$ </span><span className="animate-pulse">_</span></> : line}
+                          </span>
+                        ))}
+                      </code>
+                      <div className="mt-auto pt-2 flex flex-wrap gap-1">
+                        {visual.tags.map((tag) => (
+                          <span key={tag} className="rounded px-1.5 py-0.5 font-semibold" style={{ fontSize: 9, background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)' }}>{tag}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             </div>
           ) : (
