@@ -36,7 +36,7 @@ export function UserCreateModal({ onClose, onCreated }: Props) {
     const result = await createAdminUser(name, password, role, accountType)
     setIsCreating(false)
     if (result.ok) {
-      setSuccess(`ユーザー ${name}（${role} / ${accountType === 'corporate' ? '法人' : '個人'}）を作成しました`)
+      setSuccess(`${name}（${role} / ${accountType === 'corporate' ? '法人' : '個人'}）を作成しました`)
       setUsername('')
       setPassword('')
       onCreated()
@@ -66,8 +66,7 @@ export function UserCreateModal({ onClose, onCreated }: Props) {
     }
     setCsvResults(results)
     setIsBulkCreating(false)
-    const allOk = results.every((r) => r.ok)
-    if (allOk) onCreated()
+    if (results.every((r) => r.ok)) onCreated()
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -78,147 +77,153 @@ export function UserCreateModal({ onClose, onCreated }: Props) {
     reader.readAsText(file, 'utf-8')
   }
 
+  function switchTab(csv: boolean) {
+    setCsvMode(csv)
+    setError(null)
+    setSuccess(null)
+    setCsvResults([])
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-slate-800">新規ユーザー作成</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600 hover:bg-slate-200"
-          >
-            閉じる
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-xl overflow-hidden">
+        {/* ヘッダー */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-0">
+          <h2 className="text-base font-bold text-slate-800">新規ユーザー作成</h2>
+          <button type="button" onClick={onClose} className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
-        <div className="mt-3 flex gap-2">
+        {/* タブ切り替え */}
+        <div className="flex border-b border-slate-100 mt-4 px-6">
           <button
             type="button"
-            onClick={() => { setCsvMode(false); setError(null); setSuccess(null) }}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium ${!csvMode ? 'bg-sky-600 text-white' : 'border border-slate-300 text-slate-700'}`}
+            onClick={() => switchTab(false)}
+            className={`pb-2.5 mr-5 text-sm font-medium transition-colors border-b-2 -mb-px ${!csvMode ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
           >
             個別作成
           </button>
           <button
             type="button"
-            onClick={() => { setCsvMode(true); setError(null); setSuccess(null) }}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium ${csvMode ? 'bg-sky-600 text-white' : 'border border-slate-300 text-slate-700'}`}
+            onClick={() => switchTab(true)}
+            className={`pb-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${csvMode ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
           >
-            CSVで一括登録
+            CSV一括登録
           </button>
         </div>
 
-        {!csvMode ? (
-          <div className="mt-4 space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">ユーザー名</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="例: kira-yamada"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-              />
-              <p className="mt-0.5 text-[11px] text-slate-400">半角英数字・ハイフンのみ</p>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-medium text-slate-600">パスワード</label>
-                <button
-                  type="button"
-                  onClick={() => setPassword(generatePassword())}
-                  className="text-[11px] text-sky-600 hover:underline"
-                >
-                  自動生成
-                </button>
+        <div className="px-6 py-5">
+          {!csvMode ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">ユーザー名</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="例: kira-yamada"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
+                />
+                <p className="mt-1 text-[11px] text-slate-400">半角英数字・ハイフンのみ</p>
               </div>
-              <input
-                type="text"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="8文字以上"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">ロール</label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none"
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-slate-600">パスワード</label>
+                  <button type="button" onClick={() => setPassword(generatePassword())} className="text-[11px] font-medium text-sky-500 hover:text-sky-700">
+                    自動生成
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="8文字以上"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-mono text-slate-800 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">ロール</label>
+                  <select
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 focus:border-sky-400 focus:outline-none"
+                  >
+                    <option value="student">student（受講生）</option>
+                    <option value="manager">manager（管理者）</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">区分</label>
+                  <select
+                    value={accountType}
+                    onChange={(e) => setAccountType(e.target.value as 'corporate' | 'individual')}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 focus:border-sky-400 focus:outline-none"
+                  >
+                    <option value="individual">個人</option>
+                    <option value="corporate">法人</option>
+                  </select>
+                </div>
+              </div>
+              {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
+              {success && <p className="text-xs text-emerald-600 font-medium">{success}</p>}
+              <button
+                type="button"
+                onClick={() => void handleCreate()}
+                disabled={isCreating}
+                className="w-full rounded-xl bg-sky-500 py-2.5 text-sm font-semibold text-white hover:bg-sky-600 disabled:opacity-50 transition-colors"
               >
-                <option value="student">student（受講生）</option>
-                <option value="manager">manager（管理者）</option>
-              </select>
+                {isCreating ? '作成中...' : 'ユーザーを作成する'}
+              </button>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">アカウント区分</label>
-              <select
-                value={accountType}
-                onChange={(e) => setAccountType(e.target.value as 'corporate' | 'individual')}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none"
+          ) : (
+            <div className="space-y-4">
+              <p className="text-xs text-slate-500 bg-slate-50 rounded-lg p-3">
+                CSV形式: <code className="rounded bg-slate-200 px-1 font-mono">username,password,role</code><br />
+                role は <code className="rounded bg-slate-200 px-1 font-mono">student</code> または <code className="rounded bg-slate-200 px-1 font-mono">manager</code>（省略時は student）
+              </p>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-slate-600">CSVファイル または 直接入力</label>
+                  <button type="button" onClick={() => fileRef.current?.click()} className="text-[11px] font-medium text-sky-500 hover:text-sky-700">
+                    ファイルを選択
+                  </button>
+                  <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={handleFileChange} className="hidden" />
+                </div>
+                <textarea
+                  value={csvText}
+                  onChange={(e) => setCsvText(e.target.value)}
+                  rows={5}
+                  placeholder={'username,password,role\nkira-yamada,MyPass123,student\nkira-suzuki,Pass5678,student'}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 font-mono text-xs text-slate-700 focus:border-sky-400 focus:outline-none resize-none"
+                />
+              </div>
+              {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
+              {csvResults.length > 0 && (
+                <ul className="space-y-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                  {csvResults.map((r) => (
+                    <li key={r.username} className={`flex items-center gap-1.5 text-xs ${r.ok ? 'text-emerald-700' : 'text-red-600'}`}>
+                      <span>{r.ok ? '✓' : '✗'}</span>
+                      <span className="font-medium">{r.username}</span>
+                      {!r.ok && <span className="text-red-400">— {r.error}</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <button
+                type="button"
+                onClick={() => void handleBulkCreate()}
+                disabled={isBulkCreating || !csvText.trim()}
+                className="w-full rounded-xl bg-sky-500 py-2.5 text-sm font-semibold text-white hover:bg-sky-600 disabled:opacity-50 transition-colors"
               >
-                <option value="individual">個人</option>
-                <option value="corporate">法人（SES企業社員）</option>
-              </select>
+                {isBulkCreating ? '登録中...' : '一括登録する'}
+              </button>
             </div>
-            {error && <p className="text-xs text-red-600">{error}</p>}
-            {success && <p className="text-xs text-sky-700">{success}</p>}
-            <button
-              type="button"
-              onClick={() => void handleCreate()}
-              disabled={isCreating}
-              className="w-full rounded-xl bg-sky-600 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
-            >
-              {isCreating ? '作成中...' : '作成する'}
-            </button>
-          </div>
-        ) : (
-          <div className="mt-4 space-y-3">
-            <p className="text-xs text-slate-500">
-              CSV形式: <code className="rounded bg-slate-100 px-1">username,password,role</code>
-              <br />role は student または manager（省略時は student）
-            </p>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">CSVファイル</label>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".csv,text/csv"
-                onChange={handleFileChange}
-                className="text-xs text-slate-600"
-              />
-            </div>
-            <textarea
-              value={csvText}
-              onChange={(e) => setCsvText(e.target.value)}
-              rows={6}
-              placeholder={'username,password,role\nkira-yamada,MyPass123,student\nkira-suzuki,Pass5678,student'}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs focus:border-sky-500 focus:outline-none"
-            />
-            {error && <p className="text-xs text-red-600">{error}</p>}
-            {csvResults.length > 0 && (
-              <ul className="space-y-1 text-xs">
-                {csvResults.map((r) => (
-                  <li key={r.username} className={`flex items-center gap-1 ${r.ok ? 'text-sky-700' : 'text-red-600'}`}>
-                    <span>{r.ok ? '✓' : '✗'}</span>
-                    <span>{r.username}</span>
-                    {!r.ok && <span>— {r.error}</span>}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <button
-              type="button"
-              onClick={() => void handleBulkCreate()}
-              disabled={isBulkCreating || !csvText.trim()}
-              className="w-full rounded-xl bg-sky-600 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
-            >
-              {isBulkCreating ? '登録中...' : '一括登録する'}
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )

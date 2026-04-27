@@ -196,6 +196,23 @@ export async function deleteAdminUser(username: string): Promise<{ ok: boolean; 
   }
 }
 
+/** EC2サーバー個別停止（POST /admin/ec2/stop） */
+export async function stopUserServer(instanceId: string): Promise<{ ok: boolean; error?: string }> {
+  if (!BASE_URL) return { ok: false, error: 'API未設定' }
+  try {
+    const res = await fetch(`${BASE_URL}/admin/ec2/stop`, {
+      method: 'POST',
+      headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
+      credentials: 'omit',
+      body: JSON.stringify({ instanceId }),
+    })
+    if (!res.ok) return { ok: false, error: '停止に失敗しました' }
+    return { ok: true }
+  } catch {
+    return { ok: false, error: 'ネットワークエラー' }
+  }
+}
+
 /** 全EC2サーバー一括停止（POST /admin/ec2/stop-all） */
 export async function stopAllServers(): Promise<{ ok: boolean; stoppedCount?: number; error?: string }> {
   if (!BASE_URL) return { ok: false, error: 'API未設定' }
