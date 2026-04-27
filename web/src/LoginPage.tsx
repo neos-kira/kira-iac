@@ -1,11 +1,13 @@
 import { useEffect, useState, useRef } from 'react'
 import { useSafeNavigate } from './hooks/useSafeNavigate'
 import { NeOSLogo } from './components/NeOSLogo'
-import { setLoggedIn, setCurrentRole } from './auth'
+import { setLoggedIn, setCurrentRole, setUserRealName } from './auth'
 import { useAuth } from './AuthContext'
 import { addTrainee } from './traineeProgressStorage'
 import { isJTerada, J_TERADA_PASSWORD } from './specialUsers'
 import { checkAccount, isAccountApiAvailable, resetPassword } from './accountsApi'
+import { fetchProfile } from './progressApi'
+import { ProfileSetupModal } from './components/ProfileSetupModal'
 import { Eye, EyeOff } from 'lucide-react'
 import { safeSetItem, safeSessionRemoveItem, setCookieValue } from './utils/storage'
 
@@ -76,6 +78,7 @@ export function LoginPage() {
   const [resetError, setResetError] = useState('')
   const [resetSuccess, setResetSuccess] = useState('')
   const [isResetting, setIsResetting] = useState(false)
+  const [showProfileSetup, setShowProfileSetup] = useState(false)
 
   useEffect(() => {
     console.log(`[LoginPage] useEffect mount, instance=${instanceId.current}`)
@@ -140,6 +143,15 @@ export function LoginPage() {
       // AuthContextを更新してReactの状態を同期
       refreshAuth()
 
+      // 初回ログイン判定（manager以外）: displayName未設定ならプロフィール設定モーダルを表示
+      if (result.role !== 'manager') {
+        const profile = await fetchProfile()
+        if (!profile?.displayName) {
+          setShowProfileSetup(true)
+          return // navigate しない（モーダル表示後にonSavedで遷移）
+        }
+      }
+
       // ロールに応じて遷移
       const destination = result.role === 'manager' ? '/admin' : '/'
       console.log('[LoginPage] Navigating to', destination)
@@ -175,6 +187,19 @@ export function LoginPage() {
     } finally {
       setIsResetting(false)
     }
+  }
+
+  // 初回ログイン時プロフィール設定モーダル
+  if (showProfileSetup) {
+    return (
+      <ProfileSetupModal
+        onSaved={(name) => {
+          setUserRealName(name)
+          setShowProfileSetup(false)
+          navigate('/', { replace: true })
+        }}
+      />
+    )
   }
 
   const needsPassword = isJTerada(username.trim())

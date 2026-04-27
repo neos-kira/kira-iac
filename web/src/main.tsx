@@ -6,8 +6,7 @@ import { AuthProvider, useAuth } from './AuthContext'
 import './index.css'
 import App from './App.tsx'
 import { LoginPage } from './LoginPage'
-import { getCurrentDisplayName, getCurrentUsername, getUserRealName, setUserRealName, isLoggedIn } from './auth'
-import { ProfileSetupModal } from './components/ProfileSetupModal'
+import { getCurrentDisplayName, getCurrentUsername, isLoggedIn } from './auth'
 import { getChatLog } from './api/aiChatApi'
 import { safeGetItem, safeSetItem, safeRemoveItem, safeSessionGetItem, safeSessionSetItem, safeSessionRemoveItem, clearCookieValue } from './utils/storage'
 import { isJTerada } from './specialUsers'
@@ -91,16 +90,9 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
   console.log(`[LayoutWrapper] render, path=${path}, isLogin=${isLogin}`)
 
-  const { isAuthenticated } = useAuth()
-
   const [isMobile] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(pointer: coarse)').matches : false
   )
-
-  // 初回ログイン時プロフィール設定モーダル
-  // useState ではなく都度評価の派生値にする（セッション切れでも表示されないよう useAuth の isAuthenticated を使用）
-  const [profileSetupDismissed, setProfileSetupDismissed] = useState(false)
-  const needsProfileSetup = isAuthenticated && !getUserRealName() && !isLogin && !profileSetupDismissed
 
   // AI講師チャット開閉状態（alwaysOn設定から初期化）
   const [isChatOpen, setIsChatOpen] = useState(() => {
@@ -206,18 +198,6 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   }
 
   if (isLogin) return <>{children}</>
-
-  // displayName 未設定の場合はプロフィール登録モーダルを最前面に表示
-  if (needsProfileSetup) {
-    return (
-      <ProfileSetupModal
-        onSaved={(name) => {
-          setUserRealName(name)
-          setProfileSetupDismissed(true)
-        }}
-      />
-    )
-  }
 
   // AI浮動ボタンのbottom位置: モバイル非研修ページはBottomTabNavの上(76px)
   const btnBottom = showChat ? 24 : (isMobile ? 76 : 24)
