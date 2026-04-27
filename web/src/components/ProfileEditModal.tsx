@@ -78,7 +78,7 @@ export function ProfileEditModal({ currentDisplayName, currentEmail, onClose, on
         <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
           <div>
             <label className="block text-[12px] font-semibold text-slate-700 mb-1.5">
-              本名 <span className="text-rose-500">*</span>
+              プロフィール <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
@@ -91,7 +91,7 @@ export function ProfileEditModal({ currentDisplayName, currentEmail, onClose, on
           </div>
           <div>
             <label className="block text-[12px] font-semibold text-slate-700 mb-1.5">
-              メールアドレス <span className="text-[11px] font-normal text-slate-400">（任意）</span>
+              メールアドレス
             </label>
             <input
               type="email"
@@ -101,6 +101,9 @@ export function ProfileEditModal({ currentDisplayName, currentEmail, onClose, on
               className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-[14px] text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
               autoComplete="email"
             />
+            <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>
+              登録済みのアドレスが表示されます。変更する場合のみ上書きしてください。
+            </p>
           </div>
 
           {error && (
