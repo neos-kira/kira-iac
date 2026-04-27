@@ -6,7 +6,8 @@ import { AuthProvider, useAuth } from './AuthContext'
 import './index.css'
 import App from './App.tsx'
 import { LoginPage } from './LoginPage'
-import { getCurrentDisplayName, getCurrentUsername, isLoggedIn } from './auth'
+import { getCurrentDisplayName, getCurrentUsername, getUserRealName, setUserRealName, isLoggedIn } from './auth'
+import { ProfileSetupModal } from './components/ProfileSetupModal'
 import { getChatLog } from './api/aiChatApi'
 import { safeGetItem, safeSetItem, safeRemoveItem, safeSessionGetItem, safeSessionSetItem, safeSessionRemoveItem, clearCookieValue } from './utils/storage'
 import { isJTerada } from './specialUsers'
@@ -93,6 +94,12 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const [isMobile] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(pointer: coarse)').matches : false
   )
+
+  // 初回ログイン時プロフィール設定モーダル
+  const [needsProfileSetup, setNeedsProfileSetup] = useState(() => {
+    if (!isLoggedIn()) return false
+    return !getUserRealName()
+  })
 
   // AI講師チャット開閉状態（alwaysOn設定から初期化）
   const [isChatOpen, setIsChatOpen] = useState(() => {
@@ -198,6 +205,18 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   }
 
   if (isLogin) return <>{children}</>
+
+  // displayName 未設定の場合はプロフィール登録モーダルを最前面に表示
+  if (needsProfileSetup) {
+    return (
+      <ProfileSetupModal
+        onSaved={(name) => {
+          setUserRealName(name)
+          setNeedsProfileSetup(false)
+        }}
+      />
+    )
+  }
 
   // AI浮動ボタンのbottom位置: モバイル非研修ページはBottomTabNavの上(76px)
   const btnBottom = showChat ? 24 : (isMobile ? 76 : 24)

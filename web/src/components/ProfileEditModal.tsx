@@ -31,8 +31,16 @@ export function ProfileEditModal({ currentDisplayName, currentEmail, onClose, on
 
   return (
     <div
-      className="fixed inset-0"
-      style={{ zIndex: 9999, background: 'rgba(0,0,0,0.4)' }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        background: 'rgba(0,0,0,0.4)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="profile-edit-title"
@@ -41,16 +49,11 @@ export function ProfileEditModal({ currentDisplayName, currentEmail, onClose, on
       <div
         className="bg-white shadow-2xl"
         style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 'min(480px, calc(100vw - 48px))',
-          maxHeight: 'calc(100vh - 48px)',
+          width: 'min(480px, calc(100vw - 32px))',
+          maxHeight: 'calc(100vh - 32px)',
           overflowY: 'auto',
           borderRadius: 16,
           padding: 24,
-          zIndex: 10000,
         }}
       >
         <div className="flex items-center justify-between mb-5">
