@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { updateProfile } from '../progressApi'
 import { setUserRealName } from '../auth'
 
@@ -29,7 +30,7 @@ export function ProfileEditModal({ currentDisplayName, currentEmail, onClose, on
     onClose()
   }
 
-  return (
+  return createPortal(
     <div
       style={{
         position: 'fixed',
@@ -124,6 +125,7 @@ export function ProfileEditModal({ currentDisplayName, currentEmail, onClose, on
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
