@@ -164,7 +164,7 @@ export function InfraBasic1Page() {
         <div>
           <p className="text-label md:text-label-pc text-slate-600">課題1-1 · SSH接続</p>
           <h1 className="text-display md:text-display-pc font-bold text-slate-800 tracking-tight">SSH接続確認</h1>
-          <p className="mt-1 text-body md:text-body-pc text-slate-600">ターミナルから演習サーバーにSSH接続し、接続成功画面を提出します。</p>
+          <p className="mt-1 text-body md:text-body-pc text-slate-600">ターミナルから演習サーバーにSSH接続し、接続成功画面を送信します。</p>
         </div>
 
         {/* EC2未作成警告 */}
@@ -297,7 +297,7 @@ export function InfraBasic1Page() {
 
                 {/* 採点エリア */}
                 <div className="pt-2 border-t border-slate-100">
-                  <p className="text-label md:text-label-pc font-semibold text-slate-600 mb-2">接続成功画面を提出する</p>
+                  <p className="text-label md:text-label-pc font-semibold text-slate-600 mb-2">接続成功画面を送る</p>
                   <p className="text-label md:text-label-pc text-slate-600 mb-3">プロンプトが表示されたターミナル画面のスクリーンショットを撮影してアップロードしてください。</p>
 
                   <div

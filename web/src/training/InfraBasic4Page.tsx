@@ -244,7 +244,7 @@ export function InfraBasic4Page() {
               <li>EC2にSSH接続する（接続情報はダッシュボードを確認）</li>
               <li>各ステップの指示に従い、実機でコマンドを実行する</li>
               <li>指定された結果（cat, ls, 実行結果など）をテキストエリアに貼り付ける</li>
-              <li>「AIに確認してもらう」ボタンでAIが検証し、合格なら自動で済になる</li>
+              <li>「AIに提出する」ボタンでAIが検証し、合格なら自動で済になる</li>
             </ol>
           </div>
         </section>
@@ -299,7 +299,7 @@ export function InfraBasic4Page() {
                         disabled={score?.status === 'scoring' || !(viAnswers[s.step] ?? '').trim()}
                         className="mt-2 rounded-lg bg-sky-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {score?.status === 'scoring' ? 'AI検証中...' : 'AIに確認してもらう'}
+                        {score?.status === 'scoring' ? 'AI検証中...' : 'AIに提出する'}
                       </button>
                     </>
                   )}
@@ -388,7 +388,7 @@ export function InfraBasic4Page() {
                         disabled={score?.status === 'scoring' || !(shellAnswers[q.q] ?? '').trim()}
                         className="mt-2 rounded-lg bg-sky-600 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {score?.status === 'scoring' ? 'AI検証中...' : 'AIに確認してもらう'}
+                        {score?.status === 'scoring' ? 'AI検証中...' : 'AIに提出する'}
                       </button>
                     </>
                   )}

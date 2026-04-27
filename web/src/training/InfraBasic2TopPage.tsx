@@ -18,7 +18,7 @@ const TASKS = [
   },
   {
     category: '課題2-2 · TCP/IP',
-    title: 'TCP/IP 理解度チェック10問',
+    title: 'TCP/IP 理解度確認10問',
     description: 'TCP/IPの基礎知識を10問のクイズで確認します。',
     path: '/training/linux-level2',
   },
@@ -42,7 +42,7 @@ export function InfraBasic2TopPage() {
         <div>
           <h1 className="text-lg font-bold text-slate-800">ネットワーク基礎</h1>
           <p className="mt-1 text-sm text-slate-600">
-            ネットワーク実機を用いた調査・記述問題と、TCP/IP理解度チェック10問の2つで構成されています。
+            ネットワーク実機を用いた調査・記述問題と、TCP/IP理解度確認10問の2つで構成されています。
           </p>
           {taskProgress && (
             <p className="mt-1 text-[11px] text-slate-600">

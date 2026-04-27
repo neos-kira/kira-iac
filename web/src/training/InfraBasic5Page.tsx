@@ -423,7 +423,7 @@ function TaskRow({
             <p className="text-label md:text-label-pc text-slate-600">{task.objective}</p>
             {reviewAnswer && (
               <div>
-                <p className="text-[11px] font-medium text-slate-600 mb-1">提出した回答:</p>
+                <p className="text-[11px] font-medium text-slate-600 mb-1">あなたの回答:</p>
                 <textarea
                   value={reviewAnswer}
                   disabled
@@ -491,7 +491,7 @@ function TaskRow({
             disabled={!reviewAnswer.trim() || reviewState.status === 'scoring'}
             className="rounded-lg bg-sky-600 px-3 py-1.5 text-label md:text-label-pc font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {reviewState.status === 'scoring' ? 'AI確認中...' : 'AIに確認してもらう'}
+            {reviewState.status === 'scoring' ? 'AI確認中...' : 'AIに提出する'}
           </button>
           <VerifyResult state={reviewState} isReview={false} />
         </div>
@@ -631,14 +631,14 @@ function ReviewUploadSection({
 
       {/* Step 3: AI採点 */}
       <div>
-        <p className="text-[11px] font-semibold text-slate-600 mb-2">③ AIに採点してもらう</p>
+        <p className="text-[11px] font-semibold text-slate-600 mb-2">③ AIで採点する</p>
         <button
           type="button"
           onClick={onReviewScore}
           disabled={!reviewAnswer.trim() || reviewState.status === 'scoring'}
           className="rounded-lg bg-sky-600 px-3 py-1.5 text-label md:text-label-pc font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {reviewState.status === 'scoring' ? 'AI採点中...' : 'AIに採点してもらう'}
+          {reviewState.status === 'scoring' ? 'AI採点中...' : 'AIで採点する'}
         </button>
         {!reviewAnswer.trim() && (
           <p className="mt-1 text-[11px] text-slate-400">先にExcelファイルをアップロードしてください</p>

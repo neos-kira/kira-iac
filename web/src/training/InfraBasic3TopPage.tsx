@@ -18,7 +18,7 @@ const TASKS = [
   },
   {
     category: '課題3-2 · 実技＋理論',
-    title: 'OS・仮想化・クラウド理解度チェック',
+    title: 'OS・仮想化・クラウド理解度確認',
     description: 'OS・仮想化・クラウドの概念を、自分の言葉と実機ログで説明する記述式テストです（内容に基づき自動採点されます）。',
     path: '/training/infra-basic-3-2',
   },

@@ -16,7 +16,7 @@ export function LinuxLevel2Page() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    document.title = 'インフラ基礎課題2-2 TCP/IP理解度チェック10問'
+    document.title = 'インフラ基礎課題2-2 TCP/IP理解度確認10問'
   }, [])
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export function LinuxLevel2Page() {
 
   return (
     <TrainingQuizFrame
-      title="インフラ基礎課題2-2 — TCP/IP 理解度チェック10問"
+      title="インフラ基礎課題2-2 — TCP/IP 理解度確認10問"
       subtitle="TRAINING · INFRA · 2-2 TCP/IP"
       questions={TCPIP_LEVEL2_QUESTIONS}
       totalRequired={10}

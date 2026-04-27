@@ -24,23 +24,172 @@ function isKiraTestUser(): boolean {
   }
 }
 
-function getHeroVisual(taskName: string): { terminal: string; terminalColor: string; tags: string[] } {
-  if (taskName.includes('vi') || taskName.includes('エディタ')) {
-    return { terminal: '$ vi server.conf\n-- INSERT --\n~\n~', terminalColor: '#60A5FA', tags: ['VI', 'EDITOR', 'LINUX'] }
+type IllustrationKind = 'terminal' | 'office' | 'network' | 'editor' | 'cloud' | 'server'
+
+function getIllustrationKind(taskName: string): IllustrationKind {
+  if (taskName.includes('はじめに') || taskName.includes('IT業界')) return 'office'
+  if (taskName.includes('TCP') || taskName.includes('ネットワーク')) return 'network'
+  if (taskName.includes('vi') || taskName.includes('エディタ') || taskName.includes('シェル') || taskName.includes('スクリプト')) return 'editor'
+  if (taskName.includes('クラウド') || taskName.includes('AWS') || taskName.includes('仮想')) return 'cloud'
+  if (taskName.includes('構築') || taskName.includes('Ubuntu')) return 'server'
+  return 'terminal'
+}
+
+function HeroIllustration({ kind }: { kind: IllustrationKind }) {
+  if (kind === 'office') {
+    return (
+      <svg viewBox="0 0 110 90" width="110" style={{ display: 'block', margin: 'auto' }}>
+        <rect x="25" y="20" width="60" height="38" rx="4" fill="#1E3A5F" stroke="#3B82F6" strokeWidth="1.5"/>
+        <rect x="29" y="24" width="52" height="30" rx="2" fill="#0EA5E9" opacity="0.2"/>
+        <rect x="33" y="28" width="28" height="2.5" rx="1" fill="#7DD3FC" opacity="0.85"/>
+        <rect x="33" y="33" width="20" height="2.5" rx="1" fill="#6EE7B7" opacity="0.7"/>
+        <rect x="33" y="38" width="34" height="2.5" rx="1" fill="#7DD3FC" opacity="0.55"/>
+        <rect x="33" y="43" width="16" height="2.5" rx="1" fill="#FCD34D" opacity="0.7"/>
+        <rect x="51" y="58" width="8" height="6" rx="1" fill="#334155"/>
+        <rect x="41" y="64" width="28" height="3" rx="1.5" fill="#334155"/>
+        <rect x="23" y="71" width="64" height="9" rx="3" fill="#1E293B" stroke="#334155" strokeWidth="1"/>
+        <rect x="27" y="74" width="8" height="3" rx="1" fill="#334155"/>
+        <rect x="38" y="74" width="32" height="3" rx="1" fill="#334155"/>
+        <rect x="73" y="74" width="8" height="3" rx="1" fill="#334155"/>
+        <circle cx="55" cy="12" r="7" fill="#FCD34D" opacity="0.9"/>
+        <circle cx="52.5" cy="11" r="1" fill="#1E293B"/>
+        <circle cx="57.5" cy="11" r="1" fill="#1E293B"/>
+        <path d="M52 14 Q55 16 58 14" stroke="#1E293B" strokeWidth="0.8" fill="none"/>
+      </svg>
+    )
   }
-  if (taskName.includes('シェル') || taskName.includes('スクリプト')) {
-    return { terminal: '#!/bin/bash\nfor i in 1 2 3\ndo echo $i\ndone', terminalColor: '#FCD34D', tags: ['SHELL', 'BASH', 'SCRIPT'] }
+  if (kind === 'network') {
+    return (
+      <svg viewBox="0 0 110 90" width="110" style={{ display: 'block', margin: 'auto' }}>
+        <rect x="4" y="28" width="28" height="20" rx="3" fill="#1E3A5F" stroke="#3B82F6" strokeWidth="1.5"/>
+        <rect x="8" y="32" width="20" height="12" rx="1" fill="#0EA5E9" opacity="0.3"/>
+        <rect x="13" y="48" width="10" height="4" rx="1" fill="#334155"/>
+        <rect x="7" y="52" width="22" height="2" rx="1" fill="#334155"/>
+        <rect x="78" y="28" width="28" height="20" rx="3" fill="#1E3A5F" stroke="#3B82F6" strokeWidth="1.5"/>
+        <rect x="82" y="32" width="20" height="12" rx="1" fill="#0EA5E9" opacity="0.3"/>
+        <rect x="87" y="48" width="10" height="4" rx="1" fill="#334155"/>
+        <rect x="81" y="52" width="22" height="2" rx="1" fill="#334155"/>
+        <rect x="41" y="33" width="28" height="12" rx="3" fill="#1E293B" stroke="#6366F1" strokeWidth="1"/>
+        <circle cx="50" cy="39" r="2" fill="#22C55E"/>
+        <rect x="54" y="36" width="11" height="2" rx="1" fill="#475569"/>
+        <rect x="54" y="40" width="7" height="2" rx="1" fill="#475569"/>
+        <line x1="32" y1="38" x2="41" y2="39" stroke="#3B82F6" strokeWidth="1.5" strokeDasharray="3 2"/>
+        <line x1="69" y1="39" x2="78" y2="38" stroke="#3B82F6" strokeWidth="1.5" strokeDasharray="3 2"/>
+        <circle cx="36" cy="38.5" r="2.5" fill="#60A5FA"/>
+        <circle cx="74" cy="38.5" r="2.5" fill="#34D399"/>
+        <text x="55" y="70" textAnchor="middle" fill="#94A3B8" fontSize="7.5" fontFamily="sans-serif">TCP/IP Network</text>
+        <line x1="18" y1="54" x2="18" y2="62" stroke="#334155" strokeWidth="1"/>
+        <line x1="92" y1="54" x2="92" y2="62" stroke="#334155" strokeWidth="1"/>
+        <rect x="10" y="62" width="16" height="2" rx="1" fill="#334155"/>
+        <rect x="84" y="62" width="16" height="2" rx="1" fill="#334155"/>
+      </svg>
+    )
   }
-  if (taskName.includes('ネットワーク') || taskName.includes('TCP')) {
-    return { terminal: '$ ping 8.8.8.8\n64 bytes ttl=118\ntime=5.2ms\n$ _', terminalColor: '#6EE7B7', tags: ['NETWORK', 'TCP/IP', 'PING'] }
+  if (kind === 'editor') {
+    return (
+      <svg viewBox="0 0 110 90" width="110" style={{ display: 'block', margin: 'auto' }}>
+        <rect x="3" y="5" width="104" height="80" rx="5" fill="#0F172A" stroke="#334155" strokeWidth="1"/>
+        <rect x="3" y="5" width="104" height="18" rx="5" fill="#1E293B"/>
+        <rect x="3" y="17" width="104" height="6" fill="#1E293B"/>
+        <circle cx="13" cy="14" r="3.5" fill="#EF4444"/>
+        <circle cx="22" cy="14" r="3.5" fill="#EAB308"/>
+        <circle cx="31" cy="14" r="3.5" fill="#22C55E"/>
+        <text x="55" y="16" textAnchor="middle" fill="#64748B" fontSize="7" fontFamily="monospace">script.sh</text>
+        <rect x="3" y="23" width="16" height="62" fill="#1E293B"/>
+        <text x="11" y="35" textAnchor="middle" fill="#475569" fontSize="7" fontFamily="monospace">1</text>
+        <text x="11" y="46" textAnchor="middle" fill="#475569" fontSize="7" fontFamily="monospace">2</text>
+        <text x="11" y="57" textAnchor="middle" fill="#475569" fontSize="7" fontFamily="monospace">3</text>
+        <text x="11" y="68" textAnchor="middle" fill="#475569" fontSize="7" fontFamily="monospace">4</text>
+        <text x="11" y="79" textAnchor="middle" fill="#475569" fontSize="7" fontFamily="monospace">5</text>
+        <text x="22" y="35" fill="#C084FC" fontSize="8" fontFamily="monospace">#!/bin/bash</text>
+        <text x="22" y="46" fill="#60A5FA" fontSize="8" fontFamily="monospace">{'for i in 1..3'}</text>
+        <text x="22" y="57" fill="#F472B6" fontSize="8" fontFamily="monospace">{'  echo '}<tspan fill="#FCD34D">{"\"$i\""}</tspan></text>
+        <text x="22" y="68" fill="#F472B6" fontSize="8" fontFamily="monospace">done</text>
+        <text x="22" y="79" fill="#86EFAC" fontSize="8" fontFamily="monospace">$ </text>
+        <rect x="22" y="71" width="4" height="8" rx="1" fill="#60A5FA" opacity="0.85"/>
+      </svg>
+    )
   }
-  if (taskName.includes('サーバー構築') || taskName.includes('Ubuntu')) {
-    return { terminal: '$ apt install apache2\n$ systemctl start\napache2\n$ _', terminalColor: '#C084FC', tags: ['SERVER', 'UBUNTU', 'APACHE'] }
+  if (kind === 'cloud') {
+    return (
+      <svg viewBox="0 0 110 90" width="110" style={{ display: 'block', margin: 'auto' }}>
+        <ellipse cx="35" cy="35" rx="18" ry="14" fill="#1E3A5F" stroke="#3B82F6" strokeWidth="1.5"/>
+        <ellipse cx="55" cy="28" rx="20" ry="16" fill="#1E3A5F" stroke="#3B82F6" strokeWidth="1.5"/>
+        <ellipse cx="74" cy="35" rx="16" ry="12" fill="#1E3A5F" stroke="#3B82F6" strokeWidth="1.5"/>
+        <rect x="17" y="34" width="76" height="14" fill="#1E3A5F"/>
+        <text x="55" y="43" textAnchor="middle" fill="#7DD3FC" fontSize="9" fontFamily="sans-serif" fontWeight="bold">AWS Cloud</text>
+        <rect x="8" y="56" width="28" height="18" rx="3" fill="#1E293B" stroke="#6366F1" strokeWidth="1"/>
+        <circle cx="16" cy="63" r="2.5" fill="#22C55E"/>
+        <rect x="21" y="60" width="11" height="2" rx="1" fill="#475569"/>
+        <rect x="21" y="64" width="8" height="2" rx="1" fill="#475569"/>
+        <text x="22" y="71" textAnchor="middle" fill="#94A3B8" fontSize="6" fontFamily="monospace">EC2</text>
+        <rect x="41" y="56" width="28" height="18" rx="3" fill="#1E293B" stroke="#6366F1" strokeWidth="1"/>
+        <circle cx="49" cy="63" r="2.5" fill="#22C55E"/>
+        <rect x="54" y="60" width="11" height="2" rx="1" fill="#475569"/>
+        <rect x="54" y="64" width="8" height="2" rx="1" fill="#475569"/>
+        <text x="55" y="71" textAnchor="middle" fill="#94A3B8" fontSize="6" fontFamily="monospace">S3</text>
+        <rect x="74" y="56" width="28" height="18" rx="3" fill="#1E293B" stroke="#6366F1" strokeWidth="1"/>
+        <circle cx="82" cy="63" r="2.5" fill="#F59E0B"/>
+        <rect x="87" y="60" width="11" height="2" rx="1" fill="#475569"/>
+        <rect x="87" y="64" width="8" height="2" rx="1" fill="#475569"/>
+        <text x="88" y="71" textAnchor="middle" fill="#94A3B8" fontSize="6" fontFamily="monospace">RDS</text>
+        <line x1="34" y1="48" x2="22" y2="56" stroke="#3B82F6" strokeWidth="1" strokeDasharray="3 2" opacity="0.7"/>
+        <line x1="55" y1="48" x2="55" y2="56" stroke="#3B82F6" strokeWidth="1" strokeDasharray="3 2" opacity="0.7"/>
+        <line x1="76" y1="48" x2="88" y2="56" stroke="#3B82F6" strokeWidth="1" strokeDasharray="3 2" opacity="0.7"/>
+      </svg>
+    )
   }
-  if (taskName.includes('AWS') || taskName.includes('クラウド')) {
-    return { terminal: '$ aws s3 ls\n$ aws ec2\ndescribe-instances\n$ _', terminalColor: '#FB923C', tags: ['AWS', 'CLOUD', 'CLI'] }
+  if (kind === 'server') {
+    return (
+      <svg viewBox="0 0 110 90" width="110" style={{ display: 'block', margin: 'auto' }}>
+        <rect x="14" y="4" width="82" height="82" rx="4" fill="#0F172A" stroke="#334155" strokeWidth="1.5"/>
+        <rect x="8" y="10" width="6" height="70" rx="2" fill="#1E293B" stroke="#334155" strokeWidth="1"/>
+        <rect x="96" y="10" width="6" height="70" rx="2" fill="#1E293B" stroke="#334155" strokeWidth="1"/>
+        <rect x="18" y="10" width="74" height="14" rx="2" fill="#1E293B" stroke="#475569" strokeWidth="1"/>
+        <circle cx="26" cy="17" r="3" fill="#22C55E"/>
+        <rect x="32" y="14" width="32" height="2.5" rx="1" fill="#334155"/>
+        <rect x="32" y="18" width="22" height="2.5" rx="1" fill="#334155"/>
+        <rect x="83" y="14" width="5" height="3" rx="0.5" fill="#3B82F6"/>
+        <rect x="83" y="19" width="5" height="3" rx="0.5" fill="#3B82F6"/>
+        <rect x="18" y="28" width="74" height="14" rx="2" fill="#1E293B" stroke="#475569" strokeWidth="1"/>
+        <circle cx="26" cy="35" r="3" fill="#22C55E"/>
+        <rect x="32" y="32" width="32" height="2.5" rx="1" fill="#334155"/>
+        <rect x="32" y="36" width="22" height="2.5" rx="1" fill="#334155"/>
+        <rect x="83" y="32" width="5" height="3" rx="0.5" fill="#3B82F6"/>
+        <rect x="83" y="37" width="5" height="3" rx="0.5" fill="#3B82F6"/>
+        <rect x="18" y="46" width="74" height="14" rx="2" fill="#1E293B" stroke="#475569" strokeWidth="1"/>
+        <circle cx="26" cy="53" r="3" fill="#F59E0B"/>
+        <rect x="32" y="50" width="32" height="2.5" rx="1" fill="#334155"/>
+        <rect x="32" y="54" width="22" height="2.5" rx="1" fill="#334155"/>
+        <rect x="83" y="50" width="5" height="3" rx="0.5" fill="#475569"/>
+        <rect x="83" y="55" width="5" height="3" rx="0.5" fill="#475569"/>
+        <rect x="18" y="64" width="74" height="14" rx="2" fill="#1E293B" stroke="#334155" strokeWidth="1"/>
+        <rect x="22" y="68" width="6" height="4" rx="0.5" fill="#3B82F6"/>
+        <rect x="30" y="68" width="6" height="4" rx="0.5" fill="#3B82F6"/>
+        <rect x="38" y="68" width="6" height="4" rx="0.5" fill="#22C55E"/>
+        <rect x="46" y="68" width="6" height="4" rx="0.5" fill="#22C55E"/>
+        <rect x="54" y="68" width="6" height="4" rx="0.5" fill="#EF4444"/>
+        <rect x="62" y="68" width="6" height="4" rx="0.5" fill="#475569"/>
+        <rect x="70" y="68" width="6" height="4" rx="0.5" fill="#475569"/>
+        <rect x="78" y="68" width="6" height="4" rx="0.5" fill="#475569"/>
+      </svg>
+    )
   }
-  return { terminal: '$ ls -la\ntotal 24\ndrwxr-xr-x\n$ _', terminalColor: '#86EFAC', tags: ['BASIC', 'CMD', 'LINUX'] }
+  // terminal (default: Linux commands, SSH)
+  return (
+    <svg viewBox="0 0 110 90" width="110" style={{ display: 'block', margin: 'auto' }}>
+      <rect x="1" y="1" width="108" height="88" rx="5" fill="#0F172A"/>
+      <circle cx="12" cy="11" r="3.5" fill="#EF4444"/>
+      <circle cx="21" cy="11" r="3.5" fill="#EAB308"/>
+      <circle cx="30" cy="11" r="3.5" fill="#22C55E"/>
+      <text x="6" y="29" fill="#86EFAC" fontSize="9" fontFamily="monospace">$ ls -la</text>
+      <text x="6" y="41" fill="#94A3B8" fontSize="8.5" fontFamily="monospace">total 24</text>
+      <text x="6" y="53" fill="#94A3B8" fontSize="8.5" fontFamily="monospace">drwxr-xr-x 3</text>
+      <text x="6" y="65" fill="#94A3B8" fontSize="8.5" fontFamily="monospace">-rw-r--r-- 1</text>
+      <text x="6" y="77" fill="#86EFAC" fontSize="9" fontFamily="monospace">$ </text>
+      <rect x="17" y="69" width="5" height="10" rx="1" fill="#86EFAC"/>
+    </svg>
+  )
 }
 
 type Props = {
@@ -210,9 +359,9 @@ export function HomeDashboard({
       } else if (infra1InProgress) {
         currentTask = { taskName: 'SSH接続確認', subtaskName: 'インフラ基礎課題 1', progress: null, progressLabel: null, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '▶ 続きから再開する' }
       } else if (l2Q > 0) {
-        currentTask = { taskName: 'TCP/IP 理解度チェック', subtaskName: 'ネットワーク基礎', progress: Math.round((l2Q / 10) * 100), progressLabel: `${l2Q} / 10問`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level2'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '▶ 続きから再開する' }
+        currentTask = { taskName: 'TCP/IP 理解度確認', subtaskName: 'ネットワーク基礎', progress: Math.round((l2Q / 10) * 100), progressLabel: `${l2Q} / 10問`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level2'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '▶ 続きから再開する' }
       } else if (infra32InProgress) {
-        currentTask = { taskName: 'OS・仮想化・クラウド理解度チェック', subtaskName: 'インフラ基礎課題 3', progress: null, progressLabel: null, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '▶ 続きから再開する' }
+        currentTask = { taskName: 'OS・仮想化・クラウド理解度確認', subtaskName: 'インフラ基礎課題 3', progress: null, progressLabel: null, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '▶ 続きから再開する' }
       } else if (vi4Done > 0 && vi4Done < VI_STEPS.length) {
         currentTask = { taskName: 'viエディタ演習', subtaskName: 'インフラ基礎課題 4', progress: Math.round((vi4Done / VI_STEPS.length) * 100), progressLabel: `${vi4Done} / ${VI_STEPS.length}ステップ`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '▶ 続きから再開する' }
       } else if (shell4Done > 0 && shell4Done < SHELL_QUESTIONS.length) {
@@ -404,32 +553,10 @@ export function HomeDashboard({
                     </button>
                   </div>
                 </div>
-                {/* ターミナルイメージ（課題種別に応じて動的切り替え） */}
-                {(() => {
-                  const visual = getHeroVisual(currentTask.taskName)
-                  const lines = visual.terminal.split('\n')
-                  return (
-                    <div className="hidden md:flex w-[150px] flex-shrink-0 flex-col p-3" style={{ background: '#1a1a2e', borderRadius: 8 }}>
-                      <div className="flex gap-1 mb-2.5">
-                        <span className="rounded-full" style={{ width: 7, height: 7, background: '#E88080', display: 'inline-block' }} />
-                        <span className="rounded-full" style={{ width: 7, height: 7, background: '#E8C060', display: 'inline-block' }} />
-                        <span className="rounded-full" style={{ width: 7, height: 7, background: '#60B860', display: 'inline-block' }} />
-                      </div>
-                      <code className="font-mono leading-relaxed" style={{ fontSize: 11, color: visual.terminalColor }}>
-                        {lines.map((line, i) => (
-                          <span key={i} style={{ display: 'block', color: line.startsWith('$') || line.startsWith('#!') ? visual.terminalColor : 'rgba(255,255,255,0.45)' }}>
-                            {line === '$ _' ? <><span style={{ color: visual.terminalColor }}>$ </span><span className="animate-pulse">_</span></> : line}
-                          </span>
-                        ))}
-                      </code>
-                      <div className="mt-auto pt-2 flex flex-wrap gap-1">
-                        {visual.tags.map((tag) => (
-                          <span key={tag} className="rounded px-1.5 py-0.5 font-semibold" style={{ fontSize: 9, background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)' }}>{tag}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })()}
+                {/* イラスト（課題種別に応じて動的切り替え） */}
+                <div className="hidden md:flex w-[150px] flex-shrink-0 items-center justify-center p-1" style={{ background: '#1a1a2e', borderRadius: 8 }}>
+                  <HeroIllustration kind={getIllustrationKind(currentTask.taskName)} />
+                </div>
               </div>
             </div>
           ) : (

@@ -101,7 +101,7 @@ export const TRAINING_TASKS: TrainingTaskDef[] = [
     clearedKey: L2_CLEARED_KEY,
     subTasks: [
       { label: '2-1 ネットワーク実践編（調査・記述）', clearedKey: null, storageKeyForProgress: INFRA_BASIC_21_STORAGE_KEY },
-      { label: '2-2 TCP/IP理解度チェック10問', clearedKey: L2_CLEARED_KEY },
+      { label: '2-2 TCP/IP理解度確認10問', clearedKey: L2_CLEARED_KEY },
     ],
   },
   {
@@ -113,7 +113,7 @@ export const TRAINING_TASKS: TrainingTaskDef[] = [
     clearedKey: INFRA_BASIC_3_2_CLEARED_KEY,
     subTasks: [
       { label: '3-1 OS・仮想化・クラウドの解説', clearedKey: INFRA_BASIC_3_1_DONE_KEY },
-      { label: '3-2 理解度チェック（記述式）', clearedKey: INFRA_BASIC_3_2_CLEARED_KEY },
+      { label: '3-2 理解度確認（記述式）', clearedKey: INFRA_BASIC_3_2_CLEARED_KEY },
     ],
   },
   {

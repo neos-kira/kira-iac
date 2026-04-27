@@ -136,7 +136,7 @@ export const INFRA5_SECTIONS: Infra5Section[] = [
       },
       {
         id: 's1-11', sectionId: 's1', index: 10, number: '1-11',
-        title: '【理解度確認】OS設定の手順書作成・提出',
+        title: '【理解度確認】OS設定の手順書作成',
         objective: 'セクション1で実施したOS設定の手順書を作成し、Excelテンプレートに記入して提出してください。',
         isReview: true,
         hint: '手順書には目的・手順・確認の3点を必ず含めてください。コマンドを羅列するだけでなく、なぜその設定が必要かを説明してください。',
@@ -194,7 +194,7 @@ export const INFRA5_SECTIONS: Infra5Section[] = [
       },
       {
         id: 's2-6', sectionId: 's2', index: 16, number: '2-6',
-        title: '【理解度確認】ディスク追加の手順書作成・提出',
+        title: '【理解度確認】ディスク追加の手順書作成',
         objective: 'セクション2で実施したディスク追加の手順書をExcelテンプレートに記入して提出してください。LVMの仕組み（PV→VG→LV の3層構造）の説明を含めてください。',
         isReview: true,
         hint: 'LVMを使うメリット（柔軟なサイズ変更など）も含めると良い手順書になります。',
@@ -260,7 +260,7 @@ export const INFRA5_SECTIONS: Infra5Section[] = [
       },
       {
         id: 's3-7', sectionId: 's3', index: 23, number: '3-7',
-        title: '【理解度確認】apache2設定の手順書作成・提出',
+        title: '【理解度確認】apache2設定の手順書作成',
         objective: 'セクション3で実施したapache2設定の手順書をExcelテンプレートに記入して提出してください。Apacheの役割と設定ファイルの構成を含めてください。',
         isReview: true,
         hint: 'なぜWebサーバーが必要か、apache2.conf のどの設定がどの動作を制御するかを説明してください。',
@@ -318,7 +318,7 @@ export const INFRA5_SECTIONS: Infra5Section[] = [
       },
       {
         id: 's4-6', sectionId: 's4', index: 29, number: '4-6',
-        title: '【理解度確認】AIDE設定の手順書作成・提出',
+        title: '【理解度確認】AIDE設定の手順書作成',
         objective: 'セクション4で実施したAIDE設定の手順書をExcelテンプレートに記入して提出してください。改ざん検知の仕組みと運用方法を含めてください。',
         isReview: true,
         hint: 'AIDEがどのようにして改ざんを検知するか（ハッシュ値の比較）、なぜ定期実行が重要かを説明してください。',
@@ -408,7 +408,7 @@ export const INFRA5_SECTIONS: Infra5Section[] = [
       },
       {
         id: 's5-10', sectionId: 's5', index: 39, number: '5-10',
-        title: '【理解度確認】PostgreSQL設定の手順書作成・提出',
+        title: '【理解度確認】PostgreSQL設定の手順書作成',
         objective: 'セクション5で実施したPostgreSQL設定の手順書をExcelテンプレートに記入して提出してください。RDBMSの基本概念と運用手順を含めてください。',
         isReview: true,
         hint: 'PostgreSQLをインストールして使えるようにするまでの一連の流れを、「なぜその手順が必要か」を添えて説明してください。',
