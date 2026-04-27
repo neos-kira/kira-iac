@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useSafeNavigate } from '../hooks/useSafeNavigate'
-import { fetchAdminUsers, stopAllServers, deleteAdminUser, type AdminUser } from '../accountsApi'
+import { fetchAdminUsers, stopAllServers, deleteAdminUser, resetPassword, type AdminUser } from '../accountsApi'
 import { UserCreateModal } from '../components/UserCreateModal'
 import { ProgressDetailModal } from '../components/ProgressDetailModal'
 
@@ -57,6 +57,12 @@ export function AdminPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showWbsTip, setShowWbsTip] = useState(false)
+  const [pwResetTarget, setPwResetTarget] = useState<AdminUser | null>(null)
+  const [pwResetNewPass, setPwResetNewPass] = useState('')
+  const [pwResetConfirmPass, setPwResetConfirmPass] = useState('')
+  const [pwResetError, setPwResetError] = useState<string | null>(null)
+  const [pwResetSuccess, setPwResetSuccess] = useState<string | null>(null)
+  const [isPwResetting, setIsPwResetting] = useState(false)
 
   useEffect(() => {
     if (!showWbsTip) return
@@ -157,6 +163,24 @@ export function AdminPage() {
       void refresh()
     } else {
       setDeleteError(result.error ?? '削除に失敗しました')
+    }
+  }
+
+  async function handlePwReset() {
+    if (!pwResetTarget) return
+    if (!pwResetNewPass) { setPwResetError('新しいパスワードを入力してください'); return }
+    if (pwResetNewPass !== pwResetConfirmPass) { setPwResetError('パスワードが一致しません'); return }
+    setIsPwResetting(true)
+    setPwResetError(null)
+    setPwResetSuccess(null)
+    const ok = await resetPassword(pwResetTarget.username, pwResetNewPass)
+    setIsPwResetting(false)
+    if (ok) {
+      setPwResetSuccess(`${pwResetTarget.username} のパスワードをリセットしました`)
+      setPwResetNewPass('')
+      setPwResetConfirmPass('')
+    } else {
+      setPwResetError('リセットに失敗しました')
     }
   }
 
@@ -375,6 +399,13 @@ export function AdminPage() {
                             </button>
                             <button
                               type="button"
+                              onClick={() => { setPwResetTarget(u); setPwResetNewPass(''); setPwResetConfirmPass(''); setPwResetError(null); setPwResetSuccess(null) }}
+                              className="hidden md:inline text-xs font-medium text-amber-600 hover:text-amber-800 hover:underline"
+                            >
+                              PW変更
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => { setDeleteTarget(u); setDeleteConfirmText(''); setDeleteError(null) }}
                               className="hidden md:inline text-xs font-medium text-red-500 hover:text-red-700 hover:underline"
                             >
@@ -406,6 +437,59 @@ export function AdminPage() {
           user={detailUser}
           onClose={() => setDetailUser(null)}
         />
+      )}
+
+      {/* パスワードリセットダイアログ */}
+      {pwResetTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-base font-semibold text-slate-800">パスワードをリセット</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              <strong>{pwResetTarget.username}</strong> の新しいパスワードを設定します。
+            </p>
+            <div className="mt-4 flex flex-col gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">新しいパスワード</label>
+                <input
+                  type="password"
+                  value={pwResetNewPass}
+                  onChange={(e) => setPwResetNewPass(e.target.value)}
+                  placeholder="新しいパスワードを入力"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">確認（再入力）</label>
+                <input
+                  type="password"
+                  value={pwResetConfirmPass}
+                  onChange={(e) => setPwResetConfirmPass(e.target.value)}
+                  placeholder="もう一度入力"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none"
+                />
+              </div>
+            </div>
+            {pwResetError && <p className="mt-2 text-xs text-red-600">{pwResetError}</p>}
+            {pwResetSuccess && <p className="mt-2 text-xs text-emerald-600">{pwResetSuccess}</p>}
+            <div className="mt-4 flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setPwResetTarget(null)}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                閉じる
+              </button>
+              <button
+                type="button"
+                onClick={() => void handlePwReset()}
+                disabled={isPwResetting || !pwResetNewPass || !pwResetConfirmPass}
+                className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+              >
+                {isPwResetting ? 'リセット中...' : 'リセットする'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* 削除確認ダイアログ */}

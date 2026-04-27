@@ -5,7 +5,7 @@ import { setLoggedIn, setCurrentRole, setUserRealName } from './auth'
 import { useAuth } from './AuthContext'
 import { addTrainee } from './traineeProgressStorage'
 import { isJTerada, J_TERADA_PASSWORD } from './specialUsers'
-import { checkAccount, isAccountApiAvailable, resetPassword } from './accountsApi'
+import { checkAccount, isAccountApiAvailable } from './accountsApi'
 import { fetchProfile } from './progressApi'
 import { ProfileSetupModal } from './components/ProfileSetupModal'
 import { Eye, EyeOff } from 'lucide-react'
@@ -67,17 +67,6 @@ export function LoginPage() {
   const [loginError, setLoginError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoggingIn, setIsLoggingIn] = useState(false)
-
-  // パスワードリセット用
-  const [mode, setMode] = useState<'login' | 'reset'>('login')
-  const [resetUsername, setResetUsername] = useState('')
-  const [resetNewPassword, setResetNewPassword] = useState('')
-  const [resetConfirmPassword, setResetConfirmPassword] = useState('')
-  const [showResetPassword, setShowResetPassword] = useState(false)
-  const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false)
-  const [resetError, setResetError] = useState('')
-  const [resetSuccess, setResetSuccess] = useState('')
-  const [isResetting, setIsResetting] = useState(false)
   const [showProfileSetup, setShowProfileSetup] = useState(false)
 
   useEffect(() => {
@@ -161,34 +150,6 @@ export function LoginPage() {
     }
   }
 
-  async function handleReset() {
-    const name = resetUsername.trim().toLowerCase()
-    const newPass = resetNewPassword
-    const confirmPass = resetConfirmPassword
-
-    setResetError('')
-    setResetSuccess('')
-
-    if (!name) { setResetError('ユーザー名を入力してください。'); return }
-    if (!newPass) { setResetError('新しいパスワードを入力してください。'); return }
-    if (newPass !== confirmPass) { setResetError('パスワードが一致しません。'); return }
-
-    setIsResetting(true)
-    try {
-      const ok = await resetPassword(name, newPass)
-      if (ok) {
-        setResetSuccess('パスワードをリセットしました。ログイン画面からサインインしてください。')
-        setResetUsername('')
-        setResetNewPassword('')
-        setResetConfirmPassword('')
-      } else {
-        setResetError('リセットに失敗しました。ユーザー名を確認してください。')
-      }
-    } finally {
-      setIsResetting(false)
-    }
-  }
-
   // 初回ログイン時プロフィール設定モーダル
   if (showProfileSetup) {
     return (
@@ -210,7 +171,6 @@ export function LoginPage() {
       void handleLogin()
     }
   }
-  const canReset = !isResetting && resetUsername.trim().length > 0 && resetNewPassword.length > 0 && resetConfirmPassword.length > 0
 
   return (
     <div
@@ -233,247 +193,97 @@ export function LoginPage() {
           <NeOSLogo height={136} noLink={true} />
         </div>
 
-        {mode === 'login' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Username */}
           <div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {/* Username */}
-              <div>
-                <label htmlFor="login-username" style={labelStyle}>ユーザー名</label>
-                <input
-                  id="login-username"
-                  type="text"
-                  value={username}
-                  onChange={handleUsernameChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder="ユーザー名を入力"
-                  disabled={isLoggingIn}
-                  style={{ ...inputStyle, background: isLoggingIn ? '#F8FAFC' : 'white' }}
-                  onFocus={onInputFocus}
-                  onBlur={onInputBlur}
-                  autoComplete="username"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                  data-lpignore="true"
-                  data-form-type="other"
-                />
-              </div>
+            <label htmlFor="login-username" style={labelStyle}>ユーザー名</label>
+            <input
+              id="login-username"
+              type="text"
+              value={username}
+              onChange={handleUsernameChange}
+              onKeyDown={handleKeyDown}
+              placeholder="ユーザー名を入力"
+              disabled={isLoggingIn}
+              style={{ ...inputStyle, background: isLoggingIn ? '#F8FAFC' : 'white' }}
+              onFocus={onInputFocus}
+              onBlur={onInputBlur}
+              autoComplete="username"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              data-lpignore="true"
+              data-form-type="other"
+            />
+          </div>
 
-              {/* Password */}
-              <div>
-                <label htmlFor="login-password" style={labelStyle}>パスワード</label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    id="login-password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={handlePasswordChange}
-                    onKeyDown={handleKeyDown}
-                    placeholder="パスワードを入力"
-                    disabled={isLoggingIn}
-                    style={{ ...inputWithIconStyle, background: isLoggingIn ? '#F8FAFC' : 'white' }}
-                    onFocus={onInputFocus}
-                    onBlur={onInputBlur}
-                    autoComplete="current-password"
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                    spellCheck={false}
-                    data-lpignore="true"
-                    data-form-type="other"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    style={{ position: 'absolute', top: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', paddingRight: 14, color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer' }}
-                    aria-label={showPassword ? 'パスワードを非表示' : 'パスワードを表示'}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Error */}
-              {loginError && (
-                <p style={{ fontSize: 13, color: '#DC2626', margin: 0 }} role="alert">
-                  {loginError}
-                </p>
-              )}
-
-              {/* Login button */}
+          {/* Password */}
+          <div>
+            <label htmlFor="login-password" style={labelStyle}>パスワード</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={handlePasswordChange}
+                onKeyDown={handleKeyDown}
+                placeholder="パスワードを入力"
+                disabled={isLoggingIn}
+                style={{ ...inputWithIconStyle, background: isLoggingIn ? '#F8FAFC' : 'white' }}
+                onFocus={onInputFocus}
+                onBlur={onInputBlur}
+                autoComplete="current-password"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                data-lpignore="true"
+                data-form-type="other"
+              />
               <button
                 type="button"
-                onClick={() => void handleLogin()}
-                disabled={!canSubmit || isLoggingIn}
-                style={{
-                  height: 48,
-                  borderRadius: 12,
-                  background: canSubmit ? '#2563EB' : '#93C5FD',
-                  color: 'white',
-                  fontWeight: 600,
-                  fontSize: 15,
-                  letterSpacing: '0.01em',
-                  border: 'none',
-                  cursor: canSubmit ? 'pointer' : 'not-allowed',
-                  width: '100%',
-                  transition: 'background 0.15s, transform 0.1s',
-                  marginTop: 4,
-                }}
-                onMouseEnter={e => { if (canSubmit) e.currentTarget.style.background = '#1D4ED8' }}
-                onMouseLeave={e => { e.currentTarget.style.background = canSubmit ? '#2563EB' : '#93C5FD' }}
-                onMouseDown={e => { if (canSubmit) e.currentTarget.style.transform = 'scale(0.99)' }}
-                onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
+                onClick={() => setShowPassword((v) => !v)}
+                style={{ position: 'absolute', top: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', paddingRight: 14, color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer' }}
+                aria-label={showPassword ? 'パスワードを非表示' : 'パスワードを表示'}
               >
-                {isLoggingIn ? 'ログイン中...' : 'ログイン'}
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
-
-              {/* Reset link */}
-              <p style={{ textAlign: 'center', margin: '4px 0 0' }}>
-                <button
-                  type="button"
-                  onClick={() => { setMode('reset'); setLoginError('') }}
-                  style={{ fontSize: 13, color: '#64748B', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0' }}
-                  onMouseEnter={e => { e.currentTarget.style.color = '#2563EB'; e.currentTarget.style.textDecoration = 'underline' }}
-                  onMouseLeave={e => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.textDecoration = 'none' }}
-                >
-                  パスワードを忘れた方はこちら
-                </button>
-              </p>
             </div>
           </div>
-        ) : (
-          <div>
-            {/* Title */}
-            <h1 style={{ fontSize: 19, fontWeight: 600, color: '#0F172A', marginBottom: 24, textAlign: 'center', letterSpacing: '-0.01em' }}>
-              パスワードのリセット
-            </h1>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {/* Username */}
-              <div>
-                <label htmlFor="reset-username" style={labelStyle}>ユーザー名</label>
-                <input
-                  id="reset-username"
-                  type="text"
-                  value={resetUsername}
-                  onChange={(e) => setResetUsername(e.target.value)}
-                  placeholder="ユーザー名を入力"
-                  style={inputStyle}
-                  onFocus={onInputFocus}
-                  onBlur={onInputBlur}
-                  autoComplete="username"
-                />
-              </div>
+          {/* Error */}
+          {loginError && (
+            <p style={{ fontSize: 13, color: '#DC2626', margin: 0 }} role="alert">
+              {loginError}
+            </p>
+          )}
 
-              {/* New password */}
-              <div>
-                <label htmlFor="reset-new-password" style={labelStyle}>新しいパスワード</label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    id="reset-new-password"
-                    type={showResetPassword ? 'text' : 'password'}
-                    value={resetNewPassword}
-                    onChange={(e) => setResetNewPassword(e.target.value)}
-                    placeholder="新しいパスワードを入力"
-                    style={inputWithIconStyle}
-                    onFocus={onInputFocus}
-                    onBlur={onInputBlur}
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowResetPassword((v) => !v)}
-                    style={{ position: 'absolute', top: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', paddingRight: 14, color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer' }}
-                    aria-label={showResetPassword ? 'パスワードを非表示' : 'パスワードを表示'}
-                  >
-                    {showResetPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Confirm password */}
-              <div>
-                <label htmlFor="reset-confirm-password" style={labelStyle}>新しいパスワード（確認）</label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    id="reset-confirm-password"
-                    type={showResetConfirmPassword ? 'text' : 'password'}
-                    value={resetConfirmPassword}
-                    onChange={(e) => setResetConfirmPassword(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && canReset) {
-                        e.preventDefault()
-                        void handleReset()
-                      }
-                    }}
-                    placeholder="新しいパスワードを再入力"
-                    style={inputWithIconStyle}
-                    onFocus={onInputFocus}
-                    onBlur={onInputBlur}
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowResetConfirmPassword((v) => !v)}
-                    style={{ position: 'absolute', top: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', paddingRight: 14, color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer' }}
-                    aria-label={showResetConfirmPassword ? 'パスワードを非表示' : 'パスワードを表示'}
-                  >
-                    {showResetConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Messages */}
-              {resetError && (
-                <p style={{ fontSize: 13, color: '#DC2626', margin: 0 }} role="alert">
-                  {resetError}
-                </p>
-              )}
-              {resetSuccess && (
-                <p style={{ fontSize: 13, color: '#16A34A', margin: 0 }} role="status">
-                  {resetSuccess}
-                </p>
-              )}
-
-              {/* Reset button */}
-              <button
-                type="button"
-                onClick={() => void handleReset()}
-                disabled={!canReset}
-                style={{
-                  height: 48,
-                  borderRadius: 12,
-                  background: canReset ? '#2563EB' : '#93C5FD',
-                  color: 'white',
-                  fontWeight: 600,
-                  fontSize: 15,
-                  letterSpacing: '0.01em',
-                  border: 'none',
-                  cursor: canReset ? 'pointer' : 'not-allowed',
-                  width: '100%',
-                  transition: 'background 0.15s',
-                  marginTop: 4,
-                }}
-                onMouseEnter={e => { if (canReset) e.currentTarget.style.background = '#1D4ED8' }}
-                onMouseLeave={e => { e.currentTarget.style.background = canReset ? '#2563EB' : '#93C5FD' }}
-              >
-                {isResetting ? 'リセット中...' : 'リセットする'}
-              </button>
-
-              {/* Back to login */}
-              <p style={{ textAlign: 'center', margin: '4px 0 0' }}>
-                <button
-                  type="button"
-                  onClick={() => { setMode('login'); setResetError(''); setResetSuccess('') }}
-                  style={{ fontSize: 13, color: '#64748B', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0' }}
-                  onMouseEnter={e => { e.currentTarget.style.color = '#2563EB'; e.currentTarget.style.textDecoration = 'underline' }}
-                  onMouseLeave={e => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.textDecoration = 'none' }}
-                >
-                  ログインに戻る
-                </button>
-              </p>
-            </div>
-          </div>
-        )}
+          {/* Login button */}
+          <button
+            type="button"
+            onClick={() => void handleLogin()}
+            disabled={!canSubmit || isLoggingIn}
+            style={{
+              height: 48,
+              borderRadius: 12,
+              background: canSubmit ? '#2563EB' : '#93C5FD',
+              color: 'white',
+              fontWeight: 600,
+              fontSize: 15,
+              letterSpacing: '0.01em',
+              border: 'none',
+              cursor: canSubmit ? 'pointer' : 'not-allowed',
+              width: '100%',
+              transition: 'background 0.15s, transform 0.1s',
+              marginTop: 4,
+            }}
+            onMouseEnter={e => { if (canSubmit) e.currentTarget.style.background = '#1D4ED8' }}
+            onMouseLeave={e => { e.currentTarget.style.background = canSubmit ? '#2563EB' : '#93C5FD' }}
+            onMouseDown={e => { if (canSubmit) e.currentTarget.style.transform = 'scale(0.99)' }}
+            onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
+          >
+            {isLoggingIn ? 'ログイン中...' : 'ログイン'}
+          </button>
+        </div>
       </div>
     </div>
   )

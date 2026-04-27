@@ -34,27 +34,29 @@ export function ProfileEditModal({ currentDisplayName, currentEmail, onClose, on
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 9999,
-        background: 'rgba(0,0,0,0.4)',
+        background: 'rgba(0,0,0,0.5)',
+        zIndex: 10000,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 16,
+        padding: '16px',
       }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="profile-edit-title"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+      onClick={onClose}
     >
       <div
-        className="bg-white shadow-2xl"
         style={{
-          width: 'min(480px, calc(100vw - 32px))',
+          background: '#fff',
+          borderRadius: '16px',
+          padding: '24px',
+          width: '100%',
+          maxWidth: '480px',
           maxHeight: 'calc(100vh - 32px)',
           overflowY: 'auto',
-          borderRadius: 16,
-          padding: 24,
         }}
+        onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
           <h2 id="profile-edit-title" className="text-[18px] font-bold text-slate-800">
