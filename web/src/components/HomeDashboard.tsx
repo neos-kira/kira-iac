@@ -242,6 +242,23 @@ export function HomeDashboard({
   const itOk = itClearedCount >= 7
   const itActive = itClearedCount > 0
 
+  // ─── lastActive 判定ヘルパー（ステップ一覧より前に定義） ──────
+  const isLastActiveModuleDone = (moduleId: string | undefined): boolean => {
+    switch (moduleId) {
+      case 'linux-level1':    return snap?.l1Cleared === true
+      case 'linux-level2':    return infra2Ok
+      case 'infra-basic-3-2': return infra3Ok
+      case 'infra-basic-4':   return infra4Ok
+      case 'infra-basic-5':   return infra5Ok
+      default: return false
+    }
+  }
+  /** 指定モジュールIDのいずれかが lastActive で、かつ未完了なら true */
+  const isLastActiveFor = (moduleIds: string[]): boolean =>
+    !!snap?.lastActive &&
+    moduleIds.includes(snap.lastActive.moduleId) &&
+    !isLastActiveModuleDone(snap.lastActive.moduleId)
+
   // ─── ステップ一覧 ─────────────────────────────────────────
   type StepStatus = 'done' | 'active' | 'todo'
   type StepItem = {
@@ -263,7 +280,8 @@ export function HomeDashboard({
       status: infra1Ok ? 'done' : (
         (snap?.infra1Checkboxes ?? []).some(Boolean) ||
         (snap?.l1CurrentPart ?? 0) > 0 ||
-        (snap?.l1CurrentQuestion ?? 0) > 0
+        (snap?.l1CurrentQuestion ?? 0) > 0 ||
+        isLastActiveFor(['linux-level1'])
           ? 'active' : 'todo'
       ),
       progress: infra1Ok ? 100 : null, progressLabel: null,
@@ -272,7 +290,7 @@ export function HomeDashboard({
     },
     {
       no: 3, name: 'ネットワーク基礎', sub: 'ネットワーク実践・TCP/IP10問',
-      status: infra2Ok ? 'done' : (l2Done > 0 ? 'active' : 'todo'),
+      status: infra2Ok ? 'done' : (l2Done > 0 || isLastActiveFor(['linux-level2']) ? 'active' : 'todo'),
       progress: infra2Ok ? 100 : l2Done > 0 ? Math.round((l2Done / 10) * 100) : null,
       progressLabel: l2Done > 0 && !infra2Ok ? `${l2Done} / 10問` : null,
       action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-2-top'), '_blank'); else setShowIntroRequiredPopup(true) },
@@ -280,14 +298,14 @@ export function HomeDashboard({
     },
     {
       no: 4, name: 'ファイル操作・viエディタ', sub: 'OS/仮想化/クラウド解説・記述チェック',
-      status: infra3Ok ? 'done' : (Object.keys(snap?.infra32Answers ?? {}).length > 0 ? 'active' : 'todo'),
+      status: infra3Ok ? 'done' : (Object.keys(snap?.infra32Answers ?? {}).length > 0 || isLastActiveFor(['infra-basic-3-2']) ? 'active' : 'todo'),
       progress: infra3Ok ? 100 : null, progressLabel: null,
       action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-3-top'), '_blank'); else setShowIntroRequiredPopup(true) },
       tab: 'linux',
     },
     {
       no: 5, name: 'シェルスクリプト', sub: 'vi演習・シェルスクリプト演習',
-      status: infra4Ok ? 'done' : (infra4Active ? 'active' : 'todo'),
+      status: infra4Ok ? 'done' : (infra4Active || isLastActiveFor(['infra-basic-4']) ? 'active' : 'todo'),
       progress: infra4Ok ? 100 : infra4Active ? Math.round(((infra4ViDone + infra4ShellDone) / (VI_STEPS.length + SHELL_QUESTIONS.length)) * 100) : null,
       progressLabel: infra4Active && !infra4Ok ? `vi: ${infra4ViDone}/${VI_STEPS.length}  シェル: ${infra4ShellDone}/${SHELL_QUESTIONS.length}` : null,
       action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) },
@@ -295,7 +313,7 @@ export function HomeDashboard({
     },
     {
       no: 6, name: 'サーバー構築（Ubuntu）', sub: 'OS設定・ディスク・apache2・AIDE・PostgreSQL',
-      status: infra5Ok ? 'done' : (infra5Active ? 'active' : 'todo'),
+      status: infra5Ok ? 'done' : (infra5Active || isLastActiveFor(['infra-basic-5']) ? 'active' : 'todo'),
       progress: infra5Ok ? 100 : infra5Active ? Math.round((infra5PhaseDone / 5) * 100) : null,
       progressLabel: infra5Active && !infra5Ok ? `${infra5PhaseDone} / 5フェーズ` : null,
       action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-5'), '_blank'); else setShowIntroRequiredPopup(true) },
@@ -321,17 +339,6 @@ export function HomeDashboard({
     taskName: string; subtaskName: string; progress: number | null
     progressLabel: string | null; estimatedTime: string
     action: () => void; actionLabel: string
-  }
-  // lastActive のモジュールが既に完了しているか判定（完了済みなら個別フラグ優先）
-  const isLastActiveModuleDone = (moduleId: string | undefined): boolean => {
-    switch (moduleId) {
-      case 'linux-level1':    return snap?.l1Cleared === true
-      case 'linux-level2':    return infra2Ok
-      case 'infra-basic-3-2': return infra3Ok
-      case 'infra-basic-4':   return infra4Ok
-      case 'infra-basic-5':   return infra5Ok
-      default: return false
-    }
   }
 
   let currentTask: CurrentTask | null = null
