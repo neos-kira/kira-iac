@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useRef, useState, Component, type ReactNode, type ErrorInfo } from 'react'
+import { StrictMode, useEffect, useState, Component, type ReactNode, type ErrorInfo } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { DeskOpenProvider } from './deskOpenContext'
@@ -98,25 +98,9 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   )
 
   // 初回ログイン時プロフィール設定モーダル
-  // isAuthenticated が false→true に遷移した（ログインフォームを経由した）場合のみ表示する。
-  // ページ初期表示時にすでに true（旧セッション）の場合は遷移が発生しないため表示しない。
-  const prevIsAuthRef = useRef(isAuthenticated)
-  const [loginTransitionOccurred, setLoginTransitionOccurred] = useState(false)
+  // useState ではなく都度評価の派生値にする（セッション切れでも表示されないよう useAuth の isAuthenticated を使用）
   const [profileSetupDismissed, setProfileSetupDismissed] = useState(false)
-
-  useEffect(() => {
-    const wasAuth = prevIsAuthRef.current
-    prevIsAuthRef.current = isAuthenticated
-    if (!wasAuth && isAuthenticated) {
-      // ログインフォーム経由で認証状態が切り替わった
-      setLoginTransitionOccurred(true)
-    } else if (!isAuthenticated) {
-      // ログアウト時はリセット
-      setLoginTransitionOccurred(false)
-    }
-  }, [isAuthenticated])
-
-  const needsProfileSetup = loginTransitionOccurred && !getUserRealName() && !isLogin && !profileSetupDismissed
+  const needsProfileSetup = isAuthenticated && !getUserRealName() && !isLogin && !profileSetupDismissed
 
   // AI講師チャット開閉状態（alwaysOn設定から初期化）
   const [isChatOpen, setIsChatOpen] = useState(() => {
