@@ -61,6 +61,10 @@ function isSidebarPage(path: string): boolean {
 }
 
 function handleGlobalLogout() {
+  // チャット履歴をクリア（ユーザー固有キー + 旧キー）
+  const logoutUsername = getCurrentUsername()
+  if (logoutUsername) safeSessionRemoveItem(`nic-ai-mentor-session-messages-${logoutUsername}`)
+  safeSessionRemoveItem('nic-ai-mentor-session-messages') // 旧キー互換クリア
   safeRemoveItem('kira-session-token')
   safeRemoveItem('kira-user-logged-in')
   safeRemoveItem('kira-user-display-name')
@@ -97,9 +101,11 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     return v === 'true'
   })
 
+  // チャット履歴のsessionStorageキーをユーザー固有にする（ユーザー間の混入防止）
+  const chatSessionKey = `nic-ai-mentor-session-messages-${getCurrentUsername() || 'anonymous'}`
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
     try {
-      const raw = safeSessionGetItem('nic-ai-mentor-session-messages')
+      const raw = safeSessionGetItem(chatSessionKey)
       if (raw) {
         const parsed = JSON.parse(raw) as ChatMessage[]
         if (Array.isArray(parsed) && parsed.length > 0) return parsed
@@ -113,9 +119,9 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   // 会話履歴を sessionStorage に同期（リロード時復元用）
   useEffect(() => {
     try {
-      safeSessionSetItem('nic-ai-mentor-session-messages', JSON.stringify(chatMessages))
+      safeSessionSetItem(chatSessionKey, JSON.stringify(chatMessages))
     } catch { /* 書き込み失敗は無視 */ }
-  }, [chatMessages])
+  }, [chatMessages, chatSessionKey])
 
   // 初回マウント時: sessionStorage が空なら DynamoDB から復元
   useEffect(() => {
