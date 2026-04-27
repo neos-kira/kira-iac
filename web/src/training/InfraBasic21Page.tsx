@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { getProgressKey } from './trainingWbsData'
-import { fetchMyProgress } from '../progressApi'
+import { fetchMyProgress, scoreAnswer } from '../progressApi'
 import { getCurrentDisplayName } from '../auth'
 import {
   INFRA_BASIC_21_DEFAULT_STATE,
@@ -31,6 +31,10 @@ export function InfraBasic21Page() {
   })
   const [ec2Ip, setEc2Ip] = useState<string | null>(null)
   const [ec2State, setEc2State] = useState<string | null>(null)
+  const [pingAiInput, setPingAiInput] = useState('')
+  const [sshAiInput, setSshAiInput] = useState('')
+  const [pingAi, setPingAi] = useState<{ status: 'idle' | 'checking' | 'done' | 'error'; message: string }>({ status: 'idle', message: '' })
+  const [sshAi, setSshAi] = useState<{ status: 'idle' | 'checking' | 'done' | 'error'; message: string }>({ status: 'idle', message: '' })
 
   useEffect(() => {
     document.title = 'インフラ基礎課題2-1 ネットワーク実践編'
@@ -116,8 +120,41 @@ export function InfraBasic21Page() {
   }, [updateState])
 
   const handleReset = useCallback(() => {
+    if (!window.confirm('すべての回答をリセットします。よろしいですか？')) return
     updateState(() => INFRA_BASIC_21_DEFAULT_STATE)
   }, [updateState])
+
+  const handlePingAiCheck = async () => {
+    if (!pingAiInput.trim()) return
+    setPingAi({ status: 'checking', message: '' })
+    try {
+      const result = await scoreAnswer({
+        question: 'pingコマンドの実行結果です。演習サーバへの疎通が成功しているか判定してください。',
+        scoringCriteria: '疎通が成功している（パケットが到達している）場合は pass: true、失敗している場合は pass: false。feedbackは疎通確認の判定結果を日本語で簡潔に説明すること。',
+        answer: pingAiInput,
+      })
+      setPingAi({ status: 'done', message: result.feedback })
+      if (result.pass) handlePracticalChange('q6PingServerOk', true)
+    } catch (e) {
+      setPingAi({ status: 'error', message: String(e) })
+    }
+  }
+
+  const handleSshAiCheck = async () => {
+    if (!sshAiInput.trim()) return
+    setSshAi({ status: 'checking', message: '' })
+    try {
+      const result = await scoreAnswer({
+        question: 'SSH接続後にhostnameとwhoamiコマンドを実行した結果です。SSH接続が成功しているか判定してください。',
+        scoringCriteria: 'hostnameとwhoamiの出力が確認でき、SSH接続が成功していると判断できる場合は pass: true、出力が不完全または接続失敗が見られる場合は pass: false。feedbackは判定結果を日本語で簡潔に説明すること。',
+        answer: sshAiInput,
+      })
+      setSshAi({ status: 'done', message: result.feedback })
+      if (result.pass) handlePracticalChange('q7SshServerOk', true)
+    } catch (e) {
+      setSshAi({ status: 'error', message: String(e) })
+    }
+  }
 
   const kResult = state.knowledgeResult
 
@@ -240,7 +277,7 @@ export function InfraBasic21Page() {
             onClick={() => { saveInfraBasic21State(state, storageKey); clearDirty(); navigate('/') }}
             className="rounded-lg border border-sky-500 px-4 py-2 text-xs font-medium text-sky-600 hover:bg-sky-50"
           >
-            保存して中断
+            中断して保存
           </button>
         </div>
 
@@ -255,7 +292,7 @@ export function InfraBasic21Page() {
             <p className="text-sm text-slate-600 flex-1">
               実際の端末・サーバ・ネットワーク機器を調査しながら、
               <span className="font-semibold text-slate-800">IP情報・疎通結果・経路・概念の理解</span>
-              を記録する課題です。入力内容はブラウザに保存されるため、ページを閉じても途中から再開できます。
+              を記録する課題です。入力内容はサーバーに保存されるため、ページを閉じても途中から再開できます。
             </p>
             <svg className="shrink-0" width="120" height="120" viewBox="0 0 120 120" fill="none" aria-hidden>
               {/* ノートPC */}
@@ -409,7 +446,7 @@ export function InfraBasic21Page() {
           </div>
 
           {/* Q5-6 */}
-          <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-3">
             {ec2Ip ? (
               <div className="rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700">
                 ⚠️ この課題は演習サーバが起動している時間帯のみ実施できます。{TRAINING_HOURS_GUIDANCE}
@@ -422,32 +459,77 @@ export function InfraBasic21Page() {
             <p className="text-xs font-semibold text-sky-600">
               Q5-6. サーバ {ec2Ip ?? '(演習サーバを起動してください)'} への疎通・SSH接続
             </p>
-            <p className="text-[11px] text-slate-600">
-              {ec2Ip
-                ? <>あなたの演習サーバ <strong>{ec2Ip}</strong> に対して、Ping および SSH 接続を試み、実施できたらチェックを入れてください。</>
-                : 'トップページで演習サーバを起動すると、ここに接続先IPが自動表示されます。'}
-            </p>
-            <div className="mt-2 space-y-2 text-xs text-slate-700">
-              <label className={`flex items-center gap-2 ${!ec2Ip ? 'opacity-40' : ''}`}>
-                <input
-                  type="checkbox"
-                  checked={state.practical.q6PingServerOk}
-                  onChange={(e) => handlePracticalChange('q6PingServerOk', e.target.checked)}
-                  className="h-4 w-4 accent-sky-600"
-                  disabled={!ec2Ip}
-                />
-                <span>{ec2Ip ? `${ec2Ip} への Ping 疎通を確認した` : '(演習サーバIP取得後に有効化されます)'}</span>
-              </label>
-              <label className={`flex items-center gap-2 ${!ec2Ip ? 'opacity-40' : ''}`}>
-                <input
-                  type="checkbox"
-                  checked={state.practical.q7SshServerOk}
-                  onChange={(e) => handlePracticalChange('q7SshServerOk', e.target.checked)}
-                  className="h-4 w-4 accent-sky-600"
-                  disabled={!ec2Ip}
-                />
-                <span>{ec2Ip ? `${ec2Ip} への SSH 接続を確認した` : '(演習サーバIP取得後に有効化されます)'}</span>
-              </label>
+
+            {/* Ping疎通確認 */}
+            <div className="space-y-2 border-t border-slate-100 pt-2">
+              <p className="text-xs font-medium text-slate-700">疎通確認（Ping）</p>
+              {state.practical.q6PingServerOk ? (
+                <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                  ✅ 疎通確認OK — 判定済みです
+                </div>
+              ) : (
+                <>
+                  <p className="text-[11px] text-slate-600">
+                    {ec2Ip
+                      ? <><code className="font-mono bg-slate-100 px-1 rounded">ping -c 4 {ec2Ip}</code> を実行し、結果を貼り付けてください。</>
+                      : 'トップページで演習サーバを起動すると有効になります。'}
+                  </p>
+                  <textarea
+                    value={pingAiInput}
+                    onChange={(e) => setPingAiInput(e.target.value)}
+                    placeholder="pingの実行結果をここに貼り付けてください..."
+                    rows={4}
+                    disabled={!ec2Ip}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none resize-none font-mono disabled:opacity-40"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { void handlePingAiCheck() }}
+                    disabled={!pingAiInput.trim() || pingAi.status === 'checking' || !ec2Ip}
+                    className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {pingAi.status === 'checking' ? 'AI確認中...' : 'AIで判定する'}
+                  </button>
+                  {pingAi.status === 'done' && <p className="text-xs text-slate-700">{pingAi.message}</p>}
+                  {pingAi.status === 'error' && <p className="text-xs text-red-600">{pingAi.message}</p>}
+                </>
+              )}
+            </div>
+
+            {/* SSH接続確認 */}
+            <div className="space-y-2 border-t border-slate-100 pt-2">
+              <p className="text-xs font-medium text-slate-700">SSH接続確認</p>
+              {state.practical.q7SshServerOk ? (
+                <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                  ✅ SSH接続確認OK — 判定済みです
+                </div>
+              ) : (
+                <>
+                  <p className="text-[11px] text-slate-600">
+                    {ec2Ip
+                      ? <>SSH接続後に <code className="font-mono bg-slate-100 px-1 rounded">hostname</code> と <code className="font-mono bg-slate-100 px-1 rounded">whoami</code> を実行し、結果を貼り付けてください。</>
+                      : 'トップページで演習サーバを起動すると有効になります。'}
+                  </p>
+                  <textarea
+                    value={sshAiInput}
+                    onChange={(e) => setSshAiInput(e.target.value)}
+                    placeholder="hostnameとwhoamiの実行結果をここに貼り付けてください..."
+                    rows={4}
+                    disabled={!ec2Ip}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none resize-none font-mono disabled:opacity-40"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { void handleSshAiCheck() }}
+                    disabled={!sshAiInput.trim() || sshAi.status === 'checking' || !ec2Ip}
+                    className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {sshAi.status === 'checking' ? 'AI確認中...' : 'AIで判定する'}
+                  </button>
+                  {sshAi.status === 'done' && <p className="text-xs text-slate-700">{sshAi.message}</p>}
+                  {sshAi.status === 'error' && <p className="text-xs text-red-600">{sshAi.message}</p>}
+                </>
+              )}
             </div>
           </div>
 
@@ -623,14 +705,14 @@ export function InfraBasic21Page() {
           </div>
         </section>
 
-        {/* 下部: 保存して中断 */}
+        {/* 下部: 中断して保存 */}
         <div className="flex justify-center">
           <button
             type="button"
             onClick={() => { saveInfraBasic21State(state, storageKey); clearDirty(); navigate('/') }}
             className="rounded-lg border border-sky-500 px-6 py-2.5 text-sm font-medium text-sky-600 hover:bg-sky-50"
           >
-            保存して中断
+            中断して保存
           </button>
         </div>
       </div>

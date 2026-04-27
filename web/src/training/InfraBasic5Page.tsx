@@ -233,7 +233,7 @@ export function InfraBasic5Page() {
             Ubuntu サーバーを実際に構築します。各セクションを順番に進め、すべてのタスクを完了してください。
           </p>
           <ul className="mt-2 space-y-1 text-label md:text-label-pc text-slate-600 list-disc list-inside">
-            <li>各タスクを完了したらチェックを入れてください</li>
+            <li>各タスクはコマンド実行結果を貼り付けてAIが完了を判定します</li>
             <li>【理解度確認】タスクは手順の内容を記述してAI採点を受けてください</li>
             <li>セクションの全タスクが完了したら「セクション完了」を押してください</li>
           </ul>
