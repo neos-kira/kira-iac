@@ -63,9 +63,7 @@ export function BottomTabNav() {
   const tabs = allTabs.filter((t) => !('managerOnly' in t && t.managerOnly && !isManager))
 
   // メニュー項目
-  const drawerItems = [
-    { label: 'お問い合わせ', icon: '✉️' },
-  ]
+  const drawerItems: { label: string; icon: string }[] = []
 
   return (
     <div className="md:hidden">

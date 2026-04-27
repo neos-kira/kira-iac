@@ -202,7 +202,7 @@ export function InfraBasic4Page() {
         infra4ShellDoneQuestions: shellQs,
         lastActive: {
           moduleId: 'infra-basic-4',
-          label: `課題4 · vi&シェルスクリプト演習(途中)`,
+          label: `課題4 · vi&シェルスクリプト演習`,
           path: '/training/infra-basic-4',
           savedAt: new Date().toISOString(),
         },

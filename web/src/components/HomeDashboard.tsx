@@ -27,11 +27,11 @@ function isKiraTestUser(): boolean {
 type IllustrationKind = 'terminal' | 'office' | 'network' | 'editor' | 'cloud' | 'server'
 
 function getIllustrationKind(taskName: string): IllustrationKind {
-  if (taskName.includes('はじめに') || taskName.includes('IT業界')) return 'office'
-  if (taskName.includes('TCP') || taskName.includes('ネットワーク')) return 'network'
-  if (taskName.includes('vi') || taskName.includes('エディタ') || taskName.includes('シェル') || taskName.includes('スクリプト')) return 'editor'
+  if (taskName.includes('はじめに') || taskName.includes('IT業界') || taskName.includes('IT基礎')) return 'office'
   if (taskName.includes('クラウド') || taskName.includes('AWS') || taskName.includes('仮想')) return 'cloud'
-  if (taskName.includes('構築') || taskName.includes('Ubuntu')) return 'server'
+  if (taskName.includes('構築') || taskName.includes('Ubuntu') || taskName.includes('サーバー')) return 'server'
+  if (taskName.includes('vi') || taskName.includes('エディタ') || taskName.includes('シェル') || taskName.includes('スクリプト')) return 'editor'
+  if (taskName.includes('TCP') || taskName.includes('ネットワーク')) return 'network'
   return 'terminal'
 }
 
@@ -441,18 +441,6 @@ export function HomeDashboard({
               <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>
               演習サーバー
             </button>
-            <button type="button" disabled className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-slate-400 cursor-not-allowed">
-              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-              お知らせ
-            </button>
-            <button type="button" disabled className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-slate-400 cursor-not-allowed">
-              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              ヘルプセンター
-            </button>
-            <button type="button" disabled className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-slate-400 cursor-not-allowed">
-              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-              お問い合わせ
-            </button>
           </nav>
 
           {/* サイドバーを閉じる（アイコンのみ） */}
@@ -770,30 +758,6 @@ export function HomeDashboard({
                   </div>
                 </div>
               </div>
-
-              {/* お知らせ */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-[13px] font-semibold text-slate-700">お知らせ</h3>
-                  <button type="button" className="text-[11px] text-sky-600 hover:underline">すべて見る→</button>
-                </div>
-                <div className="space-y-3">
-                  {[
-                    { badge: 'メンテ', badgeClass: 'bg-amber-100 text-amber-700', title: '定期メンテナンスのお知らせ', date: '2026-04-30' },
-                    { badge: 'NEW', badgeClass: 'bg-sky-100 text-sky-700', title: 'サーバー構築課題が更新されました', date: '2026-04-23' },
-                    { badge: 'INFO', badgeClass: 'bg-emerald-100 text-emerald-700', title: 'AI講師機能をリリースしました', date: '2026-04-10' },
-                  ].map((item) => (
-                    <div key={item.title} className="flex gap-2">
-                      <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold h-fit ${item.badgeClass}`}>{item.badge}</span>
-                      <div>
-                        <p className="text-[12px] font-medium text-slate-700 leading-tight">{item.title}</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">{item.date}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
 
             </div>
           </div>
