@@ -633,10 +633,10 @@ export function HomeDashboard({
           {/* ── 下部 2カラム ────────────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-6">
 
-            {/* 左: 学習ロードマップ 2/3 */}
+            {/* 左: カリキュラム 2/3 */}
             <div className="lg:col-span-2 space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-[14px] font-semibold text-slate-700">学習ロードマップ</h2>
+                <h2 className="text-[14px] font-semibold text-slate-700">カリキュラム</h2>
               </div>
 
               {/* タブ */}
