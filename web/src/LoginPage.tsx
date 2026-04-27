@@ -265,7 +265,7 @@ export function LoginPage() {
             style={{
               height: 48,
               borderRadius: 12,
-              background: canSubmit ? '#2563EB' : '#93C5FD',
+              background: canSubmit ? '#0ea5e9' : '#93C5FD',
               color: 'white',
               fontWeight: 600,
               fontSize: 15,
@@ -276,8 +276,8 @@ export function LoginPage() {
               transition: 'background 0.15s, transform 0.1s',
               marginTop: 4,
             }}
-            onMouseEnter={e => { if (canSubmit) e.currentTarget.style.background = '#1D4ED8' }}
-            onMouseLeave={e => { e.currentTarget.style.background = canSubmit ? '#2563EB' : '#93C5FD' }}
+            onMouseEnter={e => { if (canSubmit) e.currentTarget.style.background = '#0284c7' }}
+            onMouseLeave={e => { e.currentTarget.style.background = canSubmit ? '#0ea5e9' : '#93C5FD' }}
             onMouseDown={e => { if (canSubmit) e.currentTarget.style.transform = 'scale(0.99)' }}
             onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
           >
