@@ -129,16 +129,10 @@ export function BottomTabNav() {
               if (tab.path) { setMenuOpen(false); navigate(tab.path) }
               else setMenuOpen((v) => !v)
             }}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 pt-1"
+            className="flex-1 flex flex-col items-center justify-center"
           >
             <span style={{ color: tab.active ? '#2563EB' : '#94A3B8' }}>
               {tab.icon}
-            </span>
-            <span
-              className="text-[10px] font-medium"
-              style={{ color: tab.active ? '#2563EB' : '#94A3B8' }}
-            >
-              {tab.label}
             </span>
           </button>
         ))}

@@ -536,7 +536,8 @@ export function HomeDashboard({
             </div>
           ) : currentTask ? (
             <div className="rounded-2xl text-white" style={{ background: 'linear-gradient(135deg, #3730a3, #2563EB)', borderRadius: 16, padding: '24px 28px' }}>
-              <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+              {/* テキスト＋イラスト行 */}
+              <div className="flex gap-4 md:gap-8 items-start">
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] uppercase tracking-widest mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>次に学習するレッスン</p>
                   <h2 className="text-[22px] font-medium leading-snug">{currentTask.taskName}</h2>
@@ -550,20 +551,31 @@ export function HomeDashboard({
                       {currentTask.progressLabel && <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.8)' }}>{currentTask.progressLabel}</p>}
                     </div>
                   )}
-                  <div className="mt-4 flex flex-col sm:flex-row flex-wrap gap-2">
-                    <button type="button" onClick={currentTask.action} className="w-full sm:w-auto flex items-center justify-center gap-1.5 font-medium text-[14px] hover:bg-white/90 transition-colors" style={{ background: '#fff', color: '#1E40AF', borderRadius: 10, padding: '9px 18px' }}>
+                  {/* PCのみ: ボタンをテキスト列の下に表示 */}
+                  <div className="hidden md:flex mt-4 flex-row flex-wrap gap-2">
+                    <button type="button" onClick={currentTask.action} className="w-auto flex items-center justify-center gap-1.5 font-medium text-[14px] hover:bg-white/90 transition-colors" style={{ background: '#fff', color: '#1E40AF', borderRadius: 10, padding: '9px 18px' }}>
                       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 2.5l8 4.5-8 4.5V2.5z" fill="#1E40AF" stroke="#1E40AF" strokeWidth="1.2" strokeLinejoin="round"/></svg>
                       {currentTask.actionLabel.replace(/^▶\s*/, '')}
                     </button>
-                    <button type="button" onClick={currentTask.action} className="w-full sm:w-auto text-white font-medium text-[14px] hover:bg-white/20 transition-colors" style={{ background: 'rgba(255,255,255,0.15)', border: '0.5px solid rgba(255,255,255,0.3)', borderRadius: 10, padding: '9px 18px' }}>
+                    <button type="button" onClick={currentTask.action} className="w-auto text-white font-medium text-[14px] hover:bg-white/20 transition-colors" style={{ background: 'rgba(255,255,255,0.15)', border: '0.5px solid rgba(255,255,255,0.3)', borderRadius: 10, padding: '9px 18px' }}>
                       詳細を見る
                     </button>
                   </div>
                 </div>
-                {/* イラスト（課題種別に応じて動的切り替え） */}
-                <div className="hidden md:flex w-[150px] flex-shrink-0 items-center justify-center p-1" style={{ background: '#1a1a2e', borderRadius: 8 }}>
+                {/* イラスト（モバイル: 90px, PC: 150px） */}
+                <div className="flex w-[90px] md:w-[150px] flex-shrink-0 items-center justify-center p-1" style={{ background: '#1a1a2e', borderRadius: 8 }}>
                   <HeroIllustration kind={getIllustrationKind(currentTask.taskName)} />
                 </div>
+              </div>
+              {/* モバイルのみ: ボタンを全幅横並びで下に表示 */}
+              <div className="flex md:hidden mt-4 flex-row gap-2">
+                <button type="button" onClick={currentTask.action} className="flex-1 flex items-center justify-center gap-1.5 font-medium text-[14px] hover:bg-white/90 transition-colors" style={{ background: '#fff', color: '#1E40AF', borderRadius: 10, padding: '9px 12px' }}>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 2.5l8 4.5-8 4.5V2.5z" fill="#1E40AF" stroke="#1E40AF" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+                  {currentTask.actionLabel.replace(/^▶\s*/, '')}
+                </button>
+                <button type="button" onClick={currentTask.action} className="flex-1 text-white font-medium text-[14px] hover:bg-white/20 transition-colors" style={{ background: 'rgba(255,255,255,0.15)', border: '0.5px solid rgba(255,255,255,0.3)', borderRadius: 10, padding: '9px 12px' }}>
+                  詳細を見る
+                </button>
               </div>
             </div>
           ) : (
