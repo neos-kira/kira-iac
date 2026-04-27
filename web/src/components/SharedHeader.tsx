@@ -24,9 +24,11 @@ type Props = {
 
 export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, completedCount: _completedCount, totalCount: _totalCount, onWbs: _onWbs, onLogout, isAdmin, onAdminMenu, onAccountPanel, onMenuOpen }: Props) {
   const [showMenu, setShowMenu] = useState(false)
+  const [showBell, setShowBell] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [showProfileEdit, setShowProfileEdit] = useState(false)
   const menuContainerRef = useRef<HTMLDivElement>(null)
+  const bellContainerRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
   const navigate = useSafeNavigate()
   const [resolvedName, setResolvedName] = useState(() => {
@@ -61,6 +63,18 @@ export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, com
     document.addEventListener('mousedown', onOutside)
     return () => document.removeEventListener('mousedown', onOutside)
   }, [showMenu])
+
+  /** ベルドロップダウン: パネル外クリックで閉じる */
+  useEffect(() => {
+    if (!showBell) return
+    const onOutside = (e: MouseEvent) => {
+      if (bellContainerRef.current && !bellContainerRef.current.contains(e.target as Node)) {
+        setShowBell(false)
+      }
+    }
+    document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
+  }, [showBell])
 
   /** AI講師パネルからの相互排他イベント受信 */
   useEffect(() => {
@@ -128,10 +142,29 @@ export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, com
           </div>
         )}
         {/* 通知ベル */}
-        <button type="button" className="relative flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 transition-colors">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-rose-500" />
-        </button>
+        <div className="relative" ref={bellContainerRef}>
+          <button
+            type="button"
+            onClick={() => setShowBell((v) => !v)}
+            className="relative flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 transition-colors"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-rose-500" />
+          </button>
+          {showBell && (
+            <div
+              className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-900/10"
+              style={{ zIndex: Z.dropdown }}
+            >
+              <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                <p className="text-[11px] font-semibold text-slate-700 tracking-wide">お知らせ</p>
+              </div>
+              <div className="px-4 py-6 text-center">
+                <p className="text-[13px] text-slate-400">現在、お知らせはありません。</p>
+              </div>
+            </div>
+          )}
+        </div>
         <div className="relative" ref={menuContainerRef}>
           <button
             type="button"
