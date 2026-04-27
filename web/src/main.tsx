@@ -456,7 +456,7 @@ function LoginReloadGuard() {
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth()
-  if (import.meta.env.DEV || isAuthenticated) {
+  if (isAuthenticated) {
     return <>{children}</>
   }
   return <Navigate to="/login" replace />
