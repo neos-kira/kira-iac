@@ -6,9 +6,9 @@ import { AuthProvider, useAuth } from './AuthContext'
 import './index.css'
 import App from './App.tsx'
 import { LoginPage } from './LoginPage'
-import { getCurrentDisplayName, getCurrentUsername, isLoggedIn } from './auth'
+import { getCurrentDisplayName, getCurrentUsername, isLoggedIn, performLogout } from './auth'
 import { getChatLog } from './api/aiChatApi'
-import { safeGetItem, safeSetItem, safeRemoveItem, safeSessionGetItem, safeSessionSetItem, safeSessionRemoveItem, clearCookieValue } from './utils/storage'
+import { safeGetItem, safeSetItem, safeSessionGetItem, safeSessionSetItem, safeSessionRemoveItem } from './utils/storage'
 import { isJTerada } from './specialUsers'
 import { isTask1Cleared } from './training/trainingWbsData'
 import { LinuxLevel1Page } from './training/LinuxLevel1Page'
@@ -61,18 +61,7 @@ function isSidebarPage(path: string): boolean {
 }
 
 function handleGlobalLogout() {
-  // チャット履歴をクリア（ユーザー固有キー + 旧キー）
-  const logoutUsername = getCurrentUsername()
-  if (logoutUsername) safeSessionRemoveItem(`nic-ai-mentor-session-messages-${logoutUsername}`)
-  safeSessionRemoveItem('nic-ai-mentor-session-messages') // 旧キー互換クリア
-  safeRemoveItem('kira-session-token')
-  safeRemoveItem('kira-user-logged-in')
-  safeRemoveItem('kira-user-display-name')
-  safeRemoveItem('kira-user-role')
-  clearCookieValue('kira-session-token')
-  clearCookieValue('kira-user-logged-in')
-  window.location.hash = '#/login'
-  window.location.reload()
+  performLogout()
 }
 
 /** DashboardShell を使うページ（max-widthラッパーを外す） */

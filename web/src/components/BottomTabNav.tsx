@@ -1,19 +1,28 @@
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useSafeNavigate } from '../hooks/useSafeNavigate'
-import { getCurrentRole } from '../auth'
+import { getCurrentRole, getCurrentDisplayName, getUserRealName, performLogout } from '../auth'
+import { fetchProfile } from '../progressApi'
+import { ProfileEditModal } from './ProfileEditModal'
 
 export function BottomTabNav() {
   const location = useLocation()
   const navigate = useSafeNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
+  const [showProfileEdit, setShowProfileEdit] = useState(false)
+  const [profileEmail, setProfileEmail] = useState('')
   const path = location.pathname
   const isManager = getCurrentRole() === 'manager'
 
-  const showToast = (msg: string) => {
-    setToast(msg)
-    setTimeout(() => setToast(null), 2500)
+  const displayName = getCurrentDisplayName()
+  const realName = getUserRealName()
+  const displayLabel = realName || displayName
+  const initial = displayLabel ? displayLabel[0].toUpperCase() : '?'
+
+  const openProfileEdit = () => {
+    setMenuOpen(false)
+    fetchProfile().then((p) => setProfileEmail(p?.email ?? '')).catch(() => {})
+    setShowProfileEdit(true)
   }
 
   const allTabs = [
@@ -62,58 +71,92 @@ export function BottomTabNav() {
 
   const tabs = allTabs.filter((t) => !('managerOnly' in t && t.managerOnly && !isManager))
 
-  // メニュー項目
-  const drawerItems: { label: string; icon: string }[] = []
-
   return (
     <div className="md:hidden">
       {/* メニュードロワー */}
       {menuOpen && (
         <>
-          {/* 背景オーバーレイ（タップで閉じる） */}
+          {/* 背景オーバーレイ */}
           <div
-            className="fixed inset-0 bg-black/20"
+            className="fixed inset-0 bg-black/50"
             style={{ zIndex: 1001 }}
             onClick={() => setMenuOpen(false)}
           />
-          {/* ドロワー本体: z-[1002]でタブバー(z-1000)より前面、background完全不透明 */}
+          {/* ドロワー本体 */}
           <div
-            className="fixed left-0 right-0 rounded-t-2xl shadow-lg px-4 py-3"
+            className="fixed left-0 right-0 rounded-t-2xl shadow-lg"
             style={{
               bottom: 'calc(60px + env(safe-area-inset-bottom))',
               zIndex: 1002,
               background: '#ffffff',
-              paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
               borderTop: '1px solid #E2E8F0',
             }}
           >
-            <div className="w-8 h-1 bg-slate-200 rounded-full mx-auto mb-3" />
-            {drawerItems.map((item) => (
-              <button
-                key={item.label}
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false)
-                  showToast('現在準備中です')
-                }}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-[14px] text-slate-600 hover:bg-slate-50 active:bg-slate-100 transition-colors"
-              >
-                <span className="text-[18px]">{item.icon}</span>
-                {item.label}
-              </button>
-            ))}
+            {/* ドラッグハンドル */}
+            <div className="w-8 h-1 bg-slate-200 rounded-full mx-auto mt-3 mb-1" />
+
+            {/* ユーザー情報 */}
+            <div className="flex items-center gap-3 px-5 py-4">
+              <div className="w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                {initial}
+              </div>
+              <span className="text-[15px] font-semibold text-slate-800 truncate">{displayLabel || '—'}</span>
+            </div>
+
+            <div className="h-px bg-slate-100 mx-4" />
+
+            {/* 進捗状況 */}
+            <button
+              type="button"
+              onClick={() => { setMenuOpen(false); navigate('/progress') }}
+              className="w-full flex items-center gap-3 px-5 py-3.5 text-left text-[14px] text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors"
+            >
+              <svg className="w-5 h-5 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              進捗状況
+            </button>
+
+            {/* 修了証 */}
+            <button
+              type="button"
+              onClick={() => { setMenuOpen(false); navigate('/certificate') }}
+              className="w-full flex items-center gap-3 px-5 py-3.5 text-left text-[14px] text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors"
+            >
+              <svg className="w-5 h-5 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+              </svg>
+              修了証
+            </button>
+
+            <div className="h-px bg-slate-100 mx-4" />
+
+            {/* プロフィール設定 */}
+            <button
+              type="button"
+              onClick={openProfileEdit}
+              className="w-full flex items-center gap-3 px-5 py-3.5 text-left text-[14px] text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors"
+            >
+              <svg className="w-5 h-5 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              プロフィール設定
+            </button>
+
+            {/* ログアウト */}
+            <button
+              type="button"
+              onClick={() => { setMenuOpen(false); performLogout() }}
+              className="w-full flex items-center gap-3 px-5 py-3.5 text-left text-[14px] text-red-500 hover:bg-red-50 active:bg-red-100 transition-colors"
+              style={{ paddingBottom: 'max(14px, env(safe-area-inset-bottom))' }}
+            >
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              ログアウト
+            </button>
           </div>
         </>
-      )}
-
-      {/* トースト（準備中メッセージ） */}
-      {toast && (
-        <div
-          className="fixed left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[13px] font-medium px-5 py-2 rounded-full shadow-lg pointer-events-none"
-          style={{ bottom: 'calc(72px + env(safe-area-inset-bottom))', zIndex: 1100 }}
-        >
-          {toast}
-        </div>
       )}
 
       {/* Bottom Tab Bar */}
@@ -137,6 +180,16 @@ export function BottomTabNav() {
           </button>
         ))}
       </nav>
+
+      {/* プロフィール編集モーダル */}
+      {showProfileEdit && (
+        <ProfileEditModal
+          currentDisplayName={displayLabel}
+          currentEmail={profileEmail}
+          onClose={() => setShowProfileEdit(false)}
+          onSaved={() => setShowProfileEdit(false)}
+        />
+      )}
     </div>
   )
 }

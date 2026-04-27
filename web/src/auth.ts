@@ -1,4 +1,4 @@
-import { safeGetItem, safeSetItem, getCookieValue, setCookieValue } from './utils/storage'
+import { safeGetItem, safeSetItem, safeRemoveItem, safeSessionRemoveItem, getCookieValue, setCookieValue, clearCookieValue } from './utils/storage'
 
 /** ログイン済みかどうか（ログイン画面をスキップするか） */
 export const LOGIN_FLAG_KEY = 'kira-user-logged-in'
@@ -77,4 +77,19 @@ export function getUserRealName(): string {
 export function setUserRealName(name: string): void {
   if (typeof window === 'undefined') return
   safeSetItem(USER_REAL_NAME_KEY, name)
+}
+
+/** ログアウト処理（全ストレージ・Cookie をクリアしてログイン画面へ） */
+export function performLogout(): void {
+  const username = getCurrentUsername()
+  if (username) safeSessionRemoveItem(`nic-ai-mentor-session-messages-${username}`)
+  safeSessionRemoveItem('nic-ai-mentor-session-messages') // 旧キー互換クリア
+  safeRemoveItem('kira-session-token')
+  safeRemoveItem(LOGIN_FLAG_KEY)
+  safeRemoveItem(USER_DISPLAY_NAME_KEY)
+  safeRemoveItem(USER_ROLE_KEY)
+  clearCookieValue('kira-session-token')
+  clearCookieValue(LOGIN_COOKIE_KEY)
+  window.location.hash = '#/login'
+  window.location.reload()
 }
