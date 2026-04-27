@@ -179,6 +179,24 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     setVpHeight(height)
   }, [isChatOpen])
 
+  // AI講師ボタン 初回チュートリアルツールチップ
+  const [showAiTutorial, setShowAiTutorial] = useState(false)
+  useEffect(() => {
+    const shown = localStorage.getItem('nic-ai-tutorial-shown')
+    if (!shown) {
+      setShowAiTutorial(true)
+      const timer = setTimeout(() => {
+        setShowAiTutorial(false)
+        localStorage.setItem('nic-ai-tutorial-shown', '1')
+      }, 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [])
+  const dismissTutorial = () => {
+    setShowAiTutorial(false)
+    localStorage.setItem('nic-ai-tutorial-shown', '1')
+  }
+
   if (isLogin) return <>{children}</>
 
   // AI浮動ボタンのbottom位置: モバイル非研修ページはBottomTabNavの上(76px)
@@ -188,15 +206,55 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
   // AI浮動ボタン（チャット未表示時のみ表示）
   const aiButton = !isChatOpen ? (
-    <button
-      type="button"
-      onClick={() => { setIsChatOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }}
-      title="AI講師に質問する"
-      className="w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35 hover:scale-110 transition-transform"
-      style={{ position: 'fixed', bottom: btnBottom, right: 24, border: 'none', cursor: 'pointer', padding: 0, zIndex: Z.floatingPanel }}
-    >
-      <img src="/ai-teacher.png" alt="AI講師" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-    </button>
+    <div style={{ position: 'fixed', bottom: btnBottom, right: 24, zIndex: Z.floatingPanel, display: 'flex', alignItems: 'center', gap: 10 }}>
+      {/* 初回チュートリアル ツールチップ */}
+      {showAiTutorial && (
+        <div
+          className="animate-tooltip-fadeout"
+          style={{
+            background: '#fff',
+            borderRadius: 12,
+            padding: '10px 14px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            fontSize: 13,
+            maxWidth: 220,
+            position: 'relative',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <button
+            type="button"
+            onClick={dismissTutorial}
+            style={{ position: 'absolute', top: 6, right: 6, background: 'none', border: 'none', cursor: 'pointer', padding: 2, lineHeight: 1, color: '#94A3B8', fontSize: 12 }}
+            aria-label="閉じる"
+          >✕</button>
+          <div style={{ fontWeight: 600, color: '#1E293B', marginBottom: 3, paddingRight: 14 }}>AI講師に質問できます</div>
+          <div style={{ color: '#64748B', fontSize: 12, whiteSpace: 'normal' }}>研修に関することなら何でも聞いてください</div>
+          {/* 右向き三角（ボタン方向） */}
+          <div style={{
+            position: 'absolute',
+            right: -7,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: 0,
+            height: 0,
+            borderTop: '7px solid transparent',
+            borderBottom: '7px solid transparent',
+            borderLeft: '7px solid #fff',
+            filter: 'drop-shadow(1px 0 1px rgba(0,0,0,0.08))',
+          }} />
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => { dismissTutorial(); setIsChatOpen(true); window.dispatchEvent(new CustomEvent('nic:close-user-menu')) }}
+        title="AI講師に質問する"
+        className={`w-14 h-14 rounded-full overflow-hidden shadow-lg shadow-sky-500/35 hover:scale-110 transition-transform${showAiTutorial ? ' animate-pulse-ring' : ''}`}
+        style={{ border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}
+      >
+        <img src="/ai-teacher.png" alt="AI講師" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+      </button>
+    </div>
   ) : null
 
   // AIチャットポップアップ（オーバーレイ型・×ボタンのみで閉じる）
