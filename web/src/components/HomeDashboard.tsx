@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { getCurrentRole, getCurrentDisplayName } from '../auth'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
@@ -247,7 +247,7 @@ export function HomeDashboard({
   type StepItem = {
     no: number; name: string; sub: string; status: StepStatus
     progress: number | null; progressLabel: string | null
-    action: () => void; tab: TabKey | 'all'
+    action: () => void; tab: TabKey | 'all'; appendix?: boolean
   }
 
   const steps: StepItem[] = [
@@ -306,7 +306,7 @@ export function HomeDashboard({
       status: itOk ? 'done' : (itActive ? 'active' : 'todo'),
       progress: itOk ? 100 : itActive ? Math.round((itClearedCount / 7) * 100) : null,
       progressLabel: itActive && !itOk ? `${itClearedCount} / 7項目` : null,
-      action: () => navigate('/it-basics'), tab: 'all',
+      action: () => navigate('/it-basics'), tab: 'all', appendix: true,
     },
   ]
 
@@ -656,11 +656,20 @@ export function HomeDashboard({
                     <p className="text-[13px] text-slate-400">このカテゴリの課題は近日公開予定です。</p>
                   </div>
                 ) : (
-                  filteredSteps.map((step) => {
+                  filteredSteps.map((step, idx) => {
                     const isDone = step.status === 'done'
                     const isActive = step.status === 'active'
+                    const isFirstAppendix = step.appendix && (idx === 0 || !filteredSteps[idx - 1].appendix)
                     return (
-                      <div key={step.no} className={`rounded-xl border transition-colors ${isDone ? 'border-slate-100 bg-slate-50/60' : isActive ? 'border-sky-300 bg-white shadow-sm' : 'border-slate-100 bg-white'}`}>
+                      <Fragment key={step.no}>
+                        {isFirstAppendix && (
+                          <div className="flex items-center gap-3 pt-1 pb-0.5">
+                            <div className="flex-1 border-t border-dashed border-slate-200" />
+                            <span className="text-[10px] font-medium text-slate-400 tracking-widest uppercase shrink-0">付録</span>
+                            <div className="flex-1 border-t border-dashed border-slate-200" />
+                          </div>
+                        )}
+                      <div className={`rounded-xl border transition-colors ${isDone ? 'border-slate-100 bg-slate-50/60' : isActive ? 'border-sky-300 bg-white shadow-sm' : 'border-slate-100 bg-white'}`}>
                         <div className="flex items-start gap-3 px-4 py-3.5">
                           <div className="flex-shrink-0 mt-0.5">
                             {isDone ? (
@@ -713,6 +722,7 @@ export function HomeDashboard({
                           </div>
                         </div>
                       </div>
+                      </Fragment>
                     )
                   })
                 )}
