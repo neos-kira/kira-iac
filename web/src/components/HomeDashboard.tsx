@@ -226,6 +226,9 @@ export function HomeDashboard({
   const introOk = isIntroCompleted
   const introStep = Number(snap?.introStep ?? 0)
   const infra1Ok = snap?.infra1Cleared === true && snap?.l1Cleared === true
+  const l1QuizPart = snap?.l1CurrentPart ?? 0
+  const l1QuizQ = snap?.l1CurrentQuestion ?? 0
+  const l1QuizDone = l1QuizPart * 10 + l1QuizQ  // 30問中の累計完了数
   const l2Done = snap?.l2CurrentQuestion ?? 0
   const infra2Ok = l2Done >= 10 && introOk
   const infra3Ok = Object.values(snap?.infra32Answers ?? {}).some((v) => v && String(v).trim())
@@ -284,7 +287,8 @@ export function HomeDashboard({
         isLastActiveFor(['linux-level1'])
           ? 'active' : 'todo'
       ),
-      progress: infra1Ok ? 100 : null, progressLabel: null,
+      progress: infra1Ok ? 100 : l1QuizDone > 0 ? Math.round((l1QuizDone / 30) * 100) : null,
+      progressLabel: l1QuizDone > 0 && !infra1Ok ? `${l1QuizDone} / 30問` : null,
       action: () => { if (introOk || canAccessAll) window.open(getTrainingUrl('/training/infra-basic-top'), '_blank'); else setShowIntroRequiredPopup(true) },
       tab: 'linux',
     },
@@ -742,12 +746,11 @@ export function HomeDashboard({
                             {isActive && step.progress !== null && step.progress !== undefined && (
                               <div className="mt-2 space-y-1">
                                 <div className="flex items-center gap-2">
-                                  <div className="flex-1 h-1.5 bg-sky-100 rounded-full overflow-hidden">
+                                  <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
                                     <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${step.progress}%` }} />
                                   </div>
-                                  <span className="text-[11px] text-sky-600 shrink-0">{step.progress}%</span>
+                                  {step.progressLabel && <span className="text-[12px] text-slate-400 shrink-0">{step.progressLabel}</span>}
                                 </div>
-                                {step.progressLabel && <p className="text-[11px] text-sky-600">{step.progressLabel}</p>}
                               </div>
                             )}
                           </div>
