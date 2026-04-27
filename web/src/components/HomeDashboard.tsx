@@ -329,7 +329,7 @@ export function HomeDashboard({
       const m = la.label.match(/(\d+)\/(\d+)/)
       const done2 = m ? parseInt(m[1]) : null
       const total2 = m ? parseInt(m[2]) : null
-      const fullLabel = la.label.replace(/\s*\d+\/\d+問$/, '').trim()
+      const fullLabel = la.label.replace(/\s*\d+\/\d+問$/, '').replace(/\(途中\)/g, '').trim()
       const courseBase = fullLabel.includes('・') ? fullLabel.split('・')[0] : fullLabel
       const partName = fullLabel.includes('・') ? fullLabel.split('・').slice(1).join('・') : ''
       currentTask = {
