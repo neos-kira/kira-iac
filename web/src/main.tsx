@@ -91,15 +91,16 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
   console.log(`[LayoutWrapper] render, path=${path}, isLogin=${isLogin}`)
 
+  const { isAuthenticated } = useAuth()
+
   const [isMobile] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(pointer: coarse)').matches : false
   )
 
   // 初回ログイン時プロフィール設定モーダル
-  const [needsProfileSetup, setNeedsProfileSetup] = useState(() => {
-    if (!isLoggedIn()) return false
-    return !getUserRealName()
-  })
+  // useState ではなく都度評価の派生値にする（セッション切れでも表示されないよう useAuth の isAuthenticated を使用）
+  const [profileSetupDismissed, setProfileSetupDismissed] = useState(false)
+  const needsProfileSetup = isAuthenticated && !getUserRealName() && !isLogin && !profileSetupDismissed
 
   // AI講師チャット開閉状態（alwaysOn設定から初期化）
   const [isChatOpen, setIsChatOpen] = useState(() => {
@@ -212,7 +213,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
       <ProfileSetupModal
         onSaved={(name) => {
           setUserRealName(name)
-          setNeedsProfileSetup(false)
+          setProfileSetupDismissed(true)
         }}
       />
     )
