@@ -109,6 +109,12 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   // ログインユーザーが変わったら即座にチャット履歴をリセット（別ユーザーの履歴漏洩防止）
   const liveUsername = getCurrentUsername()
   if (liveUsername !== currentUser) {
+    // 旧ユーザーの nic-ai-mentor sessionStorage キーをすべてクリア
+    try {
+      Object.keys(window.sessionStorage)
+        .filter((k) => k.startsWith('nic-ai-mentor'))
+        .forEach((k) => window.sessionStorage.removeItem(k))
+    } catch {}
     setCurrentUser(liveUsername)
     setChatMessages([INITIAL_MESSAGE])
   }
@@ -125,9 +131,11 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
   // currentUser が変わるたびに DynamoDB から履歴を復元（ユーザー切り替え・初回マウント両対応）
   useEffect(() => {
-    if (!currentUser) return
-    if (chatMessages.length > 1) return // sessionStorage 復元済みならスキップ
+    if (!currentUser) return undefined
+    if (chatMessages.length > 1) return undefined // sessionStorage 復元済みならスキップ
+    let cancelled = false
     getChatLog(currentUser, 50).then((logs) => {
+      if (cancelled) return // ユーザー切り替え後に解決した古い Promise は無視
       if (logs.length === 0) return
       const restored: ChatMessage[] = logs.reverse().map((m) => ({
         role: m.role as 'user' | 'assistant',
@@ -135,6 +143,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
       }))
       setChatMessages([INITIAL_MESSAGE, ...restored])
     }).catch(() => { /* 取得失敗は無視 */ })
+    return () => { cancelled = true } // currentUser 変更時に古い Promise を無効化
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser])
 

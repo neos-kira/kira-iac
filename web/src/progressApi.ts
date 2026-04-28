@@ -14,11 +14,20 @@ const SESSION_TOKEN_KEY = 'kira-session-token'
 
 export function forceLogout(): void {
   if (typeof window === 'undefined') return
+  // nic-ai-mentor プレフィックスを持つ sessionStorage キーをすべてクリア
+  try {
+    Object.keys(window.sessionStorage)
+      .filter((k) => k.startsWith('nic-ai-mentor'))
+      .forEach((k) => window.sessionStorage.removeItem(k))
+  } catch {}
   safeRemoveItem('kira-session-token')
   safeRemoveItem('kira-user-logged-in')
   safeRemoveItem('kira-user-display-name')
+  safeRemoveItem('kira-user-role')
   clearCookieValue('kira-session-token')
   clearCookieValue('kira-user-logged-in')
+  clearCookieValue('kira-user-display-name')
+  clearCookieValue('kira-user-role')
   const base = (window.location.origin + window.location.pathname).replace(/\/$/, '')
   window.location.href = base + '#/login'
 }
