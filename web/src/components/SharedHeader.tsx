@@ -142,7 +142,7 @@ export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, com
 
       <div className="flex items-center gap-2">
         {isAdmin && (
-          <div className="hidden sm:flex items-center gap-2 mr-1">
+          <div className="flex items-center gap-2 mr-1">
             {onAdminMenu && <button type="button" onClick={onAdminMenu} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50 transition-colors">講師メニュー</button>}
             {onAccountPanel && <button type="button" onClick={onAccountPanel} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50 transition-colors">アカウント管理</button>}
           </div>

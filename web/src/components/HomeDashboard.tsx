@@ -653,7 +653,6 @@ export function HomeDashboard({
                 streakDays >= 7 ? `${streakDays}日連続！素晴らしい習慣です` :
                 `${streakDays}日連続！この調子で続けよう`
               }</p>
-              <button type="button" onClick={() => navigate('/progress')} className="mt-1.5 text-[11px] text-sky-600 hover:underline">連続記録の詳細を見る→</button>
             </div>
 
             {/* 4. 総学習時間（目安） */}
