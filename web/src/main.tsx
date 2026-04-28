@@ -346,7 +346,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
                 onClick={() => { setShowMobileUserMenu((v) => !v); setShowMobileBell(false) }}
                 className="flex items-center gap-1.5 rounded-full pl-0.5 pr-2 py-0.5 hover:bg-slate-100 transition-colors"
               >
-                <span className="flex h-7 w-7 items-center justify-center rounded-full text-[12px] font-semibold text-white shrink-0 ring-2 ring-[rgba(125,211,252,0.2)]" style={{ background: '#7dd3fc' }}>
+                <span className="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-medium text-white shrink-0" style={{ background: '#0ea5e9' }}>
                   {mobileInitial || (
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>

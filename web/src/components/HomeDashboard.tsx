@@ -615,7 +615,6 @@ export function HomeDashboard({
                 <div className="min-w-0">
                   <p className="text-[20px] md:text-[22px] font-bold text-slate-800 leading-none">{progressPct?.pct ?? 0}<span className="text-[12px] text-slate-400 ml-0.5">%</span></p>
                   <p className="mt-0.5 text-[10px] md:text-[11px] text-slate-500 leading-tight">{progressPct?.completed ?? 0}/{progressPct?.total ?? 8}ステージ完了</p>
-                  <button type="button" onClick={() => navigate('/wbs')} className="hidden md:block mt-1.5 text-[11px] text-sky-600 hover:underline">ロードマップを見る→</button>
                 </div>
               </div>
             </div>
@@ -654,7 +653,7 @@ export function HomeDashboard({
                 streakDays >= 7 ? `${streakDays}日連続！素晴らしい習慣です` :
                 `${streakDays}日連続！この調子で続けよう`
               }</p>
-              <button type="button" onClick={() => navigate('/progress')} className="hidden md:block mt-1.5 text-[11px] text-sky-600 hover:underline">連続記録の詳細を見る→</button>
+              <button type="button" onClick={() => navigate('/progress')} className="mt-1.5 text-[11px] text-sky-600 hover:underline">連続記録の詳細を見る→</button>
             </div>
 
             {/* 4. 総学習時間（目安） */}
