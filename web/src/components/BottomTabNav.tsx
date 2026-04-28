@@ -97,7 +97,7 @@ export function BottomTabNav() {
 
             {/* ユーザー情報 */}
             <div className="flex items-center gap-3 px-5 py-4">
-              <div className="w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#7dd3fc', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '500', flexShrink: 0 }}>
                 {initial}
               </div>
               <span className="text-[15px] font-semibold text-slate-800 truncate">{displayLabel || '—'}</span>

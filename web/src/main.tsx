@@ -6,7 +6,7 @@ import { AuthProvider, useAuth } from './AuthContext'
 import './index.css'
 import App from './App.tsx'
 import { LoginPage } from './LoginPage'
-import { getCurrentDisplayName, getCurrentUsername, isLoggedIn, performLogout } from './auth'
+import { getCurrentDisplayName, getCurrentUsername, getUserRealName, isLoggedIn, performLogout } from './auth'
 import { getChatLog } from './api/aiChatApi'
 import { safeGetItem, safeSetItem, safeSessionGetItem, safeSessionSetItem, safeSessionRemoveItem } from './utils/storage'
 import { isJTerada } from './specialUsers'
@@ -304,7 +304,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   ) : null
 
   if (isTop) {
-    const mobileInitial = getCurrentDisplayName()?.[0]?.toUpperCase() ?? ''
+    const mobileInitial = (getUserRealName() || getCurrentDisplayName() || '?').charAt(0).toUpperCase()
     const mobileDisplayName = getCurrentDisplayName()
     return (
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', paddingBottom: isMobile ? 'calc(60px + env(safe-area-inset-bottom))' : undefined }} className="md:pb-0">
@@ -346,13 +346,8 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
                 onClick={() => { setShowMobileUserMenu((v) => !v); setShowMobileBell(false) }}
                 className="flex items-center gap-1.5 rounded-full pl-0.5 pr-2 py-0.5 hover:bg-slate-100 transition-colors"
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-medium text-white shrink-0" style={{ background: '#0ea5e9' }}>
-                  {mobileInitial || (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                      <circle cx="12" cy="7" r="4"/>
-                    </svg>
-                  )}
+                <span style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#7dd3fc', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '500', flexShrink: 0 }}>
+                  {mobileInitial}
                 </span>
                 <svg className="w-3 h-3 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
               </button>
