@@ -90,8 +90,11 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     return v === 'true'
   })
 
+  // ユーザー変更検知用: SPA ナビゲーションでユーザーが切り替わったときにチャット履歴をリセット
+  const [currentUser, setCurrentUser] = useState(() => getCurrentUsername())
+
   // チャット履歴のsessionStorageキーをユーザー固有にする（ユーザー間の混入防止）
-  const chatSessionKey = `nic-ai-mentor-session-messages-${getCurrentUsername() || 'anonymous'}`
+  const chatSessionKey = `nic-ai-mentor-session-messages-${currentUser || 'anonymous'}`
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
     try {
       const raw = safeSessionGetItem(chatSessionKey)
@@ -102,6 +105,14 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     } catch { /* 復元失敗時は初期メッセージ */ }
     return [INITIAL_MESSAGE]
   })
+
+  // ログインユーザーが変わったら即座にチャット履歴をリセット（別ユーザーの履歴漏洩防止）
+  const liveUsername = getCurrentUsername()
+  if (liveUsername !== currentUser) {
+    setCurrentUser(liveUsername)
+    setChatMessages([INITIAL_MESSAGE])
+  }
+
   const [courseProgressPct, setCourseProgressPct] = useState(0)
   // iOS Safari キーボード表示時の実ビューポート高さ（visualViewport API）
   const [vpHeight, setVpHeight] = useState<number | undefined>(undefined)
@@ -112,12 +123,11 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     } catch { /* 書き込み失敗は無視 */ }
   }, [chatMessages, chatSessionKey])
 
-  // 初回マウント時: sessionStorage が空なら DynamoDB から復元
+  // currentUser が変わるたびに DynamoDB から履歴を復元（ユーザー切り替え・初回マウント両対応）
   useEffect(() => {
-    if (chatMessages.length > 1) return // sessionStorage 復元済み
-    const userId = getCurrentUsername()
-    if (!userId) return
-    getChatLog(userId, 50).then((logs) => {
+    if (!currentUser) return
+    if (chatMessages.length > 1) return // sessionStorage 復元済みならスキップ
+    getChatLog(currentUser, 50).then((logs) => {
       if (logs.length === 0) return
       const restored: ChatMessage[] = logs.reverse().map((m) => ({
         role: m.role as 'user' | 'assistant',
@@ -126,7 +136,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
       setChatMessages([INITIAL_MESSAGE, ...restored])
     }).catch(() => { /* 取得失敗は無視 */ })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [currentUser])
 
   // nic:open-ai-panel イベントでAI講師チャットを開く
   useEffect(() => {

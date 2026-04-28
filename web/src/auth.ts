@@ -90,6 +90,8 @@ export function performLogout(): void {
   safeRemoveItem(USER_ROLE_KEY)
   clearCookieValue('kira-session-token')
   clearCookieValue(LOGIN_COOKIE_KEY)
+  clearCookieValue(USER_DISPLAY_NAME_KEY)
+  clearCookieValue(USER_ROLE_KEY)
   window.location.hash = '#/login'
   window.location.reload()
 }
