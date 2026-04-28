@@ -224,8 +224,10 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
   // AI浮動ボタンのbottom位置: モバイル非研修ページはBottomTabNavの上(76px)
   const btnBottom = showChat ? 24 : (isMobile ? 76 : 24)
-  // モバイルまたはウィンドウ幅768px未満 → 全画面ポップアップ
-  const isPopupFullscreen = isMobile || (typeof window !== 'undefined' && window.innerWidth < 768)
+  // AI パネルの高さ: visualViewport に応じて iOS キーボード時に縮小（最大560px・最小240px）
+  const aiPanelHeight = vpHeight
+    ? Math.min(560, Math.max(240, vpHeight - (isMobile && !showChat ? 104 : 56)))
+    : 560
 
   // AI浮動ボタン（チャット未表示時のみ表示）
   const aiButton = !isChatOpen ? (
@@ -280,20 +282,25 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     </div>
   ) : null
 
-  // AIチャットポップアップ（オーバーレイ型・×ボタンのみで閉じる）
+  // AIチャットポップアップ（右下固定・最大幅420px・全画面にならない）
   const aiPopup = isChatOpen ? (
-    <>
-      {/* モバイルのみ背景を暗くする（pointer-events:none で背景操作は維持） */}
-      {isPopupFullscreen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: Z.floatingPanelBehind, pointerEvents: 'none' }} />
-      )}
-      <div style={isPopupFullscreen
-        ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: vpHeight ? `${vpHeight}px` : '100dvh', zIndex: Z.floatingPanel, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: 0 }
-        : { position: 'fixed', right: 24, bottom: 24, width: 380, height: 560, zIndex: Z.floatingPanel, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }
-      }>
-        <MentorDesk context={ctx} sidebar embedded onClose={() => setIsChatOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
-      </div>
-    </>
+    <div style={{
+      position: 'fixed',
+      right: 16,
+      bottom: isMobile && !showChat ? 80 : 24,
+      width: 'min(420px, calc(100vw - 32px))',
+      height: aiPanelHeight,
+      maxHeight: '80vh',
+      zIndex: Z.floatingPanel,
+      display: 'flex',
+      flexDirection: 'column',
+      background: 'white',
+      borderRadius: 16,
+      boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+      overflow: 'hidden',
+    }}>
+      <MentorDesk context={ctx} sidebar embedded onClose={() => setIsChatOpen(false)} messages={chatMessages} setMessages={setChatMessages} />
+    </div>
   ) : null
 
   if (isTop) {
