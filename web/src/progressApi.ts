@@ -24,6 +24,7 @@ export function forceLogout(): void {
   safeRemoveItem('kira-user-logged-in')
   safeRemoveItem('kira-user-display-name')
   safeRemoveItem('kira-user-role')
+  safeRemoveItem('kira-real-name')
   clearCookieValue('kira-session-token')
   clearCookieValue('kira-user-logged-in')
   clearCookieValue('kira-user-display-name')

@@ -125,6 +125,7 @@ export function LoginPage() {
       setCurrentRole(result.role)
       safeSessionRemoveItem('kira-login-reload-tried')
       addTrainee(name)
+      setUserRealName('') // 前ユーザーの表示名キャッシュを即時クリア
 
       // ストレージ書き込みを待機
       await new Promise((resolve) => setTimeout(resolve, 50))
@@ -139,6 +140,7 @@ export function LoginPage() {
           setShowProfileSetup(true)
           return // navigate しない（モーダル表示後にonSavedで遷移）
         }
+        setUserRealName(profile.displayName) // DynamoDB の正しい表示名をキャッシュ
       }
 
       // ロールに応じて遷移

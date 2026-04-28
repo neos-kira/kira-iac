@@ -47,6 +47,12 @@ export function SharedHeader({ delayed: _delayed, progressPct: _progressPct, com
     })
   }, [resolvedName])
 
+  // SPA ログイン時（リロードなし）も正しい表示名に更新する
+  useEffect(() => {
+    setRealName(getUserRealName())
+    setResolvedName(getCurrentDisplayName())
+  }, [location.pathname])
+
   const name = resolvedName
   const displayLabel = realName || name
   const initial = displayLabel ? displayLabel[0].toUpperCase() : ''

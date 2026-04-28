@@ -91,6 +91,7 @@ export function performLogout(): void {
   safeRemoveItem(LOGIN_FLAG_KEY)
   safeRemoveItem(USER_DISPLAY_NAME_KEY)
   safeRemoveItem(USER_ROLE_KEY)
+  safeRemoveItem(USER_REAL_NAME_KEY)
   clearCookieValue('kira-session-token')
   clearCookieValue(LOGIN_COOKIE_KEY)
   clearCookieValue(USER_DISPLAY_NAME_KEY)
