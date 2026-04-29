@@ -85,6 +85,8 @@ export function InfraBasic1Page() {
   const [gradeState, setGradeState] = useState<GradeState>({})
   const [gradingSection, setGradingSection] = useState<string | null>(null)
   const [hasServer, setHasServer] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
   const [osTab, setOsTab] = useState<'mac' | 'windows'>('mac')
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -135,6 +137,46 @@ export function InfraBasic1Page() {
     setGradingSection(null)
   }, [saveGrade, username])
 
+  const handleCreate = async () => {
+    if (isCreating) return
+    setIsCreating(true)
+    setCreateError(null)
+    try {
+      const res = await fetch(`${BASE_URL}/server/create`, {
+        method: 'POST',
+        headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
+        credentials: 'omit',
+        body: JSON.stringify({}),
+      })
+      if (res.status === 409) {
+        setCreateError('すでにサーバーが存在します')
+        setTimeout(() => window.location.reload(), 1500)
+        return
+      }
+      if (!res.ok) {
+        setCreateError('作成に失敗しました。時間をおいて再試行してください。')
+        return
+      }
+      const data = await res.json() as { ok: boolean; privateKey?: string; keyPairName?: string }
+      if (data.privateKey && data.keyPairName) {
+        const blob = new Blob([data.privateKey], { type: 'application/x-pem-file' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${data.keyPairName}.pem`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }
+      window.location.reload()
+    } catch {
+      setCreateError('作成に失敗しました。時間をおいて再試行してください。')
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
   const allPassed = SECTION_IDS.every((id) => gradeState[id]?.passed)
   const sshPassed = gradeState.ssh?.passed === true
   const isGrading = gradingSection === 'ssh'
@@ -167,19 +209,28 @@ export function InfraBasic1Page() {
           <p className="mt-1 text-body md:text-body-pc text-slate-600">ターミナルから演習サーバーにSSH接続し、接続成功画面を送信します。</p>
         </div>
 
-        {/* EC2未作成警告 */}
+        {/* EC2未作成 */}
         {!hasServer && (
-          <section className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-center justify-between gap-3">
+          <section className="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
             <div>
-              <p className="text-body md:text-body-pc font-semibold text-amber-900">演習サーバーが未作成です</p>
-              <p className="text-label md:text-label-pc text-amber-700 mt-0.5">トップページでサーバーを作成してください。</p>
+              <p className="text-[14px] font-semibold text-slate-700">演習サーバーが未作成です</p>
+              <p className="text-[13px] text-slate-500 mt-1">このページを利用するにはサーバーの作成が必要です。</p>
             </div>
+            {createError && (
+              <p className="text-[13px] text-red-600">{createError}</p>
+            )}
             <button
               type="button"
-              onClick={() => navigate('/')}
-              className="shrink-0 rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-label md:text-label-pc font-medium text-amber-800 hover:bg-amber-50"
+              onClick={() => { void handleCreate() }}
+              disabled={isCreating}
+              className="w-full rounded-xl bg-sky-500 py-3 text-[14px] font-semibold text-white hover:bg-sky-600 disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
             >
-              トップページへ
+              {isCreating ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" /></svg>
+                  作成中...
+                </>
+              ) : 'サーバーを作成する'}
             </button>
           </section>
         )}
