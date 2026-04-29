@@ -739,10 +739,10 @@ export function HomeDashboard({
                             {isActive && step.progress !== null && step.progress !== undefined && (
                               <div className="mt-2 space-y-1">
                                 <div className="flex items-center gap-2">
-                                  <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
-                                    <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${step.progress}%` }} />
+                                  <div className="flex-1 overflow-hidden" style={{ height: '4px', borderRadius: '9999px', backgroundColor: '#e2e8f0' }}>
+                                    <div className="h-full transition-all" style={{ width: `${step.progress}%`, borderRadius: '9999px', backgroundColor: '#7dd3fc' }} />
                                   </div>
-                                  {step.progressLabel && <span className="text-[12px] text-slate-400 shrink-0">{step.progressLabel}</span>}
+                                  {step.progressLabel && <span className="shrink-0" style={{ fontSize: '12px', color: '#94a3b8' }}>{step.progressLabel}</span>}
                                 </div>
                               </div>
                             )}
