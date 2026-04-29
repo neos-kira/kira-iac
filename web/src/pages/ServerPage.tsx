@@ -223,7 +223,7 @@ export function ServerPage() {
                 </>
               ) : 'サーバーを作成する'}
             </button>
-            <p className="text-[11px] text-slate-400 text-center">※ 作成後は平日9:40〜19:00のみ稼働します。週末・祝日は自動停止します。</p>
+            <p className="text-[11px] text-slate-400 text-center">※ 5時間操作がない場合、サーバーは自動的に停止します。</p>
           </div>
         ) : (
           <div className="space-y-4">
