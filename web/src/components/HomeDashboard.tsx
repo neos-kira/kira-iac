@@ -389,8 +389,15 @@ export function HomeDashboard({
         currentTask = { taskName: 'viエディタ演習', subtaskName: 'インフラ基礎課題 4', progress: Math.round((vi4Done / VI_STEPS.length) * 100), progressLabel: `${vi4Done} / ${VI_STEPS.length}ステップ`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '▶ 続きから再開する' }
       } else if (shell4Done > 0 && shell4Done < SHELL_QUESTIONS.length) {
         currentTask = { taskName: 'シェルスクリプト演習', subtaskName: 'インフラ基礎課題 4', progress: Math.round((shell4Done / SHELL_QUESTIONS.length) * 100), progressLabel: `${shell4Done} / ${SHELL_QUESTIONS.length}問`, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/infra-basic-4'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '▶ 続きから再開する' }
+      } else {
+        // はじめに完了後、まだ何も着手していないケース → Linux基本操作を促す
+        currentTask = { taskName: 'Linux基本操作・コマンド', subtaskName: 'Linuxコマンド30問 — Part 1: 基本操作から始めましょう', progress: null, progressLabel: null, estimatedTime: '約1時間', action: () => { if (isIntroCompleted) window.open(getTrainingUrl('/training/linux-level1'), '_blank'); else setShowIntroRequiredPopup(true) }, actionLabel: '▶ Linux基本操作を始める' }
       }
     }
+  }
+  // 新規ユーザー（DynamoDBレコードなし）または snap ロード前にnullになった場合のフォールバック
+  if (isSnapLoaded && !currentTask) {
+    currentTask = { taskName: 'はじめに', subtaskName: 'プロフェッショナルとしての行動基準を確認', progress: 0, progressLabel: null, estimatedTime: '約30分', action: () => navigate('/training/intro'), actionLabel: '▶ はじめに' }
   }
 
   // ─── カレンダー ───────────────────────────────────────────
@@ -582,19 +589,7 @@ export function HomeDashboard({
                 </button>
               </div>
             </div>
-          ) : (
-            <div className="rounded-2xl p-5 md:p-6 text-white" style={{ background: 'linear-gradient(135deg, #059669, #0284c7)' }}>
-              <p className="text-[11px] uppercase tracking-widest text-white/70 mb-1">カリキュラム状況</p>
-              <h2 className="text-[20px] font-bold">
-                {(progressPct?.completed ?? 0) >= 8 ? '全カリキュラム完了！🎉' : 'カリキュラムを確認'}
-              </h2>
-              <p className="mt-1 text-[13px] text-white/80">
-                {(progressPct?.completed ?? 0) >= 8
-                  ? 'おめでとうございます。すべての課題をクリアしました。'
-                  : '下のロードマップから次に進む課題を選択してください。'}
-              </p>
-            </div>
-          )}
+          ) : null}
 
           {/* ── KPI 4カード ──────────────────────────────────── */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">

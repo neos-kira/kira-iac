@@ -11,6 +11,8 @@ export function ServerPage() {
   const [snap, setSnap] = useState<TraineeProgressSnapshot | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
   const [isActionLoading, setIsActionLoading] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
   const [showStopConfirm, setShowStopConfirm] = useState(false)
   const [copiedField, setCopiedField] = useState<'ip' | 'user' | null>(null)
   const [pemLostOpen, setPemLostOpen] = useState(false)
@@ -113,6 +115,46 @@ export function ServerPage() {
     }
   }
 
+  const handleCreate = async () => {
+    if (isCreating) return
+    setIsCreating(true)
+    setCreateError(null)
+    try {
+      const res = await fetch(`${BASE_URL}/server/create`, {
+        method: 'POST',
+        headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
+        credentials: 'omit',
+        body: JSON.stringify({}),
+      })
+      if (res.status === 409) {
+        setCreateError('すでにサーバーが存在します')
+        setTimeout(() => window.location.reload(), 1500)
+        return
+      }
+      if (!res.ok) {
+        setCreateError('サーバーの作成に失敗しました。時間をおいて再試行してください。')
+        return
+      }
+      const data = await res.json() as { ok: boolean; privateKey?: string; keyPairName?: string }
+      if (data.privateKey && data.keyPairName) {
+        const blob = new Blob([data.privateKey], { type: 'application/x-pem-file' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${data.keyPairName}.pem`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }
+      window.location.reload()
+    } catch {
+      setCreateError('サーバーの作成に失敗しました。時間をおいて再試行してください。')
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
   const copy = (text: string, field: 'ip' | 'user') => {
     void navigator.clipboard.writeText(text)
     setCopiedField(field)
@@ -156,11 +198,32 @@ export function ServerPage() {
             <div className="h-4 w-24 bg-slate-100 rounded" />
           </div>
         ) : !snap?.ec2PublicIp ? (
-          // サーバーなし
-          <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-8 text-center">
-            <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" /></svg>
-            <p className="text-[14px] font-medium text-slate-600 mb-1">演習サーバーが未作成です</p>
-            <p className="text-[12px] text-slate-400">管理者（講師）にサーバー作成を依頼してください。</p>
+          // サーバーなし: 自己作成UI
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 space-y-5">
+            <div className="flex flex-col items-center text-center space-y-3">
+              <svg className="w-12 h-12 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" /></svg>
+              <div>
+                <p className="text-[16px] font-semibold text-slate-700 mb-1">演習サーバーを準備しましょう</p>
+                <p className="text-[13px] text-slate-500">Linuxの実機演習に使用するサーバーです。作成には1〜2分かかります。</p>
+              </div>
+            </div>
+            {createError && (
+              <p className="text-[13px] text-red-600 text-center">{createError}</p>
+            )}
+            <button
+              type="button"
+              onClick={() => { void handleCreate() }}
+              disabled={isCreating}
+              className="w-full rounded-xl bg-sky-500 py-3 text-[14px] font-semibold text-white hover:bg-sky-600 disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
+            >
+              {isCreating ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" /></svg>
+                  作成中...
+                </>
+              ) : 'サーバーを作成する'}
+            </button>
+            <p className="text-[11px] text-slate-400 text-center">※ 作成後は平日9:40〜19:00のみ稼働します。週末・祝日は自動停止します。</p>
           </div>
         ) : (
           <div className="space-y-4">
