@@ -254,6 +254,15 @@ export function InfraBasic1Page() {
                   <p className="font-mono text-slate-700">{pemFile}</p>
                 </div>
               </div>
+              <div className="mt-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => { window.location.href = '/server' }}
+                  className="w-full rounded-lg border border-slate-200 bg-white py-2 text-[13px] font-medium text-sky-500 hover:bg-slate-50 transition-colors"
+                >
+                  演習サーバーを確認する →
+                </button>
+              </div>
             </section>
 
             {/* SSH接続手順 */}
