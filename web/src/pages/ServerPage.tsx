@@ -16,6 +16,8 @@ export function ServerPage() {
   const [showStopConfirm, setShowStopConfirm] = useState(false)
   const [copiedField, setCopiedField] = useState<'ip' | 'user' | null>(null)
   const [pemLostOpen, setPemLostOpen] = useState(false)
+  const [osTab, setOsTab] = useState<'mac' | 'windows'>('mac')
+  const [copiedCmd, setCopiedCmd] = useState<string | null>(null)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // 初回: DynamoDB からスナップショット取得
@@ -339,18 +341,63 @@ export function ServerPage() {
             <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 space-y-1">
               <p className="text-[12px] font-semibold text-amber-700">⚠ ご注意</p>
               <p className="text-[12px] text-amber-700">使用後は必ずサーバーを停止してください。</p>
-              <p className="text-[12px] text-amber-700">起動から8時間後に自動停止されます。</p>
+              <p className="text-[12px] text-amber-700">5時間操作がない場合、サーバーは自動的に停止します。</p>
             </div>
 
             {/* SSH接続コマンド */}
-            {ec2State === 'running' && snap.ec2PublicIp && snap.ec2Username && snap.keyPairName && (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <p className="text-[11px] font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">SSH接続コマンド</p>
-                <code className="text-[12px] font-mono text-slate-700 break-all">
-                  ssh -i {snap.keyPairName}.pem {snap.ec2Username}@{snap.ec2PublicIp}
-                </code>
-              </div>
-            )}
+            {ec2State === 'running' && snap.ec2PublicIp && snap.ec2Username && snap.keyPairName && (() => {
+              const pemName = `${snap.keyPairName}.pem`
+              const sshCmd = `ssh -i ${pemName} ${snap.ec2Username}@${snap.ec2PublicIp}`
+              const permCmdMac = `chmod 400 ${pemName}`
+              const permCmdWin = `icacls "${pemName}" /inheritance:r /grant:r "$($env:USERNAME):(R)"`
+              const permCmd = osTab === 'mac' ? permCmdMac : permCmdWin
+              const copyCmd = (text: string, key: string) => {
+                void navigator.clipboard.writeText(text)
+                setCopiedCmd(key)
+                setTimeout(() => setCopiedCmd(null), 1500)
+              }
+              const CodeBlock = ({ text, cmdKey }: { text: string; cmdKey: string }) => (
+                <div className="relative">
+                  <pre className="rounded-lg bg-slate-900 px-4 py-3 font-mono text-[12px] text-emerald-400 overflow-x-auto whitespace-pre-wrap break-all pr-16">{text}</pre>
+                  <button
+                    type="button"
+                    onClick={() => copyCmd(text, cmdKey)}
+                    className="absolute top-2 right-2 rounded px-2 py-0.5 text-[11px] font-medium border border-slate-600 text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-colors"
+                  >
+                    {copiedCmd === cmdKey ? '✓ コピー' : 'コピー'}
+                  </button>
+                </div>
+              )
+              return (
+                <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+                  {/* OSタブ */}
+                  <div className="flex border-b border-slate-200">
+                    {(['mac', 'windows'] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        type="button"
+                        onClick={() => setOsTab(tab)}
+                        className={`px-4 py-2 text-[12px] font-medium transition-colors ${osTab === tab ? 'text-sky-600 border-b-2 border-sky-500 bg-white -mb-px' : 'text-slate-500 hover:text-slate-700'}`}
+                      >
+                        {tab === 'mac' ? 'Mac / Linux' : 'Windows'}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="px-4 py-4 space-y-3">
+                    {/* 手順 */}
+                    <ol className="space-y-1 list-decimal list-inside">
+                      <li className="text-[12px] text-slate-600">秘密鍵ファイルをダウンロードしたフォルダで操作してください</li>
+                      <li className="text-[12px] text-slate-600">パーミッション設定を行ってください{osTab === 'windows' ? '（PowerShellで実行）' : ''}</li>
+                      <li className="text-[12px] text-slate-600">SSH接続コマンドを実行してください</li>
+                    </ol>
+                    {/* パーミッション */}
+                    <CodeBlock text={permCmd} cmdKey="perm" />
+                    {/* SSH接続 */}
+                    <CodeBlock text={sshCmd} cmdKey="ssh" />
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         )}
       </div>
