@@ -3,6 +3,7 @@ import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import * as XLSX from 'xlsx'
 import { getProgressKey } from './trainingWbsData'
 import {
+  ALL_INFRA5_TASKS,
   INFRA5_CLEARED_KEY,
   INFRA5_SECTIONS,
   PHASE_CLEARED_KEYS,
@@ -40,7 +41,7 @@ export function InfraBasic5Page() {
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
-  const [checkboxes, setCheckboxes] = useState<boolean[]>(Array(40).fill(false))
+  const [checkboxes, setCheckboxes] = useState<boolean[]>(Array(ALL_INFRA5_TASKS.length).fill(false))
   const [sectionDone, setSectionDone] = useState<Record<string, boolean>>({})
   const [reviewAnswers, setReviewAnswers] = useState<Record<string, string>>({})
   const [reviewStates, setReviewStates] = useState<Record<string, ReviewState>>({})
@@ -63,10 +64,10 @@ export function InfraBasic5Page() {
       const snap = await fetchMyProgress(username)
       if (snap) {
         setServerSnapshot(snap)
-        const boxes = Array.isArray(snap.infra5Checkboxes) ? snap.infra5Checkboxes : Array(40).fill(false)
-        // 配列長を40に正規化
-        const normalized = Array(40).fill(false)
-        boxes.forEach((v, i) => { if (i < 40) normalized[i] = !!v })
+        const boxes = Array.isArray(snap.infra5Checkboxes) ? snap.infra5Checkboxes : Array(ALL_INFRA5_TASKS.length).fill(false)
+        // 配列長を正規化
+        const normalized = Array(ALL_INFRA5_TASKS.length).fill(false)
+        boxes.forEach((v, i) => { if (i < ALL_INFRA5_TASKS.length) normalized[i] = !!v })
         setCheckboxes(normalized)
         setSectionDone(snap.infra5SectionDone ?? {})
         setReviewAnswers(snap.infra5ReviewAnswers ?? {})
@@ -188,7 +189,7 @@ export function InfraBasic5Page() {
   )
 
   const totalDone = checkboxes.filter(Boolean).length
-  const progressPct = Math.round((totalDone / 40) * 100)
+  const progressPct = Math.round((totalDone / ALL_INFRA5_TASKS.length) * 100)
   const allSectionsDone = INFRA5_SECTIONS.every((s) => sectionDone[s.id])
 
   if (isLoading) {
@@ -214,7 +215,7 @@ export function InfraBasic5Page() {
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1">
               <span className="text-label md:text-label-pc text-slate-600">進捗</span>
-              <span className="text-label md:text-label-pc font-medium text-slate-700">{totalDone} / 40 ({progressPct}%)</span>
+              <span className="text-label md:text-label-pc font-medium text-slate-700">{totalDone} / {ALL_INFRA5_TASKS.length} ({progressPct}%)</span>
             </div>
             <div className="h-2 w-full rounded-full bg-slate-200">
               <div
