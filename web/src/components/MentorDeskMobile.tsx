@@ -27,7 +27,7 @@ function renderMd(raw: string) {
   s = s.replace(/^### (.+)$/gm, '<h4 style="font-weight:700;font-size:13px;margin:4px 0">$1</h4>')
   s = s.replace(/^## (.+)$/gm, '<h3 style="font-weight:700;font-size:14px;margin:4px 0">$1</h3>')
   s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-  s = s.replace(/`([^`]+)`/g, '<code style="background:#f1f5f9;padding:1px 4px;border-radius:3px;font-size:11px">$1</code>')
+  s = s.replace(/`([^`]+)`/g, '<code translate="no" style="background:#f1f5f9;padding:1px 4px;border-radius:3px;font-size:11px">$1</code>')
   s = s.replace(/\n/g, '<br/>')
   return s
 }

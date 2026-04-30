@@ -251,7 +251,7 @@ export function ServerPage() {
               <div>
                 <p className="text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">IPアドレス</p>
                 <div className="flex items-center gap-2">
-                  <span className="text-[15px] font-mono font-semibold text-slate-800">{snap.ec2PublicIp}</span>
+                  <span translate="no" className="text-[15px] font-mono font-semibold text-slate-800">{snap.ec2PublicIp}</span>
                   <button
                     type="button"
                     onClick={() => copy(snap.ec2PublicIp ?? '', 'ip')}
@@ -268,7 +268,7 @@ export function ServerPage() {
                 <div>
                   <p className="text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">ユーザー名</p>
                   <div className="flex items-center gap-2">
-                    <span className="text-[15px] font-mono font-semibold text-slate-800">{snap.ec2Username}</span>
+                    <span translate="no" className="text-[15px] font-mono font-semibold text-slate-800">{snap.ec2Username}</span>
                     <button
                       type="button"
                       onClick={() => copy(snap.ec2Username ?? '', 'user')}
@@ -285,7 +285,7 @@ export function ServerPage() {
                 <div>
                   <p className="text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">秘密鍵ファイル</p>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[13px] font-mono text-slate-700">{snap.keyPairName}.pem</span>
+                    <span translate="no" className="text-[13px] font-mono text-slate-700">{snap.keyPairName}.pem</span>
                     <button
                       type="button"
                       onClick={() => setPemLostOpen((v) => !v)}
@@ -360,7 +360,7 @@ export function ServerPage() {
               }
               const CodeBlock = ({ text, cmdKey }: { text: string; cmdKey: string }) => (
                 <div className="relative">
-                  <pre className="rounded-lg bg-slate-900 px-4 py-3 font-mono text-sm text-green-400 overflow-x-auto whitespace-nowrap block pr-20">{text}</pre>
+                  <pre translate="no" className="rounded-lg bg-slate-900 px-4 py-3 font-mono text-sm text-green-400 overflow-x-auto whitespace-nowrap block pr-20">{text}</pre>
                   <button
                     type="button"
                     onClick={() => copyCmd(text, cmdKey)}
@@ -482,7 +482,7 @@ export function ServerPage() {
                               <div key={label} className="flex items-center justify-between text-[12px]">
                                 <span className="text-slate-500 shrink-0 w-28">{label}</span>
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <span className="font-mono text-slate-800 truncate">{value}</span>
+                                  <span translate="no" className="font-mono text-slate-800 truncate">{value}</span>
                                   {copyKey && (
                                     <button
                                       type="button"

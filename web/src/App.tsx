@@ -572,15 +572,15 @@ function App() {
             <div className="space-y-3 rounded-xl bg-slate-50 p-4 text-body md:text-body-pc">
               <div>
                 <p className="text-label md:text-label-pc text-slate-400 mb-0.5">IPアドレス</p>
-                <p className="font-bold font-mono text-slate-800 text-display md:text-display-pc">{serverCreatedModal.publicIp || '取得中...'}</p>
+                <p translate="no" className="font-bold font-mono text-slate-800 text-display md:text-display-pc">{serverCreatedModal.publicIp || '取得中...'}</p>
               </div>
               <div>
                 <p className="text-label md:text-label-pc text-slate-400 mb-0.5">接続ユーザー名</p>
-                <p className="font-semibold font-mono text-slate-700">{serverCreatedModal.ec2Username}</p>
+                <p translate="no" className="font-semibold font-mono text-slate-700">{serverCreatedModal.ec2Username}</p>
               </div>
               <div>
                 <p className="text-label md:text-label-pc text-slate-400 mb-0.5">秘密鍵ファイル（ダウンロード済み）</p>
-                <p className="font-mono text-slate-600 text-label md:text-label-pc break-all">{serverCreatedModal.pemFilename}</p>
+                <p translate="no" className="font-mono text-slate-600 text-label md:text-label-pc break-all">{serverCreatedModal.pemFilename}</p>
               </div>
             </div>
             <p className="mt-4 text-label md:text-label-pc text-slate-600">この情報はトップページの「あなたの演習サーバー」セクションでいつでも確認できます。</p>

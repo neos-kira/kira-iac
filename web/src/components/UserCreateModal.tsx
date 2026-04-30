@@ -182,8 +182,8 @@ export function UserCreateModal({ onClose, onCreated }: Props) {
           ) : (
             <div className="space-y-4">
               <p className="text-xs text-slate-500 bg-slate-50 rounded-lg p-3">
-                CSV形式: <code className="rounded bg-slate-200 px-1 font-mono">username,password,role</code><br />
-                role は <code className="rounded bg-slate-200 px-1 font-mono">student</code> または <code className="rounded bg-slate-200 px-1 font-mono">manager</code>（省略時は student）
+                CSV形式: <code translate="no" className="rounded bg-slate-200 px-1 font-mono">username,password,role</code><br />
+                role は <code translate="no" className="rounded bg-slate-200 px-1 font-mono">student</code> または <code translate="no" className="rounded bg-slate-200 px-1 font-mono">manager</code>（省略時は student）
               </p>
               <div>
                 <div className="flex items-center justify-between mb-1.5">

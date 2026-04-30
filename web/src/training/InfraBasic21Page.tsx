@@ -451,8 +451,8 @@ export function InfraBasic21Page() {
             <p className="text-xs font-semibold text-sky-600">Q3. 経路確認（tracert / traceroute）</p>
             <p className="text-[11px] text-slate-600 pr-16">経路確認コマンドの結果を貼り付けてください。OS によってコマンドが異なります。</p>
               <div className="rounded bg-slate-50 p-2 text-xs text-slate-700">
-                <p><strong>Linux / Mac:</strong> <code className="bg-slate-200 px-1 rounded text-[11px]">traceroute 8.8.8.8</code></p>
-                <p><strong>Windows:</strong> <code className="bg-slate-200 px-1 rounded text-[11px]">tracert 8.8.8.8</code></p>
+                <p><strong>Linux / Mac:</strong> <code translate="no" className="bg-slate-200 px-1 rounded text-[11px]">traceroute 8.8.8.8</code></p>
+                <p><strong>Windows:</strong> <code translate="no" className="bg-slate-200 px-1 rounded text-[11px]">tracert 8.8.8.8</code></p>
               </div>
               <textarea
                 value={state.practical.q4TraceResult}
@@ -503,7 +503,7 @@ export function InfraBasic21Page() {
                 <>
                   <p className="text-[11px] text-slate-600">
                     {ec2Ip
-                      ? <><code className="font-mono bg-slate-100 px-1 rounded">ping -c 4 {ec2Ip}</code> を実行し、結果を貼り付けてください。</>
+                      ? <><code translate="no" className="font-mono bg-slate-100 px-1 rounded">ping -c 4 {ec2Ip}</code> を実行し、結果を貼り付けてください。</>
                       : 'トップページで演習サーバを起動すると有効になります。'}
                   </p>
                   <textarea
@@ -539,7 +539,7 @@ export function InfraBasic21Page() {
                 <>
                   <p className="text-[11px] text-slate-600">
                     {ec2Ip
-                      ? <>SSH接続後に <code className="font-mono bg-slate-100 px-1 rounded">hostname</code> と <code className="font-mono bg-slate-100 px-1 rounded">whoami</code> を実行し、結果を貼り付けてください。</>
+                      ? <>SSH接続後に <code translate="no" className="font-mono bg-slate-100 px-1 rounded">hostname</code> と <code translate="no" className="font-mono bg-slate-100 px-1 rounded">whoami</code> を実行し、結果を貼り付けてください。</>
                       : 'トップページで演習サーバを起動すると有効になります。'}
                   </p>
                   <textarea

@@ -24,7 +24,7 @@ function renderMarkdown(raw: string): string {
   s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
   s = s.replace(/^---$/gm, '<hr style="border:0;border-top:1px solid #e2e8f0;margin:6px 0"/>')
   s = s.replace(/^&gt; (.+)$/gm, '<blockquote style="border-left:3px solid #7dd3fc;padding-left:8px;margin:4px 0;color:#475569">$1</blockquote>')
-  s = s.replace(/`([^`]+)`/g, '<code style="background:#f1f5f9;padding:1px 4px;border-radius:3px;font-size:11px">$1</code>')
+  s = s.replace(/`([^`]+)`/g, '<code translate="no" style="background:#f1f5f9;padding:1px 4px;border-radius:3px;font-size:11px">$1</code>')
   s = s.replace(/\n/g, '<br/>')
   return s
 }

@@ -61,7 +61,7 @@ export function InfraBasic31Page() {
             <p className="text-button md:text-button-pc" style={{ fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>【コマンドで確認する】サーバーが重いときの初動</p>
 
             <p className="text-body md:text-body-pc" style={{ fontWeight: 600, color: '#475569', marginBottom: 4 }}>① CPU の状態を見る</p>
-            <pre className="text-body md:text-body-pc" style={{ background: '#1e293b', color: '#e2e8f0', borderRadius: 8, padding: 16, lineHeight: 1.7, overflowX: 'auto', marginBottom: 12 }}>
+            <pre translate="no" className="text-body md:text-body-pc" style={{ background: '#1e293b', color: '#e2e8f0', borderRadius: 8, padding: 16, lineHeight: 1.7, overflowX: 'auto', marginBottom: 12 }}>
 {`$ top
 → us（ユーザープロセス）が高い → アプリ側の問題
 → wa（I/O待ち）が高い         → ディスクがボトルネック
@@ -69,14 +69,14 @@ export function InfraBasic31Page() {
             </pre>
 
             <p className="text-body md:text-body-pc" style={{ fontWeight: 600, color: '#475569', marginBottom: 4 }}>② メモリの状態を見る</p>
-            <pre className="text-body md:text-body-pc" style={{ background: '#1e293b', color: '#e2e8f0', borderRadius: 8, padding: 16, lineHeight: 1.7, overflowX: 'auto', marginBottom: 12 }}>
+            <pre translate="no" className="text-body md:text-body-pc" style={{ background: '#1e293b', color: '#e2e8f0', borderRadius: 8, padding: 16, lineHeight: 1.7, overflowX: 'auto', marginBottom: 12 }}>
 {`$ free -h
 → available が物理メモリの10%未満 → メモリ不足
 → swap used が増加中              → 危険信号、早急に原因調査`}
             </pre>
 
             <p className="text-body md:text-body-pc" style={{ fontWeight: 600, color: '#475569', marginBottom: 4 }}>③ ディスクの状態を見る</p>
-            <pre className="text-body md:text-body-pc" style={{ background: '#1e293b', color: '#e2e8f0', borderRadius: 8, padding: 16, lineHeight: 1.7, overflowX: 'auto' }}>
+            <pre translate="no" className="text-body md:text-body-pc" style={{ background: '#1e293b', color: '#e2e8f0', borderRadius: 8, padding: 16, lineHeight: 1.7, overflowX: 'auto' }}>
 {`$ df -h
 → Use% が90%超 → ディスクフル寸前、ログ・tmpを確認`}
             </pre>
@@ -111,7 +111,7 @@ export function InfraBasic31Page() {
             <p className="text-button md:text-button-pc" style={{ fontWeight: 600, color: '#92400e', marginBottom: 6 }}>覚えること</p>
             <p className="text-button md:text-button-pc" style={{ lineHeight: 1.8, color: '#78350f' }}>
               CPU使用率100%でも「何が原因か」を特定できなければ意味がない。
-              <code className="text-body md:text-body-pc" style={{ background: '#fef3c7', padding: '2px 6px', borderRadius: 4 }}>us</code> / <code className="text-body md:text-body-pc" style={{ background: '#fef3c7', padding: '2px 6px', borderRadius: 4 }}>sy</code> / <code className="text-body md:text-body-pc" style={{ background: '#fef3c7', padding: '2px 6px', borderRadius: 4 }}>wa</code> の3つで原因を切り分けるのが最初のステップ。
+              <code translate="no" className="text-body md:text-body-pc" style={{ background: '#fef3c7', padding: '2px 6px', borderRadius: 4 }}>us</code> / <code translate="no" className="text-body md:text-body-pc" style={{ background: '#fef3c7', padding: '2px 6px', borderRadius: 4 }}>sy</code> / <code translate="no" className="text-body md:text-body-pc" style={{ background: '#fef3c7', padding: '2px 6px', borderRadius: 4 }}>wa</code> の3つで原因を切り分けるのが最初のステップ。
             </p>
           </div>
         </section>

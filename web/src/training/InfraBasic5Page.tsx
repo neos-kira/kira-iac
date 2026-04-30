@@ -451,7 +451,7 @@ function TaskRow({
           <p className="text-[11px] font-medium text-slate-600">
             以下のコマンドを実行し、結果を貼り付けてください：
           </p>
-          <code className="block rounded-lg bg-slate-900 px-3 py-2 text-label md:text-label-pc text-emerald-400 font-mono select-all whitespace-pre-wrap">
+          <code translate="no" className="block rounded-lg bg-slate-900 px-3 py-2 text-label md:text-label-pc text-emerald-400 font-mono select-all whitespace-pre-wrap">
             $ {task.verifyCommand}
           </code>
           <textarea

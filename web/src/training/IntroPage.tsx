@@ -738,7 +738,7 @@ export function IntroPage() {
                     <h2 className="text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">■{s.title}</h2>
                   </div>
                   {s.codeExample ? (
-                    <pre className="rounded-lg bg-slate-800 text-slate-300 p-4 text-label md:text-label-pc leading-relaxed font-mono overflow-x-auto mb-3">
+                    <pre translate="no" className="rounded-lg bg-slate-800 text-slate-300 p-4 text-label md:text-label-pc leading-relaxed font-mono overflow-x-auto mb-3">
                       {s.codeExample}
                     </pre>
                   ) : null}
@@ -950,7 +950,7 @@ export function IntroPage() {
       <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-5 space-y-4">
         <p className="text-body md:text-body-pc font-semibold text-slate-800">{eq?.prompt ?? ''}</p>
         {eq?.scenarioText && (
-          <pre className="rounded-lg bg-slate-50 border border-slate-200 p-4 text-label md:text-label-pc leading-relaxed text-slate-700 whitespace-pre-wrap font-sans">
+          <pre translate="no" className="rounded-lg bg-slate-50 border border-slate-200 p-4 text-label md:text-label-pc leading-relaxed text-slate-700 whitespace-pre-wrap font-sans">
             {eq.scenarioText}
           </pre>
         )}

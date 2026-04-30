@@ -72,7 +72,7 @@ function CopyButton({ text }: { text: string }) {
 function CodeBlock({ code }: { code: string }) {
   return (
     <div className="flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-3">
-      <code className="flex-1 text-body md:text-body-pc font-mono text-emerald-400 break-all">{code}</code>
+      <code translate="no" className="flex-1 text-body md:text-body-pc font-mono text-emerald-400 break-all">{code}</code>
       <CopyButton text={code} />
     </div>
   )
@@ -243,15 +243,15 @@ export function InfraBasic1Page() {
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-label md:text-label-pc">
                 <div>
                   <span className="text-slate-400">IPアドレス</span>
-                  <p className="font-mono font-semibold text-slate-800">{ip}</p>
+                  <p translate="no" className="font-mono font-semibold text-slate-800">{ip}</p>
                 </div>
                 <div>
                   <span className="text-slate-400">ユーザー名</span>
-                  <p className="font-mono font-semibold text-slate-800">{user}</p>
+                  <p translate="no" className="font-mono font-semibold text-slate-800">{user}</p>
                 </div>
                 <div className="col-span-2">
                   <span className="text-slate-400">秘密鍵ファイル</span>
-                  <p className="font-mono text-slate-700">{pemFile}</p>
+                  <p translate="no" className="font-mono text-slate-700">{pemFile}</p>
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t border-slate-100">
@@ -309,13 +309,13 @@ export function InfraBasic1Page() {
                       <div className="flex-1 pt-0.5">
                         <p className="text-body md:text-body-pc text-slate-700 mb-1.5">以下のコマンドを入力してSSH接続する</p>
                         <CodeBlock code={sshCommand} />
-                        <p className="mt-1.5 text-label md:text-label-pc text-slate-600">「Are you sure you want to continue connecting?」と表示されたら <code className="bg-slate-100 px-1 rounded">yes</code> と入力してEnter</p>
+                        <p className="mt-1.5 text-label md:text-label-pc text-slate-600">「Are you sure you want to continue connecting?」と表示されたら <code translate="no" className="bg-slate-100 px-1 rounded">yes</code> と入力してEnter</p>
                       </div>
                     </li>
                     <li className="flex gap-3">
                       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-label md:text-label-pc font-bold text-slate-600">4</span>
                       <div className="flex-1 pt-0.5">
-                        <p className="text-body md:text-body-pc text-slate-700">プロンプト（<code className="bg-slate-100 px-1 rounded text-label md:text-label-pc">{user}@ip-xxx-xxx-xxx-xxx:~$</code>）が表示されれば接続成功</p>
+                        <p className="text-body md:text-body-pc text-slate-700">プロンプト（<code translate="no" className="bg-slate-100 px-1 rounded text-label md:text-label-pc">{user}@ip-xxx-xxx-xxx-xxx:~$</code>）が表示されれば接続成功</p>
                       </div>
                     </li>
                   </ol>
@@ -328,7 +328,7 @@ export function InfraBasic1Page() {
                       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-label md:text-label-pc font-bold text-slate-600">1</span>
                       <div className="flex-1 pt-0.5">
                         <p className="text-body md:text-body-pc text-slate-700 mb-1.5">ダウンロードフォルダに秘密鍵があることを確認し、PowerShellを開く</p>
-                        <p className="text-label md:text-label-pc text-slate-600">スタートメニューで「PowerShell」と検索して起動<br/>または Windowsキー + R → <code className="bg-slate-100 px-1 rounded">powershell</code> → Enter</p>
+                        <p className="text-label md:text-label-pc text-slate-600">スタートメニューで「PowerShell」と検索して起動<br/>または Windowsキー + R → <code translate="no" className="bg-slate-100 px-1 rounded">powershell</code> → Enter</p>
                       </div>
                     </li>
                     <li className="flex gap-3">
@@ -343,13 +343,13 @@ export function InfraBasic1Page() {
                       <div className="flex-1 pt-0.5">
                         <p className="text-body md:text-body-pc text-slate-700 mb-1.5">以下のコマンドを入力してSSH接続する</p>
                         <CodeBlock code={sshCommand} />
-                        <p className="mt-1.5 text-label md:text-label-pc text-slate-600">「Are you sure you want to continue connecting?」と表示されたら <code className="bg-slate-100 px-1 rounded">yes</code> と入力してEnter</p>
+                        <p className="mt-1.5 text-label md:text-label-pc text-slate-600">「Are you sure you want to continue connecting?」と表示されたら <code translate="no" className="bg-slate-100 px-1 rounded">yes</code> と入力してEnter</p>
                       </div>
                     </li>
                     <li className="flex gap-3">
                       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-label md:text-label-pc font-bold text-slate-600">4</span>
                       <div className="flex-1 pt-0.5">
-                        <p className="text-body md:text-body-pc text-slate-700">プロンプト（<code className="bg-slate-100 px-1 rounded text-label md:text-label-pc">{user}@ip-xxx-xxx-xxx-xxx:~$</code>）が表示されれば接続成功</p>
+                        <p className="text-body md:text-body-pc text-slate-700">プロンプト（<code translate="no" className="bg-slate-100 px-1 rounded text-label md:text-label-pc">{user}@ip-xxx-xxx-xxx-xxx:~$</code>）が表示されれば接続成功</p>
                       </div>
                     </li>
                   </ol>
