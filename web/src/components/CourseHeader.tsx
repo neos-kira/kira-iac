@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { NeOSLogo } from './NeOSLogo'
-import { getCurrentDisplayName } from '../auth'
+import { getCurrentDisplayName, getUserRealName } from '../auth'
 import { fetchMe } from '../progressApi'
 import { Z } from '../zIndex'
 
@@ -27,7 +27,7 @@ export function CourseHeader({ onLogout, onMenuOpen, progressPct = 0 }: Props) {
     fetchMe().then((username) => { if (username) setResolvedName(username) })
   }, [resolvedName])
 
-  const initial = resolvedName ? resolvedName[0].toUpperCase() : ''
+  const initial = (getUserRealName() || resolvedName || '?')[0].toUpperCase()
 
   useEffect(() => {
     if (!showMenu) return
@@ -107,12 +107,7 @@ export function CourseHeader({ onLogout, onMenuOpen, progressPct = 0 }: Props) {
                 className="flex h-7 w-7 items-center justify-center rounded-full text-[12px] font-semibold text-white shrink-0 ring-2 ring-[rgba(125,211,252,0.2)]"
                 style={{ background: '#7dd3fc' }}
               >
-                {initial || (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                  </svg>
-                )}
+                {initial}
               </span>
               <svg className="w-3 h-3 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
