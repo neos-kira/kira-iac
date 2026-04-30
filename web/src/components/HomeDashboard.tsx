@@ -24,11 +24,13 @@ function isKiraTestUser(): boolean {
   }
 }
 
-type IllustrationKind = 'terminal' | 'office' | 'network' | 'editor' | 'cloud' | 'server'
+type IllustrationKind = 'terminal' | 'office' | 'network' | 'editor' | 'cloud' | 'server' | 'vm'
 
 function getIllustrationKind(taskName: string): IllustrationKind {
   if (taskName.includes('はじめに') || taskName.includes('IT業界') || taskName.includes('IT基礎')) return 'office'
-  if (taskName.includes('クラウド') || taskName.includes('AWS') || taskName.includes('仮想')) return 'cloud'
+  // 仮想化チェックをクラウドより先に評価（「OS・仮想化・クラウド理解度確認」が cloud に誤ヒットするのを防ぐ）
+  if (taskName.includes('仮想化') || taskName.includes('ハイパーバイザー')) return 'vm'
+  if (taskName.includes('クラウド') || taskName.includes('AWS')) return 'cloud'
   if (taskName.includes('構築') || taskName.includes('Ubuntu') || taskName.includes('サーバー')) return 'server'
   if (taskName.includes('vi') || taskName.includes('エディタ') || taskName.includes('シェル') || taskName.includes('スクリプト')) return 'editor'
   if (taskName.includes('TCP') || taskName.includes('ネットワーク')) return 'network'
@@ -55,6 +57,43 @@ function HeroIllustration({ kind }: { kind: IllustrationKind }) {
         <circle cx="52.5" cy="11" r="1" fill="#1E293B"/>
         <circle cx="57.5" cy="11" r="1" fill="#1E293B"/>
         <path d="M52 14 Q55 16 58 14" stroke="#1E293B" strokeWidth="0.8" fill="none"/>
+      </svg>
+    )
+  }
+  if (kind === 'vm') {
+    return (
+      <svg viewBox="0 0 110 90" width="110" style={{ display: 'block', margin: 'auto' }}>
+        {/* VM 1 */}
+        <rect x="4" y="4" width="47" height="44" rx="3" fill="#1E293B" stroke="#3B82F6" strokeWidth="1.2"/>
+        <rect x="8" y="8" width="39" height="11" rx="2" fill="#1E3A5F"/>
+        <text x="27" y="16" textAnchor="middle" fill="#7DD3FC" fontSize="7" fontFamily="monospace">VM 1</text>
+        <rect x="8" y="23" width="39" height="2" rx="1" fill="#334155"/>
+        <rect x="8" y="28" width="28" height="2" rx="1" fill="#334155"/>
+        <rect x="8" y="33" width="20" height="2" rx="1" fill="#334155"/>
+        <circle cx="13" cy="42" r="2.5" fill="#22C55E"/>
+        <text x="19" y="44" fill="#64748B" fontSize="6" fontFamily="monospace">running</text>
+        {/* VM 2 */}
+        <rect x="59" y="4" width="47" height="44" rx="3" fill="#1E293B" stroke="#8B5CF6" strokeWidth="1.2"/>
+        <rect x="63" y="8" width="39" height="11" rx="2" fill="#2D1B69"/>
+        <text x="82" y="16" textAnchor="middle" fill="#C4B5FD" fontSize="7" fontFamily="monospace">VM 2</text>
+        <rect x="63" y="23" width="39" height="2" rx="1" fill="#334155"/>
+        <rect x="63" y="28" width="28" height="2" rx="1" fill="#334155"/>
+        <rect x="63" y="33" width="20" height="2" rx="1" fill="#334155"/>
+        <circle cx="68" cy="42" r="2.5" fill="#22C55E"/>
+        <text x="74" y="44" fill="#64748B" fontSize="6" fontFamily="monospace">running</text>
+        {/* Hypervisor layer */}
+        <rect x="4" y="52" width="102" height="10" rx="2" fill="#312E81" stroke="#6366F1" strokeWidth="1"/>
+        <text x="55" y="59" textAnchor="middle" fill="#A5B4FC" fontSize="7" fontFamily="sans-serif" fontWeight="bold">Hypervisor</text>
+        {/* Lines VM→Hypervisor */}
+        <line x1="27" y1="48" x2="27" y2="52" stroke="#6366F1" strokeWidth="1" strokeDasharray="2 1"/>
+        <line x1="82" y1="48" x2="82" y2="52" stroke="#6366F1" strokeWidth="1" strokeDasharray="2 1"/>
+        {/* Physical server */}
+        <rect x="4" y="66" width="102" height="20" rx="3" fill="#1E293B" stroke="#475569" strokeWidth="1.2"/>
+        <circle cx="15" cy="76" r="3" fill="#22C55E"/>
+        <rect x="22" y="73" width="32" height="2.5" rx="1" fill="#334155"/>
+        <rect x="22" y="77" width="22" height="2.5" rx="1" fill="#334155"/>
+        <text x="98" y="78" textAnchor="middle" fill="#94A3B8" fontSize="6" fontFamily="monospace">HW</text>
+        <line x1="55" y1="62" x2="55" y2="66" stroke="#475569" strokeWidth="1" strokeDasharray="2 1"/>
       </svg>
     )
   }
