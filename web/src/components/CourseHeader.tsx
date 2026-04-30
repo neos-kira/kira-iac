@@ -128,7 +128,7 @@ export function CourseHeader({ onLogout, onMenuOpen, progressPct = 0 }: Props) {
                 <div className="p-1.5">
                   <button
                     type="button"
-                    onClick={() => { setShowMenu(false); fetchProfile().then((p) => setProfileEmail(p?.email ?? '')).catch(() => {}); setShowProfileEdit(true) }}
+                    onClick={() => { setShowMenu(false); fetchProfile().then((p) => { setProfileEmail(p?.email ?? ''); setShowProfileEdit(true) }).catch(() => { setShowProfileEdit(true) }) }}
                     className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
                   >
                     <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>

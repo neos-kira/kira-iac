@@ -21,8 +21,7 @@ export function BottomTabNav() {
 
   const openProfileEdit = () => {
     setMenuOpen(false)
-    fetchProfile().then((p) => setProfileEmail(p?.email ?? '')).catch(() => {})
-    setShowProfileEdit(true)
+    fetchProfile().then((p) => { setProfileEmail(p?.email ?? ''); setShowProfileEdit(true) }).catch(() => { setShowProfileEdit(true) })
   }
 
   const allTabs = [
