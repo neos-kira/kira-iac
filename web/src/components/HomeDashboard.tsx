@@ -40,7 +40,7 @@ function getIllustrationKind(taskName: string): IllustrationKind {
 function HeroIllustration({ kind }: { kind: IllustrationKind }) {
   if (kind === 'office') {
     return (
-      <svg viewBox="0 0 110 90" width="110" style={{ display: 'block', margin: 'auto' }}>
+      <svg viewBox="0 0 110 90" width="88" style={{ display: 'block', margin: 'auto' }}>
         <rect x="25" y="20" width="60" height="38" rx="4" fill="#1E3A5F" stroke="#3B82F6" strokeWidth="1.5"/>
         <rect x="29" y="24" width="52" height="30" rx="2" fill="#0EA5E9" opacity="0.2"/>
         <rect x="33" y="28" width="28" height="2.5" rx="1" fill="#7DD3FC" opacity="0.85"/>
@@ -62,7 +62,7 @@ function HeroIllustration({ kind }: { kind: IllustrationKind }) {
   }
   if (kind === 'vm') {
     return (
-      <svg viewBox="0 0 110 90" width="110" style={{ display: 'block', margin: 'auto' }}>
+      <svg viewBox="0 0 110 90" width="88" style={{ display: 'block', margin: 'auto' }}>
         {/* VM 1 */}
         <rect x="4" y="4" width="47" height="44" rx="3" fill="#1E293B" stroke="#3B82F6" strokeWidth="1.2"/>
         <rect x="8" y="8" width="39" height="11" rx="2" fill="#1E3A5F"/>
@@ -99,7 +99,7 @@ function HeroIllustration({ kind }: { kind: IllustrationKind }) {
   }
   if (kind === 'network') {
     return (
-      <svg viewBox="0 0 110 90" width="110" style={{ display: 'block', margin: 'auto' }}>
+      <svg viewBox="0 0 110 90" width="88" style={{ display: 'block', margin: 'auto' }}>
         <rect x="4" y="28" width="28" height="20" rx="3" fill="#1E3A5F" stroke="#3B82F6" strokeWidth="1.5"/>
         <rect x="8" y="32" width="20" height="12" rx="1" fill="#0EA5E9" opacity="0.3"/>
         <rect x="13" y="48" width="10" height="4" rx="1" fill="#334155"/>
@@ -126,7 +126,7 @@ function HeroIllustration({ kind }: { kind: IllustrationKind }) {
   }
   if (kind === 'editor') {
     return (
-      <svg viewBox="0 0 110 90" width="110" style={{ display: 'block', margin: 'auto' }}>
+      <svg viewBox="0 0 110 90" width="88" style={{ display: 'block', margin: 'auto' }}>
         <rect x="3" y="5" width="104" height="80" rx="5" fill="#0F172A" stroke="#334155" strokeWidth="1"/>
         <rect x="3" y="5" width="104" height="18" rx="5" fill="#1E293B"/>
         <rect x="3" y="17" width="104" height="6" fill="#1E293B"/>
@@ -151,7 +151,7 @@ function HeroIllustration({ kind }: { kind: IllustrationKind }) {
   }
   if (kind === 'cloud') {
     return (
-      <svg viewBox="0 0 110 90" width="110" style={{ display: 'block', margin: 'auto' }}>
+      <svg viewBox="0 0 110 90" width="88" style={{ display: 'block', margin: 'auto' }}>
         <ellipse cx="35" cy="35" rx="18" ry="14" fill="#1E3A5F" stroke="#3B82F6" strokeWidth="1.5"/>
         <ellipse cx="55" cy="28" rx="20" ry="16" fill="#1E3A5F" stroke="#3B82F6" strokeWidth="1.5"/>
         <ellipse cx="74" cy="35" rx="16" ry="12" fill="#1E3A5F" stroke="#3B82F6" strokeWidth="1.5"/>
@@ -180,7 +180,7 @@ function HeroIllustration({ kind }: { kind: IllustrationKind }) {
   }
   if (kind === 'server') {
     return (
-      <svg viewBox="0 0 110 90" width="110" style={{ display: 'block', margin: 'auto' }}>
+      <svg viewBox="0 0 110 90" width="88" style={{ display: 'block', margin: 'auto' }}>
         <rect x="14" y="4" width="82" height="82" rx="4" fill="#0F172A" stroke="#334155" strokeWidth="1.5"/>
         <rect x="8" y="10" width="6" height="70" rx="2" fill="#1E293B" stroke="#334155" strokeWidth="1"/>
         <rect x="96" y="10" width="6" height="70" rx="2" fill="#1E293B" stroke="#334155" strokeWidth="1"/>
@@ -216,7 +216,7 @@ function HeroIllustration({ kind }: { kind: IllustrationKind }) {
   }
   // terminal (default: Linux commands, SSH)
   return (
-    <svg viewBox="0 0 110 90" width="110" style={{ display: 'block', margin: 'auto' }}>
+    <svg viewBox="0 0 110 90" width="88" style={{ display: 'block', margin: 'auto' }}>
       <rect x="1" y="1" width="108" height="88" rx="5" fill="#0F172A"/>
       <circle cx="12" cy="11" r="3.5" fill="#EF4444"/>
       <circle cx="21" cy="11" r="3.5" fill="#EAB308"/>
@@ -613,7 +613,7 @@ export function HomeDashboard({
                   </div>
                 </div>
                 {/* イラスト（モバイル: 90px, PC: 150px） */}
-                <div className="flex w-[90px] md:w-[120px] flex-shrink-0 items-center justify-center p-1" style={{ background: '#1a1a2e', borderRadius: 8 }}>
+                <div className="flex w-[90px] md:w-[96px] flex-shrink-0 items-center justify-center p-1" style={{ background: '#1a1a2e', borderRadius: 8 }}>
                   <HeroIllustration kind={getIllustrationKind(currentTask.taskName)} />
                 </div>
               </div>
