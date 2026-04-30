@@ -1,8 +1,14 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { getProgressKey } from './trainingWbsData'
-import { fetchMyProgress, scoreAnswer } from '../progressApi'
+import { fetchMyProgress, postProgress, isProgressApiAvailable, scoreAnswer } from '../progressApi'
 import { getCurrentDisplayName } from '../auth'
+import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
+
+const EMPTY_SNAPSHOT: TraineeProgressSnapshot = {
+  introConfirmed: false, introAt: null, wbsPercent: 0,
+  chapterProgress: [], currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
+}
 import {
   INFRA_BASIC_21_DEFAULT_STATE,
   INFRA_BASIC_21_STORAGE_KEY,
@@ -24,6 +30,7 @@ export function InfraBasic21Page() {
   const formRef = useRef<HTMLDivElement>(null)
   const markDirty = () => { formRef.current?.setAttribute('data-form-dirty', 'true') }
   const clearDirty = () => { formRef.current?.setAttribute('data-form-dirty', 'false') }
+  const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const [pingCheck, setPingCheck] = useState<{ checked: boolean; pass: boolean; message: string }>({
     checked: false,
     pass: false,
@@ -40,16 +47,25 @@ export function InfraBasic21Page() {
     document.title = 'インフラ基礎課題2-1 ネットワーク実践編'
   }, [])
 
-  // 研修生の演習EC2 IPをDynamoDBから取得（マルチテナント対応）
+  // 研修生の演習EC2 IPと確認済みフラグをDynamoDBから取得
   useEffect(() => {
     const username = getCurrentDisplayName().trim().toLowerCase()
     if (!username || false) return
     fetchMyProgress(username).then((snap) => {
       if (snap) {
+        setServerSnapshot(snap)
         setEc2Ip(snap.ec2PublicIp || snap.ec2Host || null)
         setEc2State(snap.ec2State ?? null)
+        // DynamoDB に保存済みの確認結果を復元
+        if (snap.infra21PingOk) {
+          updateState((prev) => ({ ...prev, practical: { ...prev.practical, q6PingServerOk: true } }))
+        }
+        if (snap.infra21SshOk) {
+          updateState((prev) => ({ ...prev, practical: { ...prev.practical, q7SshServerOk: true } }))
+        }
       }
     })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -134,7 +150,15 @@ export function InfraBasic21Page() {
         answer: pingAiInput,
       })
       setPingAi({ status: 'done', message: result.feedback })
-      if (result.pass) handlePracticalChange('q6PingServerOk', true)
+      if (result.pass) {
+        handlePracticalChange('q6PingServerOk', true)
+        // DynamoDB に保存
+        const username = getCurrentDisplayName().trim().toLowerCase()
+        if (username && isProgressApiAvailable()) {
+          const base = serverSnapshot ?? EMPTY_SNAPSHOT
+          await postProgress(username, { ...base, infra21PingOk: true, updatedAt: new Date().toISOString() })
+        }
+      }
     } catch (e) {
       setPingAi({ status: 'error', message: String(e) })
     }
@@ -150,7 +174,15 @@ export function InfraBasic21Page() {
         answer: sshAiInput,
       })
       setSshAi({ status: 'done', message: result.feedback })
-      if (result.pass) handlePracticalChange('q7SshServerOk', true)
+      if (result.pass) {
+        handlePracticalChange('q7SshServerOk', true)
+        // DynamoDB に保存
+        const username = getCurrentDisplayName().trim().toLowerCase()
+        if (username && isProgressApiAvailable()) {
+          const base = serverSnapshot ?? EMPTY_SNAPSHOT
+          await postProgress(username, { ...base, infra21SshOk: true, updatedAt: new Date().toISOString() })
+        }
+      }
     } catch (e) {
       setSshAi({ status: 'error', message: String(e) })
     }

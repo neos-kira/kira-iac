@@ -513,6 +513,11 @@ async function handler(event) {
         infra5ReviewAnswers: body.infra5ReviewAnswers && typeof body.infra5ReviewAnswers === 'object' ? body.infra5ReviewAnswers : undefined,
         // IT業界の歩き方: カテゴリIDごとのテスト合格状態
         itBasicsProgress: (body.itBasicsProgress && typeof body.itBasicsProgress === 'object' && !Array.isArray(body.itBasicsProgress)) ? body.itBasicsProgress : undefined,
+        // 課題2-1: 疎通・SSH確認結果
+        infra21PingOk: typeof body.infra21PingOk === 'boolean' ? body.infra21PingOk : undefined,
+        infra21SshOk: typeof body.infra21SshOk === 'boolean' ? body.infra21SshOk : undefined,
+        // 課題3-1: 解説既読フラグ
+        infra31Ack: typeof body.infra31Ack === 'boolean' ? body.infra31Ack : undefined,
       }
       await client.send(new PutItemCommand({ TableName, Item: marshall(Item, { removeUndefinedValues: true }) }))
       return json({ ok: true })

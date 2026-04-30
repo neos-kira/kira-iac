@@ -116,15 +116,6 @@ export function InfraBasic5Page() {
     [serverSnapshot],
   )
 
-  const toggleSectionDone = useCallback(
-    async (sectionId: string) => {
-      const next = { ...sectionDone, [sectionId]: !sectionDone[sectionId] }
-      setSectionDone(next)
-      await syncToServer(checkboxes, next, reviewAnswers)
-    },
-    [checkboxes, sectionDone, reviewAnswers, syncToServer],
-  )
-
   const handleSuspend = async () => {
     if (isSaving) return
     setIsSaving(true)
@@ -236,7 +227,7 @@ export function InfraBasic5Page() {
           <ul className="mt-2 space-y-1 text-label md:text-label-pc text-slate-600 list-disc list-inside">
             <li>各タスクはコマンド実行結果を貼り付けてAIが完了を判定します</li>
             <li>【理解度確認】タスクは手順の内容を記述してAI採点を受けてください</li>
-            <li>セクションの全タスクが完了したら「セクション完了」を押してください</li>
+            <li>セクションの全タスクが完了すると自動でセクション完了になります</li>
           </ul>
         </section>
 
@@ -253,7 +244,6 @@ export function InfraBasic5Page() {
             onToggleOpen={() =>
               setOpenSections((prev) => ({ ...prev, [section.id]: !prev[section.id] }))
             }
-            onToggleSectionDone={() => { void toggleSectionDone(section.id) }}
             onReviewAnswerChange={(taskId, value) => {
               const next = { ...reviewAnswers, [taskId]: value }
               setReviewAnswers(next)
@@ -297,7 +287,6 @@ function SectionBlock({
   reviewStates,
   isOpen,
   onToggleOpen,
-  onToggleSectionDone,
   onReviewAnswerChange,
   onReviewScore,
 }: {
@@ -308,7 +297,6 @@ function SectionBlock({
   reviewStates: Record<string, ReviewState>
   isOpen: boolean
   onToggleOpen: () => void
-  onToggleSectionDone: () => void
   onReviewAnswerChange: (taskId: string, value: string) => void
   onReviewScore: (task: Infra5Task) => void
   sectionIndex?: number
@@ -336,23 +324,10 @@ function SectionBlock({
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          {sectionDone ? (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onToggleSectionDone() }}
-              className="cursor-pointer rounded-full border border-emerald-500/60 bg-emerald-600/20 px-2 py-0.5 text-[11px] font-medium text-emerald-700 hover:bg-emerald-600/30"
-              title="クリックで未完了に戻す"
-            >
+          {sectionDone && (
+            <span className="rounded-full border border-emerald-500/60 bg-emerald-600/20 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
               済
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onToggleSectionDone() }}
-              className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:border-sky-500 hover:bg-sky-50"
-            >
-              セクション完了
-            </button>
+            </span>
           )}
           <span className="text-slate-400 text-label md:text-label-pc">{isOpen ? '▲' : '▼'}</span>
         </div>

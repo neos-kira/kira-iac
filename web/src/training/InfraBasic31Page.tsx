@@ -1,18 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useSafeNavigate } from '../hooks/useSafeNavigate'
-import { getProgressKey } from './trainingWbsData'
-import { INFRA_BASIC_3_1_DONE_KEY } from './infraBasic3Data'
 import { getCurrentDisplayName } from '../auth'
 import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 
 export function InfraBasic31Page() {
   const navigate = useSafeNavigate()
-  const key = getProgressKey(INFRA_BASIC_3_1_DONE_KEY)
-  const [ack, setAck] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return window.localStorage.getItem(key) === 'true'
-  })
+  const [ack, setAck] = useState(false)
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
 
   useEffect(() => {
@@ -22,16 +16,18 @@ export function InfraBasic31Page() {
   useEffect(() => {
     const username = getCurrentDisplayName().trim().toLowerCase()
     if (!username || false) return
-    fetchMyProgress(username).then(snap => { if (snap) setServerSnapshot(snap) })
+    fetchMyProgress(username).then(snap => {
+      if (snap) {
+        setServerSnapshot(snap)
+        // DynamoDB の値を正として復元（localStorage は参照しない）
+        if (snap.infra31Ack) setAck(true)
+      }
+    })
   }, [])
 
   const handleAckChange = async (checked: boolean) => {
     setAck(checked)
-    if (typeof window !== 'undefined') {
-      if (checked) window.localStorage.setItem(key, 'true')
-      else window.localStorage.removeItem(key)
-    }
-    // ① localStorage書き込み完了後にDynamoDB即時同期
+    // DynamoDB に即時保存
     const username = getCurrentDisplayName().trim().toLowerCase()
     if (username && isProgressApiAvailable()) {
       const base: TraineeProgressSnapshot = serverSnapshot ?? {
@@ -40,6 +36,7 @@ export function InfraBasic31Page() {
       }
       await postProgress(username, {
         ...base,
+        infra31Ack: checked,
         updatedAt: new Date().toISOString(),
       })
     }

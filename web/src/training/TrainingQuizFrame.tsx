@@ -87,7 +87,7 @@ export function TrainingQuizFrame({
   const answeredCount = answers.length
   const isFinished = answeredCount === total
   const correctCount = answers.filter((a, i) => a === questions[i].correctIndex).length
-  const isPass = isFinished && correctCount === totalRequired
+  const isPass = isFinished && correctCount >= totalRequired
 
   // 現在の問題が回答済みかどうか
   const isCurrentAnswered = currentIndex < answers.length

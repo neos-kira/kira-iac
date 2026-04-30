@@ -120,6 +120,12 @@ export type TraineeProgressSnapshot = {
   infra1GradeState?: Record<string, { passed: boolean; message: string; gradedAt: string }>
   /** IT業界の歩き方: カテゴリIDごとのテスト合格状態 */
   itBasicsProgress?: Record<string, { cleared: boolean; clearedAt: string }>
+  /** 課題2-1: 演習サーバへの疎通確認（Ping）が合格済み */
+  infra21PingOk?: boolean
+  /** 課題2-1: 演習サーバへのSSH接続確認が合格済み */
+  infra21SshOk?: boolean
+  /** 課題3-1: 解説を一通り読んだ */
+  infra31Ack?: boolean
   /**
    * 最後に「中断して保存」したモジュール情報。
    * ダッシュボードの「つづきから」はこのフィールドを最優先で表示する。
