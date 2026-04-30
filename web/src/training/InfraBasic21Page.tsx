@@ -465,7 +465,21 @@ export function InfraBasic21Page() {
               </svg>
             </div>
             <p className="text-xs font-semibold text-sky-600">Q2. 疎通確認（Ping）</p>
-              <p className="text-[11px] text-slate-600 pr-16">pingコマンドの実行結果をそのまま貼り付けてください。pingが失敗した場合（ファイアウォール等）も、その結果をそのまま記録してください。</p>
+            <div className="rounded bg-blue-50 border border-blue-200 p-3 text-[11px] text-blue-800">
+              自分のパソコンからインターネットに通信できるかを確認します。Googleのサーバー（8.8.8.8）に向けて信号を送り、返ってくるかを確認します。
+            </div>
+            <div className="rounded bg-slate-50 p-2 text-xs text-slate-700">
+              <p><strong>Windows（コマンドプロンプト）：</strong> <code translate="no" className="bg-slate-200 px-1 rounded text-[11px]">ping 8.8.8.8</code></p>
+              <p className="mt-1"><strong>Mac / Linux（ターミナル）：</strong> <code translate="no" className="bg-slate-200 px-1 rounded text-[11px]">ping -c 4 8.8.8.8</code></p>
+            </div>
+            <details className="rounded border border-slate-200 bg-white p-2 text-xs text-slate-700">
+              <summary className="cursor-pointer font-medium text-sky-600">▶ コマンドプロンプト・ターミナルの開き方</summary>
+              <div className="mt-2 space-y-1">
+                <p><strong>Windows：</strong>Windowsキー → 「cmd」と入力 → コマンドプロンプトを開く</p>
+                <p><strong>Mac：</strong>Command + Space → 「ターミナル」と入力 → Enterで開く</p>
+              </div>
+            </details>
+              <p className="text-[11px] text-slate-600 pr-16">上のコマンドを実行し、結果をそのまま貼り付けてください。pingが失敗した場合（ファイアウォール等）も、その結果をそのまま記録してください。</p>
               <textarea
                 value={state.practical.q3PingResult}
                 onChange={(e) => handlePracticalChange('q3PingResult', e.target.value)}
@@ -507,14 +521,20 @@ export function InfraBasic21Page() {
               </svg>
             </div>
             <p className="text-xs font-semibold text-sky-600">Q3. 経路確認（tracert / traceroute）</p>
-            <p className="text-[11px] text-slate-600 pr-16">OSによってコマンドが異なります。調べて実行してください。</p>
-              <details className="rounded bg-slate-50 p-2 text-xs text-slate-700">
-                <summary className="cursor-pointer font-medium text-sky-600">ヒントを見る</summary>
-                <div className="mt-2 space-y-1">
-                  <p><strong>Linux / Mac:</strong> <code translate="no" className="bg-slate-200 px-1 rounded text-[11px]">traceroute 8.8.8.8</code></p>
-                  <p><strong>Windows:</strong> <code translate="no" className="bg-slate-200 px-1 rounded text-[11px]">tracert 8.8.8.8</code></p>
-                </div>
-              </details>
+            <div className="rounded bg-blue-50 border border-blue-200 p-3 text-[11px] text-blue-800">
+              自分のパソコンからGoogleのサーバーまで、データがどのような機器を経由して届くかを確認します。
+            </div>
+            <div className="rounded bg-slate-50 p-2 text-xs text-slate-700">
+              <p><strong>Windows（コマンドプロンプト）：</strong> <code translate="no" className="bg-slate-200 px-1 rounded text-[11px]">tracert 8.8.8.8</code></p>
+              <p className="mt-1"><strong>Mac / Linux（ターミナル）：</strong> <code translate="no" className="bg-slate-200 px-1 rounded text-[11px]">traceroute 8.8.8.8</code></p>
+            </div>
+            <details className="rounded border border-slate-200 bg-white p-2 text-xs text-slate-700">
+              <summary className="cursor-pointer font-medium text-sky-600">▶ コマンドプロンプト・ターミナルの開き方</summary>
+              <div className="mt-2 space-y-1">
+                <p><strong>Windows：</strong>Windowsキー → 「cmd」と入力 → コマンドプロンプトを開く</p>
+                <p><strong>Mac：</strong>Command + Space → 「ターミナル」と入力 → Enterで開く</p>
+              </div>
+            </details>
               <textarea
                 value={state.practical.q4TraceResult}
                 onChange={(e) => handlePracticalChange('q4TraceResult', e.target.value)}
@@ -558,6 +578,15 @@ export function InfraBasic21Page() {
             {/* Ping疎通確認 */}
             <div className="space-y-2 border-t border-slate-100 pt-2">
               <p className="text-xs font-medium text-slate-700">疎通確認（Ping）</p>
+              <div className="rounded bg-blue-50 border border-blue-200 p-3 text-[11px] text-blue-800">
+                Q2ではGoogleのサーバーへの通信を確認しました。今度はあなた専用の演習サーバーに通信できるかを確認します。
+              </div>
+              {ec2Ip && (
+                <div className="rounded bg-slate-50 p-2 text-xs text-slate-700">
+                  <p><strong>Windows（コマンドプロンプト）：</strong> <code translate="no" className="bg-slate-200 px-1 rounded text-[11px]">ping {ec2Ip}</code></p>
+                  <p className="mt-1"><strong>Mac / Linux（ターミナル）：</strong> <code translate="no" className="bg-slate-200 px-1 rounded text-[11px]">ping -c 4 {ec2Ip}</code></p>
+                </div>
+              )}
               {state.practical.q6PingServerOk ? (
                 <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
                   ✅ 疎通確認OK — 判定済みです
