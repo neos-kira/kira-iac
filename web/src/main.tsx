@@ -224,8 +224,19 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
         setShowAiTutorial(false)
         localStorage.setItem(localKey, '1')
         // DynamoDB にも保存（次回別端末でも表示しない）
-        if (snap && isProgressApiAvailable()) {
-          postProgress(currentUser, { ...snap, aiTutorialShown: true }).catch(() => {})
+        // snap===null（APIエラー・レコードなし）でも最小デフォルト値をベースに保存する
+        if (isProgressApiAvailable()) {
+          const baseSnap = snap ?? {
+            introConfirmed: false,
+            introAt: null,
+            wbsPercent: 0,
+            chapterProgress: [],
+            currentDay: 0,
+            delayedIds: [],
+            updatedAt: new Date().toISOString(),
+            pins: [],
+          }
+          postProgress(currentUser, { ...baseSnap, aiTutorialShown: true }).catch(() => {})
         }
       }, 5000)
     }
