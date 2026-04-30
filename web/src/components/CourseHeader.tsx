@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { NeOSLogo } from './NeOSLogo'
 import { getCurrentDisplayName, getUserRealName } from '../auth'
-import { fetchMe } from '../progressApi'
+import { fetchMe, fetchProfile } from '../progressApi'
 import { Z } from '../zIndex'
+import { ProfileEditModal } from './ProfileEditModal'
 
 type Props = {
   onLogout: () => void
@@ -14,6 +15,8 @@ type Props = {
 export function CourseHeader({ onLogout, onMenuOpen, progressPct = 0 }: Props) {
   const navigate = useSafeNavigate()
   const [showMenu, setShowMenu] = useState(false)
+  const [showProfileEdit, setShowProfileEdit] = useState(false)
+  const [profileEmail, setProfileEmail] = useState('')
   const menuRef = useRef<HTMLDivElement>(null)
   const [resolvedName, setResolvedName] = useState(() => {
     const cached = getCurrentDisplayName()
@@ -115,15 +118,28 @@ export function CourseHeader({ onLogout, onMenuOpen, progressPct = 0 }: Props) {
             </button>
             {showMenu && (
               <div
-                className="absolute right-0 top-full mt-2 w-44 rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-900/10"
+                className="absolute right-0 top-full mt-2 w-52 rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-900/10"
                 style={{ zIndex: Z.dropdown }}
               >
+                <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                  <p className="text-[10px] text-slate-400 mb-0.5 tracking-widest uppercase">ログイン中</p>
+                  <p className="text-[14px] font-semibold text-slate-900 leading-tight truncate">{getUserRealName() || resolvedName}</p>
+                </div>
                 <div className="p-1.5">
                   <button
                     type="button"
-                    onClick={() => { setShowMenu(false); onLogout() }}
-                    className="w-full rounded-lg px-3 py-2 text-left text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                    onClick={() => { setShowMenu(false); fetchProfile().then((p) => setProfileEmail(p?.email ?? '')).catch(() => {}); setShowProfileEdit(true) }}
+                    className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
                   >
+                    <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    プロフィール設定
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowMenu(false); onLogout() }}
+                    className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                     ログアウト
                   </button>
                 </div>
@@ -139,6 +155,14 @@ export function CourseHeader({ onLogout, onMenuOpen, progressPct = 0 }: Props) {
           style={{ width: `${progressPct}%` }}
         />
       </div>
+      {showProfileEdit && (
+        <ProfileEditModal
+          currentDisplayName={getUserRealName()}
+          currentEmail={profileEmail}
+          onClose={() => setShowProfileEdit(false)}
+          onSaved={() => { setShowProfileEdit(false); setProfileEmail('') }}
+        />
+      )}
     </div>
   )
 }
