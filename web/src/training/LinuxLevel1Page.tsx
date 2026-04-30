@@ -209,8 +209,13 @@ export function LinuxLevel1Page() {
       const serverCurrentQuestion = snap.l1CurrentQuestion ?? 0
       const serverWrongIds = snap.l1WrongIds ?? []
 
-      const newPartsCleared: boolean[] = [false, false, false]
-      for (let i = 0; i < serverPart; i++) newPartsCleared[i] = true
+      // l1Cleared=true なら全3部クリア済み（serverPart=2でループすると index 2 が漏れるバグ回避）
+      let newPartsCleared: boolean[] = [false, false, false]
+      if (snap.l1Cleared) {
+        newPartsCleared = [true, true, true]
+      } else {
+        for (let i = 0; i < serverPart; i++) newPartsCleared[i] = true
+      }
 
       // DynamoDB データから queue / queueIdx / firstAttemptCorrect を復元
       // l1SavedQueueIdx: 中断時の実際のキュー位置（l1CurrentQuestion とは異なる）
@@ -299,6 +304,7 @@ export function LinuxLevel1Page() {
           l1Cleared: true,
           l1CurrentPart: activePart,
           l1CurrentQuestion: PART_SIZE,
+          l1SavedQueueIdx: PART_SIZE,  // リロード後に queueIdx が 0 にリセットされないよう保存
           l1WrongIds: [],
           l1AnsweredCommands: {},
           updatedAt: new Date().toISOString(),
