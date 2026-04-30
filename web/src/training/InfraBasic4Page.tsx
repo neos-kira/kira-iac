@@ -29,7 +29,6 @@ const RATING_STYLES: Record<Rating, { bg: string; icon: string; label: string }>
 export function InfraBasic4Page() {
   const navigate = useSafeNavigate()
   const username = getCurrentUsername()
-  const isKiraTest = username === 'kira-test'
 
   const [snapshot, setSnapshot] = useState<TraineeProgressSnapshot | null>(null)
   const [viDone, setViDone] = useState<Record<number, boolean>>({})
@@ -44,9 +43,6 @@ export function InfraBasic4Page() {
 
   const viDoneCount = VI_STEPS.filter((s) => viDone[s.step]).length
   const shellDoneCount = SHELL_QUESTIONS.filter((s) => shellDone[s.q]).length
-  const viAll = viDoneCount === VI_STEPS.length
-  const shellUnlocked = isKiraTest || viAll
-
   useEffect(() => {
     document.title = 'viエディタ・シェルスクリプト演習'
   }, [])
@@ -338,13 +334,8 @@ export function InfraBasic4Page() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-600">4-2</p>
               <h2 className="mt-1 text-heading md:text-heading-pc font-semibold text-slate-800 tracking-tight">シェルスクリプト演習（{SHELL_QUESTIONS.length}問）</h2>
             </div>
-            {!shellUnlocked && !isKiraTest && (
-              <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-700 border border-amber-200">
-                4-1 を全問クリアするとアンロック
-              </span>
-            )}
           </div>
-          <div className={shellUnlocked ? 'space-y-3' : 'space-y-3 pointer-events-none select-none opacity-60'}>
+          <div className="space-y-3">
             {SHELL_QUESTIONS.map((q) => {
               const score = shellScores[q.q]
               const done = shellDone[q.q]
@@ -421,7 +412,7 @@ export function InfraBasic4Page() {
         </section>
 
         {/* 課題4クリア → 課題5へ */}
-        {viAll && shellDoneCount === SHELL_QUESTIONS.length && (
+        {viDoneCount === VI_STEPS.length && shellDoneCount === SHELL_QUESTIONS.length && (
           <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-soft-card">
             <p className="text-body md:text-body-pc font-bold text-emerald-800">
               🎉 課題4クリア！vi &amp; シェルスクリプト演習 全20問クリアしました。
