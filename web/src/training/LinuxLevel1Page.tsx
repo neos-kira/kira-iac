@@ -263,8 +263,8 @@ export function LinuxLevel1Page() {
     const cleared = q ? firstAttemptCorrect[q.id] === true : false
     const retry = q ? (q.id in firstAttemptCorrect) : false
     const retryUnanswered = retry && !cleared && lastResult === null
-    // 入力可能（未回答 or 再出題問題）のみフォーカス
-    const canInput = lastResult === null && (retryUnanswered || !(queueIdx in answeredCommands)) && !cleared
+    // 入力可能（未回答 / 再出題問題 / 復習モードで再挑戦）のみフォーカス
+    const canInput = lastResult === null && (cleared || retryUnanswered || !(queueIdx in answeredCommands))
     if (canInput && inputRef.current) inputRef.current.focus()
   }, [lastResult, queueIdx, answeredCommands, queue, firstAttemptCorrect])
 
@@ -391,6 +391,14 @@ export function LinuxLevel1Page() {
   async function goNext() {
     const isLast = queueIdx >= queue.length - 1
     if (isLast) {
+      // 復習モード（クリア済みの部）では採点せずq1に戻る
+      if (partsCleared[activePart]) {
+        setQueueIdx(0)
+        setLastResult(null)
+        setWrongFeedback(false)
+        setInputValue('')
+        return
+      }
       // 採点
       const partQs = getPartQuestions(activePart)
       const updatedCorrect = { ...firstAttemptCorrect }
@@ -675,7 +683,11 @@ export function LinuxLevel1Page() {
         <h1 className="text-display md:text-display-pc font-semibold text-slate-800 tracking-tight">
           Linuxコマンド30問
         </h1>
-        <div className="mt-1 flex items-center gap-2" />
+        <div className="mt-1 flex items-center gap-2">
+          {partsCleared[activePart] && (
+            <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-semibold text-sky-600">復習モード</span>
+          )}
+        </div>
 
         <p className="text-display md:text-display-pc font-bold leading-snug text-gray-900 mt-2 mb-2 md:mt-4 md:mb-8">{current?.prompt}</p>
 
@@ -702,43 +714,36 @@ export function LinuxLevel1Page() {
                 // 正解フィードバック中: ユーザーが入力したコマンドをそのまま表示
                 showFeedback
                   ? inputValue
-                  // クリア済み復習モード / 回答済みで変更不可: 保存済み回答を表示
-                  : isReviewMode || (!isRetryUnanswered && queueIdx in answeredCommands)
+                  // 回答済みで変更不可（未クリア問題のみ）: 保存済み回答を表示
+                  : (!isReviewMode && !isRetryUnanswered && queueIdx in answeredCommands)
                     ? (answeredCommands[queueIdx] ?? '')
                     : inputValue
               }
-              onChange={(e) => !showFeedback && !isReviewMode && (isRetryUnanswered || !(queueIdx in answeredCommands)) && setInputValue(e.target.value)}
+              onChange={(e) => {
+                if (showFeedback) return
+                if (isReviewMode || isRetryUnanswered || !(queueIdx in answeredCommands)) setInputValue(e.target.value)
+              }}
               onKeyDown={(e) => {
                 if (e.key !== 'Enter') return
                 e.preventDefault()
                 e.stopPropagation()
-                if (showFeedback || isReviewMode) { void goNext() }
-                else if ((isRetryUnanswered || !(queueIdx in answeredCommands)) && inputValue.trim() !== '' && !isExecuting) handleExecute()
+                if (showFeedback) { void goNext() }
+                else if ((isReviewMode || isRetryUnanswered || !(queueIdx in answeredCommands)) && inputValue.trim() !== '' && !isExecuting) handleExecute()
               }}
-              disabled={showFeedback || isReviewMode || (!isRetryUnanswered && queueIdx in answeredCommands)}
+              disabled={showFeedback || (!isReviewMode && !isRetryUnanswered && queueIdx in answeredCommands)}
               className={`flex-1 min-w-0 rounded-xl border px-4 py-3 text-input text-slate-800 placeholder:text-slate-400 focus:outline-none disabled:opacity-80 ${
-                isReviewMode || showFeedback
+                showFeedback
                   ? 'border-emerald-200 bg-emerald-50'
                   : 'border-slate-300 bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500/50'
               }`}
               autoComplete="off"
               spellCheck={false}
             />
-            {isReviewMode ? (
-              // クリア済み復習モード: 「次へ」ボタンを表示（実行ボタンは非表示）
-              <button
-                type="button"
-                onClick={() => { void goNext() }}
-                style={{ background: '#0ea5e9', color: 'white', border: 'none' }}
-                className="shrink-0 whitespace-nowrap px-3 py-2.5 md:px-5 md:py-2.5 text-button md:text-button-pc font-medium rounded-lg cursor-pointer"
-              >
-                {queueIdx < queue.length - 1 ? '次へ' : '採点する'}
-              </button>
-            ) : !isRetryUnanswered && queueIdx in answeredCommands && !showFeedback ? (
-              // 回答済みで変更不可（クリア済み以外の特殊ケース）
+            {!isReviewMode && !isRetryUnanswered && queueIdx in answeredCommands && !showFeedback ? (
+              // 回答済みで変更不可（未クリア問題の特殊ケース）
               <div />
             ) : !showFeedback ? (
-              // 未回答 or 再出題問題: 実行ボタン表示
+              // 未回答 / 再出題問題 / 復習モード再挑戦: 実行ボタン表示
               <button
                 type="button"
                 onClick={() => { handleExecute() }}
@@ -749,26 +754,33 @@ export function LinuxLevel1Page() {
                 {isExecuting ? '採点中...' : '実行'}
               </button>
             ) : (
-              // フィードバック後: 次へ/採点するボタン
+              // フィードバック後: 次へ/採点する（復習モードの最終問は「最初に戻る」）
               <button
                 type="button"
                 onClick={() => { void goNext() }}
                 style={{ background: '#0ea5e9', color: 'white', border: 'none' }}
                 className="shrink-0 whitespace-nowrap px-3 py-2.5 md:px-5 md:py-2.5 text-button md:text-button-pc font-medium rounded-lg cursor-pointer"
               >
-                {queueIdx < queue.length - 1 ? '次へ' : '採点する'}
+                {queueIdx < queue.length - 1 ? '次へ' : partsCleared[activePart] ? '最初に戻る' : '採点する'}
               </button>
             )}
           </div>
         </form>
 
-        {/* 正解バッジ（クリア済み復習モード） */}
+        {/* 回答履歴（復習モード: クリア済み問題） */}
         {isReviewMode && (
-          <div
-            className="mt-2 md:mt-4 rounded-xl border border-emerald-500/50 bg-emerald-50 px-4 py-2 md:py-3 text-body md:text-body-pc text-emerald-800"
-            role="status"
-          >
-            <span className="font-medium">✓ 正解</span>
+          <div className="mt-2 md:mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 space-y-1.5">
+            <div className="flex items-start gap-2 text-xs">
+              <span className="text-slate-500 shrink-0 pt-0.5">あなたの回答:</span>
+              <code translate="no" className="font-mono text-slate-800 break-all">{answeredCommands[queueIdx] ?? '(記録なし)'}</code>
+            </div>
+            <div className="flex items-start gap-2 text-xs">
+              <span className="text-slate-500 shrink-0 pt-0.5">正解:</span>
+              <code translate="no" className="font-mono text-slate-800 break-all">{current?.choices[current.correctIndex] ?? ''}</code>
+            </div>
+            <p className={`text-xs font-semibold ${firstAttemptCorrect[current?.id ?? ''] === true ? 'text-emerald-600' : 'text-rose-600'}`}>
+              {firstAttemptCorrect[current?.id ?? ''] === true ? '✓ 初回正解' : '✗ 初回不正解'}
+            </p>
           </div>
         )}
 
