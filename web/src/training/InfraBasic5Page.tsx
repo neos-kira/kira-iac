@@ -130,7 +130,7 @@ export function InfraBasic5Page() {
         infra5ReviewAnswers: reviewAnswers,
         lastActive: {
           moduleId: 'infra-basic-5',
-          label: `課題5 · サーバー構築実践`,
+          label: `課題5 · サーバー構築実践 セクション${Object.values(sectionDone).filter(Boolean).length}/${INFRA5_SECTIONS.length}`,
           path: '/training/infra-basic-5',
           savedAt: new Date().toISOString(),
         },

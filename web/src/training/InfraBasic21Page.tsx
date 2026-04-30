@@ -120,6 +120,12 @@ export function InfraBasic21Page() {
       infra21Q8Working: currentState.practical.q9Working || undefined,
       infra21KnowledgeAnswers: currentState.knowledgeAnswers as Record<string, string>,
       infra21KnowledgeResult: currentState.knowledgeResult as Record<string, { checked: boolean; pass: boolean; feedback: string }>,
+      lastActive: {
+        moduleId: 'infra-basic-2-1',
+        label: '課題2-1 · ネットワーク実機調査',
+        path: '/training/infra-basic-2-1',
+        savedAt: new Date().toISOString(),
+      },
       updatedAt: new Date().toISOString(),
     })
   }, [serverSnapshot])

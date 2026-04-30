@@ -192,13 +192,18 @@ export function InfraBasic4Page() {
       const base = snapshot ?? EMPTY_SNAPSHOT
       const viSteps = VI_STEPS.filter((s) => viDone[s.step]).map((s) => s.step)
       const shellQs = SHELL_QUESTIONS.filter((q) => shellDone[q.q]).map((q) => q.q)
+      const viTotal = VI_STEPS.length
+      const shellTotal = SHELL_QUESTIONS.length
+      const activeLabel = viSteps.length < viTotal
+        ? `課題4 · vi演習 ${viSteps.length}/${viTotal}問`
+        : `課題4 · シェルスクリプト ${shellQs.length}/${shellTotal}問`
       const ok = await postProgress(name, {
         ...base,
         infra4ViDoneSteps: viSteps,
         infra4ShellDoneQuestions: shellQs,
         lastActive: {
           moduleId: 'infra-basic-4',
-          label: `課題4 · vi&シェルスクリプト演習`,
+          label: activeLabel,
           path: '/training/infra-basic-4',
           savedAt: new Date().toISOString(),
         },
