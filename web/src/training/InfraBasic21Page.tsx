@@ -30,11 +30,8 @@ export function InfraBasic21Page() {
   const markDirty = () => { formRef.current?.setAttribute('data-form-dirty', 'true') }
   const clearDirty = () => { formRef.current?.setAttribute('data-form-dirty', 'false') }
   const [serverSnapshot, setServerSnapshot] = useState<TraineeProgressSnapshot | null>(null)
-  const [pingCheck, setPingCheck] = useState<{ checked: boolean; pass: boolean; message: string }>({
-    checked: false,
-    pass: false,
-    message: '',
-  })
+  const [q2PingAi, setQ2PingAi] = useState<{ status: 'idle' | 'checking' | 'done' | 'error'; pass: boolean; message: string }>({ status: 'idle', pass: false, message: '' })
+  const [q8WorkingAi, setQ8WorkingAi] = useState<{ status: 'idle' | 'checking' | 'done' | 'error'; message: string }>({ status: 'idle', message: '' })
   const [ec2Ip, setEc2Ip] = useState<string | null>(null)
   const [ec2State, setEc2State] = useState<string | null>(null)
   const [pingAiInput, setPingAiInput] = useState('')
@@ -138,8 +135,7 @@ export function InfraBasic21Page() {
         },
       }))
       if (field === 'q3PingResult') {
-        // 入力が変わったら一旦判定結果をリセット
-        setPingCheck({ checked: false, pass: false, message: '' })
+        setQ2PingAi({ status: 'idle', pass: false, message: '' })
       }
     },
     [updateState],
@@ -227,10 +223,34 @@ export function InfraBasic21Page() {
 
   const kResult = state.knowledgeResult
 
+  const handleQ2PingAiCheck = async () => {
+    if (!state.practical.q3PingResult.trim()) return
+    setQ2PingAi({ status: 'checking', pass: false, message: '' })
+    try {
+      const result = await scoreAnswer({
+        question: '以下はpingコマンドの実行結果です。実際にpingコマンドを実行した結果として妥当かどうか判定してください。成功・失敗どちらでも構いませんが、pingコマンドの出力形式（パケット送受信の記録）が含まれていることが条件です。妥当であればpass: true、そうでなければpass: false と理由を返してください。',
+        scoringCriteria: 'pingコマンドの実行結果として妥当な形式（パケット送受信の記録や統計情報）が含まれている場合は pass: true。無関係なテキストや空白のみの場合は pass: false。feedbackは日本語で1〜2文で判定理由を説明すること。',
+        answer: state.practical.q3PingResult,
+      })
+      setQ2PingAi({ status: 'done', pass: result.pass, message: result.feedback })
+    } catch (e) {
+      setQ2PingAi({ status: 'error', pass: false, message: String(e) })
+    }
+  }
 
-  const handlePingCheck = () => {
-    const { pass, message } = evaluatePingLog(state.practical.q3PingResult)
-    setPingCheck({ checked: true, pass, message })
+  const handleQ8WorkingAiCheck = async () => {
+    if (!state.practical.q9Working.trim()) return
+    setQ8WorkingAi({ status: 'checking', message: '' })
+    try {
+      const result = await scoreAnswer({
+        question: '192.168.250.50/24のネットワークアドレスを求める計算過程です。IPアドレスとサブネットマスクのAND演算が正しく行われているか確認してください。',
+        scoringCriteria: '2進数変換やAND演算の過程が論理的に記載されていれば pass: true。計算内容が全くなく意味不明な場合は pass: false。feedbackは日本語で計算過程の良い点や改善点を1〜2文で説明すること。',
+        answer: state.practical.q9Working,
+      })
+      setQ8WorkingAi({ status: 'done', message: result.feedback })
+    } catch (e) {
+      setQ8WorkingAi({ status: 'error', message: String(e) })
+    }
   }
 
   function evaluateKnowledgeAnswer(q: KnowledgeQuestionConfig, answerRaw: string): { pass: boolean; feedback: string } {
@@ -328,14 +348,6 @@ export function InfraBasic21Page() {
     }
   }
 
-  function evaluatePingLog(raw: string): { pass: boolean; message: string } {
-    const text = (raw ?? '').trim()
-    if (!text) {
-      return { pass: false, message: 'ログを貼り付けてください。' }
-    }
-    return { pass: true, message: '◎ ログを確認しました。' }
-  }
-
   return (
     <div ref={formRef} className="min-h-screen bg-slate-50 text-slate-800 p-6" data-form-scope="task" data-form-dirty="false">
       <div className="mx-auto max-w-3xl space-y-6">
@@ -408,6 +420,10 @@ export function InfraBasic21Page() {
             <p className="text-[11px] text-slate-600 pr-16">
               自分のPCのIPアドレス・サブネットマスク・デフォルトゲートウェイ・MACアドレスを調べて記録します。
             </p>
+            <div className="rounded bg-slate-50 p-2 text-xs text-slate-700">
+              <p><strong>Windows（PowerShell）：</strong> <code translate="no" className="bg-slate-200 px-1 rounded text-[11px]">ipconfig /all</code></p>
+              <p className="mt-1"><strong>Mac / Linux：</strong> <code translate="no" className="bg-slate-200 px-1 rounded text-[11px]">ip a</code> または <code translate="no" className="bg-slate-200 px-1 rounded text-[11px]">ifconfig</code></p>
+            </div>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               <label className="text-[11px] text-slate-600">
                 IPアドレス
@@ -453,20 +469,19 @@ export function InfraBasic21Page() {
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={handlePingCheck}
-                  className="rounded-lg border border-sky-500 bg-white px-3 py-1.5 text-xs font-medium text-sky-600 hover:bg-sky-50"
+                  onClick={() => { void handleQ2PingAiCheck() }}
+                  disabled={!state.practical.q3PingResult.trim() || q2PingAi.status === 'checking'}
+                  className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Pingログを判定する
+                  {q2PingAi.status === 'checking' ? 'AI確認中...' : 'AIに提出する'}
                 </button>
-                {pingCheck.checked && (
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] ${pingCheck.pass
-                      ? 'border border-emerald-300 bg-emerald-50 text-emerald-700'
-                      : 'border border-amber-300 bg-amber-50 text-amber-700'
-                      }`}
-                  >
-                    {pingCheck.message}
+                {q2PingAi.status === 'done' && (
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] ${q2PingAi.pass ? 'border border-emerald-300 bg-emerald-50 text-emerald-700' : 'border border-amber-300 bg-amber-50 text-amber-700'}`}>
+                    {q2PingAi.message}
                   </span>
+                )}
+                {q2PingAi.status === 'error' && (
+                  <span className="text-xs text-red-600">{q2PingAi.message}</span>
                 )}
               </div>
           </div>
@@ -486,11 +501,14 @@ export function InfraBasic21Page() {
               </svg>
             </div>
             <p className="text-xs font-semibold text-sky-600">Q3. 経路確認（tracert / traceroute）</p>
-            <p className="text-[11px] text-slate-600 pr-16">経路確認コマンドの結果を貼り付けてください。OS によってコマンドが異なります。</p>
-              <div className="rounded bg-slate-50 p-2 text-xs text-slate-700">
-                <p><strong>Linux / Mac:</strong> <code translate="no" className="bg-slate-200 px-1 rounded text-[11px]">traceroute 8.8.8.8</code></p>
-                <p><strong>Windows:</strong> <code translate="no" className="bg-slate-200 px-1 rounded text-[11px]">tracert 8.8.8.8</code></p>
-              </div>
+            <p className="text-[11px] text-slate-600 pr-16">OSによってコマンドが異なります。調べて実行してください。</p>
+              <details className="rounded bg-slate-50 p-2 text-xs text-slate-700">
+                <summary className="cursor-pointer font-medium text-sky-600">ヒントを見る</summary>
+                <div className="mt-2 space-y-1">
+                  <p><strong>Linux / Mac:</strong> <code translate="no" className="bg-slate-200 px-1 rounded text-[11px]">traceroute 8.8.8.8</code></p>
+                  <p><strong>Windows:</strong> <code translate="no" className="bg-slate-200 px-1 rounded text-[11px]">tracert 8.8.8.8</code></p>
+                </div>
+              </details>
               <textarea
                 value={state.practical.q4TraceResult}
                 onChange={(e) => handlePracticalChange('q4TraceResult', e.target.value)}
@@ -663,25 +681,46 @@ export function InfraBasic21Page() {
               192.168.250.50/24 とサブネットマスク 255.255.255.0 の論理積からネットワークアドレスを求め、その計算過程を記載してください。
             </p>
             <div className="mt-2 grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-              <label className="text-[11px] text-slate-600">
-                ネットワークアドレス
-                <input
-                  type="text"
-                  value={state.practical.q9NetworkAddress}
-                  onChange={(e) => handlePracticalChange('q9NetworkAddress', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
-                  placeholder="ネットワークアドレス"
-                />
-              </label>
-              <label className="text-[11px] text-slate-600">
-                計算過程（2進数変換や AND 演算のメモ）
-                <textarea
-                  value={state.practical.q9Working}
-                  onChange={(e) => handlePracticalChange('q9Working', e.target.value)}
-                  className="mt-1 h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
-                  placeholder="2進数変換や AND 演算の途中式などを記載してください。"
-                />
-              </label>
+              <div className="space-y-1">
+                <label className="text-[11px] text-slate-600">
+                  ネットワークアドレス
+                  <input
+                    type="text"
+                    value={state.practical.q9NetworkAddress}
+                    onChange={(e) => handlePracticalChange('q9NetworkAddress', e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
+                    placeholder="ネットワークアドレス"
+                  />
+                </label>
+                {state.practical.q9NetworkAddress.trim() && (
+                  state.practical.q9NetworkAddress.trim() === '192.168.250.0' ? (
+                    <p className="text-xs font-semibold text-emerald-600">✅ 正解</p>
+                  ) : (
+                    <p className="text-xs font-semibold text-red-600">❌ 不正解</p>
+                  )
+                )}
+              </div>
+              <div className="space-y-2">
+                <label className="text-[11px] text-slate-600">
+                  計算過程（2進数変換や AND 演算のメモ）
+                  <textarea
+                    value={state.practical.q9Working}
+                    onChange={(e) => handlePracticalChange('q9Working', e.target.value)}
+                    className="mt-1 h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
+                    placeholder="2進数変換や AND 演算の途中式などを記載してください。"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => { void handleQ8WorkingAiCheck() }}
+                  disabled={!state.practical.q9Working.trim() || q8WorkingAi.status === 'checking'}
+                  className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {q8WorkingAi.status === 'checking' ? 'AI確認中...' : 'AIに提出する'}
+                </button>
+                {q8WorkingAi.status === 'done' && <p className="text-xs text-slate-700">{q8WorkingAi.message}</p>}
+                {q8WorkingAi.status === 'error' && <p className="text-xs text-red-600">{q8WorkingAi.message}</p>}
+              </div>
             </div>
           </div>
         </section>
