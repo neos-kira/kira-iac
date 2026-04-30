@@ -360,7 +360,7 @@ export function ServerPage() {
               }
               const CodeBlock = ({ text, cmdKey }: { text: string; cmdKey: string }) => (
                 <div className="relative">
-                  <pre className="rounded-lg bg-slate-900 px-4 py-3 font-mono text-sm text-green-400 overflow-x-auto whitespace-pre-wrap break-all pr-16">{text}</pre>
+                  <pre className="rounded-lg bg-slate-900 px-4 py-3 font-mono text-sm text-green-400 overflow-x-auto whitespace-nowrap block pr-20">{text}</pre>
                   <button
                     type="button"
                     onClick={() => copyCmd(text, cmdKey)}
@@ -389,7 +389,7 @@ export function ServerPage() {
                   {osTab === 'mac' ? (
                     <div className="px-4 py-4 space-y-3">
                       <ol className="space-y-1.5 list-decimal list-inside">
-                        <li className="text-[12px] text-slate-600">ターミナルを開いてください</li>
+                        <li className="text-[12px] text-slate-600">Finderからアプリケーション→ユーティリティ→ターミナルを開くか、Spotlight（Command+Space）で「ターミナル」と検索してください。</li>
                         <li className="text-[12px] text-slate-600">秘密鍵ファイルのあるフォルダに移動してください</li>
                         <li className="text-[12px] text-slate-600">パーミッション設定を実行してください</li>
                         <li className="text-[12px] text-slate-600">SSH接続コマンドを実行してください</li>
@@ -415,16 +415,39 @@ export function ServerPage() {
                       </div>
 
                       {winTab === 'powershell' ? (
-                        <div className="px-4 py-4 space-y-3">
-                          <ol className="space-y-1.5 list-decimal list-inside">
-                            <li className="text-[12px] text-slate-600">PowerShellを管理者権限で開いてください</li>
-                            <li className="text-[12px] text-slate-600">秘密鍵ファイルのあるフォルダに移動してください</li>
-                            <li className="text-[12px] text-slate-600">パーミッション設定を実行してください</li>
-                            <li className="text-[12px] text-slate-600">SSH接続コマンドを実行してください</li>
-                          </ol>
-                          <CodeBlock text={cdWin} cmdKey="win-cd" />
-                          <CodeBlock text={permCmdWin} cmdKey="win-perm" />
-                          <CodeBlock text={sshCmd} cmdKey="win-ssh" />
+                        <div className="px-4 py-4 space-y-4">
+                          {/* Step 1 */}
+                          <div className="space-y-2">
+                            <p className="text-[12px] font-semibold text-slate-700">① PowerShellを管理者権限で開く</p>
+                            <p className="text-[12px] text-slate-600">Windowsキーを押して「PowerShell」と検索し、「管理者として実行」を選択してください。</p>
+                            <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+                              <p className="text-[11px] text-amber-600">⚠️ 通常のPowerShellではなく「管理者として実行」を選択してください</p>
+                            </div>
+                          </div>
+                          {/* Step 2 */}
+                          <div className="space-y-2">
+                            <p className="text-[12px] font-semibold text-slate-700">② 秘密鍵ファイルのあるフォルダに移動</p>
+                            <p className="text-[12px] text-slate-600">ダウンロードフォルダに移動します。以下のコマンドをそのまま実行してください。</p>
+                            <CodeBlock text={cdWin} cmdKey="win-cd" />
+                          </div>
+                          {/* Step 3 */}
+                          <div className="space-y-2">
+                            <p className="text-[12px] font-semibold text-slate-700">③ 秘密鍵ファイルのパーミッション設定</p>
+                            <p className="text-[12px] text-slate-600">秘密鍵ファイルに適切なアクセス権限を設定します。セキュリティ上必要な手順です。</p>
+                            <CodeBlock text={permCmdWin} cmdKey="win-perm" />
+                            <div className="rounded-lg bg-green-50 border border-green-200 px-3 py-2">
+                              <p className="text-[11px] text-green-700">「1個のファイルが正常に処理されました」と表示されれば成功です。</p>
+                            </div>
+                          </div>
+                          {/* Step 4 */}
+                          <div className="space-y-2">
+                            <p className="text-[12px] font-semibold text-slate-700">④ SSH接続</p>
+                            <p className="text-[12px] text-slate-600">以下のコマンドを実行してサーバーに接続します。初回接続時は「yes」と入力してEnterを押してください。</p>
+                            <CodeBlock text={sshCmd} cmdKey="win-ssh" />
+                            <div className="rounded-lg bg-green-50 border border-green-200 px-3 py-2">
+                              <p className="text-[11px] text-green-700">「$ 」が表示されれば接続成功です。</p>
+                            </div>
+                          </div>
                         </div>
                       ) : (
                         <div className="px-4 py-4 space-y-3">
