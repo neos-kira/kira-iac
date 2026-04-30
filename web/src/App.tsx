@@ -515,18 +515,26 @@ function App() {
   }
 
   // DynamoDB取得完了まで null を返す（チラつき防止）。取得後はサブタスクのクリア数から計算。
+  // 8アイテム統一ロジック（Lambda calcWbsPercent と同一）
   const progressPct = pinnedTraining === null || !serverSnapshot
     ? null
     : (() => {
         const s = serverSnapshot
         const ch = Array.isArray(s.chapterProgress) ? s.chapterProgress : []
+        const infra5Cleared = (s.infra5PhaseDone ?? []).length >= 5 ||
+          ['s1', 's2', 's3', 's4', 's5'].every((k) => s.infra5SectionDone?.[k] === true)
+        const itBasicsOk = Object.values(
+          (s.itBasicsProgress ?? {}) as Record<string, { cleared: boolean }>
+        ).filter((v) => v.cleared).length >= 7
         const subCleared = [
-          Number(s.introStep ?? 0) >= 5 && s.introConfirmed ? 1 : 0,     // はじめに
-          Object.values((s.itBasicsProgress ?? {}) as Record<string, { cleared: boolean }>).filter(v => v.cleared).length >= 7 ? 1 : 0,  // IT業界の歩き方
-          s.l1Cleared ? 1 : 0,                                       // 1-2
-          ch[1]?.cleared ? 1 : 0,                                    // 2-x
-          ch[2]?.cleared ? 1 : 0,                                    // 3-x
-          ch[3]?.cleared ? 1 : 0,                                    // 4-x
+          Number(s.introStep ?? 0) >= 5 && s.introConfirmed ? 1 : 0,  // はじめに
+          s.infra1Cleared ? 1 : 0,                                     // 1-1 SSH接続確認
+          s.l1Cleared ? 1 : 0,                                         // 1-2 Linux30問
+          ch[1]?.cleared ? 1 : 0,                                      // 2 ネットワーク基礎
+          ch[2]?.cleared ? 1 : 0,                                      // 3 ファイル操作/vi
+          ch[3]?.cleared ? 1 : 0,                                      // 4 シェルスクリプト
+          infra5Cleared ? 1 : 0,                                       // 5 サーバー構築
+          itBasicsOk ? 1 : 0,                                          // IT業界の歩き方
         ].reduce((a, b) => a + b, 0)
         return { pct: Math.round(subCleared / 8 * 100), completed: subCleared, total: 8 }
       })()

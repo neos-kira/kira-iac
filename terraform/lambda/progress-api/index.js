@@ -160,17 +160,27 @@ async function getSessionRole(session) {
   }
 }
 
-/** wbsPercent を progress フィールドから算出（student側と同じロジック） */
+/** wbsPercent を progress フィールドから算出（フロント App.tsx と同一の8アイテムロジック） */
 function calcWbsPercent(p) {
   if (!p) return 0
   const ch = Array.isArray(p.chapterProgress) ? p.chapterProgress : []
+  const infra5Cleared =
+    (Array.isArray(p.infra5PhaseDone) && p.infra5PhaseDone.length >= 5) ||
+    (p.infra5SectionDone && typeof p.infra5SectionDone === 'object' &&
+      ['s1', 's2', 's3', 's4', 's5'].every((k) => p.infra5SectionDone[k] === true))
+  const itBasicsOk =
+    p.itBasicsProgress &&
+    typeof p.itBasicsProgress === 'object' &&
+    Object.values(p.itBasicsProgress).filter((v) => v && v.cleared).length >= 7
   const subCleared = [
-    Number(p.introStep ?? 0) >= 5 && p.introConfirmed ? 1 : 0,
-    p.infra1Cleared ? 1 : 0,
-    p.l1Cleared ? 1 : 0,
-    ch[1]?.cleared ? 1 : 0,
-    ch[2]?.cleared ? 1 : 0,
-    ch[3]?.cleared ? 1 : 0,
+    Number(p.introStep ?? 0) >= 5 && p.introConfirmed ? 1 : 0,  // はじめに
+    p.infra1Cleared ? 1 : 0,                                     // 1-1 SSH接続確認
+    p.l1Cleared ? 1 : 0,                                         // 1-2 Linux30問
+    ch[1]?.cleared ? 1 : 0,                                      // 2 ネットワーク基礎
+    ch[2]?.cleared ? 1 : 0,                                      // 3 ファイル操作/vi
+    ch[3]?.cleared ? 1 : 0,                                      // 4 シェルスクリプト
+    infra5Cleared ? 1 : 0,                                       // 5 サーバー構築
+    itBasicsOk ? 1 : 0,                                          // IT業界の歩き方
   ].reduce((a, b) => a + b, 0)
   return Math.round(subCleared / 8 * 100)
 }

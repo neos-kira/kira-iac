@@ -11,6 +11,8 @@ import {
   INFRA_BASIC_4_SHELL_ALL_CLEARED_KEY,
   getViStepKey,
   getShellQuestionKey,
+  VI_STEPS,
+  SHELL_QUESTIONS,
 } from './InfraBasic4Data'
 import {
   INFRA5_CLEARED_KEY,
@@ -20,6 +22,7 @@ import {
   INFRA5_PHASE4_CLEARED_KEY,
   INFRA5_PHASE5_CLEARED_KEY,
 } from './InfraBasic5Data'
+import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
 
 export const TRAINING_START_DATE_KEY = 'kira-training-start-date'
 
@@ -279,12 +282,66 @@ export type TaskProgress = {
   subTasks: SubTaskProgress[]
 }
 
-function getSubTaskStatus(sub: SubTaskDef, username?: string): SubTaskStatus {
+/**
+ * DynamoDBスナップショットから clearedKey のクリア状態を解決する。
+ * localStorage を参照せずサーバー側データだけで判定できるキーのみ対応。
+ */
+function resolveKeyFromSnap(clearedKey: string, snap: TraineeProgressSnapshot): boolean {
+  if (clearedKey === INFRA_BASIC_1_CLEARED_KEY) return snap.infra1Cleared === true
+  if (clearedKey === L1_CLEARED_KEY) return snap.l1Cleared === true
+  if (clearedKey === L2_CLEARED_KEY) return (snap.l2CurrentQuestion ?? 0) >= 10
+  if (clearedKey === INFRA_BASIC_3_1_DONE_KEY) return snap.infra31Ack === true
+  if (clearedKey === INFRA_BASIC_3_2_CLEARED_KEY) {
+    return Object.values(snap.infra32Answers ?? {}).some((v) => v && String(v).trim() !== '')
+  }
+  if (clearedKey === INFRA_BASIC_4_VI_ALL_CLEARED_KEY) {
+    return (snap.infra4ViDoneSteps ?? []).length >= VI_STEPS.length
+  }
+  if (clearedKey === INFRA_BASIC_4_SHELL_ALL_CLEARED_KEY) {
+    return (snap.infra4ShellDoneQuestions ?? []).length >= SHELL_QUESTIONS.length
+  }
+  if (clearedKey === INFRA_BASIC_4_CLEARED_KEY) {
+    return (snap.infra4ViDoneSteps ?? []).length >= VI_STEPS.length &&
+      (snap.infra4ShellDoneQuestions ?? []).length >= SHELL_QUESTIONS.length
+  }
+  if (clearedKey === INFRA5_PHASE1_CLEARED_KEY) {
+    return snap.infra5SectionDone?.['s1'] === true || (snap.infra5PhaseDone ?? []).includes(1)
+  }
+  if (clearedKey === INFRA5_PHASE2_CLEARED_KEY) {
+    return snap.infra5SectionDone?.['s2'] === true || (snap.infra5PhaseDone ?? []).includes(2)
+  }
+  if (clearedKey === INFRA5_PHASE3_CLEARED_KEY) {
+    return snap.infra5SectionDone?.['s3'] === true || (snap.infra5PhaseDone ?? []).includes(3)
+  }
+  if (clearedKey === INFRA5_PHASE4_CLEARED_KEY) {
+    return snap.infra5SectionDone?.['s4'] === true || (snap.infra5PhaseDone ?? []).includes(4)
+  }
+  if (clearedKey === INFRA5_PHASE5_CLEARED_KEY) {
+    return snap.infra5SectionDone?.['s5'] === true || (snap.infra5PhaseDone ?? []).includes(5)
+  }
+  if (clearedKey === INFRA5_CLEARED_KEY) {
+    const phaseDone = snap.infra5PhaseDone ?? []
+    const sectionDone = snap.infra5SectionDone ?? {}
+    return phaseDone.length >= 5 || ['s1', 's2', 's3', 's4', 's5'].every((k) => sectionDone[k] === true)
+  }
+  return false
+}
+
+function getSubTaskStatus(sub: SubTaskDef, username?: string, snap?: TraineeProgressSnapshot): SubTaskStatus {
   if (typeof window === 'undefined') return 'not_started'
   if (sub.clearedKey) {
+    if (snap) return resolveKeyFromSnap(sub.clearedKey, snap) ? 'cleared' : 'not_started'
     return window.localStorage.getItem(getProgressKey(sub.clearedKey, username)) === 'true' ? 'cleared' : 'not_started'
   }
   if (sub.storageKeyForProgress) {
+    // infra21: DynamoDB フィールドで判定
+    if (snap && sub.storageKeyForProgress === INFRA_BASIC_21_STORAGE_KEY) {
+      const hasInfra21Data = !!(
+        snap.infra21Q1Ip || snap.infra21Q2PingLog || snap.infra21PingOk || snap.infra21SshOk
+      )
+      return hasInfra21Data ? 'in_progress' : 'not_started'
+    }
+    // localStorage フォールバック
     try {
       const raw = window.localStorage.getItem(getProgressKey(sub.storageKeyForProgress, username))
       if (!raw) return 'not_started'
@@ -298,8 +355,11 @@ function getSubTaskStatus(sub: SubTaskDef, username?: string): SubTaskStatus {
   return 'not_started'
 }
 
-/** username 指定時はそのユーザーの進捗を参照（管理者画面のリアルタイム表示用）。 */
-export function getTaskProgressList(username?: string): TaskProgress[] {
+/**
+ * username 指定時はそのユーザーの進捗を参照（管理者画面のリアルタイム表示用）。
+ * snap 指定時は DynamoDB スナップショットを優先して読み取り、localStorage を参照しない。
+ */
+export function getTaskProgressList(username?: string, snap?: TraineeProgressSnapshot): TaskProgress[] {
   const start = getTrainingStartDate(username)
   const today = new Date()
   const todayStr =
@@ -312,7 +372,13 @@ export function getTaskProgressList(username?: string): TaskProgress[] {
   return tasks.map((task) => {
     const deadline = start ? getDeadlineForTask(start, task.estimatedDays) : '—'
     let cleared = false
-    if (typeof window !== 'undefined') {
+    if (snap) {
+      if (task.clearedKeys && task.clearedKeys.length > 0) {
+        cleared = task.clearedKeys.every((k) => resolveKeyFromSnap(k, snap))
+      } else {
+        cleared = resolveKeyFromSnap(task.clearedKey, snap)
+      }
+    } else if (typeof window !== 'undefined') {
       if (task.clearedKeys && task.clearedKeys.length > 0) {
         cleared = task.clearedKeys.every((k) => window.localStorage.getItem(getProgressKey(k, username)) === 'true')
       } else {
@@ -322,7 +388,7 @@ export function getTaskProgressList(username?: string): TaskProgress[] {
     const isDelayed = !!start && !cleared && todayStr > deadline
     const subTasks: SubTaskProgress[] = task.subTasks.map((sub) => ({
       label: sub.label,
-      status: getSubTaskStatus(sub, username),
+      status: getSubTaskStatus(sub, username, snap),
     }))
     return {
       id: task.id,

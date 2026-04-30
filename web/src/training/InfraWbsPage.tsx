@@ -58,8 +58,8 @@ function fmtDate(s: string): string {
 
 // ─── WBS データ生成 ────────────────────────────────────────────────────────────
 
-function buildWBSRows(startDate: string | null): WBSRow[] {
-  const progressList = getTaskProgressList()
+function buildWBSRows(startDate: string | null, snap?: TraineeProgressSnapshot): WBSRow[] {
+  const progressList = getTaskProgressList(undefined, snap)
   const todayStr = today()
   const rows: WBSRow[] = []
 
@@ -187,23 +187,30 @@ export function InfraWbsPage() {
   const [displayMode, setDisplayMode] = useState<DisplayMode>(queryUserId ? 'manager' : 'individual')
   const startDate = getTrainingStartDate()
 
-  const wbsRows = buildWBSRows(startDate)
+  const wbsRows = buildWBSRows(startDate, serverSnapshot ?? undefined)
   const taskRows = wbsRows.filter((r) => r.level === 0)
 
   const delayedCount = taskRows.filter((r) => r.status === 'delayed').length
 
-  // ── Fix3: ダッシュボードと同じ serverSnapshot ベースの進捗計算 ──
+  // ── ダッシュボードと同じ serverSnapshot ベースの進捗計算（8アイテム統一ロジック）──
   const overallData = (() => {
     if (!serverSnapshot) return { pct: 0, completed: 0, total: 8 }
     const s = serverSnapshot
     const ch = Array.isArray(s.chapterProgress) ? s.chapterProgress : []
+    const infra5Cleared = (s.infra5PhaseDone ?? []).length >= 5 ||
+      ['s1', 's2', 's3', 's4', 's5'].every((k) => s.infra5SectionDone?.[k] === true)
+    const itBasicsOk = Object.values(
+      (s.itBasicsProgress ?? {}) as Record<string, { cleared: boolean }>
+    ).filter((v) => v.cleared).length >= 7
     const subCleared = [
-      Number(s.introStep ?? 0) >= 5 && s.introConfirmed ? 1 : 0,
-      Object.values((s.itBasicsProgress ?? {}) as Record<string, { cleared: boolean }>).filter(v => v.cleared).length >= 7 ? 1 : 0,
-      s.l1Cleared ? 1 : 0,
-      ch[1]?.cleared ? 1 : 0,
-      ch[2]?.cleared ? 1 : 0,
-      ch[3]?.cleared ? 1 : 0,
+      Number(s.introStep ?? 0) >= 5 && s.introConfirmed ? 1 : 0,  // はじめに
+      s.infra1Cleared ? 1 : 0,                                     // 1-1 SSH接続確認
+      s.l1Cleared ? 1 : 0,                                         // 1-2 Linux30問
+      ch[1]?.cleared ? 1 : 0,                                      // 2 ネットワーク基礎
+      ch[2]?.cleared ? 1 : 0,                                      // 3 ファイル操作/vi
+      ch[3]?.cleared ? 1 : 0,                                      // 4 シェルスクリプト
+      infra5Cleared ? 1 : 0,                                       // 5 サーバー構築
+      itBasicsOk ? 1 : 0,                                          // IT業界の歩き方
     ].reduce((a, b) => a + b, 0)
     return { pct: Math.round(subCleared / 8 * 100), completed: subCleared, total: 8 }
   })()

@@ -3,6 +3,8 @@ import { useSafeNavigate } from '../hooks/useSafeNavigate'
 import { getCurrentDisplayName } from '../auth'
 import { fetchMyProgress, postProgress, isProgressApiAvailable } from '../progressApi'
 import type { TraineeProgressSnapshot } from '../traineeProgressStorage'
+import { INFRA_BASIC_3_1_DONE_KEY } from './infraBasic3Data'
+import { getProgressKey } from './trainingWbsData'
 
 export function InfraBasic31Page() {
   const navigate = useSafeNavigate()
@@ -39,6 +41,13 @@ export function InfraBasic31Page() {
         infra31Ack: checked,
         updatedAt: new Date().toISOString(),
       })
+      // WBS 表示用に localStorage にも書き込む（DynamoDB優先だが端末ローカルの即時反映用）
+      const lsKey = getProgressKey(INFRA_BASIC_3_1_DONE_KEY)
+      if (checked) {
+        window.localStorage.setItem(lsKey, 'true')
+      } else {
+        window.localStorage.removeItem(lsKey)
+      }
     }
   }
 
