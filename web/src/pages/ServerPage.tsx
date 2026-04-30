@@ -17,6 +17,7 @@ export function ServerPage() {
   const [copiedField, setCopiedField] = useState<'ip' | 'user' | null>(null)
   const [pemLostOpen, setPemLostOpen] = useState(false)
   const [osTab, setOsTab] = useState<'mac' | 'windows'>('mac')
+  const [winTab, setWinTab] = useState<'powershell' | 'teraterm'>('powershell')
   const [copiedCmd, setCopiedCmd] = useState<string | null>(null)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -348,9 +349,10 @@ export function ServerPage() {
             {ec2State === 'running' && snap.ec2PublicIp && snap.ec2Username && snap.keyPairName && (() => {
               const pemName = `${snap.keyPairName}.pem`
               const sshCmd = `ssh -i ${pemName} ${snap.ec2Username}@${snap.ec2PublicIp}`
+              const cdMac = `cd ~/Downloads`
               const permCmdMac = `chmod 400 ${pemName}`
+              const cdWin = String.raw`cd $env:USERPROFILE\Downloads`
               const permCmdWin = `icacls "${pemName}" /inheritance:r /grant:r "$($env:USERNAME):(R)"`
-              const permCmd = osTab === 'mac' ? permCmdMac : permCmdWin
               const copyCmd = (text: string, key: string) => {
                 void navigator.clipboard.writeText(text)
                 setCopiedCmd(key)
@@ -358,7 +360,7 @@ export function ServerPage() {
               }
               const CodeBlock = ({ text, cmdKey }: { text: string; cmdKey: string }) => (
                 <div className="relative">
-                  <pre className="rounded-lg bg-slate-900 px-4 py-3 font-mono text-[12px] text-emerald-400 overflow-x-auto whitespace-pre-wrap break-all pr-16">{text}</pre>
+                  <pre className="rounded-lg bg-slate-900 px-4 py-3 font-mono text-sm text-green-400 overflow-x-auto whitespace-pre-wrap break-all pr-16">{text}</pre>
                   <button
                     type="button"
                     onClick={() => copyCmd(text, cmdKey)}
@@ -383,18 +385,99 @@ export function ServerPage() {
                       </button>
                     ))}
                   </div>
-                  <div className="px-4 py-4 space-y-3">
-                    {/* 手順 */}
-                    <ol className="space-y-1 list-decimal list-inside">
-                      <li className="text-[12px] text-slate-600">秘密鍵ファイルをダウンロードしたフォルダで操作してください</li>
-                      <li className="text-[12px] text-slate-600">パーミッション設定を行ってください{osTab === 'windows' ? '（PowerShellで実行）' : ''}</li>
-                      <li className="text-[12px] text-slate-600">SSH接続コマンドを実行してください</li>
-                    </ol>
-                    {/* パーミッション */}
-                    <CodeBlock text={permCmd} cmdKey="perm" />
-                    {/* SSH接続 */}
-                    <CodeBlock text={sshCmd} cmdKey="ssh" />
-                  </div>
+
+                  {osTab === 'mac' ? (
+                    <div className="px-4 py-4 space-y-3">
+                      <ol className="space-y-1.5 list-decimal list-inside">
+                        <li className="text-[12px] text-slate-600">ターミナルを開いてください</li>
+                        <li className="text-[12px] text-slate-600">秘密鍵ファイルのあるフォルダに移動してください</li>
+                        <li className="text-[12px] text-slate-600">パーミッション設定を実行してください</li>
+                        <li className="text-[12px] text-slate-600">SSH接続コマンドを実行してください</li>
+                      </ol>
+                      <CodeBlock text={cdMac} cmdKey="mac-cd" />
+                      <CodeBlock text={permCmdMac} cmdKey="mac-perm" />
+                      <CodeBlock text={sshCmd} cmdKey="mac-ssh" />
+                    </div>
+                  ) : (
+                    <div>
+                      {/* Windowsサブタブ */}
+                      <div className="flex border-b border-slate-100 bg-slate-50 px-4">
+                        {(['powershell', 'teraterm'] as const).map((sub) => (
+                          <button
+                            key={sub}
+                            type="button"
+                            onClick={() => setWinTab(sub)}
+                            className={`px-3 py-2 text-[11px] font-medium transition-colors ${winTab === sub ? 'text-sky-600 border-b-2 border-sky-500 -mb-px bg-white' : 'text-slate-500 hover:text-slate-700'}`}
+                          >
+                            {sub === 'powershell' ? 'PowerShell' : 'TeraTerm'}
+                          </button>
+                        ))}
+                      </div>
+
+                      {winTab === 'powershell' ? (
+                        <div className="px-4 py-4 space-y-3">
+                          <ol className="space-y-1.5 list-decimal list-inside">
+                            <li className="text-[12px] text-slate-600">PowerShellを管理者権限で開いてください</li>
+                            <li className="text-[12px] text-slate-600">秘密鍵ファイルのあるフォルダに移動してください</li>
+                            <li className="text-[12px] text-slate-600">パーミッション設定を実行してください</li>
+                            <li className="text-[12px] text-slate-600">SSH接続コマンドを実行してください</li>
+                          </ol>
+                          <CodeBlock text={cdWin} cmdKey="win-cd" />
+                          <CodeBlock text={permCmdWin} cmdKey="win-perm" />
+                          <CodeBlock text={sshCmd} cmdKey="win-ssh" />
+                        </div>
+                      ) : (
+                        <div className="px-4 py-4 space-y-3">
+                          <ol className="space-y-1.5 list-decimal list-inside">
+                            <li className="text-[12px] text-slate-600">
+                              TeraTermをインストールしてください（未インストールの場合）
+                              <br />
+                              <a
+                                href="https://teratermproject.github.io/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-4 text-sky-500 underline"
+                              >
+                                https://teratermproject.github.io/
+                              </a>
+                            </li>
+                            <li className="text-[12px] text-slate-600">TeraTermを起動し、以下の接続情報を入力してください</li>
+                            <li className="text-[12px] text-slate-600">認証画面で秘密鍵ファイルを選択してください</li>
+                          </ol>
+                          {/* 接続情報カード */}
+                          <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-2">
+                            {(
+                              [
+                                { label: 'ホスト', value: snap.ec2PublicIp ?? '', copyKey: 'tt-ip' as string | null },
+                                { label: 'TCPポート', value: '22', copyKey: null },
+                                { label: 'サービス', value: 'SSH', copyKey: null },
+                                { label: 'ユーザー名', value: snap.ec2Username ?? '', copyKey: 'tt-user' as string | null },
+                                { label: '認証方式', value: 'RSA/DSA/ECDSA/ED25519鍵を使う', copyKey: null },
+                                { label: '秘密鍵ファイル', value: pemName, copyKey: null },
+                              ] as { label: string; value: string; copyKey: string | null }[]
+                            ).map(({ label, value, copyKey }) => (
+                              <div key={label} className="flex items-center justify-between text-[12px]">
+                                <span className="text-slate-500 shrink-0 w-28">{label}</span>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="font-mono text-slate-800 truncate">{value}</span>
+                                  {copyKey && (
+                                    <button
+                                      type="button"
+                                      onClick={() => copyCmd(value, copyKey)}
+                                      className="shrink-0 rounded px-1.5 py-0.5 text-[10px] border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+                                    >
+                                      {copiedCmd === copyKey ? '✓' : 'コピー'}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-[11px] text-slate-500">※ 秘密鍵ファイルは .pem のままで使用できます。変換不要です。</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )
             })()}
