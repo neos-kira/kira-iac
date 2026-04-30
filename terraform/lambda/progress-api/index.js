@@ -175,25 +175,57 @@ function calcWbsPercent(p) {
   return Math.round(subCleared / 8 * 100)
 }
 
-/** 現在進行中の課題ラベルを返す（lastActive.label 優先、student側と同じフォールバック） */
+/** 現在進行中の課題ラベルを返す（lastActive.label 優先、HomeDashboard と同じフォールバックロジック） */
 function getCurrentChapterLabel(progress) {
   if (!progress) return 'はじめに'
   if (progress.lastActive?.label) return progress.lastActive.label
-  // フォールバック: l1CurrentPart/l1CurrentQuestion から判定
+
+  const introConfirmed = progress.introConfirmed === true
+  const introStep = Number(progress.introStep ?? 0)
+
+  // はじめに未完了
+  if (!introConfirmed) {
+    if (introStep <= 0) return 'はじめに'
+    if (introStep >= 1 && introStep <= 4) return `はじめに (Step ${introStep}/5)`
+  }
+
+  // l1途中（未クリア）
   const l1Part = Number(progress.l1CurrentPart ?? 0)
   const l1Q = Number(progress.l1CurrentQuestion ?? 0)
   if ((l1Part > 0 || l1Q > 0) && !progress.l1Cleared) {
     const partLabels = ['基本操作', 'サーバー構築', '実践問題']
-    return `課題1-2 · ${partLabels[l1Part] ?? '基本操作'} ${l1Q + 1}/10問`
+    return `Linuxコマンド30問 · ${partLabels[l1Part] ?? '基本操作'} ${l1Q + 1}/10問`
   }
-  // infra1途中
+
+  // infra1途中（SSH接続確認）
   const infra1Checkboxes = Array.isArray(progress.infra1Checkboxes) ? progress.infra1Checkboxes : []
   if (infra1Checkboxes.some(Boolean) && !progress.infra1Cleared) {
-    return '課題1-1 · ツール演習（途中から再開）'
+    return 'SSH接続確認（途中）'
   }
-  // l2途中
+
+  // l2途中（TCP/IP）
   const l2Q = Number(progress.l2CurrentQuestion ?? 0)
-  if (l2Q > 0) return `課題2-2 · TCP/IP ${l2Q + 1}/10問`
+  if (l2Q > 0) return `TCP/IP理解度確認 ${l2Q + 1}/10問`
+
+  // infra3途中（OS・仮想化・クラウド）
+  const infra32Answers = (progress.infra32Answers && typeof progress.infra32Answers === 'object') ? progress.infra32Answers : {}
+  if (Object.values(infra32Answers).some((v) => v && String(v).trim())) {
+    return 'OS・仮想化・クラウド理解度確認（途中）'
+  }
+
+  // infra4途中（vi・シェルスクリプト）
+  const vi4Done = Array.isArray(progress.infra4ViDoneSteps) ? progress.infra4ViDoneSteps.length : 0
+  const shell4Done = Array.isArray(progress.infra4ShellDoneQuestions) ? progress.infra4ShellDoneQuestions.length : 0
+  if (vi4Done > 0 && vi4Done < 10) return `viエディタ演習 ${vi4Done}/10ステップ`
+  if (shell4Done > 0 && shell4Done < 11) return `シェルスクリプト演習 ${shell4Done}/11問`
+
+  // infra5途中（サーバー構築）
+  const infra5PhaseDone = Array.isArray(progress.infra5PhaseDone) ? progress.infra5PhaseDone.length : 0
+  if (infra5PhaseDone > 0) return `サーバー構築 ${infra5PhaseDone}/5フェーズ`
+
+  // introConfirmed=true かつ何も着手していない → Linux基本操作・コマンドを促す
+  if (introConfirmed) return 'Linux基本操作・コマンド'
+
   return 'はじめに'
 }
 

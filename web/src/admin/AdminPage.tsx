@@ -427,7 +427,7 @@ export function AdminPage() {
                     const isStaleZero = u.wbsPercent === 0 && !!u.createdAt && Date.now() - new Date(u.createdAt).getTime() > 7 * 86400 * 1000
                     const rowBg = isStaleZero ? 'bg-red-50/40' : isFollowup ? 'bg-amber-50/40' : 'hover:bg-slate-50/70'
                     const initial = u.username[0]?.toUpperCase() ?? '?'
-                    const currentTask = u.lastActive?.label ?? u.currentChapter ?? '未開始'
+                    const currentTask = u.currentChapter ?? '未開始'
                     return (
                       <tr key={u.username} className={`${rowBg} transition-colors`}>
                         {/* 受講生名 */}
