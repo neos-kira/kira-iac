@@ -267,8 +267,18 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
       const localKey = `nic-ai-tutorial-shown-${currentUser}`
       localStorage.setItem(localKey, '1')
       const snap = aiTutorialSnapRef.current
-      if (snap && isProgressApiAvailable()) {
-        postProgress(currentUser, { ...snap, aiTutorialShown: true }).catch(() => {})
+      if (isProgressApiAvailable()) {
+        const baseSnap = snap ?? {
+          introConfirmed: false,
+          introAt: null,
+          wbsPercent: 0,
+          chapterProgress: [],
+          currentDay: 0,
+          delayedIds: [],
+          updatedAt: new Date().toISOString(),
+          pins: [],
+        }
+        postProgress(currentUser, { ...baseSnap, aiTutorialShown: true }).catch(() => {})
       }
     }
   }
