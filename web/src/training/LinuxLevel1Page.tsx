@@ -167,6 +167,15 @@ export function LinuxLevel1Page() {
   const allClearSavedRef = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const mobileCurrentRef = useRef<HTMLButtonElement>(null)
+  // DynamoDB側でアクティブな部（タブ切替でも変わらない・interrupt保存基準）
+  const [serverActivePart, setServerActivePart] = useState(initPart)
+  // タブ切替でレビューに入ったとき元のアクティブ部の状態を退避するref
+  const savedActiveStateRef = useRef<{
+    firstAttemptCorrect: Record<string, boolean>
+    answeredCommands: Record<number, string>
+    queueIdx: number
+    queue: QuizQuestion[]
+  } | null>(null)
 
   useEffect(() => {
     document.title = 'Linuxコマンド30問'
@@ -241,15 +250,32 @@ export function LinuxLevel1Page() {
       setPartScore(0)
 
       // 回答済みコマンドを復元（DynamoDBに保存値があればそちら、なければ choices[correctIndex] で補完）
+      let restoredAnsweredCommands: Record<number, string>
       if (snap.l1AnsweredCommands && Object.keys(snap.l1AnsweredCommands).length > 0) {
-        const restored: Record<number, string> = {}
+        restoredAnsweredCommands = {}
         Object.entries(snap.l1AnsweredCommands).forEach(([k, v]) => {
-          restored[Number(k)] = v
+          restoredAnsweredCommands[Number(k)] = v
         })
-        setAnsweredCommands(restored)
       } else {
-        setAnsweredCommands(serverRestored.answeredCommands)
+        restoredAnsweredCommands = serverRestored.answeredCommands
       }
+      setAnsweredCommands(restoredAnsweredCommands)
+
+      // DynamoDB側のアクティブ部を記録（タブ切替中のinterrupt保存に使用）
+      setServerActivePart(serverPart)
+      savedActiveStateRef.current = {
+        firstAttemptCorrect: serverRestored.firstAttemptCorrect,
+        answeredCommands: restoredAnsweredCommands,
+        queueIdx: serverRestored.queueIdx,
+        queue: serverRestored.queue,
+      }
+
+      // クリア済み部で開始する場合は初問の回答をinputValueに設定
+      const firstQForInput = getPartQuestions(serverPart)[0]
+      const startCleared = snap.l1Cleared === true || newPartsCleared[serverPart] === true
+      setInputValue(startCleared
+        ? (restoredAnsweredCommands[0] ?? firstQForInput?.choices[firstQForInput?.correctIndex ?? 0] ?? '')
+        : '')
 
       saveL1State(storageKey, newPartsCleared, serverPart, serverCurrentQuestion, serverWrongIds, serverSavedQueueIdx)
       setIsLoading(false)
@@ -320,8 +346,6 @@ export function LinuxLevel1Page() {
     void save()
   }, [phase, activePart, serverSnapshot])
 
-  const firstAttemptCount = Object.keys(firstAttemptCorrect).length
-
   function handleExecute() {
     if (!current || lastResult !== null || isExecuting) return
     // setIsExecuting(true) を先にレンダリングさせるため、採点処理を setTimeout で遅延する。
@@ -372,10 +396,13 @@ export function LinuxLevel1Page() {
 
   function handlePrevQuestion() {
     if (queueIdx > 0) {
+      const prevIdx = queueIdx - 1
+      const prevQ = queue[prevIdx]
+      const prevCleared = prevQ ? firstAttemptCorrect[prevQ.id] === true : false
       setLastResult(null)
       setWrongFeedback(false)
-      setInputValue('')
-      setQueueIdx((i) => i - 1)
+      setInputValue(prevCleared ? (answeredCommands[prevIdx] ?? prevQ?.choices[prevQ.correctIndex] ?? '') : '')
+      setQueueIdx(prevIdx)
     }
   }
 
@@ -384,7 +411,7 @@ export function LinuxLevel1Page() {
     if (!q || firstAttemptCorrect[q.id] !== true) return
     setLastResult(null)
     setWrongFeedback(false)
-    setInputValue('')
+    setInputValue(answeredCommands[targetIdx] ?? q.choices[q.correctIndex] ?? '')
     setQueueIdx(targetIdx)
   }
 
@@ -393,10 +420,11 @@ export function LinuxLevel1Page() {
     if (isLast) {
       // 復習モード（クリア済みの部）では採点せずq1に戻る
       if (partsCleared[activePart]) {
+        const firstQ = queue[0]
         setQueueIdx(0)
         setLastResult(null)
         setWrongFeedback(false)
-        setInputValue('')
+        setInputValue(answeredCommands[0] ?? firstQ?.choices[firstQ?.correctIndex ?? 0] ?? '')
         return
       }
       // 採点
@@ -418,10 +446,13 @@ export function LinuxLevel1Page() {
         setPhase('part_result')
       }
     } else {
-      setQueueIdx((i) => i + 1)
+      const nextIdx = queueIdx + 1
+      const nextQ = queue[nextIdx]
+      const nextCleared = nextQ ? firstAttemptCorrect[nextQ.id] === true : false
+      setQueueIdx(nextIdx)
       setLastResult(null)
       setWrongFeedback(false)
-      setInputValue('')
+      setInputValue(nextCleared ? (answeredCommands[nextIdx] ?? nextQ?.choices[nextQ.correctIndex] ?? '') : '')
     }
   }
 
@@ -438,18 +469,75 @@ export function LinuxLevel1Page() {
     setAnsweredCommands({})
   }
 
+  /** 部タブクリック: クリア済み部のレビュー切替またはアクティブ部への復帰 */
+  function handlePartTabClick(partIdx: number) {
+    if (partIdx === activePart) return
+    if (partIdx === serverActivePart) {
+      // アクティブ部（DynamoDB側）に戻る: 退避した状態を復元
+      const saved = savedActiveStateRef.current
+      setActivePart(partIdx)
+      if (saved) {
+        setQueue(saved.queue)
+        setQueueIdx(saved.queueIdx)
+        setFirstAttemptCorrect(saved.firstAttemptCorrect)
+        setAnsweredCommands(saved.answeredCommands)
+        const firstQ = saved.queue[0]
+        const firstCleared = firstQ ? saved.firstAttemptCorrect[firstQ.id] === true : false
+        setInputValue(firstCleared ? (saved.answeredCommands[0] ?? firstQ?.choices[firstQ.correctIndex] ?? '') : '')
+      } else {
+        setQueue(getPartQuestions(partIdx))
+        setQueueIdx(0)
+        setFirstAttemptCorrect({})
+        setAnsweredCommands({})
+        setInputValue('')
+      }
+      setLastResult(null)
+      setWrongFeedback(false)
+      setPhase('quiz')
+    } else if (partsCleared[partIdx]) {
+      // クリア済みの別の部をレビュー: 現在アクティブ部の状態を退避
+      if (activePart === serverActivePart) {
+        savedActiveStateRef.current = { firstAttemptCorrect, answeredCommands, queueIdx, queue }
+      }
+      // クリア済み部の状態を再構築（全問正解・正解コマンドを初期表示）
+      const qs = getPartQuestions(partIdx)
+      const allCorrect: Record<string, boolean> = {}
+      const allAnswered: Record<number, string> = {}
+      qs.forEach((q, i) => {
+        allCorrect[q.id] = true
+        allAnswered[i] = q.choices[q.correctIndex] ?? ''
+      })
+      setActivePart(partIdx)
+      setQueue(qs)
+      setQueueIdx(0)
+      setFirstAttemptCorrect(allCorrect)
+      setAnsweredCommands(allAnswered)
+      setInputValue(allAnswered[0] ?? '')
+      setLastResult(null)
+      setWrongFeedback(false)
+      setPhase('quiz')
+    }
+  }
+
   /** 中断ボタン: DynamoDB保存 → ok なら遷移、失敗なら表示 */
   async function handleInterrupt() {
     if (isSaving) return
     setIsSaving(true)
     setSaveError(null)
 
-    const wrongIds = Object.keys(firstAttemptCorrect).filter((id) => firstAttemptCorrect[id] === false)
-    const currentQuestion = firstAttemptCount
-    const savedQueueIdx = queueIdx
+    // クリア済み部を閲覧中の場合はDynamoDB側のアクティブ部の状態で保存する
+    const isInReview = activePart !== serverActivePart
+    const saveState = (isInReview && savedActiveStateRef.current)
+      ? savedActiveStateRef.current
+      : { firstAttemptCorrect, answeredCommands, queueIdx, queue }
+    const saveActivePart = isInReview ? serverActivePart : activePart
+
+    const wrongIds = Object.keys(saveState.firstAttemptCorrect).filter((id) => saveState.firstAttemptCorrect[id] === false)
+    const currentQuestion = Object.keys(saveState.firstAttemptCorrect).length
+    const savedQueueIdx = saveState.queueIdx
 
     // ① localStorage に現在の状態をキャッシュ保存
-    saveL1State(storageKey, partsCleared, activePart, currentQuestion, wrongIds, savedQueueIdx)
+    saveL1State(storageKey, partsCleared, saveActivePart, currentQuestion, wrongIds, savedQueueIdx)
 
     // ② DynamoDB に即時同期：serverSnapshotをベースに変化した値だけ上書き
     const username = getCurrentDisplayName().trim().toLowerCase()
@@ -459,11 +547,11 @@ export function LinuxLevel1Page() {
         currentDay: 0, delayedIds: [], updatedAt: '', pins: [],
       }
       const cmdMap: Record<string, string> = {}
-      Object.entries(answeredCommands).forEach(([k, v]) => { cmdMap[String(k)] = v })
-      const partName = PART_NAMES[activePart] ?? '基本操作'
+      Object.entries(saveState.answeredCommands).forEach(([k, v]) => { cmdMap[String(k)] = v })
+      const partName = PART_NAMES[saveActivePart] ?? '基本操作'
       const ok = await postProgress(username, {
         ...base,
-        l1CurrentPart: activePart,
+        l1CurrentPart: saveActivePart,
         l1CurrentQuestion: currentQuestion,
         l1SavedQueueIdx: savedQueueIdx,
         l1WrongIds: wrongIds,
@@ -659,6 +747,34 @@ export function LinuxLevel1Page() {
           <div className="mx-auto max-w-xl w-full">
             {saveError && <p className="text-xs text-red-600 text-right mb-2">{saveError}</p>}
           </div>
+          {/* 第1部・第2部・第3部タブ */}
+          <div className="mx-auto max-w-xl w-full flex gap-2 mb-3 px-1">
+            {PART_LABELS.map((label, idx) => {
+              const isActive = activePart === idx
+              const isPartCleared = partsCleared[idx]
+              const isAccessible = isPartCleared || idx === serverActivePart
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handlePartTabClick(idx)}
+                  disabled={!isAccessible}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    isActive
+                      ? 'bg-sky-500 text-white'
+                      : isPartCleared
+                        ? 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 cursor-pointer'
+                        : isAccessible
+                          ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer'
+                          : 'bg-slate-50 text-slate-300 cursor-not-allowed'
+                  }`}
+                >
+                  {isPartCleared && !isActive && <span>✓</span>}
+                  {label}
+                </button>
+              )
+            })}
+          </div>
           {/* 進捗バー + ナビゲーション */}
           <div className="mx-auto max-w-xl w-full flex items-center gap-3 mb-2 md:mb-4 px-1">
             <button
@@ -683,11 +799,7 @@ export function LinuxLevel1Page() {
         <h1 className="text-display md:text-display-pc font-semibold text-slate-800 tracking-tight">
           Linuxコマンド30問
         </h1>
-        <div className="mt-1 flex items-center gap-2">
-          {partsCleared[activePart] && (
-            <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-semibold text-sky-600">復習モード</span>
-          )}
-        </div>
+        <div className="mt-1 flex items-center gap-2" />
 
         <p className="text-display md:text-display-pc font-bold leading-snug text-gray-900 mt-2 mb-2 md:mt-4 md:mb-8">{current?.prompt}</p>
 
@@ -767,21 +879,16 @@ export function LinuxLevel1Page() {
           </div>
         </form>
 
-        {/* 回答履歴（復習モード: クリア済み問題） */}
+        {/* 正解・不正解表示（クリア済み問題の復習） */}
         {isReviewMode && (
-          <div className="mt-2 md:mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 space-y-1.5">
-            <div className="flex items-start gap-2 text-xs">
-              <span className="text-slate-500 shrink-0 pt-0.5">あなたの回答:</span>
-              <code translate="no" className="font-mono text-slate-800 break-all">{answeredCommands[queueIdx] ?? '(記録なし)'}</code>
+          firstAttemptCorrect[current?.id ?? ''] === true ? (
+            <p className="mt-2 md:mt-4 text-sm font-semibold text-green-600">✅ 正解</p>
+          ) : (
+            <div className="mt-2 md:mt-4">
+              <p className="text-sm font-semibold text-red-600">❌ 不正解</p>
+              <p className="mt-1 text-xs text-slate-700">正解：<code translate="no" className="font-mono">{current?.choices[current.correctIndex] ?? ''}</code></p>
             </div>
-            <div className="flex items-start gap-2 text-xs">
-              <span className="text-slate-500 shrink-0 pt-0.5">正解:</span>
-              <code translate="no" className="font-mono text-slate-800 break-all">{current?.choices[current.correctIndex] ?? ''}</code>
-            </div>
-            <p className={`text-xs font-semibold ${firstAttemptCorrect[current?.id ?? ''] === true ? 'text-emerald-600' : 'text-rose-600'}`}>
-              {firstAttemptCorrect[current?.id ?? ''] === true ? '✓ 初回正解' : '✗ 初回不正解'}
-            </p>
-          </div>
+          )
         )}
 
         {wrongFeedback && (
