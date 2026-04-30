@@ -460,6 +460,9 @@ async function handler(event) {
       if (traineeId !== session.username) {
         return json({ error: 'forbidden' }, 403)
       }
+      // 既存レコードを取得して lastLoginAt を保持（PUT で上書きされると消えるため）
+      const existingRecord = await client.send(new GetItemCommand({ TableName, Key: marshall({ traineeId }) }))
+      const existingData = existingRecord.Item ? unmarshall(existingRecord.Item) : null
       const Item = {
         traineeId,
         introConfirmed: !!body.introConfirmed,
@@ -543,6 +546,10 @@ async function handler(event) {
         infra21KnowledgeResult: (body.infra21KnowledgeResult && typeof body.infra21KnowledgeResult === 'object' && !Array.isArray(body.infra21KnowledgeResult)) ? body.infra21KnowledgeResult : undefined,
         // 課題3-1: 解説既読フラグ
         infra31Ack: typeof body.infra31Ack === 'boolean' ? body.infra31Ack : undefined,
+        // AI講師チュートリアル既読フラグ（一度 true になったら保持）
+        aiTutorialShown: body.aiTutorialShown === true ? true : (existingData?.aiTutorialShown || undefined),
+        // 最終ログイン日時は PUT で上書きされないよう既存値を引き継ぐ
+        lastLoginAt: existingData?.lastLoginAt || undefined,
       }
       await client.send(new PutItemCommand({ TableName, Item: marshall(Item, { removeUndefinedValues: true }) }))
       return json({ ok: true })

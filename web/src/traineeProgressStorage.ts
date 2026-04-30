@@ -164,6 +164,8 @@ export type TraineeProgressSnapshot = {
     path: string       // ルートパス (例: '/training/linux-level1')
     savedAt: string    // ISO 8601 タイムスタンプ
   } | null
+  /** AI講師チュートリアルを既に表示済みか（DynamoDB保存） */
+  aiTutorialShown?: boolean
 }
 
 /** 受講生IDは小文字統一（kira-test 等）。大文字小文字のずれを防ぐ。 */

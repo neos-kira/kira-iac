@@ -9,6 +9,8 @@ import { LoginPage } from './LoginPage'
 import { getCurrentDisplayName, getCurrentUsername, getUserRealName, isLoggedIn, performLogout } from './auth'
 import { getChatLog } from './api/aiChatApi'
 import { safeGetItem, safeSetItem, safeSessionGetItem, safeSessionSetItem, safeSessionRemoveItem } from './utils/storage'
+import { fetchMyProgress, postProgress, isProgressApiAvailable } from './progressApi'
+import type { TraineeProgressSnapshot } from './traineeProgressStorage'
 import { isJTerada } from './specialUsers'
 import { isTask1Cleared } from './training/trainingWbsData'
 import { LinuxLevel1Page } from './training/LinuxLevel1Page'
@@ -204,20 +206,60 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   }, [showMobileBell, showMobileUserMenu])
 
   const [showAiTutorial, setShowAiTutorial] = useState(false)
+  const aiTutorialSnapRef = useRef<TraineeProgressSnapshot | null>(null)
+  const aiTutorialTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
-    const shown = localStorage.getItem('nic-ai-tutorial-shown')
-    if (!shown) {
+    if (!currentUser || !isLoggedIn()) return
+    // ユーザー固有のローカルキー（同デバイスで別ユーザーが共用しないよう分離）
+    const localKey = `nic-ai-tutorial-shown-${currentUser}`
+    if (localStorage.getItem(localKey)) return // ローカルキャッシュで即スキップ
+
+    let cancelled = false
+    const showTutorial = (snap: TraineeProgressSnapshot | null) => {
+      if (cancelled) return
+      aiTutorialSnapRef.current = snap
       setShowAiTutorial(true)
-      const timer = setTimeout(() => {
+      aiTutorialTimerRef.current = setTimeout(() => {
+        if (cancelled) return
         setShowAiTutorial(false)
-        localStorage.setItem('nic-ai-tutorial-shown', '1')
+        localStorage.setItem(localKey, '1')
+        // DynamoDB にも保存（次回別端末でも表示しない）
+        if (snap && isProgressApiAvailable()) {
+          postProgress(currentUser, { ...snap, aiTutorialShown: true }).catch(() => {})
+        }
       }, 5000)
-      return () => clearTimeout(timer)
     }
-  }, [])
+
+    if (!isProgressApiAvailable()) {
+      showTutorial(null)
+    } else {
+      fetchMyProgress(currentUser).then((snap) => {
+        if (cancelled) return
+        if (!snap?.aiTutorialShown) {
+          showTutorial(snap)
+        } else {
+          localStorage.setItem(localKey, '1') // DynamoDBが既読ならローカルに同期
+        }
+      }).catch(() => { if (!cancelled) showTutorial(null) })
+    }
+
+    return () => {
+      cancelled = true
+      if (aiTutorialTimerRef.current) clearTimeout(aiTutorialTimerRef.current)
+    }
+  }, [currentUser])
+
   const dismissTutorial = () => {
+    if (aiTutorialTimerRef.current) clearTimeout(aiTutorialTimerRef.current)
     setShowAiTutorial(false)
-    localStorage.setItem('nic-ai-tutorial-shown', '1')
+    if (currentUser) {
+      const localKey = `nic-ai-tutorial-shown-${currentUser}`
+      localStorage.setItem(localKey, '1')
+      const snap = aiTutorialSnapRef.current
+      if (snap && isProgressApiAvailable()) {
+        postProgress(currentUser, { ...snap, aiTutorialShown: true }).catch(() => {})
+      }
+    }
   }
 
   if (isLogin) return <>{children}</>
