@@ -587,7 +587,7 @@ export function HomeDashboard({
           ) : currentTask ? (
             <div className="rounded-2xl text-white" style={{ background: 'linear-gradient(135deg, #3730a3, #2563EB)', borderRadius: 16, padding: '24px 28px' }}>
               {/* テキスト＋イラスト行 */}
-              <div className="flex gap-4 md:gap-8 items-start">
+              <div className="flex gap-4 items-start">
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] uppercase tracking-widest mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>次に学習するレッスン</p>
                   <h2 className="text-[22px] font-medium leading-snug">{currentTask.taskName}</h2>
@@ -613,7 +613,7 @@ export function HomeDashboard({
                   </div>
                 </div>
                 {/* イラスト（モバイル: 90px, PC: 150px） */}
-                <div className="flex w-[90px] md:w-[150px] flex-shrink-0 items-center justify-center p-1" style={{ background: '#1a1a2e', borderRadius: 8 }}>
+                <div className="flex w-[90px] md:w-[120px] flex-shrink-0 items-center justify-center p-1" style={{ background: '#1a1a2e', borderRadius: 8 }}>
                   <HeroIllustration kind={getIllustrationKind(currentTask.taskName)} />
                 </div>
               </div>
