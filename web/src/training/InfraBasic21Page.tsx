@@ -20,8 +20,7 @@ import {
   type KnowledgeQuestionConfig,
 } from './infraBasic21Data'
 
-/** TODO: テナント設定から取得（現在はハードコード。テナント毎の運用時間が確定したら設定値化すること） */
-const TRAINING_HOURS_GUIDANCE = '平日9:40〜19:00が目安です'
+const TRAINING_HOURS_GUIDANCE = '5時間操作がない場合、サーバーは自動的に停止します'
 
 export function InfraBasic21Page() {
   const navigate = useSafeNavigate()
@@ -47,7 +46,7 @@ export function InfraBasic21Page() {
     document.title = 'インフラ基礎課題2-1 ネットワーク実践編'
   }, [])
 
-  // 研修生の演習EC2 IPと確認済みフラグをDynamoDBから取得
+  // 研修生の演習EC2 IPと確認済みフラグをDynamoDBから取得・全フィールド復元
   useEffect(() => {
     const username = getCurrentDisplayName().trim().toLowerCase()
     if (!username || false) return
@@ -56,13 +55,33 @@ export function InfraBasic21Page() {
         setServerSnapshot(snap)
         setEc2Ip(snap.ec2PublicIp || snap.ec2Host || null)
         setEc2State(snap.ec2State ?? null)
-        // DynamoDB に保存済みの確認結果を復元
-        if (snap.infra21PingOk) {
-          updateState((prev) => ({ ...prev, practical: { ...prev.practical, q6PingServerOk: true } }))
-        }
-        if (snap.infra21SshOk) {
-          updateState((prev) => ({ ...prev, practical: { ...prev.practical, q7SshServerOk: true } }))
-        }
+        // DynamoDB の値を正として全フィールドを復元
+        updateState((prev) => ({
+          ...prev,
+          practical: {
+            ...prev.practical,
+            q1Ip: snap.infra21Q1Ip ?? prev.practical.q1Ip,
+            q1Mask: snap.infra21Q1Mask ?? prev.practical.q1Mask,
+            q1Dg: snap.infra21Q1Dg ?? prev.practical.q1Dg,
+            q1Mac: snap.infra21Q1Mac ?? prev.practical.q1Mac,
+            q3PingResult: snap.infra21Q2PingLog ?? prev.practical.q3PingResult,
+            q4TraceResult: snap.infra21Q3TraceResult ?? prev.practical.q4TraceResult,
+            q5BoundaryIp: snap.infra21Q4BoundaryIp ?? prev.practical.q5BoundaryIp,
+            q6PingServerOk: snap.infra21PingOk ?? prev.practical.q6PingServerOk,
+            q7SshServerOk: snap.infra21SshOk ?? prev.practical.q7SshServerOk,
+            q8ServerIp: snap.infra21Q7ServerIp ?? prev.practical.q8ServerIp,
+            q8ServerMask: snap.infra21Q7ServerMask ?? prev.practical.q8ServerMask,
+            q8ServerDg: snap.infra21Q7ServerDg ?? prev.practical.q8ServerDg,
+            q9NetworkAddress: snap.infra21Q8NetworkAddress ?? prev.practical.q9NetworkAddress,
+            q9Working: snap.infra21Q8Working ?? prev.practical.q9Working,
+          },
+          knowledgeAnswers: snap.infra21KnowledgeAnswers
+            ? { ...prev.knowledgeAnswers, ...snap.infra21KnowledgeAnswers } as typeof prev.knowledgeAnswers
+            : prev.knowledgeAnswers,
+          knowledgeResult: snap.infra21KnowledgeResult
+            ? { ...prev.knowledgeResult, ...snap.infra21KnowledgeResult } as typeof prev.knowledgeResult
+            : prev.knowledgeResult,
+        }))
       }
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -81,6 +100,32 @@ export function InfraBasic21Page() {
       return next
     })
   }, [storageKey])
+
+  const saveAllToDb = useCallback(async (currentState: InfraBasic21StoredState) => {
+    const username = getCurrentDisplayName().trim().toLowerCase()
+    if (!username || !isProgressApiAvailable()) return
+    const base = serverSnapshot ?? EMPTY_SNAPSHOT
+    await postProgress(username, {
+      ...base,
+      infra21PingOk: currentState.practical.q6PingServerOk || base.infra21PingOk || undefined,
+      infra21SshOk: currentState.practical.q7SshServerOk || base.infra21SshOk || undefined,
+      infra21Q1Ip: currentState.practical.q1Ip || undefined,
+      infra21Q1Mask: currentState.practical.q1Mask || undefined,
+      infra21Q1Dg: currentState.practical.q1Dg || undefined,
+      infra21Q1Mac: currentState.practical.q1Mac || undefined,
+      infra21Q2PingLog: currentState.practical.q3PingResult || undefined,
+      infra21Q3TraceResult: currentState.practical.q4TraceResult || undefined,
+      infra21Q4BoundaryIp: currentState.practical.q5BoundaryIp || undefined,
+      infra21Q7ServerIp: currentState.practical.q8ServerIp || undefined,
+      infra21Q7ServerMask: currentState.practical.q8ServerMask || undefined,
+      infra21Q7ServerDg: currentState.practical.q8ServerDg || undefined,
+      infra21Q8NetworkAddress: currentState.practical.q9NetworkAddress || undefined,
+      infra21Q8Working: currentState.practical.q9Working || undefined,
+      infra21KnowledgeAnswers: currentState.knowledgeAnswers as Record<string, string>,
+      infra21KnowledgeResult: currentState.knowledgeResult as Record<string, { checked: boolean; pass: boolean; feedback: string }>,
+      updatedAt: new Date().toISOString(),
+    })
+  }, [serverSnapshot])
 
   const handlePracticalChange = useCallback(
     (field: keyof InfraBasic21StoredState['practical'], value: string | boolean) => {
@@ -114,26 +159,18 @@ export function InfraBasic21Page() {
     [updateState],
   )
 
-  const handleKnowledgeCheck = useCallback(() => {
-    updateState((prev) => {
-      const next: InfraBasic21StoredState = {
-        ...prev,
-        knowledgeResult: { ...prev.knowledgeResult },
-      }
-
-      for (const q of KNOWLEDGE_QUESTIONS_21) {
-        const answerRaw = prev.knowledgeAnswers[q.id] ?? ''
-        const { pass, feedback } = evaluateKnowledgeAnswer(q, answerRaw)
-        next.knowledgeResult[q.id] = {
-          checked: true,
-          pass,
-          feedback,
-        }
-      }
-
-      return next
-    })
-  }, [updateState])
+  const handleKnowledgeCheck = useCallback(async () => {
+    const newKnowledgeResult = { ...state.knowledgeResult }
+    for (const q of KNOWLEDGE_QUESTIONS_21) {
+      const answerRaw = state.knowledgeAnswers[q.id] ?? ''
+      const { pass, feedback } = evaluateKnowledgeAnswer(q, answerRaw)
+      newKnowledgeResult[q.id] = { checked: true, pass, feedback }
+    }
+    const newState: InfraBasic21StoredState = { ...state, knowledgeResult: newKnowledgeResult }
+    updateState(() => newState)
+    await saveAllToDb(newState)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, updateState, saveAllToDb])
 
   const handleReset = useCallback(() => {
     if (!window.confirm('すべての回答をリセットします。よろしいですか？')) return
@@ -306,7 +343,7 @@ export function InfraBasic21Page() {
         <div className="flex items-center justify-end">
           <button
             type="button"
-            onClick={() => { saveInfraBasic21State(state, storageKey); clearDirty(); navigate('/') }}
+            onClick={() => { void (async () => { saveInfraBasic21State(state, storageKey); await saveAllToDb(state); clearDirty(); navigate('/') })() }}
             className="rounded-lg border border-sky-500 px-4 py-2 text-xs font-medium text-sky-600 hover:bg-sky-50"
           >
             中断して保存
@@ -485,7 +522,9 @@ export function InfraBasic21Page() {
               </div>
             ) : (
               <div className="rounded border border-rose-200 bg-rose-50 p-2 text-xs text-rose-700">
-                ⚠️ 演習サーバが{ec2State === 'stopped' ? '停止中' : '未起動または未作成'}です。トップページから演習サーバを起動後、このページを再読み込みしてください。
+                {ec2State === 'stopped'
+                  ? '⚠️ 演習サーバが停止中です。トップページから演習サーバを起動後、このページを再読み込みしてください。'
+                  : '⚠️ 演習サーバーが未作成です。先にサーバーを作成してください。'}
               </div>
             )}
             <p className="text-xs font-semibold text-sky-600">
@@ -503,7 +542,7 @@ export function InfraBasic21Page() {
                 <>
                   <p className="text-[11px] text-slate-600">
                     {ec2Ip
-                      ? <><code translate="no" className="font-mono bg-slate-100 px-1 rounded">ping -c 4 {ec2Ip}</code> を実行し、結果を貼り付けてください。</>
+                      ? <>演習サーバーへのpingコマンドを考えて実行し、結果を貼り付けてください。（演習サーバーIP: <code translate="no" className="font-mono bg-slate-100 px-1 rounded">{ec2Ip}</code>）</>
                       : 'トップページで演習サーバを起動すると有効になります。'}
                   </p>
                   <textarea
@@ -520,7 +559,7 @@ export function InfraBasic21Page() {
                     disabled={!pingAiInput.trim() || pingAi.status === 'checking' || !ec2Ip}
                     className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {pingAi.status === 'checking' ? 'AI確認中...' : 'AIで判定する'}
+                    {pingAi.status === 'checking' ? 'AI確認中...' : 'AIに提出する'}
                   </button>
                   {pingAi.status === 'done' && <p className="text-xs text-slate-700">{pingAi.message}</p>}
                   {pingAi.status === 'error' && <p className="text-xs text-red-600">{pingAi.message}</p>}
@@ -556,7 +595,7 @@ export function InfraBasic21Page() {
                     disabled={!sshAiInput.trim() || sshAi.status === 'checking' || !ec2Ip}
                     className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {sshAi.status === 'checking' ? 'AI確認中...' : 'AIで判定する'}
+                    {sshAi.status === 'checking' ? 'AI確認中...' : 'AIに提出する'}
                   </button>
                   {sshAi.status === 'done' && <p className="text-xs text-slate-700">{sshAi.message}</p>}
                   {sshAi.status === 'error' && <p className="text-xs text-red-600">{sshAi.message}</p>}
@@ -722,7 +761,7 @@ export function InfraBasic21Page() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={handleKnowledgeCheck}
+              onClick={() => { void handleKnowledgeCheck() }}
               className="rounded-xl bg-gradient-to-r bg-sky-600 px-4 py-2 text-xs font-semibold text-white hover:bg-sky-700"
             >
               小テストを採点する
@@ -741,7 +780,7 @@ export function InfraBasic21Page() {
         <div className="flex justify-center">
           <button
             type="button"
-            onClick={() => { saveInfraBasic21State(state, storageKey); clearDirty(); navigate('/') }}
+            onClick={() => { void (async () => { saveInfraBasic21State(state, storageKey); await saveAllToDb(state); clearDirty(); navigate('/') })() }}
             className="rounded-lg border border-sky-500 px-6 py-2.5 text-sm font-medium text-sky-600 hover:bg-sky-50"
           >
             中断して保存

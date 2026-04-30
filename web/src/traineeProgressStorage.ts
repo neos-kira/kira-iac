@@ -124,6 +124,34 @@ export type TraineeProgressSnapshot = {
   infra21PingOk?: boolean
   /** 課題2-1: 演習サーバへのSSH接続確認が合格済み */
   infra21SshOk?: boolean
+  /** 課題2-1: Q1 自端末IPアドレス */
+  infra21Q1Ip?: string
+  /** 課題2-1: Q1 サブネットマスク */
+  infra21Q1Mask?: string
+  /** 課題2-1: Q1 デフォルトゲートウェイ */
+  infra21Q1Dg?: string
+  /** 課題2-1: Q1 MACアドレス */
+  infra21Q1Mac?: string
+  /** 課題2-1: Q2 疎通確認Pingログ */
+  infra21Q2PingLog?: string
+  /** 課題2-1: Q3 経路確認結果 */
+  infra21Q3TraceResult?: string
+  /** 課題2-1: Q4 WAN/LAN境界IP */
+  infra21Q4BoundaryIp?: string
+  /** 課題2-1: Q7 接続先サーバIPアドレス */
+  infra21Q7ServerIp?: string
+  /** 課題2-1: Q7 接続先サーバサブネットマスク */
+  infra21Q7ServerMask?: string
+  /** 課題2-1: Q7 接続先サーバデフォルトゲートウェイ */
+  infra21Q7ServerDg?: string
+  /** 課題2-1: Q8 ネットワークアドレス計算結果 */
+  infra21Q8NetworkAddress?: string
+  /** 課題2-1: Q8 計算過程メモ */
+  infra21Q8Working?: string
+  /** 課題2-1: 知識確認回答テキスト */
+  infra21KnowledgeAnswers?: Record<string, string>
+  /** 課題2-1: 知識確認採点結果 */
+  infra21KnowledgeResult?: Record<string, { checked: boolean; pass: boolean; feedback: string }>
   /** 課題3-1: 解説を一通り読んだ */
   infra31Ack?: boolean
   /**

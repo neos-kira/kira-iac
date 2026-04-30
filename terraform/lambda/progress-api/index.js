@@ -516,6 +516,21 @@ async function handler(event) {
         // 課題2-1: 疎通・SSH確認結果
         infra21PingOk: typeof body.infra21PingOk === 'boolean' ? body.infra21PingOk : undefined,
         infra21SshOk: typeof body.infra21SshOk === 'boolean' ? body.infra21SshOk : undefined,
+        // 課題2-1: Q1〜Q4・Q7〜Q8・知識確認
+        infra21Q1Ip: typeof body.infra21Q1Ip === 'string' ? body.infra21Q1Ip : undefined,
+        infra21Q1Mask: typeof body.infra21Q1Mask === 'string' ? body.infra21Q1Mask : undefined,
+        infra21Q1Dg: typeof body.infra21Q1Dg === 'string' ? body.infra21Q1Dg : undefined,
+        infra21Q1Mac: typeof body.infra21Q1Mac === 'string' ? body.infra21Q1Mac : undefined,
+        infra21Q2PingLog: typeof body.infra21Q2PingLog === 'string' ? body.infra21Q2PingLog : undefined,
+        infra21Q3TraceResult: typeof body.infra21Q3TraceResult === 'string' ? body.infra21Q3TraceResult : undefined,
+        infra21Q4BoundaryIp: typeof body.infra21Q4BoundaryIp === 'string' ? body.infra21Q4BoundaryIp : undefined,
+        infra21Q7ServerIp: typeof body.infra21Q7ServerIp === 'string' ? body.infra21Q7ServerIp : undefined,
+        infra21Q7ServerMask: typeof body.infra21Q7ServerMask === 'string' ? body.infra21Q7ServerMask : undefined,
+        infra21Q7ServerDg: typeof body.infra21Q7ServerDg === 'string' ? body.infra21Q7ServerDg : undefined,
+        infra21Q8NetworkAddress: typeof body.infra21Q8NetworkAddress === 'string' ? body.infra21Q8NetworkAddress : undefined,
+        infra21Q8Working: typeof body.infra21Q8Working === 'string' ? body.infra21Q8Working : undefined,
+        infra21KnowledgeAnswers: (body.infra21KnowledgeAnswers && typeof body.infra21KnowledgeAnswers === 'object' && !Array.isArray(body.infra21KnowledgeAnswers)) ? body.infra21KnowledgeAnswers : undefined,
+        infra21KnowledgeResult: (body.infra21KnowledgeResult && typeof body.infra21KnowledgeResult === 'object' && !Array.isArray(body.infra21KnowledgeResult)) ? body.infra21KnowledgeResult : undefined,
         // 課題3-1: 解説既読フラグ
         infra31Ack: typeof body.infra31Ack === 'boolean' ? body.infra31Ack : undefined,
       }
