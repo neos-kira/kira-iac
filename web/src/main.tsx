@@ -9,7 +9,7 @@ import { LoginPage } from './LoginPage'
 import { getCurrentDisplayName, getCurrentUsername, getUserRealName, isLoggedIn, performLogout } from './auth'
 import { getChatLog } from './api/aiChatApi'
 import { safeGetItem, safeSetItem, safeSessionGetItem, safeSessionSetItem, safeSessionRemoveItem } from './utils/storage'
-import { fetchMyProgress, postProgress, isProgressApiAvailable } from './progressApi'
+import { fetchMyProgress, fetchMeInfo, postProgress, isProgressApiAvailable } from './progressApi'
 import type { TraineeProgressSnapshot } from './traineeProgressStorage'
 import { isJTerada } from './specialUsers'
 import { isTask1Cleared } from './training/trainingWbsData'
@@ -208,6 +208,9 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const [showAiTutorial, setShowAiTutorial] = useState(false)
   const aiTutorialSnapRef = useRef<TraineeProgressSnapshot | null>(null)
   const aiTutorialTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // 新規ユーザー用: 利用規約同意後に showTutorial を呼ぶためにスナップショットを保持
+  // undefined = 未判定, null = progressなし, TraineeProgressSnapshot = 取得済み
+  const pendingTutorialSnapRef = useRef<TraineeProgressSnapshot | null | undefined>(undefined)
   useEffect(() => {
     if (!currentUser || !isLoggedIn()) return
     // ユーザー固有のローカルキー（同デバイスで別ユーザーが共用しないよう分離）
@@ -241,21 +244,39 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
       }, 5000)
     }
 
+    // 利用規約同意イベントを受けて新規ユーザーにアニメーションを表示
+    const onTermsAgreed = () => {
+      if (pendingTutorialSnapRef.current === undefined) return // まだ判定中
+      showTutorial(pendingTutorialSnapRef.current)
+    }
+    window.addEventListener('nic:terms-agreed', onTermsAgreed)
+
     if (!isProgressApiAvailable()) {
       showTutorial(null)
     } else {
-      fetchMyProgress(currentUser).then((snap) => {
+      // progress と termsAgreedAt を並列取得
+      Promise.all([
+        fetchMyProgress(currentUser).catch(() => null),
+        fetchMeInfo().catch(() => null),
+      ]).then(([snap, meInfo]) => {
         if (cancelled) return
-        if (!snap?.aiTutorialShown) {
-          showTutorial(snap)
-        } else {
+        if (snap?.aiTutorialShown) {
           localStorage.setItem(localKey, '1') // DynamoDBが既読ならローカルに同期
+          return
         }
+        // 利用規約未同意 = 新規ユーザー → 同意後イベントで表示するためスナップを保持
+        if (!meInfo?.termsAgreedAt) {
+          pendingTutorialSnapRef.current = snap
+          return
+        }
+        // 既存ユーザー（termsAgreedAt あり・aiTutorialShown なし）→ 即表示
+        showTutorial(snap)
       }).catch(() => { if (!cancelled) showTutorial(null) })
     }
 
     return () => {
       cancelled = true
+      window.removeEventListener('nic:terms-agreed', onTermsAgreed)
       if (aiTutorialTimerRef.current) clearTimeout(aiTutorialTimerRef.current)
     }
   }, [currentUser])

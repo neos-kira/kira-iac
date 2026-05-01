@@ -38,7 +38,7 @@ export const LINUX_LEVEL1_QUESTIONS: QuizQuestion[] = [
   { id: 'q24', prompt: 'viで挿入モードに切り替えるには？', choices: ['i'], correctIndex: 0 },
   { id: 'q25', prompt: 'viで開いたファイルを保存して閉じるには？', choices: [':wq'], correctIndex: 0, alternatives: [':x', 'ZZ'] },
   { id: 'q26', prompt: 'viで編集中に保存せず強制終了するには？', choices: [':q!'], correctIndex: 0, alternatives: ['ZQ'] },
-  { id: 'q27', prompt: '開いているapache2.conf内でListenという文字列が含まれる行を確認するには？', choices: ['grep Listen /etc/apache2/apache2.conf'], correctIndex: 0 },
+  { id: 'q27', prompt: 'viで開いたファイル内でListenという文字列を検索するには？', choices: ['/Listen'], correctIndex: 0 },
   { id: 'q28', prompt: 'ユーザー名neos-training、IP 203.0.113.1のサーバーへSSH接続するには？', choices: ['ssh neos-training@203.0.113.1'], correctIndex: 0, alternatives: ['ssh -l neos-training 203.0.113.1'] },
   { id: 'q29', prompt: 'ローカルのindex.htmlをIP 203.0.113.1のサーバーの/var/www/html/へ転送するには？', choices: ['scp index.html neos-training@203.0.113.1:/var/www/html/'], correctIndex: 0 },
   { id: 'q30', prompt: 'apache2を再起動して設定を反映するには？', choices: ['systemctl restart apache2'], correctIndex: 0 },

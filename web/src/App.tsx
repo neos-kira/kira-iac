@@ -554,7 +554,7 @@ function App() {
     <div className="min-h-screen text-slate-800">
       {/* 利用規約同意モーダル（研修生・未同意の場合） */}
       {!isAdminView && termsAgreedAt === '' && (
-        <TermsModal onAgreed={(t) => setTermsAgreedAt(t)} />
+        <TermsModal onAgreed={(t) => { setTermsAgreedAt(t); window.dispatchEvent(new CustomEvent('nic:terms-agreed')) }} />
       )}
       {/* サーバー作成成功モーダル */}
       {/* 停止確認ダイアログ */}
